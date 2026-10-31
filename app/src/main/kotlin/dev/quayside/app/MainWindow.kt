@@ -9,6 +9,7 @@ import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.terminal.ui.TerminalArea
+import dev.quayside.terminal.ui.TerminalSettingsDialog
 
 /** The content and menu of the main window; its controllers live as long as the window (AM-408). */
 @Composable
@@ -21,13 +22,7 @@ internal fun FrameWindowScope.MainWindow(
     val controllers =
         remember { WindowControllers(core, modules, AwtDirectoryPicker(window, core.dispatchers.main), scope) }
     WindowBindings(modules.registry, controllers.providers, controllers.palette, keys)
-    AppMenu(
-        controllers.projects,
-        controllers.palette,
-        controllers.missionControl,
-        controllers.terminal,
-        modules.projects,
-    )
+    AppMenu(controllers, modules.projects)
     QuaysideApp(
         projects = controllers.projects,
         missionControl = controllers.missionControl,
@@ -36,6 +31,7 @@ internal fun FrameWindowScope.MainWindow(
             TerminalArea(controllers.terminal, controllers.terminalKeys::onKey, modifier)
         },
     )
+    TerminalSettingsDialog(controllers.terminalSettings)
 }
 
 /** Registers the command [providers] and routes the window keys to [palette] while the window is shown. */

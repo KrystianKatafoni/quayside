@@ -13,6 +13,7 @@ import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
 import dev.quayside.terminal.ui.TerminalController
+import dev.quayside.terminal.ui.TerminalSettingsController
 
 /**
  * The window menu: "Projects", "Terminal" and "View". Items are enabled by [AppMenuState.of]; shortcuts come from
@@ -20,22 +21,25 @@ import dev.quayside.terminal.ui.TerminalController
  */
 @Composable
 internal fun FrameWindowScope.AppMenu(
-    projects: ProjectsController,
-    palette: CommandPaletteController,
-    missionControl: MissionControlController,
-    terminal: TerminalController,
+    controllers: WindowControllers,
     projectsApi: ProjectsApi,
 ) {
+    val projects = controllers.projects
+    val palette = controllers.palette
+    val missionControl = controllers.missionControl
+    val terminal = controllers.terminal
+    val terminalSettings = controllers.terminalSettings
     val menu by projects.menu.collectAsState()
     val list by projectsApi.projects.collectAsState()
     val selection by projects.selection.collectAsState()
     val paletteOpen by palette.isOpen.collectAsState()
     val sessionActions by missionControl.actions.collectAsState()
-    val enabled = AppMenuState.of(menu, paletteOpen, sessionActions.dialogOpen)
+    val settingsDialog by terminalSettings.state.collectAsState()
+    val enabled = AppMenuState.of(menu, paletteOpen, sessionActions.dialogOpen || settingsDialog != null)
     MenuBar {
         Menu(Strings["menu.projects"]) { ProjectItems(projects, enabled) }
         Menu(Strings["menu.terminal"]) {
-            TerminalItems(terminal, selectedTerminalProject(list, selection), blocked = !enabled.palette)
+            TerminalItems(terminal, terminalSettings, selectedTerminalProject(list, selection), !enabled.palette)
         }
         Menu(Strings["menu.view"]) {
             Item(

@@ -36,6 +36,8 @@ import dev.quayside.terminal.api.FakeTerminalSettingsRepo
 import dev.quayside.terminal.ui.ShellStart
 import dev.quayside.terminal.ui.TerminalArea
 import dev.quayside.terminal.ui.TerminalController
+import dev.quayside.terminal.ui.TerminalSettingsController
+import dev.quayside.terminal.ui.TerminalSettingsDialog
 import kotlinx.coroutines.CoroutineScope
 import java.nio.file.Path
 import kotlin.time.Duration.Companion.hours
@@ -48,8 +50,8 @@ import kotlin.time.Duration.Companion.hours
  * With [terminal] the window also gets the terminal panel and its palette commands; the widgets of the fake sessions
  * are replaced by markers tagged `terminal.content.<session id>` (see [RecordingTerminals]).
  *
- * With [terminalSettings] shell tabs get their label and directory from [SettingsShellStart] (AM-508); without,
- * from [PlainShellStart].
+ * With [terminalSettings] the window also gets the settings dialog and its palette command (AM-508); shell tabs get
+ * their label and directory from [SettingsShellStart]; without, from [PlainShellStart].
  *
  * With [terminal] the window also registers [AttachCommands] (AM-505); [attachCommand] stands for
  * `AgentRuntime.attachCommand`.
@@ -75,8 +77,7 @@ internal fun ComposeUiTest.showWindow(
         val registry = remember { FakeCommandRegistry(scope) }
         val palette = remember { CommandPaletteController(registry, scope, NoOpLogger).also { built += it } }
         remember { registry.register(AppCommands(projects, controller, missionControl, palette, scope)) }
-        val shellStart =
-            remember { shellStartOf(terminalSettings, missionControl, sessions) }
+        val shellStart = remember { shellStartOf(terminalSettings, missionControl, sessions) }
         val terminalController =
             rememberTerminal(terminal, scope, shellStart) {
                 TerminalWiring(projects, sessions, controller, missionControl, scope)
@@ -90,10 +91,34 @@ internal fun ComposeUiTest.showWindow(
                 palette = palette,
                 terminalPanel = terminalPanel(terminalController, terminal),
             )
+            SettingsDialogHost(terminalSettings, registry, WindowParts(controller, missionControl, scope))
         }
     }
     waitUntil { built.isNotEmpty() }
     return built.single()
+}
+
+/** What the settings dialog and its command need from the window. */
+private class WindowParts(
+    val projects: ProjectsController,
+    val missionControl: MissionControlController,
+    val scope: CoroutineScope,
+)
+
+/** The settings dialog over [repo] with its palette command registered; nothing without a repo. */
+@Composable
+private fun SettingsDialogHost(
+    repo: FakeTerminalSettingsRepo?,
+    registry: FakeCommandRegistry,
+    window: WindowParts,
+) {
+    val controller =
+        remember {
+            repo?.let { TerminalSettingsController(it, window.scope) }?.also {
+                registry.register(TerminalSettingsCommands(window.projects, window.missionControl, it, window.scope))
+            }
+        }
+    controller?.let { TerminalSettingsDialog(it) }
 }
 
 /** Routes the palette's keys through [keys] while the window is shown. */

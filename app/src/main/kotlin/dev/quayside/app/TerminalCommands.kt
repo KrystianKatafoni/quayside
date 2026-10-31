@@ -12,10 +12,12 @@ import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsMenuState
+import dev.quayside.terminal.ui.SettingsDialogState
 import dev.quayside.terminal.ui.SplitAxis
 import dev.quayside.terminal.ui.TerminalController
 import dev.quayside.terminal.ui.TerminalMenuState
 import dev.quayside.terminal.ui.TerminalProject
+import dev.quayside.terminal.ui.TerminalSettingsController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -131,5 +133,43 @@ internal class TerminalCommands(
                 missionControl.actions.value,
                 terminal.menu.value,
             ),
+        )
+}
+
+/**
+ * The palette command "Ustawienia terminala" (`terminal.settings`, FR-T7, AM-508); none while a project or session
+ * dialog or the settings dialog itself is open ([dialogOpen]).
+ */
+internal fun terminalSettingsCommands(
+    dialogOpen: Boolean,
+    settings: TerminalSettingsController,
+): List<Command> =
+    if (dialogOpen) {
+        emptyList()
+    } else {
+        listOf(terminalCommand("terminal.settings", "command.terminalSettings") { settings.open() })
+    }
+
+/**
+ * Offers [terminalSettingsCommands], hidden while a dialog of the projects, Mission Control or settings is open.
+ * The hiding is a guard only against a late `stateIn` (the open dialog's popup already blocks the palette), so
+ * no UI test observes it; [terminalSettingsCommands] carries the tested rule.
+ */
+internal class TerminalSettingsCommands(
+    controller: ProjectsController,
+    missionControl: MissionControlController,
+    settings: TerminalSettingsController,
+    scope: CoroutineScope,
+) : CommandProvider {
+    private val offered =
+        { menu: ProjectsMenuState, actions: SessionActionsState, dialog: SettingsDialogState? ->
+            terminalSettingsCommands(menu.dialogOpen || actions.dialogOpen || dialog != null, settings)
+        }
+
+    override val commands: StateFlow<List<Command>> =
+        combine(controller.menu, missionControl.actions, settings.state, offered).stateIn(
+            scope,
+            SharingStarted.Eagerly,
+            offered(controller.menu.value, missionControl.actions.value, settings.state.value),
         )
 }

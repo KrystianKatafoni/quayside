@@ -58,7 +58,7 @@ Do sprawdzenia w krokach 1–2:
 - Potwierdzenie przyjęcia tekstu (T): pole wejścia zostaje widoczne, więc potwierdzeniem jest `Busy`, `None` albo puste pole po wcześniej widzianym polu z tekstem (`TextFilled`).
 - Zamknięcie ukrytego PTY po odłączeniu: na macOS pty4j przy zamykaniu PTY prawdopodobnie zabija całą grupę procesów klienta (test z potomkiem w tej samej grupie padał tylko w CI na macOS; fixture uruchamia go teraz w osobnej sesji, jak demon). Jeśli `claude attach` zostawia w swojej grupie proces potrzebny sesji, odłączenie może ją zabić. Każda próba sprawdza po odłączeniu, czy sesja żyje (`SESSION_LOST`).
 - Reguła „sesja gotowa (DONE), a `waitingFor` = input” jest mapowana na `BLOCKED`. Do weryfikacji, ryzyko `STILL_BLOCKED`.
-- Scenariusze T i O zapisują plik. W domyślnym trybie zgód może to wywołać prośbę o zgodę i fałszywe porażki. Rozważyć `--permission-mode acceptEdits` tylko dla T i O (Z zostaje w trybie domyślnym). Decyzja przed krokiem 2.
+- Scenariusze T i O zapisują plik. W domyślnym trybie zgód może to wywołać prośbę o zgodę i fałszywe porażki. **Decyzja:** T i O startują z `--permission-mode acceptEdits`. Z startuje z jawnym `--permission-mode default`, bo w skonfigurowanym trybie użytkownika `touch` nie wywoływał prośby o zgodę i sesja kończyła się bez pytania (sprawdzone ręcznie przed pomiarem).
 - Odpowiedź przez Esc przy odmowie może zostawić sesję czekającą na tekst. Kalibracja porównuje opcję 3 z Esc.
 - `SpikeClaude` duplikuje parser `agents --json` z `agent-runtime:impl` (zależność impl → impl jest zakazana).
 
@@ -69,14 +69,46 @@ Do sprawdzenia w krokach 1–2:
 
 ## Wyniki
 
-Wypełni PR `docs/AM-507-wyniki`.
+Pomiar z 2026-10-31, `claude` 2.1.316, model `haiku`, macOS. Wariant każdego rodzaju wybrany w kalibracji; pomiar: 10 prób na rodzaj i 3 wyścigi na rodzaj, razem 39 sesji pomiarowych (plus 24 w kalibracji i 3 w kroku 1). Czasy to czas od wyświetlenia pytania do jego zniknięcia po wpisaniu odpowiedzi. Surowe wiersze (`trials.jsonl`, `calib-trials.jsonl`) zawierają tylko rodzaj, werdykt i czasy; zostają lokalnie w `build/reply-spike/`.
 
 | Rodzaj | Próby | Sukcesy | Szkodliwe | p50 | p95 | Wpisania w wyścigach | Czyste odłączenia | Wybrany wariant | Wersja `claude` |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| T tekst | | | | | | | | | |
-| O opcje | | | | | | | | | |
-| Z zgoda | | | | | | | | | |
+| T tekst | 10 | 10 | 0 | 199 ms | 225 ms | 0 z 3 | 10 z 10 | `TextKeys.PASTE`, `Detach.HANGUP` | 2.1.316 |
+| O opcje | 10 | 10 | 0 | 165 ms | 195 ms | 0 z 3 | 10 z 10 | `ChoiceKeys.DIGIT`, `Detach.HANGUP` | 2.1.316 |
+| Z zgoda | 10 | 10 | 0 | 189 ms | 219 ms | 0 z 3 | 10 z 10 | `ChoiceKeys.DIGIT` (allow `1`, deny `Esc`), `Detach.HANGUP` | 2.1.316 |
+
+Ocena według tabeli z sekcji „Kryteria”: **T Dobry, O Dobry, Z Dobry.**
+
+Kalibracja (3 próby na wariant):
+
+| Rodzaj | Wariant | Sukcesy | Czyste odłączenia |
+| --- | --- | --- | --- |
+| T | PASTE + HANGUP | 3/3 | 3/3 |
+| T | TYPE + HANGUP | 2/3 (jedna porażka `no_effect`) | 3/3 |
+| T | PASTE + KEY | 3/3 | 0/3 |
+| O | DIGIT + HANGUP | 3/3 | 3/3 |
+| O | ARROWS + HANGUP | 3/3 | 3/3 |
+| Z | DIGIT + HANGUP | 3/3 | 3/3 |
+| Z | ARROWS + HANGUP | 3/3 | 3/3 |
+| Z | DIGIT + KEY | 3/3 | 0/3 |
+
+Wnioski z kalibracji i kroku 1:
+
+- Wklejenie (bracketed paste) jest pewniejsze niż pisanie znak po znaku i dwa razy szybsze. Cyfra i strzałki działają tak samo dobrze, cyfra jest prostsza.
+- Odłączenie przez SIGHUP do klienta `attach` (`HANGUP`) jest czyste, sesja przeżywa. Klawisz odłączenia (placeholder, strzałka w lewo) nie odłączał klienta sam (0 czystych odłączeń).
+- Markery ekranu z ręcznie zrobionych ramek nie pasowały do prawdziwego TUI i zostały poprawione na nagranych ramkach: pole wejścia to wiersz `❯` pod poziomą linią (dopełniony niełamliwymi spacjami); lista opcji pytania ma dodatkowe wiersze „Type something.” i „Chat about this”, których nie liczymy jako opcji; zgoda ma pytanie „Do you want to proceed?”, w którym opcja 2 zmienia ustawienia projektu (dlatego allow = `1`).
+- Po pomiarze nie została żadna sesja (`claude agents --json --all`).
 
 ## Decyzja
 
-Do wypełnienia po pomiarze (PR `docs/AM-507-wyniki`, `Closes #101`).
+Wszystkie trzy rodzaje pytań wyszły jako **Dobry**, więc odpowiedź przez ukryty `claude attach` w PTY jest przyjęta dla pytania tekstowego, pytania z opcjami i prośby o zgodę. Fallback Agent SDK / `stream-json` (ADR 0015) nie jest potrzebny.
+
+Skutek dla UI (zgodnie z sekcją „Kryteria”): pole odpowiedzi bez terminala dla wszystkich trzech rodzajów. Zadanie wdrożeniowe wprowadza wariant `open` bez widżetu w `terminal:api` i `SessionReplies` w `sessions:api`, używa wariantów z tabeli (T: wklejenie, O i Z: cyfra, odłączenie przez `HANGUP`) i przenosi do `main` ekran bez widżetu, klawisze i klasyfikator razem z markerami z tego pomiaru. Zbiór źródeł `replySpike` usuwa to zadanie.
+
+Zastrzeżenia:
+
+- **10/10 to brak sygnału awarii, nie dowód.** Dolna granica 95% przedziału ufności wynosi ok. 74%. Przed wdrożeniem warto powtórzyć pomiar na 20 próbach (dobry ≥ 19/20), a zawsze po aktualizacji Claude Code. Markery ekranu są przypięte do 2.1.316.
+- **Wyścigi pokryte częściowo** (sekcja „Ograniczenia pomiaru”): „widoczna karta attach” tylko ręcznie, „sesja przestaje czekać” jako attach do usuniętej sesji.
+- **Z mierzono w jawnym trybie `default`**, a T i O w `acceptEdits`. Zachowanie w trybach użytkownika, które same zezwalają na polecenie, jest inne: sesja nie pyta, więc nie ma czego potwierdzać. Aplikacja musi odpowiadać tylko na pytanie, które jest na ekranie (klasyfikator to sprawdza przed wpisaniem).
+- **Odstępstwo od protokołu:** `claude --bg` odmawia pracy w niezaufanym katalogu (`Workspace not trusted`), więc katalogi prób leżą w `~/quayside-spike-work` (owner-only, nadpisywalne `QUAYSIDE_SPIKE_WORK`), a nie w `$TMPDIR`. Człowiek zaufał tej jednej lokalizacji ręcznie. Sesje pomiarowe nie widzą CLAUDE.md ani hooków repo.
+- **Wdrożenie w aplikacji** wymaga zaufanego katalogu sesji: ukryty attach działa na istniejących sesjach, więc nie dotyczy nowych katalogów, ale warto to potwierdzić w zadaniu wdrożeniowym.

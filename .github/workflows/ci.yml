@@ -17,7 +17,7 @@ jobs:
     name: Docs lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,7 +31,7 @@ jobs:
     name: Build and test (macOS)
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: gradle
         run: echo "present=$([ -f gradlew ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - if: steps.gradle.outputs.present == 'true'

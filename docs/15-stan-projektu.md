@@ -7,7 +7,7 @@
 ## Gdzie jesteśmy
 
 - **Nowe repo i nazwa (2026-10-31).** Projekt nazywał się Agent Manager i żył w `KrystianKatafoni/agent-manager`. Przeniesiony do `KrystianKatafoni/quayside` jednym commitem startowym, bez historii i starych PR-ów. Numery issues zaczynają się od nowa; stare numery z planów w `docs/plans/` i ADR-ów dotyczą starego repo.
-- **M1–M4 zrobione, M5 prawie:** zostały AM-507 (pomiar na Macu, ADR 0014) i AM-508.
+- **M1–M4 zrobione, M5 prawie:** AM-507 zrobione (ADR 0014 przyjęta), został AM-508.
 - **Dalej:** ścieżka krytyczna do 1.0: AM-601 → AM-603 → AM-701–705 → AM-903/904 → AM-905.
 
 Zawsze aktualne źródło: `python3 scripts/roadmap_sync.py --dry-run` i otwarte PR-y.

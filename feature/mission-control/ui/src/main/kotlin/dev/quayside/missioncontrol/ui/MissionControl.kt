@@ -192,7 +192,8 @@ private fun Filters(
  * A row never takes focus: a focused `clickable` handles `space` and Enter as a click and consumes them before the
  * window shortcuts (`space` preview, later `⏎` attach) see them. A click requests focus anyway, and an unfocusable
  * node hands it to its first focusable child, so the children (the texts and the "⋯" button) must not be focusable
- * either. A click selects at once (no wait for a double click); a double click also attaches, a right click and
+ * either. The first click of a double click has already selected the row, so `attachSelected` in `app` reads the
+ * right session; `select()` in the double-click path is only a guard. A click selects at once (no wait for a double click); a double click also attaches, a right click and
  * "⋯" select and open the [menu] (AM-511).
  */
 @Composable

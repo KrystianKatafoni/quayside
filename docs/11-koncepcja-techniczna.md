@@ -241,7 +241,7 @@ internal interface SpeechPort { suspend fun speak(text: String, voice: VoiceId, 
 ```
 
 ```kotlin
-// terminal:api (AM-502, find w AM-504; profile i settings dochodzą w AM-508)
+// terminal:api (AM-502, find w AM-504, settings w AM-508)
 interface TerminalApi : AutoCloseable {
     suspend fun openShell(dir: Path): Outcome<TerminalSession, TerminalError>
     suspend fun openCommand(command: ShellCommand): Outcome<TerminalSession, TerminalError>  // np. attachCommand z AgentRuntime
@@ -263,7 +263,19 @@ data class SearchQuery(val text: String, val matchCase: Boolean = false, val reg
 data class SearchMatch(val row: Int, val start: Int, val end: Int)   // wiersz 0 = najstarszy wiersz migawki
 data class SearchResult(val count: Int, val current: Int?, val limited: Boolean)
 sealed interface SearchError { InvalidPattern; Closed }
+
 object ScrollbackMatcher { const val MAX_MATCHES = 10_000; fun find(rows: List<String>, query: SearchQuery): Outcome<List<SearchMatch>, SearchError> }  // czysta reguła w `api`, wspólna dla impl i fake'a
+
+// ustawienia terminala (AM-508, ADR 0016): `terminal.json`, działają w nowych kartach i panelach
+enum class ShellProfile { LOGIN_DEFAULT, ZSH, BASH, FISH }
+enum class StartDirectory { SESSION_WORKTREE, PROJECT, HOME }
+data class TerminalSettings(val shell: ShellProfile, val startDirectory: StartDirectory, val fontFamily: String?,
+                            val fontSize: Int, val scrollbackLines: Int, val ligatures: Boolean, val optionAsMeta: Boolean)
+interface TerminalSettingsRepo {
+    val settings: StateFlow<TerminalSettings>; val issue: StateFlow<TerminalSettingsIssue?>
+    suspend fun update(change: (TerminalSettings) -> TerminalSettings): Outcome<TerminalSettings, TerminalSettingsError>
+}
+object TerminalSettingsRules { fun validate(s: TerminalSettings): Outcome<TerminalSettings, TerminalSettingsError.Invalid> /* + startDirOf, shellLabelOf */ }
 ```
 
 ```kotlin

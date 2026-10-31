@@ -1,4 +1,4 @@
-import dev.agentmanager.buildlogic.QualityThresholds
+import dev.quayside.buildlogic.QualityThresholds
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
 // Quality gate for every Kotlin module (ENG-C1, docs/12 §7): ktlint via Spotless, detekt with the

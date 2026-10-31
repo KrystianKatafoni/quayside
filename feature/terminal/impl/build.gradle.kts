@@ -47,6 +47,9 @@ dependencies {
     implementation(project(":core:domain"))
     // TerminalApi, TerminalSession, TerminalId and TerminalError (AM-502); the module factory returns them (AM-502).
     implementation(project(":feature:terminal:api"))
+    // JsonStorage and StoreSpec for terminal.json (AM-508, ADR 0016); the serializer works on JsonElement.
+    implementation(project(":core:storage"))
+    implementation(libs.kotlinx.serialization.json)
     // Dispatchers.Swing: widgets are built and disposed on the event thread.
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.jediterm.core)
@@ -66,6 +69,8 @@ dependencies {
     // FakeProcessRunner for SpikeClaudeTest (AM-507).
     testImplementation(testFixtures(project(":core:process")))
     testImplementation(project(":core:process"))
+    // InMemoryJsonStore for the settings repo tests (AM-508).
+    testImplementation(testFixtures(project(":core:storage")))
     // RecordingLogger.
     testImplementation(project(":core:testing"))
     testImplementation(libs.kotlinx.coroutines.test)

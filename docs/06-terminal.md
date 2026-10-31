@@ -29,7 +29,7 @@ Terminal jest pełnoprawną częścią aplikacji, nie dodatkiem. Działa w dwóc
 | Bloki komend z kodem wyjścia | Włączone |
 | Ścieżki otwierają IntelliJ IDEA | Włączone |
 | Kopiuj przy zaznaczeniu | Wyłączone |
-| Option jako Meta | Włączone |
+| Option jako Meta | Wyłączone (polskie znaki z ⌥; ADR 0016) |
 | Dzwonek terminala → powiadomienie | Włączone |
 
 ## Implementacja

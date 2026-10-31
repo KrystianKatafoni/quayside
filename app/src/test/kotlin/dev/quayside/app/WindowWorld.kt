@@ -32,6 +32,8 @@ import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionsApi
+import dev.quayside.terminal.api.FakeTerminalSettingsRepo
+import dev.quayside.terminal.ui.ShellStart
 import dev.quayside.terminal.ui.TerminalArea
 import dev.quayside.terminal.ui.TerminalController
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +48,9 @@ import kotlin.time.Duration.Companion.hours
  * With [terminal] the window also gets the terminal panel and its palette commands; the widgets of the fake sessions
  * are replaced by markers tagged `terminal.content.<session id>` (see [RecordingTerminals]).
  *
+ * With [terminalSettings] shell tabs get their label and directory from [SettingsShellStart] (AM-508); without,
+ * from [PlainShellStart].
+ *
  * With [terminal] the window also registers [AttachCommands] (AM-505); [attachCommand] stands for
  * `AgentRuntime.attachCommand`.
  *
@@ -59,6 +64,7 @@ internal fun ComposeUiTest.showWindow(
     sessions: FakeSessions = FakeSessions(),
     terminal: RecordingTerminals? = null,
     attachCommand: (SessionId) -> ShellCommand = ::defaultAttachCommand,
+    terminalSettings: FakeTerminalSettingsRepo? = null,
 ): CommandPaletteController {
     val built = mutableListOf<CommandPaletteController>()
     val keys = WindowKeys()
@@ -69,8 +75,10 @@ internal fun ComposeUiTest.showWindow(
         val registry = remember { FakeCommandRegistry(scope) }
         val palette = remember { CommandPaletteController(registry, scope, NoOpLogger).also { built += it } }
         remember { registry.register(AppCommands(projects, controller, missionControl, palette, scope)) }
+        val shellStart =
+            remember { shellStartOf(terminalSettings, missionControl, sessions) }
         val terminalController =
-            rememberTerminal(terminal, scope) {
+            rememberTerminal(terminal, scope, shellStart) {
                 TerminalWiring(projects, sessions, controller, missionControl, scope)
                     .register(registry, it, attachCommand)
             }
@@ -183,11 +191,33 @@ private fun projectsController(
 private fun rememberTerminal(
     terminals: RecordingTerminals?,
     scope: CoroutineScope,
+    shellStart: ShellStart,
     register: (TerminalController) -> Unit,
 ): TerminalController? =
     remember {
-        terminals?.let { TerminalController(it, scope, NoOpLogger, "zsh") }?.also(register)
+        terminals?.let { TerminalController(it, scope, NoOpLogger, shellStart) }?.also(register)
     }
+
+/** Home of the shells started from [terminalSettings] with `StartDirectory.HOME`; a directory that exists. */
+internal val WINDOW_HOME: Path = Path.of(System.getProperty("java.io.tmpdir"))
+
+/**
+ * The shell start of the window: [SettingsShellStart] over [settings] and the session selected in [missionControl]
+ * (login shell `zsh`, home [WINDOW_HOME]), or [PlainShellStart] without [settings].
+ */
+private fun shellStartOf(
+    settings: FakeTerminalSettingsRepo?,
+    missionControl: MissionControlController,
+    sessions: FakeSessions,
+): ShellStart =
+    settings?.let {
+        SettingsShellStart(
+            it.settings,
+            Path.of("/bin/zsh"),
+            WINDOW_HOME,
+            selectedSessionDirOf(missionControl, sessions.snapshot),
+        )
+    } ?: PlainShellStart()
 
 /** The terminal panel slot of the window: the area over [controller] with markers for the widgets of [terminals]. */
 private fun terminalPanel(

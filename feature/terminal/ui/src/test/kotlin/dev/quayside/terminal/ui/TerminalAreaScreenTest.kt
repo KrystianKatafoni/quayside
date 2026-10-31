@@ -49,7 +49,13 @@ class TerminalAreaScreenTest {
         val built = mutableListOf<TerminalController>()
         setContent {
             val scope = rememberCoroutineScope()
-            val controller = remember { TerminalController(api, scope, RecordingLogger(), "zsh").also { built += it } }
+            val controller =
+                remember {
+                    TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
+                        built +=
+                            it
+                    }
+                }
             TerminalArea(controller, onAppKey = { false }, paneContent = { component ->
                 val id =
                     api.fake.sessions

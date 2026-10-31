@@ -14,9 +14,13 @@ import dev.quayside.projects.impl.projectInspectorModule
 import dev.quayside.projects.impl.projectsModule
 import dev.quayside.sessions.impl.sessionsModule
 import dev.quayside.terminal.api.TerminalApi
+import dev.quayside.terminal.api.TerminalSettings
+import dev.quayside.terminal.api.TerminalSettingsRepo
 import dev.quayside.terminal.impl.terminalModule
+import dev.quayside.terminal.impl.terminalSettingsModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
 
@@ -40,15 +44,15 @@ fun main() {
     val commandsScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
     val registry = commandPaletteModule(commandsScope, core.logger)
     val shell = LoginShellProcessRunner.defaultShell()
-    val terminal = startTerminals(core, shell)
-    val modules = AppModules(projects, sessions, inspector, registry, terminalDeps(terminal, shell, runtime))
+    val terminal = terminalDeps(core, shell, runtime, runBlocking { terminalSettingsModule(core.storage, core.logger) })
+    val modules = AppModules(projects, sessions, inspector, registry, terminal)
     val keys = WindowKeys()
     // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
     System.setProperty("compose.interop.blending", "true")
     application {
         Window(
             onCloseRequest = {
-                terminal.close()
+                terminal.api.close()
                 exitApplication()
             },
             onKeyEvent = keys::onKeyEvent,
@@ -60,22 +64,34 @@ fun main() {
     }
 }
 
+/** The terminal module on [shell] over [repo] (read in `main`, before the window opens, like the project list). */
 private fun terminalDeps(
-    terminal: TerminalApi,
+    core: CoreDeps,
     shell: Path,
     runtime: AgentRuntime,
-): TerminalDeps = TerminalDeps(terminal, shell.fileName.toString(), runtime::attachCommand)
+    repo: TerminalSettingsRepo,
+): TerminalDeps {
+    val api = startTerminals(core, shell, repo.settings)
+    return TerminalDeps(api, repo, shell, runtime::attachCommand)
+}
 
 /**
- * The terminal module on [shell]. Its scope lives as long as the app (it disposes widgets on Main). Cmd-Q bypasses
- * `onCloseRequest`, so a shutdown hook also kills every shell tree.
+ * The terminal module on [shell] with [settings]. Its scope lives as long as the app (it disposes widgets on Main).
+ * Cmd-Q bypasses `onCloseRequest`, so a shutdown hook also kills every shell tree.
  */
 private fun startTerminals(
     core: CoreDeps,
     shell: Path,
+    settings: StateFlow<TerminalSettings>,
 ): TerminalApi {
     val terminal =
-        terminalModule(core.dispatchers, CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger, shell)
+        terminalModule(
+            core.dispatchers,
+            CoroutineScope(SupervisorJob() + core.dispatchers.default),
+            core.logger,
+            shell,
+            settings,
+        )
     Runtime.getRuntime().addShutdownHook(Thread { terminal.close() })
     return terminal
 }

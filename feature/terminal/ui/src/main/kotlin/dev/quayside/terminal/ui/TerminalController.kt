@@ -18,8 +18,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Tabs and panes of embedded terminals grouped by project (FR-T2). Opens sessions through [terminals] in [scope]
- * (the window scope, Main dispatcher; not thread-safe). [shellLabel] names shell tabs, e.g. `zsh`. Logs tab and
- * pane ids, kinds and fixed failure categories only, never commands, paths or project names (ENG-C8).
+ * (the window scope, Main dispatcher; not thread-safe). [shellStart] gives shell tabs their label (e.g. `zsh`) and
+ * start directory, read at every open (AM-508). Logs tab and pane ids, kinds and fixed failure categories only,
+ * never commands, paths or project names (ENG-C8).
  *
  * The 13 operations are the API of the panel, the menu and the key dispatcher; the logic is in the reducers.
  */
@@ -28,7 +29,7 @@ public class TerminalController(
     private val terminals: TerminalApi,
     private val scope: CoroutineScope,
     private val logger: Logger,
-    private val shellLabel: String,
+    private val shellStart: ShellStart,
 ) {
     private val store = MutableStateFlow(TerminalUiState())
     private val menuState = MutableStateFlow(MENU_EMPTY)
@@ -54,9 +55,13 @@ public class TerminalController(
     /** What the terminal can do now; `app` enables menu items and palette commands from it. */
     public val menu: StateFlow<TerminalMenuState> = menuState
 
-    /** Opens a login shell in [project]'s dir as a new tab shown in the active pane. Failures show in the panel. */
+    /**
+     * Opens a shell as a new tab shown in the active pane, labelled and placed by [ShellStart] (read now). The tab
+     * keeps that directory as its project dir, so a split starts there too. Failures show in the panel.
+     */
     public fun openShell(project: TerminalProject) {
-        open(TabSpec(project, shellLabel, TabKind.SHELL), Placement.Active) { terminals.openShell(project.dir) }
+        val placed = project.copy(dir = shellStart.dirOf(project))
+        open(TabSpec(placed, shellStart.label, TabKind.SHELL), Placement.Active) { terminals.openShell(placed.dir) }
     }
 
     /** Runs [command] (e.g. `attachCommand`) in a new tab labelled [label], shown in the active pane (AM-505). */
@@ -109,7 +114,7 @@ public class TerminalController(
         if (project == null || !menuState.value.canSplit) return
         splitPending = true
         publishMenu()
-        val spec = TabSpec(project, shellLabel, TabKind.SHELL)
+        val spec = TabSpec(project, shellStart.label, TabKind.SHELL)
         open(spec, Placement.Split(axis)) { terminals.openShell(project.dir) }
     }
 

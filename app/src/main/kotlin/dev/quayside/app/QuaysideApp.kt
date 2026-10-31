@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.filterNotNull
  * the Attach and Odpowiedz buttons, the row menu and a double click (AM-511); it is the one `⏎` and `r` use.
  */
 @Composable
+@Suppress("LongParameterList") // the sidebar, centre, palette and the two terminal parts of one window (AM-511)
 internal fun QuaysideApp(
     projects: ProjectsController,
     missionControl: MissionControlController,

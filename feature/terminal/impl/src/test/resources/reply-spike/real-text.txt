@@ -1,0 +1,18 @@
+ ▐▛███▛█   Claude Code
+▝▜██████▀  Haiku
+ ▝▝   ▝▝   ~/work/record-text
+
+
+❯ Zapytaj mnie o jedno słowo.
+
+⏺ Jakie jedno słowo mam zapisać w pliku?
+
+✻ Crunched for 4s · done
+
+✎ w tej turze bez zmian · w sesji: 0 [ diff ]                               [-]
+
+────────────────────────────────────────────────────────── am507-text-0-1 ─
+❯
+────────────────────────────────────────────────────────────────────────────────
+  user@host ~/work/record-text
+  ⏵⏵ accept edits on (shift+tab to cycle)

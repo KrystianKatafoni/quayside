@@ -57,6 +57,28 @@ internal class SpikeClaudeTest {
         }
 
     @Test
+    fun `start passes the permission mode before the prompt`() =
+        runTest {
+            val runner = FakeProcessRunner { ok("backgrounded · 00000002\n") }
+
+            SpikeClaude(runner).start("n", "p", DIR, permissionMode = "acceptEdits")
+
+            runner.commands.single().argv shouldBe
+                listOf(
+                    "claude",
+                    "--bg",
+                    "--name",
+                    "n",
+                    "--model",
+                    "haiku",
+                    "--permission-mode",
+                    "acceptEdits",
+                    "--",
+                    "p",
+                )
+        }
+
+    @Test
     fun `start uses the given executable and model`() =
         runTest {
             val runner = FakeProcessRunner()

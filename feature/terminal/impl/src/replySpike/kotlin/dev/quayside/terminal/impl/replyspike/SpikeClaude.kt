@@ -36,12 +36,17 @@ internal class SpikeClaude(
     private val executable: String = "claude",
     private val workDir: Path = Path.of(System.getProperty("java.io.tmpdir")),
 ) {
+    /** [permissionMode] is passed as `--permission-mode`; null keeps the default mode. */
     suspend fun start(
         name: String,
         prompt: String,
         dir: Path,
         model: String = "haiku",
-    ): Outcome<Unit, SpikeError> = exec(listOf("--bg", "--name", name, "--model", model, "--", prompt), dir).map { }
+        permissionMode: String? = null,
+    ): Outcome<Unit, SpikeError> {
+        val mode = permissionMode?.let { listOf("--permission-mode", it) }.orEmpty()
+        return exec(listOf("--bg", "--name", name, "--model", model) + mode + listOf("--", prompt), dir).map { }
+    }
 
     /** Output of `claude --version`, recorded in the report. */
     suspend fun version(): Outcome<String, SpikeError> = exec(listOf("--version"), workDir).map { it.trim() }

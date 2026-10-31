@@ -2,11 +2,19 @@ package dev.quayside.terminal.impl.replyspike
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.PosixFilePermissions
 import kotlin.random.Random
 
 private const val MAX_SUFFIX = 1_000_000
 private const val ANSWER_FILE = "answer.txt"
 private const val APPROVAL_FILE = "approved.txt"
+
+// T and O write answer.txt; acceptEdits keeps the file write from raising a permission prompt of its own.
+// Z runs in the explicit default mode, because its permission prompt is the subject of the trial.
+private const val ACCEPT_EDITS = "acceptEdits"
+
+// The user's configured mode may already allow `touch`, so Z asks for the default mode explicitly.
+private const val EXPLICIT_DEFAULT = "default"
 private val CHOICES = listOf("alfa", "beta", "gamma")
 
 /** One question to the session and the answer the runner gives; [effect] reads what the answer did in the dir. */
@@ -14,6 +22,7 @@ internal class Scenario(
     val kind: Kind,
     val prompt: String,
     val reply: Reply,
+    val permissionMode: String? = null,
     private val check: (Path) -> Effect,
 ) {
     fun effect(dir: Path): Effect = check(dir)
@@ -37,6 +46,7 @@ internal object Scenarios {
             Kind.TEXT,
             "Zapytaj mnie zwykłym tekstem (bez narzędzi) o jedno słowo i zapisz je w pliku $ANSWER_FILE.",
             Reply.Text(token),
+            ACCEPT_EDITS,
         ) { dir ->
             content(dir, ANSWER_FILE)?.let { if (it == token) Effect.AS_EXPECTED else Effect.WRONG }
                 ?: Effect.ABSENT
@@ -47,6 +57,7 @@ internal object Scenarios {
             Kind.OPTIONS,
             "Zapytaj narzędziem pytań o wybór: ${CHOICES.joinToString("/")}. Zapisz wybór w pliku $ANSWER_FILE.",
             Reply.Option(chosen + 1),
+            ACCEPT_EDITS,
         ) { dir ->
             content(
                 dir,
@@ -56,7 +67,12 @@ internal object Scenarios {
         }
 
     private fun permission(allow: Boolean) =
-        Scenario(Kind.PERMISSION, "Uruchom polecenie `touch $APPROVAL_FILE`.", Reply.Permission(allow)) { dir ->
+        Scenario(
+            Kind.PERMISSION,
+            "Uruchom polecenie `touch $APPROVAL_FILE`.",
+            Reply.Permission(allow),
+            EXPLICIT_DEFAULT,
+        ) { dir ->
             val approved = Files.exists(dir.resolve(APPROVAL_FILE))
             when {
                 approved == allow -> Effect.AS_EXPECTED
@@ -79,6 +95,27 @@ internal fun sessionName(
     random: Random,
 ): String = "am507-${kind.name.lowercase()}-$n${if (race) "-race" else ""}-${random.nextInt(0, MAX_SUFFIX)}"
 
-/** Fresh directory `am507*` under [parent] (default: the per-user temp dir); the JDK gives it owner-only rights. */
-internal fun newWorkRoot(parent: Path = Path.of(System.getProperty("java.io.tmpdir"))): Path =
-    Files.createTempDirectory(parent, "am507")
+/** Environment variable that overrides [defaultWorkParent]. */
+internal const val WORK_PARENT_ENV = "QUAYSIDE_SPIKE_WORK"
+
+/**
+ * Parent of the trial directories: `$QUAYSIDE_SPIKE_WORK` or `~/quayside-spike-work`. It is not under the temp dir,
+ * because `claude --bg` refuses untrusted workspaces: the human trusts this one directory once. Created with
+ * owner-only rights when missing.
+ */
+internal fun defaultWorkParent(
+    env: Map<String, String> = System.getenv(),
+    home: Path = Path.of(System.getProperty("user.home")),
+): Path {
+    val parent = env[WORK_PARENT_ENV]?.takeIf { it.isNotBlank() }?.let(Path::of) ?: home.resolve("quayside-spike-work")
+    if (!Files.exists(parent)) {
+        Files.createDirectories(
+            parent,
+            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")),
+        )
+    }
+    return parent
+}
+
+/** Fresh directory `am507*` under [parent]; the JDK gives it owner-only rights. */
+internal fun newWorkRoot(parent: Path = defaultWorkParent()): Path = Files.createTempDirectory(parent, "am507")

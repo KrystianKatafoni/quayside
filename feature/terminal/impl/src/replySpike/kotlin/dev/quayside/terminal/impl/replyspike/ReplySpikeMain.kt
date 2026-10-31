@@ -140,7 +140,7 @@ private suspend fun record(
     val name = sessionName(kind, 0, race = false, Random.Default)
     val scenario = Scenarios.of(kind, 0, "token")
     try {
-        claude.start(name, scenario.prompt, dir)
+        claude.start(name, scenario.prompt, dir, permissionMode = scenario.permissionMode)
         waitBlocked(claude, name)?.let { capture(it, kind, dir, shell) }
     } finally {
         withContext(NonCancellable) { claude.sessions(name).getOrNull()?.forEach { claude.stopAndRemove(it.id) } }

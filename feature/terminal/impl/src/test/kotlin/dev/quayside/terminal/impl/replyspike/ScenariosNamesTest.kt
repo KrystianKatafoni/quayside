@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.PosixFilePermissions
 import kotlin.random.Random
 
 /** Unique session names and the work directory of the runner (review: no fixed `/tmp/am507`, no name clashes). */
@@ -50,5 +51,21 @@ internal class ScenariosNamesTest {
         first.fileName.toString() shouldStartWith "am507"
         first shouldNotBe second
         first shouldNotBe Path.of("/tmp/am507")
+    }
+
+    @Test
+    fun `work parent defaults to a private directory in home`() {
+        val parent = defaultWorkParent(emptyMap(), home = parent)
+
+        parent shouldBe this.parent.resolve("quayside-spike-work")
+        Files.getPosixFilePermissions(parent) shouldBe PosixFilePermissions.fromString("rwx------")
+    }
+
+    @Test
+    fun `work parent can be overridden by the environment`() {
+        val custom = parent.resolve("custom")
+
+        defaultWorkParent(mapOf(WORK_PARENT_ENV to custom.toString()), home = parent) shouldBe custom
+        Files.isDirectory(custom) shouldBe true
     }
 }

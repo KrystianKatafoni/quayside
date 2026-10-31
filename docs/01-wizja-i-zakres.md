@@ -6,6 +6,8 @@ Praca z kilkoma agentami Claude Code naraz rozjeżdża się po wielu oknach term
 
 ## Rozwiązanie
 
+Główna idea: **widzisz wszystkich agentów w jednym oknie i nie przegapisz tego, który na Ciebie czeka.** Rdzeń produktu to przegląd sesji, powiadomienia i terminal. Skróty klawiszowe przyspieszają pracę, ale nie są warunkiem obsługi ([ADR 0015](adr/0015-skroty-jako-dodatek.md)).
+
 Jedno natywne okno na macOS, które:
 
 1. trzyma listę **projektów** (lokalnych katalogów), które użytkownik sam dodaje i usuwa,
@@ -13,7 +15,8 @@ Jedno natywne okno na macOS, które:
 3. pozwala **startować, zatrzymywać, wznawiać** agentów i **odpowiadać** im,
 4. ma **pełnoprawny terminal** (attach do agenta, zwykły shell, logi),
 5. **powiadamia** popupem i głosem, gdy agent czegoś potrzebuje, z konfiguracją per zdarzenie i per projekt,
-6. jest **szybki z klawiatury** (paleta ⌘K, skróty w stylu vima) i **konfigurowalny wizualnie** (schematy kolorów i typografia).
+6. ma każdą akcję pod ręką **myszą** (przyciski, menu kontekstowe) i w **palecie ⌘K**, a skróty w stylu vima są dodatkiem dla wprawionych,
+7. jest **konfigurowalny wizualnie** (schematy kolorów i typografia).
 
 ## Użytkownik docelowy
 
@@ -25,7 +28,7 @@ Programista pracujący równolegle z wieloma agentami Claude Code na jednym Macu
 - Odpowiedź na pytanie agenta lub zgoda na narzędzie **bez przełączania okna**: z popupu albo panelu szczegółów.
 - Start nowego agenta w projekcie w **≤ 3 akcjach** (⌘N → prompt → Enter).
 - Sesje **przeżywają zamknięcie aplikacji**, bo trzyma je supervisor Claude Code, a nie aplikacja.
-- Cała obsługa możliwa **z klawiatury**.
+- Każda akcja na sesji i projekcie dostępna **myszą** (widoczna kontrolka) i z **palety ⌘K**; skróty są opcjonalne.
 
 ## Poza zakresem (nie robimy w 1.0)
 

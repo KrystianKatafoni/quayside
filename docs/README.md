@@ -45,7 +45,7 @@ Aplikacja **nie uruchamia własnego orkiestratora**. Steruje oficjalnym supervis
 | Terminal | JediTerm (terminal z IDE JetBrains) + pty4j |
 | Backend agentów | Supervisor Claude Code (Agent View, v2.1.139+) wywoływany przez CLI |
 | Zdarzenia | Hooki HTTP Claude Code → lokalny serwer w aplikacji (`127.0.0.1`) |
-| Główny ekran | Mission Control w stylu Keyboard-first (paleta ⌘K, skróty j/k, pasek trybu) |
+| Główny ekran | Mission Control w stylu Keyboard-first: przegląd sesji z akcjami pod myszą, paleta ⌘K, skróty jako dodatek ([ADR 0015](adr/0015-skroty-jako-dodatek.md)) |
 | Wygląd | 9 schematów kolorów × 8 typografii, wybierane niezależnie |
 | Architektura kodu | Modularny monolit: feature jako `api` / `impl` / `ui`, porty i adaptery, jeden composition root, reguły zależności wymuszane przez Gradle i Konsist |
 | Testy | Jednostkowe, kontraktowe, integracyjne, funkcjonalne (Compose UI) i architektury; bramka `./gradlew check` |

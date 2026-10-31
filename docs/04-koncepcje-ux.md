@@ -36,10 +36,12 @@ Siatka żywych kafelków (2×2, 3×2, 4×3). Na czekających kafelkach można od
 
 **Wybrany kierunek: Mission Control w stylu i kolorystyce Keyboard-first.**
 
+> Aktualizacja 2026-10-31 ([ADR 0015](adr/0015-skroty-jako-dodatek.md)): z Keyboard-first bierzemy wygląd, paletę ⌘K i skróty, ale nie jako fundament. Każda akcja ma też widoczną kontrolkę dla myszy, a pasek trybu `NORMAL` staje się paskiem statusu.
+
 | Z koncepcji | Bierzemy |
 | --- | --- |
 | Mission Control | Układ trzech paneli, panel szczegółów sesji, terminal pod listą |
-| Keyboard-first | Paleta ⌘K w nagłówku, kompaktowe wiersze z glifami stanu `? ! ~ ✓ ✕`, skróty j/k, pasek trybu NORMAL, typografia IBM Plex i fiolet jako domyślny schemat |
+| Keyboard-first | Paleta ⌘K w nagłówku, kompaktowe wiersze z glifami stanu `? ! ~ ✓ ✕`, skróty j/k jako dodatek, pasek statusu, typografia IBM Plex i fiolet jako domyślny schemat |
 | Ściana terminali | Odpowiedź i zgoda bez otwierania terminala, przeniesione do popupu i panelu szczegółów |
 | Kanban | Dialog usuwania projektu z działającymi sesjami |
 | TUI | Schemat *Phosphor* i typografia JetBrains Mono jako opcje wyglądu |

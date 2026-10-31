@@ -34,6 +34,13 @@ internal class ScreenClassifierTest {
     }
 
     @Test
+    fun `real TUI input row padded with no-break spaces is still the input box`() {
+        val rows = plain("real-text.txt").map { if (it == "❯") "❯\u00a0\u00a0" else it }
+
+        ScreenClassifier.classify(rows) shouldBe Prompt.Text
+    }
+
+    @Test
     fun `trailing spaces do not matter for the markers`() {
         ScreenClassifier.classify(framed("options.ansi")) shouldBe
             ScreenClassifier.classify(framed("options.ansi").map { "$it  " })

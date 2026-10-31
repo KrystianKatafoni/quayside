@@ -50,8 +50,8 @@ internal object PromptMarkers {
     /** Horizontal rule of the real TUI; the input box sits right under one. */
     val RULE = Regex("^\\s*[─╌]{10,}")
 
-    /** Input row of the real TUI: the pointer, then the typed text (maybe none). */
-    val POINTER_ROW = Regex("^\\s*❯(\\s+(\\S.*))?\\s*$")
+    /** Input row of the real TUI: the pointer, then the typed text (maybe none); the TUI pads with no-break spaces. */
+    val POINTER_ROW = Regex("^\\s*❯([\\s\\p{Z}]+([^\\s\\p{Z}].*))?[\\s\\p{Z}]*$")
 
     /** Rows the question tool adds to the real options: not answers to count. */
     val EXTRA_CHOICE = Regex("Type something|Chat about this")

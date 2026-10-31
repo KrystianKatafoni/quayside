@@ -30,6 +30,7 @@ internal fun FrameWindowScope.MainWindow(
         terminalPanel = { modifier ->
             TerminalArea(controllers.terminal, controllers.terminalKeys::onKey, modifier)
         },
+        attacher = controllers.attacher,
     )
     TerminalSettingsDialog(controllers.terminalSettings)
 }

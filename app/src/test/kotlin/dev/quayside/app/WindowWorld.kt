@@ -78,10 +78,12 @@ internal fun ComposeUiTest.showWindow(
         val palette = remember { CommandPaletteController(registry, scope, NoOpLogger).also { built += it } }
         remember { registry.register(AppCommands(projects, controller, missionControl, palette, scope)) }
         val shellStart = remember { shellStartOf(terminalSettings, missionControl, sessions) }
+        val attacher = remember { arrayOfNulls<SessionAttacher>(size = 1) }
         val terminalController =
             rememberTerminal(terminal, scope, shellStart) {
-                TerminalWiring(projects, sessions, controller, missionControl, scope)
-                    .register(registry, it, attachCommand)
+                attacher[0] =
+                    TerminalWiring(projects, sessions, controller, missionControl, scope)
+                        .register(registry, it, attachCommand)
             }
         PaletteKeys(keys, palette)
         KeysBox(keys) {
@@ -90,6 +92,7 @@ internal fun ComposeUiTest.showWindow(
                 missionControl = missionControl,
                 palette = palette,
                 terminalPanel = terminalPanel(terminalController, terminal),
+                attacher = attacher[0],
             )
             SettingsDialogHost(terminalSettings, registry, WindowParts(controller, missionControl, scope))
         }
@@ -145,11 +148,12 @@ private class TerminalWiring(
         registry: FakeCommandRegistry,
         terminal: TerminalController,
         attachCommand: (SessionId) -> ShellCommand,
-    ) {
+    ): SessionAttacher {
         terminal.followSessions(sessions.snapshot, scope)
         registry.register(TerminalCommands(projects, controller, missionControl, terminal, scope))
         val attacher = SessionAttacher(missionControl, terminal, attachCommand, NoOpLogger)
         registry.register(AttachCommands(controller, missionControl, attacher, scope))
+        return attacher
     }
 }
 

@@ -129,17 +129,27 @@ internal class ScriptedTerminalApi(
     override fun close() = fake.close()
 }
 
+/** [ShellStart] a test controls: [label] and the directory function can change between two opens. */
+internal class FixedShellStart(
+    override var label: String = "zsh",
+    var dir: (TerminalProject) -> Path = { it.dir },
+) : ShellStart {
+    override fun dirOf(project: TerminalProject): Path = dir(project)
+}
+
 /** World of controller tests: a controller over a [ScriptedTerminalApi] driven by the test scheduler. */
 internal class ControllerWorld(
     scope: TestScope,
     val api: ScriptedTerminalApi,
+    val shellStart: FixedShellStart = FixedShellStart(),
 ) {
     val logger = RecordingLogger()
-    val controller = TerminalController(api, scope.backgroundScope, logger, "zsh")
+    val controller = TerminalController(api, scope.backgroundScope, logger, shellStart)
     val state get() = controller.state.value
 }
 
-internal fun TestScope.world(): ControllerWorld = ControllerWorld(this, ScriptedTerminalApi())
+internal fun TestScope.world(shellStart: FixedShellStart = FixedShellStart()): ControllerWorld =
+    ControllerWorld(this, ScriptedTerminalApi(), shellStart)
 
 /** A project named [name] with a real directory under [root]. */
 internal fun projectIn(

@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
 import java.nio.file.Path
 
 /** Tabs on a fake terminal API: opening, errors, exit and close (FR-T2; AM-503 plan, decisions 6 and 7). */
@@ -211,5 +212,48 @@ class TerminalControllerTest {
             logged shouldNotContain "topsecret"
             logged shouldNotContain root.toString()
             logged shouldNotContain "claude"
+        }
+
+    @Test
+    fun `shell opens in the dir of the shell start`() =
+        runTest {
+            val worktree = Files.createDirectory(root.resolve("worktree"))
+            val world = world(FixedShellStart(dir = { worktree }))
+            val alpha = projectIn("Alpha")
+
+            act { world.controller.openShell(alpha) }
+
+            world.api.shellDirs shouldBe listOf(worktree)
+            world.state.tabs
+                .single()
+                .project.dir shouldBe worktree
+        }
+
+    @Test
+    fun `shell tab label is read at open time`() =
+        runTest {
+            val shellStart = FixedShellStart(label = "zsh")
+            val world = world(shellStart)
+            val alpha = projectIn("Alpha")
+            act { world.controller.openShell(alpha) }
+
+            shellStart.label = "fish"
+            act { world.controller.openShell(alpha) }
+
+            world.state.tabs.map { it.label } shouldBe listOf("zsh", "fish")
+        }
+
+    @Test
+    fun `split opens in the dir of the active shell tab`() =
+        runTest {
+            val worktree = Files.createDirectory(root.resolve("worktree"))
+            val world = world(FixedShellStart(dir = { worktree }))
+            val alpha = projectIn("Alpha")
+            act { world.controller.openShell(alpha) }
+
+            act { world.controller.split(SplitAxis.SIDE_BY_SIDE) }
+
+            world.api.shellDirs shouldBe listOf(worktree, worktree)
+            world.state.tabs.size shouldBe 2
         }
 }

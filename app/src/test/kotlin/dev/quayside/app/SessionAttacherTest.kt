@@ -100,7 +100,7 @@ class SessionAttacherTest {
 
     private fun TestScope.parts(state: SessionState = SessionState.Working): Parts {
         val missionControl = missionControl(backgroundScope, state)
-        val terminal = TerminalController(terminals, backgroundScope, NoOpLogger, "zsh")
+        val terminal = TerminalController(terminals, backgroundScope, NoOpLogger, PlainShellStart())
         return Parts(missionControl, terminal, SessionAttacher(missionControl, terminal, ::attachCommand, log))
             .also { runCurrent() }
     }
@@ -126,7 +126,7 @@ class SessionAttacherTest {
             setContent {
                 val scope = rememberCoroutineScope()
                 missionControl = remember { missionControl(scope) }
-                val terminal = remember { TerminalController(terminals, scope, NoOpLogger, "zsh") }
+                val terminal = remember { TerminalController(terminals, scope, NoOpLogger, PlainShellStart()) }
                 attacher = remember { SessionAttacher(missionControl, terminal, ::attachCommand, log) }
                 TerminalArea(terminal, { false }, Modifier, terminals.paneContent)
             }
@@ -192,7 +192,7 @@ class SessionAttacherTest {
             setContent {
                 val scope = rememberCoroutineScope()
                 missionControl = remember { missionControl(scope, SessionState.AwaitingPermission("Bash")) }
-                val terminal = remember { TerminalController(terminals, scope, NoOpLogger, "zsh") }
+                val terminal = remember { TerminalController(terminals, scope, NoOpLogger, PlainShellStart()) }
                 attacher = remember { SessionAttacher(missionControl, terminal, ::attachCommand, log) }
                 TerminalArea(terminal, { false }, Modifier, terminals.paneContent)
             }

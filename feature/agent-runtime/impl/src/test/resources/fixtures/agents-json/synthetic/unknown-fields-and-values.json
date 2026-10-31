@@ -1,0 +1,29 @@
+[
+  {
+    "id": "a1b2c3d4",
+    "kind": "background",
+    "sessionId": "00000000-0000-4000-8000-000000000031",
+    "name": "fix-login",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "hibernating",
+    "startedAt": 1792328042940,
+    "pid": 5001,
+    "model": "opus",
+    "worktree": { "path": "/Users/test/projects/agent-manager/.worktrees/fix-login", "branch": "feat/fix-login" },
+    "tags": ["m2", 7, null],
+    "costUsd": 0.42
+  },
+  {
+    "id": "b2c3d4e5",
+    "kind": "background",
+    "sessionId": "00000000-0000-4000-8000-000000000032",
+    "name": "add-tests",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "blocked",
+    "waitingFor": "oauth",
+    "startedAt": 1792328043940,
+    "pid": 5002,
+    "futureFlag": true,
+    "nested": { "deeper": { "deepest": [] } }
+  }
+]

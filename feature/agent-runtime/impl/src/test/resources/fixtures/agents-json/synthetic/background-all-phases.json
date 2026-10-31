@@ -1,0 +1,64 @@
+[
+  {
+    "id": "a1b2c3d4",
+    "kind": "background",
+    "sessionId": "00000000-0000-4000-8000-000000000011",
+    "name": "fix-login",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "working",
+    "startedAt": 1792328042940,
+    "pid": 5001
+  },
+  {
+    "id": "b2c3d4e5",
+    "kind": "background",
+    "sessionId": "00000000-0000-4000-8000-000000000012",
+    "name": "add-tests",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "blocked",
+    "waitingFor": "permission prompt",
+    "startedAt": 1792328043940,
+    "pid": 5002
+  },
+  {
+    "id": "c3d4e5f6",
+    "kind": "background",
+    "sessionId": "00000000-0000-4000-8000-000000000013",
+    "name": "write-docs",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "blocked",
+    "waitingFor": "input needed",
+    "startedAt": 1792328044940,
+    "pid": 5003
+  },
+  {
+    "id": "d4e5f6a7",
+    "kind": "background",
+    "sessionId": "00000000-0000-4000-8000-000000000014",
+    "name": "refactor-ui",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "done",
+    "startedAt": 1792328045940,
+    "pid": 5004
+  },
+  {
+    "id": "e5f6a7b8",
+    "kind": "background",
+    "sessionId": "00000000-0000-4000-8000-000000000015",
+    "name": "bump-deps",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "failed",
+    "startedAt": 1792328046940,
+    "pid": 5005
+  },
+  {
+    "id": "f6a7b8c9",
+    "kind": "background",
+    "sessionId": "00000000-0000-4000-8000-000000000016",
+    "name": "old-spike",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "stopped",
+    "startedAt": 1792328047940,
+    "pid": 5006
+  }
+]

@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      kotlin-compose:
+        patterns: ["org.jetbrains.kotlin*", "org.jetbrains.compose*"]
+      test:
+        patterns: ["*junit*", "*kotest*", "*mockk*", "*konsist*"]
+    commit-message:
+      prefix: build
+    labels: [type:chore, dependencies]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+    labels: [type:chore, dependencies]

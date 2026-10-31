@@ -1,0 +1,9 @@
+[2J[H[1mBash command[0m
+
+  touch approved.txt
+  [2mCreate the approval marker[0m
+
+Do you want to proceed?
+[36m❯ 1. Yes[0m
+  2. Yes, and don't ask again for touch commands
+  3. No, and tell Claude what to do differently (esc)

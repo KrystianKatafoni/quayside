@@ -1,0 +1,12 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false,        // long lines are fine in Polish prose and tables
+    "MD024": { "siblings_only": true },
+    "MD033": false,        // inline HTML (images with width) allowed
+    "MD041": false,        // skills start with frontmatter
+    "MD060": false
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules/**", "**/build/**", ".claude/skills/**/templates.md"]
+}

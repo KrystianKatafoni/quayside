@@ -1,0 +1,63 @@
+name: Release
+
+# Runs when a human (or release-manager on command) pushes a tag vX.Y.Z.
+# Builds the .dmg; signs and notarizes it only when the Apple secrets are configured.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  dmg:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      HAS_SIGNING: ${{ secrets.MACOS_CERT_P12_BASE64 != '' }}
+      HAS_NOTARY: ${{ secrets.APPLE_ID != '' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Import signing certificate
+        if: env.HAS_SIGNING == 'true'
+        env:
+          MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          echo "$MACOS_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p ci "$RUNNER_TEMP/build.keychain"
+          security default-keychain -s "$RUNNER_TEMP/build.keychain"
+          security unlock-keychain -p ci "$RUNNER_TEMP/build.keychain"
+          security import "$RUNNER_TEMP/cert.p12" -k "$RUNNER_TEMP/build.keychain" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci "$RUNNER_TEMP/build.keychain"
+          rm "$RUNNER_TEMP/cert.p12"
+      - name: Build DMG
+        env:
+          AM_SIGN: ${{ env.HAS_SIGNING }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: ./gradlew :app:packageDmg --no-daemon
+      - name: Notarize
+        if: env.HAS_NOTARY == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          dmg=$(find app/build -name '*.dmg' | head -1)
+          xcrun notarytool submit "$dmg" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple "$dmg"
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dmg=$(find app/build -name '*.dmg' | head -1)
+          notes=$(awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## \\["v"\\]"{f=1;next} /^## \[/{f=0} f' CHANGELOG.md)
+          prerelease=$([[ "$GITHUB_REF_NAME" == v0.* ]] && echo --prerelease || true)
+          gh release create "$GITHUB_REF_NAME" "$dmg" --title "Agent Manager $GITHUB_REF_NAME" --notes "${notes:-See CHANGELOG.md}" $prerelease

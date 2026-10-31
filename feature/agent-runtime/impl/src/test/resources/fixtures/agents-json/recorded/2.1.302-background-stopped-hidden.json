@@ -1,0 +1,20 @@
+[
+  {
+    "pid": 4242,
+    "cwd": "/Users/test/projects/other",
+    "kind": "interactive",
+    "startedAt": 1792347697864,
+    "sessionId": "00000000-0000-4000-8000-000000000004",
+    "name": "agent-manager-4",
+    "status": "idle"
+  },
+  {
+    "pid": 4242,
+    "cwd": "/Users/test/projects/agent-manager",
+    "kind": "interactive",
+    "startedAt": 1792349457102,
+    "sessionId": "00000000-0000-4000-8000-000000000005",
+    "name": "agent-manager-5",
+    "status": "busy"
+  }
+]

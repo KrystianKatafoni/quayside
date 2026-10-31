@@ -1,0 +1,51 @@
+[
+  {
+    "id": "a1b2c3d4",
+    "sessionId": "00000000-0000-4000-8000-000000000041",
+    "name": "iso-date",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "working",
+    "startedAt": "2026-10-18T09:14:02Z",
+    "pid": 5001
+  },
+  {
+    "sessionId": "00000000-0000-4000-8000-000000000042",
+    "name": "no-id",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "working",
+    "startedAt": 1792328042940
+  },
+  {
+    "id": "b2c3d4e5",
+    "name": "relative-cwd",
+    "cwd": "projects/agent-manager",
+    "state": "working",
+    "startedAt": 1792328042940
+  },
+  42,
+  {
+    "id": "c3d4e5f6",
+    "sessionId": "00000000-0000-4000-8000-000000000043",
+    "name": "epoch-seconds",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "done",
+    "startedAt": 1792328042,
+    "pid": 5003
+  },
+  {
+    "id": "a1b2c3d4",
+    "sessionId": "00000000-0000-4000-8000-000000000044",
+    "name": "duplicate-of-first",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "failed",
+    "startedAt": 1792328042940
+  },
+  {
+    "id": "d4e5f6a7",
+    "name": "garbage-date",
+    "cwd": "/Users/test/projects/agent-manager",
+    "state": "blocked",
+    "waitingFor": "permission",
+    "startedAt": "last tuesday"
+  }
+]

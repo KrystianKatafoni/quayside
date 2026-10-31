@@ -1,0 +1,37 @@
+name: Błąd
+description: Coś działa inaczej niż w wymaganiach
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: expected
+    attributes:
+      label: Oczekiwane zachowanie
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Faktyczne zachowanie
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Kroki odtworzenia
+      value: "1. \n2. \n3. "
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Wersje
+      description: Agent Manager, Claude Code (`claude --version`), macOS
+      placeholder: "0.1.0 / 2.1.290 / 15.5"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logi
+      description: Bez tokenów i danych prywatnych.
+      render: text

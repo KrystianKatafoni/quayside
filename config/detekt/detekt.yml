@@ -1,0 +1,35 @@
+# Repo rules on top of detekt defaults (ENG-C1–C3). Keep changes small and explained.
+complexity:
+  LongMethod:
+    allowedLines: 30
+  CyclomaticComplexMethod:
+    allowedComplexity: 10
+  LargeClass:
+    allowedLines: 300
+  LongParameterList:
+    allowedFunctionParameters: 5
+    allowedConstructorParameters: 6
+
+coroutines:
+  GlobalCoroutineUsage:
+    active: true
+
+naming:
+  FunctionNaming:
+    # Composable functions are nouns in PascalCase (Compose API guidelines).
+    ignoreAnnotated: ['Composable']
+
+potential-bugs:
+  UnsafeCallOnNullableType:
+    active: true
+
+style:
+  ForbiddenMethodCall:
+    active: true
+    methods:
+      - value: 'kotlin.io.println'
+        reason: 'Use Logger from core:domain (ENG-C8).'
+      - value: 'kotlin.io.print'
+        reason: 'Use Logger from core:domain (ENG-C8).'
+      - value: 'kotlinx.coroutines.runBlocking'
+        reason: 'Only allowed in main and tests (ENG-C3).'

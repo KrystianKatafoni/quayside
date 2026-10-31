@@ -1,0 +1,29 @@
+name: Maintenance
+
+# Weekly: checks the Claude Code changelog against docs/compat.md and opens `compat` issues.
+on:
+  schedule:
+    - cron: "17 6 * * 1"   # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+  actions: read
+
+jobs:
+  compat-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: /compat-check
+          claude_args: >-
+            --max-turns 30
+            --allowedTools "WebFetch,Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh label:*),Read,Grep,Glob"

@@ -1,0 +1,28 @@
+# Gradle / Kotlin
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+*.class
+*.log
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# macOS
+.DS_Store
+
+# Packaging and signing (never commit)
+*.dmg
+*.p12
+*.cer
+*.mobileprovision
+.env
+.env.*
+
+# Claude Code: local, per-developer files
+.claude/settings.local.json
+.claude/.state/
+CLAUDE.local.md

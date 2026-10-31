@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    name: Docs lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx --yes markdownlint-cli2@0.18.1
+      - name: Agent config is valid JSON
+        run: jq empty .claude/settings.json
+      - name: Hook scripts are executable
+        run: test -z "$(find .claude/hooks scripts -name '*.sh' ! -perm -u+x)"
+
+  build:
+    name: Build and test (macOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - id: gradle
+        run: echo "present=$([ -f gradlew ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.gradle.outputs.present == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - if: steps.gradle.outputs.present == 'true'
+        uses: gradle/actions/setup-gradle@v4
+      - if: steps.gradle.outputs.present == 'true'
+        run: ./gradlew check --no-daemon
+      - name: Test summary (annotation, readable via the API)
+        if: steps.gradle.outputs.present == 'true' && always()
+        run: |
+          files=$(find . -path '*/build/test-results/*' -name 'TEST-*.xml' 2>/dev/null)
+          if [ -z "$files" ]; then echo "::warning::No test results found"; exit 0; fi
+          total=0; failed=0; skipped=0
+          for f in $files; do
+            t=$(sed -n 's/.*<testsuite [^>]*tests="\([0-9]*\)".*/\1/p' "$f" | head -1)
+            e=$(sed -n 's/.*<testsuite [^>]*failures="\([0-9]*\)".*/\1/p' "$f" | head -1)
+            k=$(sed -n 's/.*<testsuite [^>]*skipped="\([0-9]*\)".*/\1/p' "$f" | head -1)
+            total=$((total + ${t:-0})); failed=$((failed + ${e:-0})); skipped=$((skipped + ${k:-0}))
+          done
+          echo "::notice title=Tests::$total tests, $failed failed, $skipped skipped in $(echo "$files" | wc -l | tr -d ' ') suites"
+      - if: steps.gradle.outputs.present == 'true' && failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: "**/build/reports/"
+      - if: steps.gradle.outputs.present != 'true'
+        run: echo "Gradle not set up yet (AM-101); skipping build."

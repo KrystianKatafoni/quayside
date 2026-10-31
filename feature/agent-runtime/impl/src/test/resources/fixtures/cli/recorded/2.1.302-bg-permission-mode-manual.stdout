@@ -1,0 +1,5 @@
+backgrounded · 00000002 · agent-manager-2
+  claude agents             list sessions
+  claude attach 00000002    open in this terminal
+  claude logs 00000002      show recent output
+  claude stop 00000002      stop this session

@@ -1,0 +1,26 @@
+name: Funkcja / zadanie
+description: Nowa potrzeba lub zadanie spoza roadmapy
+labels: ["type:feat"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Co jest dziś trudne lub niemożliwe?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propozycja
+      description: Jak powinno działać z punktu widzenia użytkownika?
+  - type: input
+    id: area
+    attributes:
+      label: Moduł
+      description: np. sessions, terminal, notifications (zobacz docs/11-koncepcja-techniczna.md)
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorytet
+      options: ["P1 — blokuje pracę z agentami", "P2 — utrudnia", "P3 — kosmetyka"]

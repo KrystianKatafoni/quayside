@@ -7,10 +7,10 @@
 | Strefa | Zawartość |
 | --- | --- |
 | Nagłówek (44 px) | Ścieżka `agents / <projekt>`, pole palety ⌘K, przełącznik głosu (z nazwą głosu), dzwonek z licznikiem, przycisk **Nowy agent ⌘N** |
-| Sidebar projektów (232 px) | Lista projektów z kropką stanu i licznikami `czeka·pracuje`, menu ⋯, przycisk „+ Dodaj projekt z dysku…”, widoki globalne, ściągawka skrótów |
-| Środek | Nagłówek projektu (ścieżka, branch, liczba sesji), filtr Wszystkie/Aktywne/Zakończone, lista sesji, linia skrótów, panel terminala |
+| Sidebar projektów (232 px) | Lista projektów z kropką stanu i licznikami `czeka·pracuje`, menu ⋯, przycisk „+ Dodaj projekt z dysku…”, widoki globalne, zwijana ściągawka skrótów |
+| Środek | Nagłówek projektu (ścieżka, branch, liczba sesji), filtr Wszystkie/Aktywne/Zakończone, lista sesji (prawy klik lub ⋯ w wierszu otwiera menu akcji), panel terminala |
 | Panel szczegółów (300 px) | Nazwa i stan sesji, podsumowanie, worktree/model/tryb/ID, akcje Odpowiedz (r), Attach, Respawn, Zatrzymaj |
-| Pasek trybu (28 px) | Tryb `NORMAL`, projekt, liczniki czekających i pracujących, status głosu i popupu, wersja supervisora |
+| Pasek statusu (28 px) | Projekt, liczniki czekających i pracujących, status głosu i popupu, wersja supervisora |
 | Popupy | Stos w wybranym rogu ekranu (domyślnie prawy dół); szczegóły w [07](07-powiadomienia.md) |
 
 ## Wiersz sesji
@@ -28,7 +28,21 @@
 | `✕` | Błąd | err | `failed` | `StopFailure` (np. `rate_limit`) |
 | `○` | Zatrzymana | dim | `stopped` | `SessionEnd` |
 
+## Mysz
+
+Każdą akcję da się wykonać bez klawiatury ([ADR 0015](adr/0015-skroty-jako-dodatek.md)):
+
+| Gest | Akcja |
+| --- | --- |
+| Klik w wiersz | Zaznaczenie i panel szczegółów |
+| Dwuklik w wiersz | Attach w terminalu |
+| Prawy klik lub ⋯ w wierszu | Menu: Odpowiedz, Attach, Podgląd, Respawn, Zatrzymaj, Usuń |
+| Przyciski w panelu szczegółów | Odpowiedz, Attach, Respawn, Zatrzymaj |
+| Pole palety w nagłówku | Paleta komend (to samo co ⌘K) |
+
 ## Skróty klawiszowe
+
+Skróty są przyspieszeniem dla wprawionych; każdy ma odpowiednik w menu albo palecie.
 
 | Skrót | Akcja |
 | --- | --- |

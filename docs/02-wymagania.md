@@ -65,7 +65,8 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-A5 | Automatyczne przełączanie schematu dzień/noc razem z trybem macOS | S |
 | FR-A6 | Własny schemat, import i eksport `theme.json` | C |
 | FR-K1 | Paleta komend ⌘K obejmująca wszystkie akcje (sesje, projekty, ustawienia) | M |
-| FR-K2 | Nawigacja klawiaturą: j/k, ⏎ attach, r odpowiedz, x stop, space podgląd, g p przełącz projekt | M |
+| FR-K2 | Skróty jako przyspieszenie: j/k, ⏎ attach, r odpowiedz, x stop, space podgląd, g p przełącz projekt ([ADR 0015](adr/0015-skroty-jako-dodatek.md)) | S |
+| FR-K3 | Każda akcja na sesji i projekcie ma widoczną kontrolkę: przycisk w panelu szczegółów albo pozycję menu kontekstowego wiersza (prawy klik, przycisk ⋯); podgląd i attach także kliknięciem | M |
 
 ## Wymagania niefunkcjonalne
 
@@ -76,7 +77,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | NFR-3 | Zamknięcie aplikacji nie zatrzymuje agentów. Po starcie pełny stan odtwarza się z `claude agents --json` |
 | NFR-4 | Bezpieczeństwo hooków: serwer nasłuchuje tylko na `127.0.0.1`, wymaga tokenu w nagłówku (`allowedEnvVars`) |
 | NFR-5 | Edycja `~/.claude/settings.json` tylko za zgodą użytkownika, z kopią zapasową i możliwością cofnięcia |
-| NFR-6 | Kontrast tekstu ≥ 4.5:1 w każdym schemacie; pełna obsługa klawiaturą; etykiety dostępności na przyciskach ikonowych |
+| NFR-6 | Kontrast tekstu ≥ 4.5:1 w każdym schemacie; obsługa klawiaturą przez fokus i Tab (dostępność); etykiety dostępności na przyciskach ikonowych |
 | NFR-7 | Zużycie RAM w spoczynku < 400 MB (JVM), start aplikacji < 3 s |
 | NFR-8 | Warstwa CLI za jednym interfejsem (`ClaudeCli`), bo Agent View jest w research preview i jego format może się zmieniać |
 | NFR-9 | Wykrycie wersji Claude Code przy starcie; ostrzeżenie poniżej v2.1.139 lub gdy Agent View jest wyłączony |

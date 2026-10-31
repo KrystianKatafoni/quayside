@@ -43,6 +43,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 - r i komenda palety „Odpowiedz w terminalu” otwierają `claude attach` zaznaczonej sesji, która czeka na użytkownika (pytanie albo zgoda), w nowej karcie terminala projektu; odpowiedź wpisuje się w pełnym TUI (ADR 0013). Dla sesji, która nie czeka, `r` nic nie robi.
 - Ustawienia terminala w `terminal.json` (ADR 0016): powłoka (`zsh`, `bash`, `fish`), katalog startowy nowej powłoki (worktree zaznaczonej sesji, projekt, katalog domowy), font, rozmiar, scrollback (domyślnie 100 000 wierszy), ligatury (domyślnie włączone) i Option jako Meta (domyślnie wyłączone); działają w nowych kartach i panelach. Okno „Ustawienia terminala…” (komenda palety `terminal.settings` i menu Terminal) zmienia je i zapisuje do `terminal.json`; błędne pole pokazuje komunikat, a błąd zapisu lub uszkodzony plik ustawień — informację w oknie (AM-508).
 - Karty attach: ⏎, `r` i komenda palety pokazują istniejącą kartę attach sesji i dają jej fokus zamiast otwierać drugą kartę i drugi proces `claude attach`; karta po zakończonym procesie attach jest zastępowana w tym samym miejscu; kropka stanu sesji przy karcie attach (kolory jak w Mission Control).
+- Obsługa myszą w Mission Control (AM-511, ADR 0015): przyciski „Attach” i „Odpowiedz” w panelu szczegółów, menu wiersza sesji (prawy klik albo „⋯”: attach, odpowiedz, podgląd, zatrzymaj, respawn, usuń z listy), dwuklik na wierszu = attach i zwijana ściągawka skrótów („Skróty” w pasku statusu).
 
 ### Changed
 

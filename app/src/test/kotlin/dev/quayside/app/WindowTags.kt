@@ -29,6 +29,11 @@ internal object WindowTags {
 
     const val TERMINAL_AREA = "terminal.area"
 
+    /** The terminal settings dialog (AM-508) and its parts; tags of `terminal:ui`, `internal` there. */
+    const val SETTINGS_DIALOG = "terminal.settings"
+    const val SETTINGS_FONT_SIZE = "terminal.settings.fontSize"
+    const val SETTINGS_SAVE = "terminal.settings.save"
+
     /** Tags of `terminal:ui`, which are `internal` there; tab and pane ids count from 1 in opening order. */
     fun terminalGroup(projectId: String): String = "terminal.group.$projectId"
 

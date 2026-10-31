@@ -1,6 +1,7 @@
 package dev.quayside.terminal.ui
 
 import dev.quayside.core.domain.ProjectId
+import dev.quayside.terminal.api.TerminalSettingsField
 
 /** Semantics tags of the terminal area for UI tests. A pane frame exposes `selected` = it is the active pane. */
 internal object TerminalTags {
@@ -25,6 +26,27 @@ internal object TerminalTags {
     const val SEARCH_UP = "terminal.search.up"
     const val SEARCH_DOWN = "terminal.search.down"
     const val SEARCH_CLOSE = "terminal.search.close"
+
+    /** The settings dialog (AM-508), its fields in tab order, its buttons and messages. */
+    const val SETTINGS_DIALOG = "terminal.settings"
+    const val SETTINGS_SHELL = "terminal.settings.shell"
+    const val SETTINGS_START_DIRECTORY = "terminal.settings.startDirectory"
+    const val SETTINGS_FONT_FAMILY = "terminal.settings.fontFamily"
+    const val SETTINGS_FONT_SIZE = "terminal.settings.fontSize"
+    const val SETTINGS_SCROLLBACK = "terminal.settings.scrollback"
+    const val SETTINGS_LIGATURES = "terminal.settings.ligatures"
+    const val SETTINGS_OPTION_AS_META = "terminal.settings.optionAsMeta"
+    const val SETTINGS_SAVE = "terminal.settings.save"
+    const val SETTINGS_CANCEL = "terminal.settings.cancel"
+
+    /** The notice about `terminal.json` (recovered, unreadable, newer app). */
+    const val SETTINGS_NOTICE = "terminal.settings.notice"
+
+    /** The fixed "settings could not be saved" text. */
+    const val SETTINGS_STORAGE_ERROR = "terminal.settings.storageError"
+
+    /** The message under [field]; absent while the field is valid. */
+    fun settingsInvalid(field: TerminalSettingsField): String = "terminal.settings.invalid.${field.name}"
 
     fun group(project: ProjectId): String = "terminal.group.${project.value}"
 

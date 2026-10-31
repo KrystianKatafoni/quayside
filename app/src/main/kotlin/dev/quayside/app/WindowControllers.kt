@@ -6,6 +6,7 @@ import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.terminal.ui.TerminalController
+import dev.quayside.terminal.ui.TerminalSettingsController
 import kotlinx.coroutines.CoroutineScope
 
 /**
@@ -31,6 +32,8 @@ internal class WindowControllers(
         )
     val terminal = TerminalController(modules.terminal.api, scope, core.logger, shellStart)
 
+    val terminalSettings = TerminalSettingsController(modules.terminal.repo, scope)
+
     /** ⌘ keys of a focused terminal, bridged to the palette and the shortcuts. */
     val terminalKeys = TerminalKeys(modules.registry, palette, scope)
 
@@ -45,5 +48,6 @@ internal class WindowControllers(
             AppCommands(modules.projects, projects, missionControl, palette, scope),
             TerminalCommands(modules.projects, projects, missionControl, terminal, scope),
             AttachCommands(projects, missionControl, attacher, scope),
+            TerminalSettingsCommands(projects, missionControl, terminalSettings, scope),
         )
 }

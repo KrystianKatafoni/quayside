@@ -10,6 +10,7 @@ import dev.quayside.commandpalette.ui.toKeyShortcut
 import dev.quayside.terminal.ui.SplitAxis
 import dev.quayside.terminal.ui.TerminalController
 import dev.quayside.terminal.ui.TerminalProject
+import dev.quayside.terminal.ui.TerminalSettingsController
 
 private val NEXT_PANE_KEY = KeyShortcut(Key.DirectionRight, meta = true, alt = true)
 private val PREVIOUS_PANE_KEY = KeyShortcut(Key.DirectionLeft, meta = true, alt = true)
@@ -21,6 +22,7 @@ private val PREVIOUS_PANE_KEY = KeyShortcut(Key.DirectionLeft, meta = true, alt 
 @Composable
 internal fun MenuScope.TerminalItems(
     terminal: TerminalController,
+    settings: TerminalSettingsController,
     project: TerminalProject?,
     blocked: Boolean,
 ) {
@@ -43,6 +45,8 @@ internal fun MenuScope.TerminalItems(
     ) { terminal.toggleMaximized() }
     Separator()
     Entry("command.closeTerminalTab", state.hasTabs && on) { terminal.closeActive() }
+    Separator()
+    Entry("command.terminalSettings", on) { settings.open() }
 }
 
 @Composable

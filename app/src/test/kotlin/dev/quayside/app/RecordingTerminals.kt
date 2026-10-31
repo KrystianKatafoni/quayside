@@ -10,21 +10,32 @@ import dev.quayside.terminal.api.FakeTerminalApi
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalError
 import dev.quayside.terminal.api.TerminalSession
+import dev.quayside.terminal.api.TerminalSettings
+import kotlinx.coroutines.flow.StateFlow
 import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.swing.JComponent
 
-/** [FakeTerminalApi] that remembers the directories shells were started in; the widgets are drawn as markers. */
+/**
+ * [FakeTerminalApi] that remembers the directories (and the [settings]) shells were started with; the widgets are
+ * drawn as markers.
+ */
 internal class RecordingTerminals(
     val fake: FakeTerminalApi = FakeTerminalApi(),
+    private val settings: StateFlow<TerminalSettings>? = null,
 ) : TerminalApi {
     private val dirs = CopyOnWriteArrayList<Path>()
+    private val opened = CopyOnWriteArrayList<TerminalSettings>()
+
+    /** The [settings] read at every shell opened so far, as `JediTermTerminalApi` reads them; empty without them. */
+    val settingsAtOpen: List<TerminalSettings> get() = opened.toList()
 
     /** Directories of every shell opened so far, in order. */
     val shellDirs: List<Path> get() = dirs.toList()
 
     override suspend fun openShell(dir: Path): Outcome<TerminalSession, TerminalError> {
         dirs.add(dir)
+        settings?.let { opened.add(it.value) }
         return fake.openShell(dir)
     }
 

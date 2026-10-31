@@ -34,7 +34,8 @@ Każdy etap kończy się czymś, czego da się realnie używać.
 - [x] Odpowiedź na pytanie agenta: wystarczy przez attach, czy potrzebny własny widok czatu (wtedy Agent SDK jako sidecar)? — rozstrzygnięte 2026-10-19 „Etapami” ([ADR 0013](adr/0013-strategia-odpowiedzi-na-pytania-agenta.md)): AM-411 podgląd (`space`), AM-506 `r` = attach w karcie terminala, AM-507 spike ukrytego attach dla FR-S5, fallback Agent SDK
 - [ ] Streszczenia modelem Haiku: domyślnie włączone czy opcjonalne (koszt i limity)?
 - [ ] Popup systemowy macOS: potrzebny w 1.0, czy wystarczy własny?
-- [ ] Nazwa produktu i ikona (robocza nazwa: Agent Manager).
+- [x] Nazwa produktu: Quayside (wybrana 2026-10-31, wcześniej robocza nazwa Agent Manager).
+- [ ] Ikona produktu.
 - [ ] Czy aplikacja ma też obsługiwać sesje interaktywne otwarte w zwykłym terminalu (po `/bg` pojawiają się w Agent View)?
 
 ## Kryteria akceptacji MVP (etapy 0–6)

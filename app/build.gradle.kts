@@ -47,6 +47,6 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "dev.agentmanager.app.MainKt"
+        mainClass = "dev.quayside.app.MainKt"
     }
 }

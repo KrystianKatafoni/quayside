@@ -1,9 +1,9 @@
-# Agent Manager — dokumentacja projektu
+# Quayside — dokumentacja projektu
 
 > Wersja 0.1 · 18.10.2026 · status: koncepcja zatwierdzona, etap M0 (fundament repo)
-> Nazwa robocza: **Agent Manager** (projekt w Claude: *AgentToolMac*)
+> Nazwa: **Quayside** (wcześniej Agent Manager; projekt w Claude: *AgentToolMac*)
 
-Agent Manager to natywna aplikacja desktopowa na macOS 15 Sequoia do zarządzania lokalnymi agentami Claude Code. Zbiera w jednym oknie projekty, sesje agentów, ich stan i terminal, a gdy agent czegoś potrzebuje, daje znać popupem i głosem.
+Quayside to natywna aplikacja desktopowa na macOS 15 Sequoia do zarządzania lokalnymi agentami Claude Code. Zbiera w jednym oknie projekty, sesje agentów, ich stan i terminal, a gdy agent czegoś potrzebuje, daje znać popupem i głosem.
 
 Aplikacja **nie uruchamia własnego orkiestratora**. Steruje oficjalnym supervisorem sesji w tle Claude Code (`claude --bg`, `claude agents --json`, `claude attach/stop/logs/respawn`) i odbiera zdarzenia przez hooki HTTP.
 

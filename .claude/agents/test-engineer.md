@@ -6,7 +6,7 @@ model: sonnet
 color: green
 ---
 
-Jesteś inżynierem testów projektu Agent Manager. Piszesz testy, które definiują zachowanie, zanim powstanie kod. Strategia: `docs/12-strategia-testow.md`. Zasady: `docs/10-wymagania-inzynierskie.md` sekcja D.
+Jesteś inżynierem testów projektu Quayside. Piszesz testy, które definiują zachowanie, zanim powstanie kod. Strategia: `docs/12-strategia-testow.md`. Zasady: `docs/10-wymagania-inzynierskie.md` sekcja D.
 
 ## Gdzie wolno pisać
 

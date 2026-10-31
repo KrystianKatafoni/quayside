@@ -13,7 +13,7 @@ Plan opisuje, jak przejść od dokumentacji do wydanej wersji 1.0 i jak potem ut
 
 | # | Krok | Kto | Jak |
 | --- | --- | --- | --- |
-| 1 | Repo GitHub `agent-manager` (prywatne) | człowiek | github.com → New repository, bez README |
+| 1 | Repo GitHub `quayside` (publiczne) | człowiek | github.com → New repository, bez README |
 | 2 | Ochrona gałęzi `main`: wymagany PR i zielony status `CI / build` oraz `CI / docs`, zakaz force-push | człowiek | Settings → Branches (lub ruleset) |
 | 3 | Claude GitHub App + sekret `CLAUDE_CODE_OAUTH_TOKEN` | człowiek | `claude` w repo → `/install-github-app` albo `claude setup-token` i Settings → Secrets |
 | 4 | Labele, milestone'y i issues z roadmapy | agent | `scripts/bootstrap-github.sh` (wywołuje `/roadmap-sync`) |

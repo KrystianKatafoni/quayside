@@ -45,4 +45,5 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Changed
 
+- Nowa nazwa aplikacji: Quayside (wcześniej Agent Manager). Dane aplikacji leżą w `~/Library/Application Support/Quayside/`; listę projektów ze starego katalogu `AgentManager/` trzeba przenieść ręcznie.
 - API `feature:terminal:api`: `TerminalSession` ma nowe pole `search` (`TerminalSearch`, `SearchQuery`, `ScrollbackMatcher`) — zmiana kontraktu wg ENG-I6.

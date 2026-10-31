@@ -25,7 +25,7 @@ body:
     id: versions
     attributes:
       label: Wersje
-      description: Agent Manager, Claude Code (`claude --version`), macOS
+      description: Quayside, Claude Code (`claude --version`), macOS
       placeholder: "0.1.0 / 2.1.290 / 15.5"
     validations:
       required: true

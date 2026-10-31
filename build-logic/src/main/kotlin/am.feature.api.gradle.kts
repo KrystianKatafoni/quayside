@@ -1,5 +1,5 @@
-import dev.agentmanager.buildlogic.ModuleRules
-import dev.agentmanager.buildlogic.enforceModuleRule
+import dev.quayside.buildlogic.ModuleRules
+import dev.quayside.buildlogic.enforceModuleRule
 
 // Public contract of a feature (and core modules): explicit visibility everywhere,
 // contracts and fakes in testFixtures, dependencies only on shared core modules.

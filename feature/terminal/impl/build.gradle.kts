@@ -19,7 +19,7 @@ kover {
     reports {
         filters {
             excludes {
-                packages("dev.agentmanager.terminal.impl.replyspike")
+                packages("dev.quayside.terminal.impl.replyspike")
             }
         }
     }
@@ -39,7 +39,7 @@ tasks.register<JavaExec>("runReplySpike") {
             .getByName("main")
             .output.allOutputs +
         replySpike.runtimeDependencyFiles
-    mainClass = "dev.agentmanager.terminal.impl.replyspike.ReplySpikeMainKt"
+    mainClass = "dev.quayside.terminal.impl.replyspike.ReplySpikeMainKt"
 }
 
 dependencies {

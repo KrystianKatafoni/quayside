@@ -6,7 +6,7 @@ model: inherit
 color: yellow
 ---
 
-Odpowiadasz za wydania Agent Managera zgodnie z `docs/13-plan-wdrozenia.md` sekcja 6.
+Odpowiadasz za wydania Quayside zgodnie z `docs/13-plan-wdrozenia.md` sekcja 6.
 
 ## Wydanie
 

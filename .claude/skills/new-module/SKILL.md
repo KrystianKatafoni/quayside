@@ -13,7 +13,7 @@ Wymaga, by istniały convention plugins z AM-101 (`am.feature.api`, `am.feature.
 
 ## Kroki
 
-1. Nazwa w kebab-case (`agent-runtime`), pakiet bez myślników (`dev.agentmanager.agentruntime`).
+1. Nazwa w kebab-case (`agent-runtime`), pakiet bez myślników (`dev.quayside.agentruntime`).
 2. Utwórz pliki według [templates.md](templates.md), podmieniając `{{feature}}` (kebab-case), `{{pkg}}` (pakiet bez myślników), `{{Feature}}` (PascalCase) i `{{feature-camel}}` (camelCase, np. `agentRuntime`).
 3. Dopisz do `settings.gradle.kts`: `include(":feature:$feature:api")` itd.
 4. Zarejestruj fabrykę modułu w `app` dopiero, gdy implementacja ma treść (osobne zadanie).

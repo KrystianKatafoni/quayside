@@ -1,6 +1,6 @@
 # 11 · Koncepcja techniczna
 
-Dokument opisuje, jak zbudować Agent Manager tak, żeby spełnić [wymagania inżynierskie](10-wymagania-inzynierskie.md): jasne moduły, hermetyczność, jasne interfejsy i izolację zmian. Funkcje produktu opisują pliki [02](02-wymagania.md)–[08](08-wyglad.md), a ogólny przepływ danych [03-architektura.md](03-architektura.md).
+Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżynierskie](10-wymagania-inzynierskie.md): jasne moduły, hermetyczność, jasne interfejsy i izolację zmian. Funkcje produktu opisują pliki [02](02-wymagania.md)–[08](08-wyglad.md), a ogólny przepływ danych [03-architektura.md](03-architektura.md).
 
 ## 1. Styl architektury
 
@@ -336,7 +336,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 
 ## 8. Persystencja i konfiguracja
 
-| Plik w `~/Library/Application Support/AgentManager/` | Właściciel (moduł) |
+| Plik w `~/Library/Application Support/Quayside/` | Właściciel (moduł) |
 | --- | --- |
 | `projects.json` | `projects:impl` |
 | `notifications.json` | `notifications:impl` |
@@ -365,7 +365,7 @@ fun main() = application {
     val appearance    = appearanceModule(core)
     val palette       = commandPaletteModule(core)
 
-    AgentManagerApp(projects, sessions, notifications, terminal, appearance, palette, runtime.hookInstaller)
+    QuaysideApp(projects, sessions, notifications, terminal, appearance, palette, runtime.hookInstaller)
 }
 ```
 
@@ -388,7 +388,7 @@ Każda fabryka `xxxModule(…)` zwraca obiekt z interfejsami `api`, np. `Session
 ## 11. Struktura repozytorium
 
 ```text
-agent-manager/
+quayside/
 ├── app/                          # main, composition root, okna, nawigacja
 ├── build-logic/                  # convention plugins: am.kotlin, am.feature.api|impl|ui, am.quality
 ├── core/
@@ -413,7 +413,7 @@ agent-manager/
 └── settings.gradle.kts
 ```
 
-Pakiety: `dev.agentmanager.<feature>.<api|impl|ui>` (pakiet = moduł, łatwe reguły Konsist).
+Pakiety: `dev.quayside.<feature>.<api|impl|ui>` (pakiet = moduł, łatwe reguły Konsist).
 
 ## 12. Narzędzia i biblioteki
 

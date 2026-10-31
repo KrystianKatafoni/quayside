@@ -113,8 +113,8 @@ Zestaw minimalny dla MVP:
 ## 5. Testy architektury (Konsist)
 
 ```kotlin
-// szkic — pakiet = moduł, np. dev.agentmanager.sessions.impl
-private val implOrUi = Regex("""dev\.agentmanager\.([\w-]+)\.(impl|ui)\b.*""")
+// szkic — pakiet = moduł, np. dev.quayside.sessions.impl
+private val implOrUi = Regex("""dev\.quayside\.([\w-]+)\.(impl|ui)\b.*""")
 
 class ArchitectureTest {
     @Test fun `impl does not import impl or ui of another feature`() =

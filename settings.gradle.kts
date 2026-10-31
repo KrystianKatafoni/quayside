@@ -22,7 +22,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "agent-manager"
+rootProject.name = "quayside"
 
 // Modules are added by their roadmap tasks and by /new-module.
 include(":app")

@@ -1,6 +1,6 @@
 # Kompatybilność z Claude Code
 
-Agent Manager steruje supervisorem sesji Claude Code (Agent View, research preview). Ten plik aktualizuje skill `/compat-check` (co tydzień w GitHub Actions) albo człowiek po ręcznym teście.
+Quayside steruje supervisorem sesji Claude Code (Agent View, research preview). Ten plik aktualizuje skill `/compat-check` (co tydzień w GitHub Actions) albo człowiek po ręcznym teście.
 
 | Pozycja | Wartość |
 | --- | --- |

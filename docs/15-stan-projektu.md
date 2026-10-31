@@ -2,14 +2,13 @@
 
 > Notatka przekazania dla nowych sesji (Mac, sesje w chmurze, telefon). Aktualizuj ją przy zmianie etapu albo ustaleń o środowisku. Postęp zadań jest w [ROADMAP.md](ROADMAP.md) — tu jest kontekst, którego roadmapa nie mówi.
 >
-> Stan na: 2026-10-18
+> Stan na: 2026-10-31
 
 ## Gdzie jesteśmy
 
-- **M0 (fundament repo)** — zrobione: dokumentacja, agent Claude Code (agenci, skille, hooki, uprawnienia), automatyzacja GitHub.
-- **M1 (szkielet aplikacji)** — prawie zrobione: build Gradle i convention plugins (AM-101), `core:domain` (AM-102), `core:testing` (AM-103), reguły modułów i testy architektury (AM-104), bramka jakości i `quickCheck` (AM-105), `core:process` (AM-106).
-- **W przeglądzie:** AM-107 `core:storage` (PR #61), AM-108 okno aplikacji (PR #62).
-- **Dalej:** M2 — `agent-runtime` (AM-201…), czyli integracja z supervisorem Claude Code.
+- **Nowe repo i nazwa (2026-10-31).** Projekt nazywał się Agent Manager i żył w `KrystianKatafoni/agent-manager`. Przeniesiony do `KrystianKatafoni/quayside` jednym commitem startowym, bez historii i starych PR-ów. Numery issues zaczynają się od nowa; stare numery z planów w `docs/plans/` i ADR-ów dotyczą starego repo.
+- **M1–M4 zrobione, M5 prawie:** zostały AM-507 (pomiar na Macu, ADR 0014) i AM-508.
+- **Dalej:** ścieżka krytyczna do 1.0: AM-601 → AM-603 → AM-701–705 → AM-903/904 → AM-905.
 
 Zawsze aktualne źródło: `python3 scripts/roadmap_sync.py --dry-run` i otwarte PR-y.
 
@@ -18,13 +17,13 @@ Zawsze aktualne źródło: `python3 scripts/roadmap_sync.py --dry-run` i otwarte
 - Jedno zadanie = jedna gałąź = jeden PR; **scala tylko człowiek** (squash merge). Po scaleniu `/roadmap-sync`.
 - Kolejne zadanie: `/deliver AM-XXX` (lub `claude --agent am-lead`, potem `/deliver`).
 - Po rebase własnej gałęzi wolno `git push --force-with-lease` (wyjątek w zasadzie 6 `CLAUDE.md`).
-- CI publikuje liczbę testów w adnotacji **„Tests”** checka „Build and test (macOS)” — sesje bez dostępu do logów Actions czytają ją przez `gh api repos/KrystianKatafoni/agent-manager/check-runs/<id>/annotations`.
+- CI publikuje liczbę testów w adnotacji **„Tests”** checka „Build and test (macOS)” — sesje bez dostępu do logów Actions czytają ją przez `gh api repos/KrystianKatafoni/quayside/check-runs/<id>/annotations`.
 
 ## Gdzie można pracować
 
 | Miejsce | Kiedy | Uwagi |
 | --- | --- | --- |
-| Mac, terminal | główna praca | `claude --agent am-lead --remote-control "Agent Manager"` — ta sama sesja widoczna na telefonie (aplikacja Claude → Code). Mac musi być wybudzony (`caffeinate -i`). |
+| Mac, terminal | główna praca | `claude --agent am-lead --remote-control "Quayside"` — ta sama sesja widoczna na telefonie (aplikacja Claude → Code). Mac musi być wybudzony (`caffeinate -i`). |
 | Sesja w chmurze (claude.ai/code lub zakładka Code w aplikacji) | Mac wyłączony | Wynik zawsze jako gałąź + PR. Na Macu potem `git pull` albo `claude --teleport`. |
 | GitHub, komentarz `@claude` w issue/PR | drobne poprawki | Wymaga sekretu `CLAUDE_CODE_OAUTH_TOKEN` (patrz niżej). |
 
@@ -48,5 +47,5 @@ Zawsze aktualne źródło: `python3 scripts/roadmap_sync.py --dry-run` i otwarte
 
 ## Otwarte sprawy
 
-- PR-y Dependabota (#2–#6) z aktualizacjami akcji GitHub — do przeglądu przez `maintainer`, usuwają ostrzeżenia o Node 20 w CI.
+- Katalog danych aplikacji zmienił nazwę na `~/Library/Application Support/Quayside/`; dane ze starego `AgentManager/` trzeba raz przenieść ręcznie (`mv`).
 - Powiadomienia głosowe hooka (`notify.sh`) działają tylko na macOS; w chmurze są cicho pomijane.

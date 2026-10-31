@@ -10,7 +10,7 @@ Ten sam przepływ jako diagram Mermaid, z podziałem na moduły aplikacji:
 
 ```mermaid
 flowchart LR
-  subgraph App["Agent Manager (Kotlin / Compose Desktop)"]
+  subgraph App["Quayside (Kotlin / Compose Desktop)"]
     P[ProjectStore]
     M[SessionMonitor]
     T[TerminalTabs<br/>JediTerm + pty4j]
@@ -42,7 +42,7 @@ flowchart LR
 | Terminal | JediTerm + pty4j | Emulator z IDE JetBrains, sprawdzony na macOS; w Compose przez `SwingPanel` |
 | HTTP (hooki) | Ktor server (CIO) | Lekki, coroutines, bind tylko do `127.0.0.1` |
 | JSON | kotlinx.serialization | Parsowanie `claude agents --json` i payloadów hooków |
-| Persystencja | Pliki JSON w `~/Library/Application Support/AgentManager/` | Prosto, łatwy eksport motywu |
+| Persystencja | Pliki JSON w `~/Library/Application Support/Quayside/` | Prosto, łatwy eksport motywu |
 | Procesy | `ProcessBuilder` przez login shell `/bin/zsh -l -c` | GUI z Findera nie dziedziczy PATH z `.zprofile` |
 | Głos | `say -v <głos> -r <tempo>` | Wbudowane w macOS, polski głos Zosia |
 | Pakowanie | `jpackage` / Compose `packageDmg`, Developer ID + notaryzacja | Dystrybucja poza App Store |
@@ -126,7 +126,7 @@ data class Theme(val scheme: String = "plex", val typography: String = "plex",
 
 | Plik | Zawartość |
 | --- | --- |
-| `~/Library/Application Support/AgentManager/projects.json` | Projekty i wyjątki per projekt |
+| `~/Library/Application Support/Quayside/projects.json` | Projekty i wyjątki per projekt |
 | `…/notifications.json` | Macierz reguł, ustawienia głosu i popupu, ciche godziny |
 | `…/terminal.json` | Profile powłoki, font, skróty |
 | `…/theme.json` | Wybrany schemat, typografia, skala, dzień/noc, własne schematy |

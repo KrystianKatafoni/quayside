@@ -1,6 +1,6 @@
 ---
 name: compat-check
-description: Sprawdza, czy nowe wersje Claude Code zmieniły coś, od czego zależy Agent Manager (claude agents --json, --bg, attach/stop/respawn/rm, hooki, Agent View) i zakłada issue z etykietą compat, gdy tak. Uruchamiany co tydzień przez workflow maintenance.yml oraz na żądanie.
+description: Sprawdza, czy nowe wersje Claude Code zmieniły coś, od czego zależy Quayside (claude agents --json, --bg, attach/stop/respawn/rm, hooki, Agent View) i zakłada issue z etykietą compat, gdy tak. Uruchamiany co tydzień przez workflow maintenance.yml oraz na żądanie.
 allowed-tools: Bash(claude --version), Bash(gh issue *), Bash(gh label *), Read, Grep, Glob, WebFetch
 ---
 
@@ -18,6 +18,6 @@ allowed-tools: Bash(claude --version), Bash(gh issue *), Bash(gh label *), Read,
    - tytuł `compat: Claude Code <wersja> — <krótki opis>`,
    - treść: cytowane (krótko) wpisy changelogu z linkiem, wpływ na moduły, propozycja zadania do roadmapy, nowe fixtures do nagrania,
    - etykiety `compat`, `area:agent-runtime` (utwórz brakujące przez `gh label create`).
-5. Zwróć podsumowanie: wersja, liczba przejrzanych wpisów, utworzone issues lub „bez zmian wpływających na Agent Manager”.
+5. Zwróć podsumowanie: wersja, liczba przejrzanych wpisów, utworzone issues lub „bez zmian wpływających na Quayside”.
 
 Lokalnie (nie w CI) możesz dodatkowo zaktualizować tabelę „Historia przeglądów” w `docs/compat.md` i wysłać to przez `/ship`.

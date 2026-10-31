@@ -64,4 +64,4 @@ Wszystkie fonty są na licencji SIL Open Font License i można je dołączyć do
 }
 ```
 
-Plik leży w `~/Library/Application Support/AgentManager/theme.json`. W Kotlinie mapuje się 1:1 na `data class Theme` z kotlinx.serialization, a schematy na `data class ColorScheme(val bg: Color, …)` dostarczane przez `CompositionLocalProvider`.
+Plik leży w `~/Library/Application Support/Quayside/theme.json`. W Kotlinie mapuje się 1:1 na `data class Theme` z kotlinx.serialization, a schematy na `data class ColorScheme(val bg: Color, …)` dostarczane przez `CompositionLocalProvider`.

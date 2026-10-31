@@ -1,6 +1,6 @@
 # 14. Agent Claude Code — wdrażanie i utrzymanie
 
-> Jak działa agent, który buduje Agent Managera według [ROADMAP.md](ROADMAP.md) i później go utrzymuje. Proces i etapy opisuje [13-plan-wdrozenia.md](13-plan-wdrozenia.md).
+> Jak działa agent, który buduje Quayside według [ROADMAP.md](ROADMAP.md) i później go utrzymuje. Proces i etapy opisuje [13-plan-wdrozenia.md](13-plan-wdrozenia.md).
 
 ## 1. Idea
 
@@ -144,7 +144,7 @@ claude --agent am-lead
 > /release prepare
 > /release tag
 
-# W tle, z podglądem w Agent View (lub w samym Agent Managerze po M4)
+# W tle, z podglądem w Agent View (lub w samym Quayside po M4)
 claude --bg --agent am-lead "/deliver AM-204"
 ```
 

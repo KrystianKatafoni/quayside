@@ -11,10 +11,10 @@ dependencies {
 }
 ```
 
-## `feature/{{feature}}/api/src/main/kotlin/dev/agentmanager/{{pkg}}/api/{{Feature}}Api.kt`
+## `feature/{{feature}}/api/src/main/kotlin/dev/quayside/{{pkg}}/api/{{Feature}}Api.kt`
 
 ```kotlin
-package dev.agentmanager.{{pkg}}.api
+package dev.quayside.{{pkg}}.api
 
 /**
  * Public contract of the {{feature}} feature.
@@ -23,10 +23,10 @@ package dev.agentmanager.{{pkg}}.api
 interface {{Feature}}Api
 ```
 
-## `feature/{{feature}}/api/src/testFixtures/kotlin/dev/agentmanager/{{pkg}}/api/{{Feature}}ApiContract.kt`
+## `feature/{{feature}}/api/src/testFixtures/kotlin/dev/quayside/{{pkg}}/api/{{Feature}}ApiContract.kt`
 
 ```kotlin
-package dev.agentmanager.{{pkg}}.api
+package dev.quayside.{{pkg}}.api
 
 /** Contract every [{{Feature}}Api] implementation (fake and real) must satisfy. */
 abstract class {{Feature}}ApiContract {
@@ -34,10 +34,10 @@ abstract class {{Feature}}ApiContract {
 }
 ```
 
-## `feature/{{feature}}/api/src/testFixtures/kotlin/dev/agentmanager/{{pkg}}/api/Fake{{Feature}}Api.kt`
+## `feature/{{feature}}/api/src/testFixtures/kotlin/dev/quayside/{{pkg}}/api/Fake{{Feature}}Api.kt`
 
 ```kotlin
-package dev.agentmanager.{{pkg}}.api
+package dev.quayside.{{pkg}}.api
 
 /** In-memory fake for tests of other modules. Must pass [{{Feature}}ApiContract]. */
 class Fake{{Feature}}Api : {{Feature}}Api
@@ -55,12 +55,12 @@ dependencies {
 }
 ```
 
-## `feature/{{feature}}/impl/src/main/kotlin/dev/agentmanager/{{pkg}}/impl/{{Feature}}Module.kt`
+## `feature/{{feature}}/impl/src/main/kotlin/dev/quayside/{{pkg}}/impl/{{Feature}}Module.kt`
 
 ```kotlin
-package dev.agentmanager.{{pkg}}.impl
+package dev.quayside.{{pkg}}.impl
 
-import dev.agentmanager.{{pkg}}.api.{{Feature}}Api
+import dev.quayside.{{pkg}}.api.{{Feature}}Api
 
 /** The only public entry point of this module; called from the composition root in `app`. */
 fun {{feature-camel}}Module(/* deps */): {{Feature}}Api = Default{{Feature}}Api()

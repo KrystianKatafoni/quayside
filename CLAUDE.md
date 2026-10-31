@@ -1,4 +1,4 @@
-# CLAUDE.md — Agent Manager
+# CLAUDE.md — Quayside
 
 Natywna aplikacja macOS (Kotlin + Compose Desktop) do zarządzania lokalnymi agentami Claude Code. Ten plik czyta każda sesja Claude Code w repo. Trzymaj go krótkim; szczegóły są w `docs/`.
 
@@ -60,7 +60,7 @@ Gradle 9.7 z wrapperem i JDK 21 (toolchain). Convention plugins: `am.kotlin` (z 
 
 Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia każdy).
 
-- W sesjach Claude Code w chmurze GitHub działa tylko przez REST: zamiast `gh pr create` / `gh issue create|close|comment` używaj `gh api repos/KrystianKatafoni/agent-manager/{pulls,issues}…` (GraphQL jest zablokowany).
+- W sesjach Claude Code w chmurze GitHub działa tylko przez REST: zamiast `gh pr create` / `gh issue create|close|comment` używaj `gh api repos/KrystianKatafoni/quayside/{pulls,issues}…` (GraphQL jest zablokowany).
 - W sesjach w chmurze Maven Central i repozytoria Gradle bywają niedostępne (allowlista sieci); wtedy weryfikacją buildu jest CI w PR.
 - Komunikaty wyjątków kotlinx.serialization cytują fragment wejścia — nie wolno ich logować ani zwracać w błędach; używaj stałych kategorii powodu.
 - Przy `allWarningsAsErrors` nie używaj przestarzałego API: w Compose MP 1.12 testy UI importują `androidx.compose.ui.test.v2.runComposeUiTest`. Źródła Compose (`*-desktop`) są na repo1.maven.org, więc API da się sprawdzić bez `dl.google.com`.

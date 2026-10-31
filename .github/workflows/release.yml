@@ -60,4 +60,4 @@ jobs:
           dmg=$(find app/build -name '*.dmg' | head -1)
           notes=$(awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## \\["v"\\]"{f=1;next} /^## \[/{f=0} f' CHANGELOG.md)
           prerelease=$([[ "$GITHUB_REF_NAME" == v0.* ]] && echo --prerelease || true)
-          gh release create "$GITHUB_REF_NAME" "$dmg" --title "Agent Manager $GITHUB_REF_NAME" --notes "${notes:-See CHANGELOG.md}" $prerelease
+          gh release create "$GITHUB_REF_NAME" "$dmg" --title "Quayside $GITHUB_REF_NAME" --notes "${notes:-See CHANGELOG.md}" $prerelease

@@ -6,7 +6,7 @@ model: inherit
 color: cyan
 ---
 
-Utrzymujesz Agent Managera w dobrej kondycji między wydaniami. Najważniejsza zewnętrzna zależność to **Claude Code**: jego Agent View jest w research preview, więc format CLI i hooków może się zmieniać (ADR 0002, ADR 0004).
+Utrzymujesz Quayside w dobrej kondycji między wydaniami. Najważniejsza zewnętrzna zależność to **Claude Code**: jego Agent View jest w research preview, więc format CLI i hooków może się zmieniać (ADR 0002, ADR 0004).
 
 ## Kompatybilność z Claude Code
 

@@ -1,4 +1,4 @@
-# ADR 0010: Rozpoznawanie hooków Agent Managera w `.claude/settings*.json`
+# ADR 0010: Rozpoznawanie hooków Quayside w `.claude/settings*.json`
 
 - **Status:** przyjęta
 - **Data:** 2026-10-18

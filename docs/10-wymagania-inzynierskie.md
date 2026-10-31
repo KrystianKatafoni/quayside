@@ -1,6 +1,6 @@
 # 10 · Wymagania inżynierskie
 
-Ten dokument określa, **jak** budujemy Agent Manager. Jest wiążący dla każdego kodu w repozytorium, niezależnie od tego, czy pisze go człowiek, czy agent Claude Code. Szczegóły architektury: [11-koncepcja-techniczna.md](11-koncepcja-techniczna.md). Szczegóły testów: [12-strategia-testow.md](12-strategia-testow.md).
+Ten dokument określa, **jak** budujemy Quayside. Jest wiążący dla każdego kodu w repozytorium, niezależnie od tego, czy pisze go człowiek, czy agent Claude Code. Szczegóły architektury: [11-koncepcja-techniczna.md](11-koncepcja-techniczna.md). Szczegóły testów: [12-strategia-testow.md](12-strategia-testow.md).
 
 **Cel nadrzędny: zmiana w jednym miejscu nie wymusza zmian w innych.** Każde wymaganie poniżej służy temu celowi albo czytelności kodu.
 

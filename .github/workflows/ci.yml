@@ -40,7 +40,7 @@ jobs:
           distribution: temurin
           java-version: 21
       - if: steps.gradle.outputs.present == 'true'
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - if: steps.gradle.outputs.present == 'true'
         run: ./gradlew check --no-daemon
       - name: Test summary (annotation, readable via the API)

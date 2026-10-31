@@ -87,3 +87,4 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - W testach Compose Desktop `performClick` daje fokus klikalnemu elementowi jak klik myszą, więc `assertIsNotFocused()` po kliknięciu dowodzi `canFocus = false`; gdy kliknięcie usuwa węzeł (np. baner), fokus sprawdzaj przez Tab.
 - Zwolnienie blokady (zbiór kluczy w trakcie, flaga `pending`) w `finally` wymaga testu ścieżki błędu — po nieudanym starcie kolejne wywołanie znowu otwiera; inaczej przeniesienie zwolnienia do gałęzi `Ok` nie wywróci żadnego testu.
 - `@Suppress("ForbiddenMethodCall")` nie zwalnia z ENG-C3: `runBlocking` tylko w `main`.
+- ktlint nie zgłasza nieużywanych importów — po przeniesieniu kodu między plikami sprawdź je ręcznie.

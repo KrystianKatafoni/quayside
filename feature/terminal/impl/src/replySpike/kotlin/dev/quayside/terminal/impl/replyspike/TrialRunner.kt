@@ -73,7 +73,15 @@ internal class TrialRunner(
     }
 
     private suspend fun play(trial: Trial): TrialFacts {
-        val started = claude.start(trial.name, trial.scenario.prompt, trial.dir).getOrNull() != null
+        val started =
+            claude
+                .start(
+                    trial.name,
+                    trial.scenario.prompt,
+                    trial.dir,
+                    permissionMode = trial.scenario.permissionMode,
+                ).getOrNull() !=
+                null
         val blocked = if (started) awaitBlocked(trial.name, trial.settings.blockedTimeout) else null
         return when {
             !started -> {

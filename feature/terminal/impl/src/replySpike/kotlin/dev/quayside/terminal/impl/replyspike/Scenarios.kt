@@ -7,6 +7,10 @@ import kotlin.random.Random
 private const val MAX_SUFFIX = 1_000_000
 private const val ANSWER_FILE = "answer.txt"
 private const val APPROVAL_FILE = "approved.txt"
+
+// T and O write answer.txt; acceptEdits keeps the file write from raising a permission prompt of its own.
+// Z stays in the default mode, because its permission prompt is the subject of the trial.
+private const val ACCEPT_EDITS = "acceptEdits"
 private val CHOICES = listOf("alfa", "beta", "gamma")
 
 /** One question to the session and the answer the runner gives; [effect] reads what the answer did in the dir. */
@@ -14,6 +18,7 @@ internal class Scenario(
     val kind: Kind,
     val prompt: String,
     val reply: Reply,
+    val permissionMode: String? = null,
     private val check: (Path) -> Effect,
 ) {
     fun effect(dir: Path): Effect = check(dir)
@@ -37,6 +42,7 @@ internal object Scenarios {
             Kind.TEXT,
             "Zapytaj mnie zwykłym tekstem (bez narzędzi) o jedno słowo i zapisz je w pliku $ANSWER_FILE.",
             Reply.Text(token),
+            ACCEPT_EDITS,
         ) { dir ->
             content(dir, ANSWER_FILE)?.let { if (it == token) Effect.AS_EXPECTED else Effect.WRONG }
                 ?: Effect.ABSENT
@@ -47,6 +53,7 @@ internal object Scenarios {
             Kind.OPTIONS,
             "Zapytaj narzędziem pytań o wybór: ${CHOICES.joinToString("/")}. Zapisz wybór w pliku $ANSWER_FILE.",
             Reply.Option(chosen + 1),
+            ACCEPT_EDITS,
         ) { dir ->
             content(
                 dir,

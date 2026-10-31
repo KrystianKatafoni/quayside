@@ -102,7 +102,7 @@ Zestaw minimalny dla MVP:
 
 1. Dodanie projektu pokazuje jego sesje (FR-P1, FR-S1).
 2. Usunięcie projektu z działającymi sesjami: obie ścieżki dialogu (FR-P3, FR-P4).
-3. Start agenta z ⌘N i promptem → stan „pracuje” (FR-S3, FR-K2).
+3. Start agenta przyciskiem „Nowy agent” i promptem → stan „pracuje” (FR-S3, FR-K3); ten sam scenariusz skrótem ⌘N (FR-K2).
 4. Pytanie agenta → popup + głos + glif `?`; odpowiedź z popupu (FR-N1–N4, FR-S5).
 5. Prośba o zgodę → Pozwól z popupu (FR-S6).
 6. Cisza nocna i tryb w tle blokują głos, ale nie popup (FR-N5, FR-N6).

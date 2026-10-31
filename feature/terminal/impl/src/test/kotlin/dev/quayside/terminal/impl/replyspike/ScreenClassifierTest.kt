@@ -17,6 +17,9 @@ private val HOME_AND_CLEAR = Regex("\u001b\\[2J\u001b\\[H")
 private fun framed(name: String): List<String> =
     replySpikeResource(name).replace(HOME_AND_CLEAR, "").replace(SGR, "").lines()
 
+/** Frame recorded from the real TUI (anonymized), plain text. */
+private fun plain(name: String): List<String> = replySpikeResource(name).lines()
+
 /** Table 2 of the AM-507 plan. */
 internal class ScreenClassifierTest {
     @ParameterizedTest(name = "{0}")
@@ -43,6 +46,9 @@ internal class ScreenClassifierTest {
                 Arguments.of("text question with the input box", framed("text.ansi"), Prompt.Text),
                 Arguments.of("numbered options with the select footer", framed("options.ansi"), Prompt.Options(3)),
                 Arguments.of("permission for Bash", framed("permission.ansi"), Prompt.Permission("Bash")),
+                Arguments.of("real TUI: idle input box", plain("real-text.txt"), Prompt.Text),
+                Arguments.of("real TUI: options without its own rows", plain("real-options.txt"), Prompt.Options(3)),
+                Arguments.of("real TUI: permission for Bash", plain("real-permission.txt"), Prompt.Permission("Bash")),
                 Arguments.of("input box that holds the reply", framed("text-filled.ansi"), Prompt.TextFilled),
                 Arguments.of("empty input box with a spinner", framed("text-sent.ansi"), Prompt.Busy),
                 Arguments.of("empty input box without a spinner", framed("text-sent-quiet.ansi"), Prompt.Text),

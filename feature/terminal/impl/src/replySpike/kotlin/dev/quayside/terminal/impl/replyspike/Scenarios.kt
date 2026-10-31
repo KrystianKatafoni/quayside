@@ -10,8 +10,11 @@ private const val ANSWER_FILE = "answer.txt"
 private const val APPROVAL_FILE = "approved.txt"
 
 // T and O write answer.txt; acceptEdits keeps the file write from raising a permission prompt of its own.
-// Z stays in the default mode, because its permission prompt is the subject of the trial.
+// Z runs in the explicit default mode, because its permission prompt is the subject of the trial.
 private const val ACCEPT_EDITS = "acceptEdits"
+
+// The user's configured mode may already allow `touch`, so Z asks for the default mode explicitly.
+private const val EXPLICIT_DEFAULT = "default"
 private val CHOICES = listOf("alfa", "beta", "gamma")
 
 /** One question to the session and the answer the runner gives; [effect] reads what the answer did in the dir. */
@@ -64,7 +67,12 @@ internal object Scenarios {
         }
 
     private fun permission(allow: Boolean) =
-        Scenario(Kind.PERMISSION, "Uruchom polecenie `touch $APPROVAL_FILE`.", Reply.Permission(allow)) { dir ->
+        Scenario(
+            Kind.PERMISSION,
+            "Uruchom polecenie `touch $APPROVAL_FILE`.",
+            Reply.Permission(allow),
+            EXPLICIT_DEFAULT,
+        ) { dir ->
             val approved = Files.exists(dir.resolve(APPROVAL_FILE))
             when {
                 approved == allow -> Effect.AS_EXPECTED

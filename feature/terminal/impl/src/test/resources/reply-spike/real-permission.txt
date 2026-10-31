@@ -1,0 +1,18 @@
+❯ Uruchom polecenie touch approved.txt.
+
+  Running 1 shell command…
+
+────────────────────────────────────────────────────────────────────────────────
+ Bash command
+ Create approved.txt in the working directory
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ touch approved.txt
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Do you want to proceed?
+ ❯ 1. Yes
+   2. Yes, and always allow access to the directory from this project
+   3. Yes, and switch to auto mode
+   4. No
+
+ Esc to cancel · Tab to amend
+──────────────────────────────────────────────────── am507-permission-0-1 ─

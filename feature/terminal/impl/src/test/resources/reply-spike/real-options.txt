@@ -1,0 +1,20 @@
+❯ Zapytaj narzędziem pytań o wybór.
+
+⏺ Calling 1 tool…
+────────────────────────────────────────────────────────────────────────────────
+ ☐ Wybór
+
+Którą opcję wybierasz: alfa, beta czy gamma?
+
+❯ 1. alfa
+     Wybierz opcję alfa.
+  2. beta
+     Wybierz opcję beta.
+  3. gamma
+     Wybierz opcję gamma.
+  4. Type something.
+────────────────────────────────────────────────────────────────────────────────
+  5. Chat about this
+
+Enter to select · ↑/↓ to navigate · Esc to cancel
+─────────────────────────────────────────────────────── am507-options-0-1 ─

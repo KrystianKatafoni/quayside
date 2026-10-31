@@ -2,6 +2,7 @@ package dev.quayside.terminal.impl.replyspike
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.PosixFilePermissions
 import kotlin.random.Random
 
 private const val MAX_SUFFIX = 1_000_000
@@ -86,6 +87,27 @@ internal fun sessionName(
     random: Random,
 ): String = "am507-${kind.name.lowercase()}-$n${if (race) "-race" else ""}-${random.nextInt(0, MAX_SUFFIX)}"
 
-/** Fresh directory `am507*` under [parent] (default: the per-user temp dir); the JDK gives it owner-only rights. */
-internal fun newWorkRoot(parent: Path = Path.of(System.getProperty("java.io.tmpdir"))): Path =
-    Files.createTempDirectory(parent, "am507")
+/** Environment variable that overrides [defaultWorkParent]. */
+internal const val WORK_PARENT_ENV = "QUAYSIDE_SPIKE_WORK"
+
+/**
+ * Parent of the trial directories: `$QUAYSIDE_SPIKE_WORK` or `~/quayside-spike-work`. It is not under the temp dir,
+ * because `claude --bg` refuses untrusted workspaces: the human trusts this one directory once. Created with
+ * owner-only rights when missing.
+ */
+internal fun defaultWorkParent(
+    env: Map<String, String> = System.getenv(),
+    home: Path = Path.of(System.getProperty("user.home")),
+): Path {
+    val parent = env[WORK_PARENT_ENV]?.takeIf { it.isNotBlank() }?.let(Path::of) ?: home.resolve("quayside-spike-work")
+    if (!Files.exists(parent)) {
+        Files.createDirectories(
+            parent,
+            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")),
+        )
+    }
+    return parent
+}
+
+/** Fresh directory `am507*` under [parent]; the JDK gives it owner-only rights. */
+internal fun newWorkRoot(parent: Path = defaultWorkParent()): Path = Files.createTempDirectory(parent, "am507")

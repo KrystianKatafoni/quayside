@@ -48,4 +48,18 @@ class FakeTerminalApiTest {
 
             api.commands shouldBe listOf(command)
         }
+
+    @Test
+    fun `shellDirs records the dirs of shells in order and not of commands`() =
+        runTest {
+            val other =
+                java.nio.file.Files
+                    .createDirectory(dir.resolve("other"))
+
+            api.openShell(dir)
+            api.openCommand(ShellCommand(listOf("claude"), dir))
+            api.openShell(other)
+
+            api.shellDirs shouldBe listOf(dir, other)
+        }
 }

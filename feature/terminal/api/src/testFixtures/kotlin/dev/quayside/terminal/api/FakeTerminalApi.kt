@@ -31,8 +31,15 @@ public class FakeTerminalApi : TerminalApi {
     public val commands: List<ShellCommand> get() = ranCommands.toList()
 
     private val ranCommands = CopyOnWriteArrayList<ShellCommand>()
+    private val dirs = CopyOnWriteArrayList<Path>()
 
-    override suspend fun openShell(dir: Path): Outcome<TerminalSession, TerminalError> = open(dir)
+    /** Directories passed to [openShell], in order, recorded when the call starts (failed opens included). */
+    public val shellDirs: List<Path> get() = dirs.toList()
+
+    override suspend fun openShell(dir: Path): Outcome<TerminalSession, TerminalError> {
+        dirs.add(dir)
+        return open(dir)
+    }
 
     override suspend fun openCommand(command: ShellCommand): Outcome<TerminalSession, TerminalError> =
         open(command.workDir).also { if (it is Outcome.Ok) ranCommands += command }

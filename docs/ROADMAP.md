@@ -66,7 +66,7 @@
 - [x] AM-504 · Szukanie w scrollbacku (⌘F, wielkość liter, regex) · moduły: terminal:* · zależy: AM-503 · wymagania: FR-T3 · issue: —
 - [x] AM-505 · Skrót ⏎: attach wybranej sesji w terminalu (komenda palety i skrót) · moduły: mission-control:ui, app · zależy: AM-503, AM-409 · wymagania: FR-K2 (część) · issue: —
 - [x] AM-506 · Skrót r: attach wybranej sesji w karcie terminala z fokusem na odpowiedzi (ADR 0013) · moduły: mission-control:ui, app · zależy: AM-503, AM-505, AM-411 · wymagania: FR-K2 (część) · issue: —
-- [~] AM-507 · Spike: odpowiedź przez ukryty attach w PTY (pytanie tekstowe, opcje, zgoda), fallback Agent SDK (ADR 0013) · moduły: terminal:impl · zależy: AM-502 · wymagania: FR-S5 · issue: #1
+- [x] AM-507 · Spike: odpowiedź przez ukryty attach w PTY (pytanie tekstowe, opcje, zgoda), fallback Agent SDK (ADR 0013) · moduły: terminal:impl · zależy: AM-502 · wymagania: FR-S5 · issue: #1
 - [ ] AM-508 · Ustawienia terminala: powłoka, katalog startowy, font i rozmiar, scrollback, ligatury, Option jako Meta (zapis i zastosowanie) · moduły: terminal:*, core:storage, app · zależy: AM-503 · wymagania: FR-T7 (bez dzwonka) · issue: #2
 - [ ] AM-509 · Dzwonek terminala → powiadomienie · moduły: terminal:impl, notifications:impl, app · zależy: AM-508, AM-701 · wymagania: FR-T7 (dzwonek) · issue: #3
 - [x] AM-510 · Karty attach: fokus istniejącej karty sesji i kropka stanu · moduły: terminal:ui, app · zależy: AM-505 · wymagania: FR-T2, FR-K2 (część) · issue: —

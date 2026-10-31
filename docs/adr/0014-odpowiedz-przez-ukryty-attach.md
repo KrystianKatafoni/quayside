@@ -1,6 +1,6 @@
 # ADR 0014: Odpowiedź przez ukryty attach w PTY
 
-- **Status:** proponowana (szkic ze spike'a AM-507; wyniki i decyzję dopisze PR `docs/AM-507-wyniki`, status zmienia człowiek)
+- **Status:** przyjęta (wyniki spike'a AM-507 scalone w PR #34; zaakceptował człowiek 2026-10-31)
 - **Data:** 2026-10-20
 - **Dotyczy:** `feature:terminal:impl` (spike), później `sessions`, `mission-control`, `notifications` (AM-702)
 

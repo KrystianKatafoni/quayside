@@ -14,23 +14,41 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
-/** Stop, Respawn, Remove and "Podgląd" buttons of the details panel, then the "in progress" text or the failure. */
+/** One thing the user can do with the selected session; the details panel and the row menu draw the same list. */
+internal data class SessionControl(
+    val id: String,
+    val labelKey: String,
+    val event: MissionControlEvent,
+)
+
+/** "Attach" and "Odpowiedz" (AM-511) when they apply now. */
+internal fun SessionDetails.openControls(): List<SessionControl> =
+    listOfNotNull(
+        SessionControl("attach", "action.attach", MissionControlEvent.Attach).takeIf { canAttach },
+        SessionControl("reply", "action.reply", MissionControlEvent.Reply).takeIf { canReply },
+    )
+
+/** Everything the row menu offers: [openControls], then [otherControls]. */
+internal fun SessionDetails.allControls(): List<SessionControl> = openControls() + otherControls()
+
+/** Stop, Respawn and Remove when they apply now, then the always available "Podgląd". */
+internal fun SessionDetails.otherControls(): List<SessionControl> =
+    SessionAction.entries.filter { it in actions }.map {
+        SessionControl(it.name.lowercase(), "action.${it.name.lowercase()}", MissionControlEvent.Run(it))
+    } + SessionControl("preview", "action.preview", MissionControlEvent.TogglePreview)
+
+/** Attach and reply buttons, then stop, respawn, remove and "Podgląd", then the "in progress" text or the failure. */
 @Composable
 internal fun SessionActionsView(
     details: SessionDetails,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-        SessionAction.entries.filter { it in details.actions }.forEach { action ->
-            ActionButton(
-                tagOf(action),
-                "action.${action.name.lowercase()}",
-            ) { onEvent(MissionControlEvent.Run(action)) }
+    listOf(details.openControls(), details.otherControls()).filter { it.isNotEmpty() }.forEach { controls ->
+        Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
+            controls.forEach { control ->
+                ActionButton(MissionControlTags.details(control.id), control.labelKey) { onEvent(control.event) }
+            }
         }
-        ActionButton(
-            MissionControlTags.DETAILS_PREVIEW,
-            "action.preview",
-        ) { onEvent(MissionControlEvent.TogglePreview) }
     }
     details.busy?.let {
         Box(Modifier.testTag(MissionControlTags.DETAILS_BUSY)) {
@@ -63,10 +81,3 @@ private fun ActionButton(
         Label(MissionControlStrings[labelKey])
     }
 }
-
-private fun tagOf(action: SessionAction): String =
-    when (action) {
-        SessionAction.STOP -> MissionControlTags.DETAILS_STOP
-        SessionAction.RESPAWN -> MissionControlTags.DETAILS_RESPAWN
-        SessionAction.REMOVE -> MissionControlTags.DETAILS_REMOVE
-    }

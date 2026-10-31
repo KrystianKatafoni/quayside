@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,8 +18,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
@@ -29,31 +34,42 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.quayside.core.domain.SessionId
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
  * The centre of the window: header, filter, session list, details panel and mode bar; stateless apart from
- * [controller].
+ * [controller]. [onAttach] and [onReply] open the selected session in the terminal (`⏎`, `r`); the buttons, the row
+ * menu and a double click on a row call them (AM-511). They do nothing by default.
  */
 @Composable
 public fun MissionControl(
     controller: MissionControlController,
     modifier: Modifier = Modifier,
+    onAttach: () -> Unit = {},
+    onReply: () -> Unit = {},
 ) {
     val state by controller.state.collectAsState()
+    val onEvent: (MissionControlEvent) -> Unit = { event ->
+        when (event) {
+            MissionControlEvent.Attach -> onAttach()
+            MissionControlEvent.Reply -> onReply()
+            else -> controller.onEvent(event)
+        }
+    }
     Column(modifier = modifier.fillMaxSize().background(color = Colors.background).testTag(MissionControlTags.ROOT)) {
         Box(modifier = Modifier.weight(weight = 1f).fillMaxWidth()) {
             when (val screen = state.screen) {
                 Screen.NoProjects -> Empty("empty.noProjects", "empty.noProjects.hint")
                 Screen.NoSelection -> Empty("empty.noSelection", hint = null)
-                is Screen.Project -> ProjectPage(screen, state.preview, controller::onEvent)
-                is Screen.Global -> GlobalPage(screen, state.preview, controller::onEvent)
+                is Screen.Project -> ProjectPage(screen, state.preview, onEvent)
+                is Screen.Global -> GlobalPage(screen, state.preview, onEvent)
             }
         }
         ModeBarView(state.modeBar)
     }
-    state.dialog?.let { SessionDialogView(it, controller::onEvent) }
+    state.dialog?.let { SessionDialogView(it, onEvent) }
 }
 
 @Composable
@@ -108,13 +124,35 @@ internal fun SessionPage(
                 Text(UiText("list.loading"), tag = MissionControlTags.LOADING)
             } else {
                 val listWeight = if (preview == null) 1f else LIST_SHARE
-                Column(modifier = Modifier.weight(weight = listWeight).verticalScroll(rememberScrollState())) {
-                    rows.forEach { row -> SessionRowView(row) { onEvent(MissionControlEvent.SelectSession(row.id)) } }
-                }
+                SessionRows(rows, details, onEvent, Modifier.weight(weight = listWeight))
             }
             preview?.let { SessionPreviewView(it, onEvent, Modifier.weight(weight = 1f - LIST_SHARE)) }
         }
         Details(details, onEvent)
+    }
+}
+
+/**
+ * The scrolling list of rows. The row menu is open for at most one row, the one it was opened on; another selection
+ * (j/k, a click elsewhere) closes it for good.
+ */
+@Composable
+private fun SessionRows(
+    rows: List<SessionRow>,
+    details: SessionDetails?,
+    onEvent: (MissionControlEvent) -> Unit,
+    modifier: Modifier,
+) {
+    var menuFor by remember { mutableStateOf<SessionId?>(value = null) }
+    val selectedId = rows.firstOrNull { it.selected }?.id
+    LaunchedEffect(selectedId) { if (menuFor != selectedId) menuFor = null }
+    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
+        rows.forEach { row ->
+            val controls = details?.takeIf { row.selected && it.id == row.id }?.let(SessionDetails::allControls)
+            val menu =
+                RowMenu(controls.orEmpty(), open = menuFor == row.id) { open -> menuFor = if (open) row.id else null }
+            SessionRowView(row, menu, onEvent)
+        }
     }
 }
 
@@ -153,38 +191,58 @@ private fun Filters(
 /**
  * A row never takes focus: a focused `clickable` handles `space` and Enter as a click and consumes them before the
  * window shortcuts (`space` preview, later `⏎` attach) see them. A click requests focus anyway, and an unfocusable
- * node hands it to its first focusable child, so the children (only texts here) must not be focusable either.
+ * node hands it to its first focusable child, so the children (the texts and the "⋯" button) must not be focusable
+ * either. A click selects at once (no wait for a double click); a double click also attaches, a right click and
+ * "⋯" select and open the [menu] (AM-511).
  */
 @Composable
 private fun SessionRowView(
     row: SessionRow,
-    onClick: () -> Unit,
+    menu: RowMenu,
+    onEvent: (MissionControlEvent) -> Unit,
 ) {
+    val select = { onEvent(MissionControlEvent.SelectSession(row.id)) }
+    val rowMenu =
+        RowMenu(menu.controls, menu.open) { open ->
+            if (open) select()
+            menu.setOpen(open)
+        }
+    val attach = {
+        select()
+        onEvent(MissionControlEvent.Attach)
+    }
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .testTag(MissionControlTags.row(row.id))
                 .focusProperties { canFocus = false }
-                .clickable(onClick = onClick)
+                .onRowMouse(row.id, onSecondary = { rowMenu.setOpen(true) }, onDouble = attach)
+                .clickable(onClick = select)
                 .background(color = if (row.selected) Colors.selection else Color.Transparent),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
-        Box(
-            Modifier
-                .size(
-                    width = 3.dp,
-                    height = 28.dp,
-                ).background(if (row.selected) Colors.accent else Color.Transparent),
-        )
-        Label(row.glyph.symbol, Colors.of(row.glyph.tone))
-        Label(row.name, mono = true)
-        row.project?.let { Label(MissionControlStrings.format(it), Colors.secondary) }
-        Box(modifier = Modifier.weight(weight = 1f)) { Label(row.summary.orEmpty(), Colors.secondary) }
-        Label(MissionControlStrings.format(row.lastEvent), Colors.secondary)
-        Label(MissionControlStrings.format(row.age), Colors.secondary)
+        RowCells(row)
+        RowMenuButton(MissionControlTags.rowMenuButton(row.id), rowMenu, onEvent)
     }
+}
+
+@Composable
+private fun RowScope.RowCells(row: SessionRow) {
+    Box(
+        Modifier
+            .size(
+                width = 3.dp,
+                height = 28.dp,
+            ).background(if (row.selected) Colors.accent else Color.Transparent),
+    )
+    Label(row.glyph.symbol, Colors.of(row.glyph.tone))
+    Label(row.name, mono = true)
+    row.project?.let { Label(MissionControlStrings.format(it), Colors.secondary) }
+    Box(modifier = Modifier.weight(weight = 1f)) { Label(row.summary.orEmpty(), Colors.secondary) }
+    Label(MissionControlStrings.format(row.lastEvent), Colors.secondary)
+    Label(MissionControlStrings.format(row.age), Colors.secondary)
 }
 
 @Composable
@@ -235,10 +293,12 @@ private fun Field(
 
 /**
  * `NORMAL`, the selected project (none in a global view), the counters of every project and the freshness of the
- * snapshot.
+ * snapshot; at the end the "Skróty" toggle of the cheat sheet, which opens above the bar (closed at start).
  */
 @Composable
 private fun ModeBarView(bar: ModeBar) {
+    var shortcuts by remember { mutableStateOf(value = false) }
+    if (shortcuts) ShortcutsPanel()
     Row(
         modifier =
             Modifier
@@ -254,7 +314,10 @@ private fun ModeBarView(bar: ModeBar) {
         bar.project?.let { Label(it) }
         Label(MissionControlStrings.formatted("modeBar.waiting", bar.waiting), Colors.of(Tone.WARN))
         Label(MissionControlStrings.formatted("modeBar.working", bar.working), Colors.of(Tone.WORK))
-        Label(MissionControlStrings.format(bar.freshness), Colors.secondary)
+        Box(modifier = Modifier.weight(weight = 1f)) {
+            Label(MissionControlStrings.format(bar.freshness), Colors.secondary)
+        }
+        ShortcutsToggle(shortcuts) { shortcuts = !shortcuts }
     }
 }
 

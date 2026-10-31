@@ -67,14 +67,14 @@ public class MissionControlController(
         ) { snapshot, list, picked, at, (acting, shown) ->
             MissionControlReducer
                 .reduce(snapshot, list, picked, at, zone)
-                .withActions(snapshot, picked, acting)
+                .withActions(snapshot, picked, acting, list)
                 .copy(preview = shown)
         }.stateIn(
             scope,
             SharingStarted.Eagerly,
             MissionControlReducer
                 .reduce(monitor.snapshot.value, projects.projects.value, selection.value, now.value, zone)
-                .withActions(monitor.snapshot.value, selection.value, ui.value)
+                .withActions(monitor.snapshot.value, selection.value, ui.value, projects.projects.value)
                 .copy(preview = preview.shown.value),
         )
 
@@ -211,11 +211,19 @@ public class MissionControlController(
     internal fun onEvent(event: MissionControlEvent) {
         when (event) {
             is MissionControlEvent.SelectFilter -> selection.update { it.withFilter(event.filter) }
+
             is MissionControlEvent.SelectSession -> selection.update { it.copy(session = event.id) }
+
             is MissionControlEvent.Run -> if (event.action == SessionAction.REMOVE) askToRemove() else run(event.action)
+
             MissionControlEvent.TogglePreview -> togglePreview()
+
             MissionControlEvent.ConfirmRemove -> confirmRemove()
+
             MissionControlEvent.Dismiss -> ui.update { it.copy(dialog = null) }
+
+            // Opening a terminal tab is `app`'s job: MissionControl routes these to its callbacks (AM-511).
+            MissionControlEvent.Attach, MissionControlEvent.Reply -> Unit
         }
     }
 }

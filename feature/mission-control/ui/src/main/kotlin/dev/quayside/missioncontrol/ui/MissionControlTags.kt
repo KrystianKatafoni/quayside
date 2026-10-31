@@ -24,6 +24,20 @@ internal object MissionControlTags {
     const val PREVIEW_CLOSE = "missionControl.preview.close"
     const val DETAILS_PREVIEW = "missionControl.details.preview"
     const val MODE_BAR = "missionControl.modeBar"
+    const val DETAILS_ATTACH = "missionControl.details.attach"
+    const val DETAILS_REPLY = "missionControl.details.reply"
+    const val ROW_MENU = "missionControl.rowMenu"
+    const val SHORTCUTS_TOGGLE = "missionControl.shortcuts.toggle"
+    const val SHORTCUTS = "missionControl.shortcuts"
+
+    /** The button of the control [id] (`attach`, `reply`, `stop`, `respawn`, `remove`, `preview`) in the panel. */
+    fun details(id: String): String = "missionControl.details.$id"
+
+    /** The item of the control [id] in the open row menu. */
+    fun menuItem(id: String): String = "missionControl.rowMenu.$id"
+
+    /** The "⋯" button of the row of session [id]; clicking it opens the row menu. */
+    fun rowMenuButton(id: SessionId): String = "missionControl.rowMenuButton.${id.value}"
 
     /** The filter button of [filter]. */
     fun filter(filter: SessionFilter): String = "missionControl.filter.${filter.name.lowercase()}"

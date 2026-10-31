@@ -1,6 +1,7 @@
 package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
@@ -56,13 +57,17 @@ internal fun MissionControlUiState.withActions(
     snapshot: SessionsSnapshot,
     selection: Selection,
     acting: ActionUi,
+    projects: List<Project>,
 ): MissionControlUiState {
     val withDialog = copy(dialog = acting.dialog)
     val details = screen.details()
     val target = SessionActions.target(snapshot.sessions, selection)
     if (details == null || target == null) return withDialog
+    val attach = SessionAttach.targetOf(target, projects, acting.dialog != null)
     val shown =
         details.copy(
+            canAttach = attach != null,
+            canReply = attach?.waiting == true,
             actions = SessionActions.available(target.state, busy = acting.busy != null || acting.dialog != null),
             busy = acting.busy?.takeIf { it.first == details.id }?.second,
             failure = acting.failure?.takeIf { it.id == details.id },

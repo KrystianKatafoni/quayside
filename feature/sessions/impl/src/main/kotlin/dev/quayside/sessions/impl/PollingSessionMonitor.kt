@@ -1,5 +1,6 @@
 package dev.quayside.sessions.impl
 
+import dev.quayside.agentruntime.api.AgentEventSource
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
@@ -40,6 +41,7 @@ internal class PollingSessionMonitor(
     private val schedule: PollSchedule,
     private val logger: Logger,
     private val reader: RecentOutputReader,
+    private val hooks: AgentEventSource,
 ) : SessionMonitor {
     private val wakeups = Channel<Unit>(Channel.CONFLATED)
 
@@ -50,9 +52,10 @@ internal class PollingSessionMonitor(
     override suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError> = reader.read(id)
 
     /**
-     * Starts the project watcher and the loop; both stop when [scope] is cancelled. The watcher starts
-     * undispatched, so its subscription and the baseline skipped by `drop(1)` are set before the loop can
-     * list; a change right after [start] is never lost, also on a multi-threaded dispatcher.
+     * Starts the project watcher, the hook collector and the loop; all stop when [scope] is cancelled. The
+     * watcher and the collector start undispatched, so their subscriptions and the baseline skipped by
+     * `drop(1)` are set before the loop can list; a change right after [start] is never lost, also on a
+     * multi-threaded dispatcher.
      */
     fun start(scope: CoroutineScope) {
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
@@ -62,6 +65,7 @@ internal class PollingSessionMonitor(
                 .drop(1)
                 .collect { wakeups.trySend(Unit) }
         }
+        scope.launch(start = CoroutineStart.UNDISPATCHED) { hooks.events.collect { state.onHook(it) } }
         scope.launch { poll() }
     }
 

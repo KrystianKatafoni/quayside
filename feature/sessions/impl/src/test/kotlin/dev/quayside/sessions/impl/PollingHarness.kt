@@ -2,6 +2,7 @@
 
 package dev.quayside.sessions.impl
 
+import dev.quayside.agentruntime.api.FakeAgentEventSource
 import dev.quayside.agentruntime.api.FakeAgentRuntime
 import dev.quayside.agentruntime.api.RuntimePhase
 import dev.quayside.agentruntime.api.RuntimeSession
@@ -41,6 +42,7 @@ internal class PollingHarness(
     private val api: SessionsApi =
         sessionsModule(
             runtime = runtime,
+            hooks = FakeAgentEventSource(),
             projects = projects,
             scope = scope.backgroundScope,
             clock = scope.virtualClock(),

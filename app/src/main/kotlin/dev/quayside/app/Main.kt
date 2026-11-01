@@ -7,6 +7,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.impl.agentRuntimeModule
+import dev.quayside.agentruntime.impl.hookEventSourceModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
@@ -39,7 +40,8 @@ fun main() {
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
     // Lives as long as the app, not the window (AM-405 risks).
     val sessionsScope = CoroutineScope(SupervisorJob() + core.dispatchers.io)
-    val sessions = sessionsModule(runtime, projects, sessionsScope, core.clock, core.logger)
+    val hooks = hookEventSourceModule(core.process, core.clock, core.logger, sessionsScope, core.homeDir)
+    val sessions = sessionsModule(runtime, hooks, projects, sessionsScope, core.clock, core.logger)
     // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
     val commandsScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
     val registry = commandPaletteModule(commandsScope, core.logger)

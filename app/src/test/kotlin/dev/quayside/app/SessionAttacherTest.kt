@@ -303,4 +303,57 @@ class SessionAttacherTest {
             terminals.fake.sessions
                 .map { it.isClosed } shouldBe listOf(true, false)
         }
+
+    private fun TestScope.knownSessions() = sessions(SessionState.Working).snapshot.value.sessions
+
+    @Test
+    fun `a popup attach opens claude attach of the session in its project group`() =
+        runTest {
+            val parts = parts()
+
+            parts.attacher.attachSession(SessionId("s1"), knownSessions(), listOf(project))
+            runCurrent()
+
+            terminals.fake.commands shouldBe listOf(attachCommand(SessionId("s1")))
+            parts.terminal.menu.value.hasTabs shouldBe true
+        }
+
+    @Test
+    fun `a popup attach of a session that is gone opens nothing`() =
+        runTest {
+            val parts = parts()
+
+            parts.attacher.attachSession(SessionId("gone"), knownSessions(), listOf(project))
+            runCurrent()
+
+            terminals.fake.commands.shouldBeEmpty()
+            parts.terminal.menu.value.hasTabs shouldBe false
+        }
+
+    @Test
+    fun `a popup attach of a session outside the registered projects opens nothing`() =
+        runTest {
+            val parts = parts()
+
+            parts.attacher.attachSession(SessionId("s1"), knownSessions(), emptyList())
+            runCurrent()
+
+            terminals.fake.commands.shouldBeEmpty()
+            parts.terminal.menu.value.hasTabs shouldBe false
+        }
+
+    @Test
+    fun `a popup attach logs the session id only`() =
+        runTest {
+            val parts = parts()
+
+            parts.attacher.attachSession(SessionId("s1"), knownSessions(), listOf(project))
+            runCurrent()
+
+            log.entries.map { it.level to it.message } shouldBe listOf(LogLevel.INFO to "popup attach")
+            log.entries.map { it.fields } shouldBe listOf(mapOf("sessionId" to "s1"))
+            val logged = log.entries.joinToString { "${it.message} ${it.fields} ${it.cause}" }
+            logged shouldNotContain secretName
+            logged shouldNotContain "Quayside"
+        }
 }

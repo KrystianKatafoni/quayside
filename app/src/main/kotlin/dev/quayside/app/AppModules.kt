@@ -19,6 +19,7 @@ internal class AppModules(
     val inspector: ProjectInspector,
     val registry: CommandRegistry,
     val terminal: TerminalDeps,
+    val notifications: NotificationDeps,
 )
 
 /**

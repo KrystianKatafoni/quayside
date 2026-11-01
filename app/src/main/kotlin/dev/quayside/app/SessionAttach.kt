@@ -12,8 +12,10 @@ import dev.quayside.core.domain.info
 import dev.quayside.missioncontrol.ui.AttachTarget
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.SessionActionsState
+import dev.quayside.projects.api.Project
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsMenuState
+import dev.quayside.sessions.api.Session
 import dev.quayside.terminal.ui.TerminalController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -77,6 +79,20 @@ internal class SessionAttacher(
     fun replySelected() {
         val target = missionControl.attachTarget()?.takeIf { it.waiting } ?: return
         open(target, "session reply")
+    }
+
+    /**
+     * Shows the attach tab of [id] chosen on a popup (AM-702): looks the session up in [sessions] and its project in
+     * [projects]; no-op for a session that is gone or outside the registered projects.
+     */
+    fun attachSession(
+        id: SessionId,
+        sessions: List<Session>,
+        projects: List<Project>,
+    ) {
+        val session = sessions.firstOrNull { it.id == id } ?: return
+        val project = projects.firstOrNull { it.id == session.project } ?: return
+        open(AttachTarget(id, session.name, project, session.state.isWaiting), "popup attach")
     }
 
     private fun open(

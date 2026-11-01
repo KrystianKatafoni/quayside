@@ -12,8 +12,8 @@ import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
 import dev.quayside.notifications.api.NotificationSettingsRepo
-import dev.quayside.notifications.impl.notificationCenterModule
 import dev.quayside.notifications.impl.notificationSettingsModule
+import dev.quayside.notifications.ui.PopupWindow
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.impl.projectInspectorModule
 import dev.quayside.projects.impl.projectsModule
@@ -40,25 +40,15 @@ fun main() {
     System.setProperty("apple.awt.fileDialogForDirectories", "true")
     val core = productionCoreDeps()
     core.logger.info("app start")
-    val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir, injectHookToken = true)
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
-    val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
-    // Lives as long as the app, not the window (AM-405 risks).
-    val sessionsScope = CoroutineScope(SupervisorJob() + core.dispatchers.io)
-    val sessions = sessionsDeps(core, runtime, projects, sessionsScope)
-    // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
-    val commandsScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
-    val registry = commandPaletteModule(commandsScope, core.logger)
-    val shell = LoginShellProcessRunner.defaultShell()
-    val terminal = terminalDeps(core, shell, runtime, runBlocking { storedSettings(core) })
-    val modules = AppModules(projects, sessions, inspector, registry, terminal)
+    val modules = appModules(core, projects, runBlocking { storedSettings(core) })
     val keys = WindowKeys()
     // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
     System.setProperty("compose.interop.blending", "true")
     application {
         Window(
             onCloseRequest = {
-                terminal.api.close()
+                modules.terminal.api.close()
                 exitApplication()
             },
             onKeyEvent = keys::onKeyEvent,
@@ -67,7 +57,25 @@ fun main() {
         ) {
             MainWindow(core, modules, keys)
         }
+        PopupWindow(modules.notifications.popups)
     }
+}
+
+/** The module graph of the window over the already read [projects] and [stored] settings. */
+private fun appModules(
+    core: CoreDeps,
+    projects: ProjectsApi,
+    stored: StoredSettings,
+): AppModules {
+    val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir, injectHookToken = true)
+    val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
+    // Lives as long as the app, not the window (AM-405 risks).
+    val sessions = sessionsDeps(core, runtime, projects, CoroutineScope(SupervisorJob() + core.dispatchers.io))
+    // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
+    val registry = commandPaletteModule(CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger)
+    val notifications = notificationDeps(core, stored.notifications, sessions, projects)
+    val terminal = terminalDeps(core, LoginShellProcessRunner.defaultShell(), runtime, stored.terminal, notifications)
+    return AppModules(projects, sessions, inspector, registry, terminal, notifications)
 }
 
 /** The sessions module fed by the hook server (AM-601, AM-603); both live in [scope], as long as the app. */
@@ -93,21 +101,18 @@ private suspend fun storedSettings(core: CoreDeps): StoredSettings =
         notificationSettingsModule(core.storage, core.logger),
     )
 
-/**
- * The terminal module on [shell] over the stored settings. Its bells become notifications in a scope that lives as
- * long as the app (AM-509).
- */
+/** The terminal module on [shell] over the stored settings. Its bells become notifications of [notifications]. */
 private fun terminalDeps(
     core: CoreDeps,
     shell: Path,
     runtime: AgentRuntime,
-    stored: StoredSettings,
+    stored: TerminalSettingsRepo,
+    notifications: NotificationDeps,
 ): TerminalDeps {
-    val api = startTerminals(core, shell, stored.terminal.settings)
+    val api = startTerminals(core, shell, stored.settings)
     val scope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
-    val center = notificationCenterModule(stored.notifications, scope, core.clock)
-    forwardBells(api.bells, stored.terminal.settings, center, scope)
-    return TerminalDeps(api, stored.terminal, shell, runtime::attachCommand)
+    forwardBells(api.bells, stored.settings, notifications.center, scope)
+    return TerminalDeps(api, stored, shell, runtime::attachCommand)
 }
 
 /**

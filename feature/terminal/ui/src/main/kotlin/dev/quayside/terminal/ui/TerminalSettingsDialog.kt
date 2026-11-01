@@ -179,6 +179,9 @@ private fun ToggleRows(
     ToggleSetting(TerminalTags.SETTINGS_OPTION_AS_META, "settings.optionAsMeta", draft.optionAsMeta) { on ->
         controller.edit { it.copy(optionAsMeta = on) }
     }
+    ToggleSetting(TerminalTags.SETTINGS_BELL, "settings.bellNotification", draft.bellNotification) { on ->
+        controller.edit { it.copy(bellNotification = on) }
+    }
 }
 
 private fun SettingsDialogState.invalidAt(field: TerminalSettingsField): TerminalSettingsField? =

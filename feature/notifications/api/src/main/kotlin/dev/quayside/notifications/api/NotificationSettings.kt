@@ -19,6 +19,9 @@ public enum class NotificationKind {
 
     /** The session has been working for longer than [NotificationSettings.runningLongMinutes]. */
     RUNNING_LONG,
+
+    /** A terminal rang its bell (FR-T7, AM-509). */
+    TERMINAL_BELL,
 }
 
 /** How a notification reaches the user (FR-N1). */
@@ -78,7 +81,7 @@ public data class NotificationSettings(
         public fun defaultChannels(kind: NotificationKind): Set<NotificationChannel> =
             when (kind) {
                 NotificationKind.NEEDS_INPUT, NotificationKind.PERMISSION, NotificationKind.FAILED -> ALL
-                NotificationKind.TURN_ENDED -> setOf(NotificationChannel.POPUP)
+                NotificationKind.TURN_ENDED, NotificationKind.TERMINAL_BELL -> setOf(NotificationChannel.POPUP)
                 NotificationKind.PULL_REQUEST -> setOf(NotificationChannel.POPUP, NotificationChannel.DOCK_BADGE)
                 NotificationKind.RUNNING_LONG -> setOf(NotificationChannel.VOICE)
             }

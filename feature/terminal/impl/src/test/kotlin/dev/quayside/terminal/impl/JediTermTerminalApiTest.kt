@@ -13,7 +13,9 @@ import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -105,6 +107,24 @@ class JediTermTerminalApiTest {
 
             first.historyLines() shouldBeLessThanOrEqual SMALL
             second.historyLines() shouldBeGreaterThan SMALL
+        }
+
+    @Test
+    @Suppress("InjectDispatcher") // Real time and real dispatchers on purpose: the PTY tests wait for real processes.
+    fun `a bell in a terminal reaches the bells flow with its id`() =
+        runTest {
+            val session = kit.openShell()
+
+            val ringing =
+                withContext(Dispatchers.Default) {
+                    // Collecting starts before the bell: the flow has no replay.
+                    val bell =
+                        async(start = CoroutineStart.UNDISPATCHED) { withTimeout(5.seconds) { kit.api.bells.first() } }
+                    session.send("printf '\\a'\r")
+                    bell.await()
+                }
+
+            ringing shouldBe session.id
         }
 
     private suspend fun TerminalTestKit.openShell(): TerminalSession =

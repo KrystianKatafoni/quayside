@@ -3,6 +3,7 @@ package dev.quayside.notifications.impl
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionState
 import kotlin.time.Duration.Companion.minutes
@@ -21,10 +22,21 @@ internal fun decide(
     settings: NotificationSettings,
 ): List<Delivery> {
     val kind = kindOf(event, settings) ?: return emptyList()
-    return NotificationChannel.entries
-        .filter { it in settings.channelsFor(kind) && globallyOn(it, settings) }
-        .map { Delivery(it, kind, event.session) }
+    return deliveriesOf(kind, event.session, settings)
 }
+
+/** The deliveries of a terminal bell (FR-T7): the channels chosen for [NotificationKind.TERMINAL_BELL]. */
+internal fun decideTerminalBell(settings: NotificationSettings): List<Delivery> =
+    deliveriesOf(NotificationKind.TERMINAL_BELL, null, settings)
+
+private fun deliveriesOf(
+    kind: NotificationKind,
+    session: Session?,
+    settings: NotificationSettings,
+): List<Delivery> =
+    NotificationChannel.entries
+        .filter { it in settings.channelsFor(kind) && globallyOn(it, settings) }
+        .map { Delivery(it, kind, session) }
 
 private fun kindOf(
     event: SessionEvent,

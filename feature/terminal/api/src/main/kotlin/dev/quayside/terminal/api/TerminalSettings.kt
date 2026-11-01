@@ -11,6 +11,8 @@ public enum class StartDirectory { SESSION_WORKTREE, PROJECT, HOME }
  *
  * @property fontFamily null: the terminal's default monospace font.
  * @property optionAsMeta Option sends Escape (Meta); also blocks Option characters such as `ą`.
+ * @property bellNotification a bell in a terminal ([TerminalApi.bells]) becomes a notification (FR-T7, AM-509);
+ *   read when the bell rings, so it applies to open tabs too.
  */
 public data class TerminalSettings(
     val shell: ShellProfile = ShellProfile.LOGIN_DEFAULT,
@@ -20,6 +22,7 @@ public data class TerminalSettings(
     val scrollbackLines: Int = 100_000,
     val ligatures: Boolean = true,
     val optionAsMeta: Boolean = false,
+    val bellNotification: Boolean = true,
 )
 
 /** The settings field that failed validation. */

@@ -55,6 +55,7 @@ class TerminalSettingsIntegrationTest {
             scrollbackLines = 50_000,
             ligatures = false,
             optionAsMeta = true,
+            bellNotification = false,
         )
 
     @Test
@@ -117,6 +118,7 @@ class TerminalSettingsIntegrationTest {
                                     "scrollbackLines" to JsonPrimitive(100_000),
                                     "ligatures" to JsonPrimitive(true),
                                     "optionAsMeta" to JsonPrimitive(false),
+                                    "bellNotification" to JsonPrimitive(true),
                                 ),
                             ),
                     ),

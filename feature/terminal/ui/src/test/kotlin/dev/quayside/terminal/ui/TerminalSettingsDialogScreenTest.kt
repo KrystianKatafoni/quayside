@@ -37,6 +37,7 @@ private val TAB_ORDER =
         TerminalTags.SETTINGS_SCROLLBACK,
         TerminalTags.SETTINGS_LIGATURES,
         TerminalTags.SETTINGS_OPTION_AS_META,
+        TerminalTags.SETTINGS_BELL,
         TerminalTags.SETTINGS_SAVE,
         TerminalTags.SETTINGS_CANCEL,
     )

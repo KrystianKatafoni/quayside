@@ -14,7 +14,11 @@ import dev.quayside.terminal.api.TerminalId
 import dev.quayside.terminal.api.TerminalSession
 import dev.quayside.terminal.api.TerminalSettings
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.awt.GraphicsEnvironment
@@ -45,6 +49,10 @@ internal class JediTermTerminalApi(
     private val sessions = ConcurrentHashMap<TerminalId, JediTermSession>()
     private val closed = AtomicBoolean(false)
     private val counter = AtomicLong()
+    private val bellFlow =
+        MutableSharedFlow<TerminalId>(extraBufferCapacity = BELL_BUFFER, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    override val bells: SharedFlow<TerminalId> = bellFlow.asSharedFlow()
 
     override suspend fun openShell(dir: Path): Outcome<TerminalSession, TerminalError> {
         val settings = launch.settings.value
@@ -119,6 +127,7 @@ internal class JediTermTerminalApi(
             widget.setTtyConnector(connector)
             widget.start()
             val id = TerminalId("t-${counter.incrementAndGet()}")
+            widget.highlighting?.onBell = { bellFlow.tryEmit(id) }
             JediTermSession(id, connector, widget, context) { sessions.remove(it) }
         }
 
@@ -160,4 +169,8 @@ internal class JediTermTerminalApi(
             TerminalError.StartFailed -> "startFailed"
             TerminalError.Closed -> "closed"
         }
+
+    private companion object {
+        const val BELL_BUFFER = 16
+    }
 }

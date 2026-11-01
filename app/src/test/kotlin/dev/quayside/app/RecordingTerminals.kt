@@ -24,6 +24,8 @@ internal class RecordingTerminals(
     val fake: FakeTerminalApi = FakeTerminalApi(),
     private val settings: StateFlow<TerminalSettings>? = null,
 ) : TerminalApi {
+    override val bells get() = fake.bells
+
     private val dirs = CopyOnWriteArrayList<Path>()
     private val opened = CopyOnWriteArrayList<TerminalSettings>()
 

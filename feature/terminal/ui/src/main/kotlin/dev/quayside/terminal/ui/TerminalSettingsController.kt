@@ -27,6 +27,7 @@ public data class SettingsDraft(
     val scrollbackLines: String,
     val ligatures: Boolean,
     val optionAsMeta: Boolean,
+    val bellNotification: Boolean,
 )
 
 /**
@@ -121,6 +122,7 @@ private fun draftOf(settings: TerminalSettings): SettingsDraft =
         scrollbackLines = settings.scrollbackLines.toString(),
         ligatures = settings.ligatures,
         optionAsMeta = settings.optionAsMeta,
+        bellNotification = settings.bellNotification,
     )
 
 /**
@@ -136,6 +138,7 @@ private fun settingsOf(draft: SettingsDraft): TerminalSettings =
         scrollbackLines = draft.scrollbackLines.trim().toIntOrNull() ?: NOT_A_NUMBER,
         ligatures = draft.ligatures,
         optionAsMeta = draft.optionAsMeta,
+        bellNotification = draft.bellNotification,
     )
 
 private const val NOT_A_NUMBER: Int = Int.MIN_VALUE

@@ -11,6 +11,9 @@ import dev.quayside.agentruntime.impl.hookEventSourceModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
+import dev.quayside.notifications.api.NotificationSettingsRepo
+import dev.quayside.notifications.impl.notificationCenterModule
+import dev.quayside.notifications.impl.notificationSettingsModule
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.impl.projectInspectorModule
 import dev.quayside.projects.impl.projectsModule
@@ -47,7 +50,7 @@ fun main() {
     val commandsScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
     val registry = commandPaletteModule(commandsScope, core.logger)
     val shell = LoginShellProcessRunner.defaultShell()
-    val terminal = terminalDeps(core, shell, runtime, runBlocking { terminalSettingsModule(core.storage, core.logger) })
+    val terminal = terminalDeps(core, shell, runtime, runBlocking { storedSettings(core) })
     val modules = AppModules(projects, sessions, inspector, registry, terminal)
     val keys = WindowKeys()
     // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
@@ -78,15 +81,37 @@ private fun sessionsDeps(
     return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger)
 }
 
-/** The terminal module on [shell] over [repo] (read in `main`, before the window opens, like the project list). */
+/** The settings files read in `main` before the window opens, like the project list. */
+private class StoredSettings(
+    val terminal: TerminalSettingsRepo,
+    val notifications: NotificationSettingsRepo,
+)
+
+private suspend fun storedSettings(core: CoreDeps): StoredSettings =
+    StoredSettings(
+        terminalSettingsModule(core.storage, core.logger),
+        notificationSettingsModule(core.storage, core.logger),
+    )
+
+/**
+ * The terminal module on [shell] over the stored settings. Its bells become notifications in a scope that lives as
+ * long as the app (AM-509).
+ */
 private fun terminalDeps(
     core: CoreDeps,
     shell: Path,
     runtime: AgentRuntime,
-    repo: TerminalSettingsRepo,
+    stored: StoredSettings,
 ): TerminalDeps {
-    val api = startTerminals(core, shell, repo.settings)
-    return TerminalDeps(api, repo, shell, runtime::attachCommand)
+    val api = startTerminals(core, shell, stored.terminal.settings)
+    val center = notificationCenterModule(stored.notifications)
+    forwardBells(
+        api.bells,
+        stored.terminal.settings,
+        center,
+        CoroutineScope(SupervisorJob() + core.dispatchers.default),
+    )
+    return TerminalDeps(api, stored.terminal, shell, runtime::attachCommand)
 }
 
 /**

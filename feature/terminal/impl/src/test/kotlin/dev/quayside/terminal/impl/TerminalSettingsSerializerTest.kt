@@ -57,6 +57,7 @@ class TerminalSettingsSerializerTest {
                     "scrollbackLines" to JsonPrimitive(100_000),
                     "ligatures" to JsonPrimitive(true),
                     "optionAsMeta" to JsonPrimitive(false),
+                    "bellNotification" to JsonPrimitive(true),
                 ),
             )
     }
@@ -72,6 +73,7 @@ class TerminalSettingsSerializerTest {
                 scrollbackLines = 2_000,
                 ligatures = false,
                 optionAsMeta = true,
+                bellNotification = false,
             )
 
         decode(Json.encodeToString(TerminalSettingsSerializer, custom)) shouldBe custom
@@ -87,6 +89,7 @@ class TerminalSettingsSerializerTest {
                 scrollbackLines = 20_000,
                 ligatures = false,
                 optionAsMeta = true,
+                bellNotification = false,
             )
 
         @JvmStatic
@@ -96,7 +99,7 @@ class TerminalSettingsSerializerTest {
                 arguments(
                     "full object",
                     """{"shell":"BASH","startDirectory":"PROJECT","fontFamily":"Menlo","fontSize":16,
-                        "scrollbackLines":20000,"ligatures":false,"optionAsMeta":true}""",
+                        "scrollbackLines":20000,"ligatures":false,"optionAsMeta":true,"bellNotification":false}""",
                     full,
                 ),
                 arguments("empty object gives the defaults", "{}", TerminalSettings()),

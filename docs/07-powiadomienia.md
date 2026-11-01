@@ -14,6 +14,7 @@ Powiadomienia mają jeden cel: gdy agent czeka, użytkownik ma się o tym dowied
 | `✕` Błąd sesji | `StopFailure` | ✓ | ✓ | ✓ | ✓ |
 | `#` Pull request gotowy do review | status PR z `agents --json` | ✓ | – | – | ✓ |
 | `~` Pracuje dłużej niż N min (domyślnie 30) | reguła aplikacji | – | ✓ | – | – |
+| `🔔` Dzwonek terminala (BEL) | terminal; przełącznik w ustawieniach terminala | ✓ | – | – | – |
 
 Globalne przełączniki: popupy, głos, **Nie przeszkadzać** w godzinach (domyślnie 22:00–07:00), respektowanie trybu Skupienia macOS.
 

@@ -40,6 +40,7 @@ internal object TerminalSettingsSerializer : KSerializer<TerminalSettings> {
                 put("scrollbackLines", value.scrollbackLines)
                 put("ligatures", value.ligatures)
                 put("optionAsMeta", value.optionAsMeta)
+                put("bellNotification", value.bellNotification)
             },
         )
     }
@@ -56,6 +57,7 @@ internal object TerminalSettingsSerializer : KSerializer<TerminalSettings> {
             scrollbackLines = obj.int("scrollbackLines", TerminalSettingsRules.SCROLLBACK_LINES, d.scrollbackLines),
             ligatures = obj.flag("ligatures", d.ligatures),
             optionAsMeta = obj.flag("optionAsMeta", d.optionAsMeta),
+            bellNotification = obj.flag("bellNotification", d.bellNotification),
         )
     }
 

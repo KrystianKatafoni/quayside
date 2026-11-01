@@ -45,6 +45,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 - Karty attach: ⏎, `r` i komenda palety pokazują istniejącą kartę attach sesji i dają jej fokus zamiast otwierać drugą kartę i drugi proces `claude attach`; karta po zakończonym procesie attach jest zastępowana w tym samym miejscu; kropka stanu sesji przy karcie attach (kolory jak w Mission Control).
 - Obsługa myszą w Mission Control (AM-511, ADR 0015): przyciski „Attach” i „Odpowiedz” w panelu szczegółów, menu wiersza sesji (prawy klik albo „⋯”: attach, odpowiedz, podgląd, zatrzymaj, respawn, usuń z listy), dwuklik na wierszu = attach i zwijana ściągawka skrótów („Skróty” w pasku statusu).
 - Serwer hooków w `feature:agent-runtime:impl` (Ktor CIO, `127.0.0.1`, token `X-AM-Token` z Keychain przez `security`): hooki `Notification`, `Stop`, `StopFailure` i `SessionEnd` trafiają do `AgentEventSource` (fabryka `hookEventSourceModule`, ADR 0017).
+- Instalator hooków w `feature:agent-runtime:impl` (AM-602, NFR-5): `hookInstallerModule` dopisuje nasze handlery HTTP do `~/.claude/settings.json` albo `.claude/settings.local.json` projektu, zawsze po kopii zapasowej, usuwa tylko nasze handlery albo przywraca kopię; obcych ustawień i hooków nie rusza.
 
 ### Changed
 

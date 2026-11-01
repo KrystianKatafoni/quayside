@@ -19,6 +19,9 @@ internal object WindowTags {
     const val PREVIEW_TEXT = "missionControl.preview.text"
     const val PREVIEW_CLOSE = "missionControl.preview.close"
     const val DETAILS_PREVIEW = "missionControl.details.preview"
+    const val DETAILS_ATTACH = "missionControl.details.attach"
+    const val DETAILS_REPLY = "missionControl.details.reply"
+    const val ROW_MENU_ATTACH = "missionControl.rowMenu.attach"
     const val SIDEBAR = "projects.sidebar"
     const val ADD_BUTTON = "projects.add"
     const val MODE_BAR = "missionControl.modeBar"
@@ -61,4 +64,6 @@ internal object WindowTags {
     fun view(name: String): String = "missionControl.view.$name"
 
     fun missionRow(sessionId: String): String = "missionControl.row.$sessionId"
+
+    fun missionRowMenuButton(sessionId: String): String = "missionControl.rowMenuButton.$sessionId"
 }

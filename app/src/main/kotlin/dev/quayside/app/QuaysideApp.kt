@@ -24,15 +24,18 @@ import kotlinx.coroutines.flow.filterNotNull
  * AM-405, AM-407). A shown global view clears the project in the sidebar (AM-407, decision 1).
  *
  * [terminalPanel], when given, draws the terminal under Mission Control; it gets the size to take and draws nothing
- * while there are no tabs and no error (AM-503).
+ * while there are no tabs and no error (AM-503). [attacher], when given, serves the mouse paths to the terminal:
+ * the Attach and Odpowiedz buttons, the row menu and a double click (AM-511); it is the one `⏎` and `r` use.
  */
 @Composable
+@Suppress("LongParameterList") // the sidebar, centre, palette and the two terminal parts of one window (AM-511)
 internal fun QuaysideApp(
     projects: ProjectsController,
     missionControl: MissionControlController,
     palette: CommandPaletteController,
     modifier: Modifier = Modifier,
     terminalPanel: (@Composable (Modifier) -> Unit)? = null,
+    attacher: SessionAttacher? = null,
 ) {
     LaunchedEffect(projects, missionControl) {
         missionControl.view.filterNotNull().collect { projects.onIntent(ProjectsIntent.ClearSelection) }
@@ -43,7 +46,12 @@ internal fun QuaysideApp(
             GlobalViews(missionControl)
         }
         Column(modifier = Modifier.weight(weight = 1f)) {
-            MissionControl(missionControl, Modifier.weight(weight = 1f).fillMaxWidth())
+            MissionControl(
+                missionControl,
+                Modifier.weight(weight = 1f).fillMaxWidth(),
+                onAttach = { attacher?.attachSelected() },
+                onReply = { attacher?.replySelected() },
+            )
             terminalPanel?.invoke(Modifier.fillMaxWidth().height(TERMINAL_HEIGHT))
         }
         CommandPalette(palette)

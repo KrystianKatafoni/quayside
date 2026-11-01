@@ -45,6 +45,12 @@ internal sealed interface MissionControlEvent {
     data class Run(
         val action: SessionAction,
     ) : MissionControlEvent
+
+    /** "Attach" in the details panel or the row menu, or a double click on a row (AM-511); `app` handles it. */
+    data object Attach : MissionControlEvent
+
+    /** "Odpowiedz" in the details panel or the row menu (AM-511); `app` handles it. */
+    data object Reply : MissionControlEvent
 }
 
 /** What the user picked: the project (from the sidebar), the filter and the session. */
@@ -130,7 +136,11 @@ internal data class SessionRow(
     val project: UiText? = null,
 )
 
-/** FR-S8, only the fields `sessions:api` has. [worktree] is the session cwd. */
+/**
+ * FR-S8, only the fields `sessions:api` has. [worktree] is the session cwd.
+ * @property canAttach `⏎` and the "Attach" controls apply ([SessionActionsState.canAttach]).
+ * @property canReply [canAttach] and the session waits for the user ([SessionActionsState.canReply]).
+ */
 internal data class SessionDetails(
     val id: SessionId,
     val name: String,
@@ -142,6 +152,8 @@ internal data class SessionDetails(
     val actions: Set<SessionAction> = emptySet(),
     val busy: SessionAction? = null,
     val failure: Failure? = null,
+    val canAttach: Boolean = false,
+    val canReply: Boolean = false,
 )
 
 /** @property waiting @property working counted over the sessions of every project. */

@@ -37,7 +37,7 @@ internal class WindowControllers(
     /** ⌘ keys of a focused terminal, bridged to the palette and the shortcuts. */
     val terminalKeys = TerminalKeys(modules.registry, palette, scope)
 
-    private val attacher = SessionAttacher(missionControl, terminal, modules.terminal.attachCommand, core.logger)
+    val attacher = SessionAttacher(missionControl, terminal, modules.terminal.attachCommand, core.logger)
 
     init {
         terminal.followSessions(modules.sessions.monitor.snapshot, scope)

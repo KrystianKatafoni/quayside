@@ -78,11 +78,9 @@ internal fun ComposeUiTest.showWindow(
         val palette = remember { CommandPaletteController(registry, scope, NoOpLogger).also { built += it } }
         remember { registry.register(AppCommands(projects, controller, missionControl, palette, scope)) }
         val shellStart = remember { shellStartOf(terminalSettings, missionControl, sessions) }
+        val wiring = remember { TerminalWiring(projects, sessions, controller, missionControl, scope) }
         val terminalController =
-            rememberTerminal(terminal, scope, shellStart) {
-                TerminalWiring(projects, sessions, controller, missionControl, scope)
-                    .register(registry, it, attachCommand)
-            }
+            rememberTerminal(terminal, scope, shellStart) { wiring.register(registry, it, attachCommand) }
         PaletteKeys(keys, palette)
         KeysBox(keys) {
             QuaysideApp(
@@ -90,6 +88,7 @@ internal fun ComposeUiTest.showWindow(
                 missionControl = missionControl,
                 palette = palette,
                 terminalPanel = terminalPanel(terminalController, terminal),
+                attacher = wiring.attacher,
             )
             SettingsDialogHost(terminalSettings, registry, WindowParts(controller, missionControl, scope))
         }
@@ -141,6 +140,10 @@ private class TerminalWiring(
     private val missionControl: MissionControlController,
     private val scope: CoroutineScope,
 ) {
+    /** The attacher of the registered terminal, which the mouse paths of `QuaysideApp` use; null without one. */
+    var attacher: SessionAttacher? = null
+        private set
+
     fun register(
         registry: FakeCommandRegistry,
         terminal: TerminalController,
@@ -148,8 +151,9 @@ private class TerminalWiring(
     ) {
         terminal.followSessions(sessions.snapshot, scope)
         registry.register(TerminalCommands(projects, controller, missionControl, terminal, scope))
-        val attacher = SessionAttacher(missionControl, terminal, attachCommand, NoOpLogger)
-        registry.register(AttachCommands(controller, missionControl, attacher, scope))
+        val created = SessionAttacher(missionControl, terminal, attachCommand, NoOpLogger)
+        attacher = created
+        registry.register(AttachCommands(controller, missionControl, created, scope))
     }
 }
 

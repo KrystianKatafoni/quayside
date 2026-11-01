@@ -14,23 +14,18 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
-/** Stop, Respawn, Remove and "Podgląd" buttons of the details panel, then the "in progress" text or the failure. */
+/** Attach and reply buttons, then stop, respawn, remove and "Podgląd", then the "in progress" text or the failure. */
 @Composable
 internal fun SessionActionsView(
     details: SessionDetails,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-        SessionAction.entries.filter { it in details.actions }.forEach { action ->
-            ActionButton(
-                tagOf(action),
-                "action.${action.name.lowercase()}",
-            ) { onEvent(MissionControlEvent.Run(action)) }
+    listOf(details.openControls(), details.otherControls()).filter { it.isNotEmpty() }.forEach { controls ->
+        Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
+            controls.forEach { control ->
+                ActionButton(MissionControlTags.details(control.id), control.labelKey) { onEvent(control.event) }
+            }
         }
-        ActionButton(
-            MissionControlTags.DETAILS_PREVIEW,
-            "action.preview",
-        ) { onEvent(MissionControlEvent.TogglePreview) }
     }
     details.busy?.let {
         Box(Modifier.testTag(MissionControlTags.DETAILS_BUSY)) {
@@ -63,10 +58,3 @@ private fun ActionButton(
         Label(MissionControlStrings[labelKey])
     }
 }
-
-private fun tagOf(action: SessionAction): String =
-    when (action) {
-        SessionAction.STOP -> MissionControlTags.DETAILS_STOP
-        SessionAction.RESPAWN -> MissionControlTags.DETAILS_RESPAWN
-        SessionAction.REMOVE -> MissionControlTags.DETAILS_REMOVE
-    }

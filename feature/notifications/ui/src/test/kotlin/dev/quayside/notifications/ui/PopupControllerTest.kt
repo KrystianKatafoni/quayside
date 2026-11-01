@@ -24,7 +24,8 @@ class PopupControllerTest {
     fun `starts empty with the default position and style`() =
         runTest {
             val controller = PopupController(center, repo, backgroundScope)
-            controller.state.value.popups.shouldBeEmpty()
+            controller.state.value.popups
+                .shouldBeEmpty()
             controller.state.value.position shouldBe PopupPosition.BOTTOM_RIGHT
             controller.state.value.style shouldBe PopupStyle.DETAILED
         }
@@ -35,7 +36,8 @@ class PopupControllerTest {
             val controller = PopupController(center, repo, backgroundScope)
             center.show(aPopup("a"), aPopup("b"))
             advanceUntilIdle()
-            controller.state.value.popups.map { it.id.value } shouldBe listOf("a", "b")
+            controller.state.value.popups
+                .map { it.id.value } shouldBe listOf("a", "b")
         }
 
     @Test

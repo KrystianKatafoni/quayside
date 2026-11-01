@@ -32,6 +32,8 @@ dependencies {
     // Terminal bells become notifications (AM-509).
     implementation(project(":feature:notifications:api"))
     implementation(project(":feature:notifications:impl"))
+    // The popup window and its Attach action (AM-702).
+    implementation(project(":feature:notifications:ui"))
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.slf4j.api)
     runtimeOnly(libs.slf4j.simple)

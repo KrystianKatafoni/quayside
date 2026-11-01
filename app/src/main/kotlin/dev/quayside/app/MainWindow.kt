@@ -10,6 +10,8 @@ import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.terminal.ui.TerminalArea
 import dev.quayside.terminal.ui.TerminalSettingsDialog
+import kotlinx.coroutines.launch
+import java.awt.Frame
 
 /** The content and menu of the main window; its controllers live as long as the window (AM-408). */
 @Composable
@@ -33,6 +35,30 @@ internal fun FrameWindowScope.MainWindow(
         attacher = controllers.attacher,
     )
     TerminalSettingsDialog(controllers.terminalSettings)
+    PopupAttachHandler(modules, controllers.attacher)
+}
+
+/**
+ * Makes the Attach action of a popup open the session's terminal tab and bring this window to the front while the
+ * window is shown. Runs on the window scope (Main), because the popup action comes from a background scope.
+ */
+@Composable
+private fun FrameWindowScope.PopupAttachHandler(
+    modules: AppModules,
+    attacher: SessionAttacher,
+) {
+    val scope = rememberCoroutineScope()
+    DisposableEffect(Unit) {
+        modules.notifications.attach.handler = { id ->
+            scope.launch {
+                val sessions = modules.sessions.monitor.snapshot.value.sessions
+                attacher.attachSession(id, sessions, modules.projects.projects.value)
+                window.extendedState = Frame.NORMAL
+                window.toFront()
+            }
+        }
+        onDispose { modules.notifications.attach.handler = null }
+    }
 }
 
 /** Registers the command [providers] and routes the window keys to [palette] while the window is shown. */

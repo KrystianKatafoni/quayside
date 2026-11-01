@@ -11,6 +11,7 @@
 - `[ ]` do zrobienia, `[~]` w toku (otwarty PR), `[x]` scalone do `main`.
 - Agent bierze **pierwszy** wpis `[ ]`, którego wszystkie zależności są `[x]`.
 - Zmiana zakresu = PR zmieniający ten plik, z uzasadnieniem w opisie.
+- Pomysły bez konceptu, jeszcze poza zakresem: [IDEAS.md](IDEAS.md).
 
 ## M0 · Fundament repozytorium
 

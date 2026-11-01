@@ -121,6 +121,26 @@ class NotificationPolicyTest {
         channels(event, settings.copy(runningLongMinutes = 11)).shouldBeEmpty()
     }
 
+    @Test
+    fun `a terminal bell delivers on the popup by default and belongs to no session`() {
+        val deliveries = decideTerminalBell(settings)
+
+        deliveries.map { it.channel } shouldContainExactly listOf(POPUP)
+        deliveries.forEach {
+            it.kind shouldBe NotificationKind.TERMINAL_BELL
+            it.session shouldBe null
+        }
+    }
+
+    @Test
+    fun `a terminal bell follows the matrix and the popup switch`() {
+        val loud = settings.withChannel(NotificationKind.TERMINAL_BELL, SOUND, true)
+
+        decideTerminalBell(loud).map { it.channel } shouldContainExactly listOf(POPUP, SOUND)
+        decideTerminalBell(loud.copy(popups = false)).map { it.channel } shouldContainExactly listOf(SOUND)
+        decideTerminalBell(settings.copy(matrix = mapOf(NotificationKind.TERMINAL_BELL to emptySet()))).shouldBeEmpty()
+    }
+
     companion object {
         @JvmStatic
         @Suppress("LongMethod")

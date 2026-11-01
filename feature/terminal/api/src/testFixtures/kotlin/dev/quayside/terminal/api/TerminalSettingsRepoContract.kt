@@ -19,6 +19,7 @@ public abstract class TerminalSettingsRepoContract {
 
             repo.settings.value shouldBe TerminalSettings()
             repo.settings.value.optionAsMeta shouldBe false
+            repo.settings.value.bellNotification shouldBe true
             repo.issue.value shouldBe null
         }
 

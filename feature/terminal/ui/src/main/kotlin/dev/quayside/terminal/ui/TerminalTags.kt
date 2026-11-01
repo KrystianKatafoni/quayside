@@ -36,6 +36,7 @@ internal object TerminalTags {
     const val SETTINGS_SCROLLBACK = "terminal.settings.scrollback"
     const val SETTINGS_LIGATURES = "terminal.settings.ligatures"
     const val SETTINGS_OPTION_AS_META = "terminal.settings.optionAsMeta"
+    const val SETTINGS_BELL = "terminal.settings.bellNotification"
     const val SETTINGS_SAVE = "terminal.settings.save"
     const val SETTINGS_CANCEL = "terminal.settings.cancel"
 

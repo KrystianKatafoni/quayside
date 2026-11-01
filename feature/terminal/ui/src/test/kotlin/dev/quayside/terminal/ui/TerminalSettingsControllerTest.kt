@@ -33,6 +33,7 @@ class TerminalSettingsControllerTest {
             scrollbackLines = 5_000,
             ligatures = false,
             optionAsMeta = true,
+            bellNotification = false,
         )
 
     private fun TestScope.controllerOver(repo: TerminalSettingsRepo) = TerminalSettingsController(repo, backgroundScope)
@@ -62,6 +63,7 @@ class TerminalSettingsControllerTest {
                     scrollbackLines = "5000",
                     ligatures = false,
                     optionAsMeta = true,
+                    bellNotification = false,
                 )
             state?.invalid.shouldBeNull()
             state?.storageFailed shouldBe false
@@ -92,6 +94,19 @@ class TerminalSettingsControllerTest {
             controller.state.value.shouldBeNull()
             repo.saves shouldBe 1
             repo.settings.value shouldBe saved.copy(fontSize = 20, fontFamily = null, shell = ShellProfile.ZSH)
+        }
+
+    @Test
+    fun `FR-T7 bell notification can be switched off and saved`() =
+        runTest {
+            val repo = FakeTerminalSettingsRepo(saved.copy(bellNotification = true))
+            val controller = controllerOver(repo)
+            act { controller.open() }
+
+            act { controller.edit { it.copy(bellNotification = false) } }
+            act { controller.save() }
+
+            repo.settings.value.bellNotification shouldBe false
         }
 
     @ParameterizedTest(name = "{0}")

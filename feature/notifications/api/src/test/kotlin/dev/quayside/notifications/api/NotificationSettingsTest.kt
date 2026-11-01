@@ -19,6 +19,7 @@ class NotificationSettingsTest {
         s.channelsFor(NotificationKind.PULL_REQUEST) shouldBe
             setOf(NotificationChannel.POPUP, NotificationChannel.DOCK_BADGE)
         s.channelsFor(NotificationKind.RUNNING_LONG) shouldBe setOf(NotificationChannel.VOICE)
+        s.channelsFor(NotificationKind.TERMINAL_BELL) shouldBe setOf(NotificationChannel.POPUP)
         s.runningLongMinutes shouldBe 30
     }
 

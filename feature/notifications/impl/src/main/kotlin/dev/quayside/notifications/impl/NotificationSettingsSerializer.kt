@@ -40,6 +40,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
             NotificationKind.FAILED to "failed",
             NotificationKind.PULL_REQUEST to "pullRequest",
             NotificationKind.RUNNING_LONG to "runningLong",
+            NotificationKind.TERMINAL_BELL to "terminalBell",
         )
     private val CHANNELS =
         mapOf(

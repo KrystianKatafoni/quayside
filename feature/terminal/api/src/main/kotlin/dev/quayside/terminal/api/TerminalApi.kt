@@ -2,6 +2,7 @@ package dev.quayside.terminal.api
 
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ShellCommand
+import kotlinx.coroutines.flow.SharedFlow
 import java.nio.file.Path
 
 /**
@@ -10,6 +11,13 @@ import java.nio.file.Path
  * opens fail with [TerminalError.Closed]; `app` calls it on exit (also from a shutdown hook). Idempotent.
  */
 public interface TerminalApi : AutoCloseable {
+    /**
+     * The terminal that rang its bell (BEL, `\u0007`, outside an escape sequence), once per bell (AM-509). Hot, no
+     * replay: a bell with no collector is lost, and a collector that falls behind loses the oldest bells. Emitted
+     * from a terminal's own thread; collect it on any dispatcher.
+     */
+    public val bells: SharedFlow<TerminalId>
+
     /** Starts the user's login shell (`<shell> -l`) in [dir], e.g. the project or its worktree. */
     public suspend fun openShell(dir: Path): Outcome<TerminalSession, TerminalError>
 

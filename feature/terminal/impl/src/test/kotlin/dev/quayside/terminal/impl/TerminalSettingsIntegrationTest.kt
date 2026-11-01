@@ -55,6 +55,7 @@ class TerminalSettingsIntegrationTest {
             scrollbackLines = 50_000,
             ligatures = false,
             optionAsMeta = true,
+            bellNotification = false,
         )
 
     @Test

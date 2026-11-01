@@ -109,6 +109,8 @@ internal fun key(
 internal class ScriptedTerminalApi(
     val fake: FakeTerminalApi = FakeTerminalApi(),
 ) : TerminalApi {
+    override val bells get() = fake.bells
+
     val shellDirs = mutableListOf<Path>()
 
     @Volatile var failWith: TerminalError? = null

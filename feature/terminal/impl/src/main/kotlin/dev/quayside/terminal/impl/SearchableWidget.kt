@@ -68,6 +68,18 @@ internal class HighlightingPanel(
     private var shownHits: List<SearchMatch> = emptyList()
     private var shownSelected: SearchMatch? = null
 
+    /**
+     * Called for every bell of the terminal (AM-509), on the emulator thread; set once after the widget is built,
+     * because the panel is created inside the super constructor.
+     */
+    @Volatile
+    var onBell: (() -> Unit)? = null
+
+    override fun beep() {
+        super.beep()
+        onBell?.invoke()
+    }
+
     override val hits: List<SearchMatch> get() = shownHits
     override val selected: SearchMatch? get() = shownSelected
 

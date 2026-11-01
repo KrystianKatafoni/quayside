@@ -29,6 +29,9 @@ dependencies {
     implementation(project(":feature:terminal:api"))
     implementation(project(":feature:terminal:impl"))
     implementation(project(":feature:terminal:ui"))
+    // Terminal bells become notifications (AM-509).
+    implementation(project(":feature:notifications:api"))
+    implementation(project(":feature:notifications:impl"))
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.slf4j.api)
     runtimeOnly(libs.slf4j.simple)
@@ -43,6 +46,8 @@ dependencies {
     testImplementation(testFixtures(project(":feature:command-palette:api")))
     // FakeTerminalApi behind the terminal panel in the window test (AM-503).
     testImplementation(testFixtures(project(":feature:terminal:api")))
+    // RecordingNotificationCenter for the bell forwarding (AM-509).
+    testImplementation(testFixtures(project(":feature:notifications:api")))
 }
 
 compose.desktop {

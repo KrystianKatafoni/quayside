@@ -3,8 +3,11 @@ package dev.quayside.terminal.api
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ShellCommand
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArrayList
@@ -23,6 +26,15 @@ public class FakeTerminalApi : TerminalApi {
 
     @Volatile
     private var closed = false
+
+    private val bellFlow = MutableSharedFlow<TerminalId>(extraBufferCapacity = BELL_BUFFER)
+
+    override val bells: SharedFlow<TerminalId> = bellFlow.asSharedFlow()
+
+    /** Simulates a bell in [session]; lost when nobody collects [bells], like the real one. */
+    public fun ringBell(session: FakeTerminalSession) {
+        bellFlow.tryEmit(session.id)
+    }
 
     /** Every session opened so far, in order (closed ones included). */
     public val sessions: List<FakeTerminalSession> get() = opened.toList()
@@ -64,6 +76,10 @@ public class FakeTerminalApi : TerminalApi {
     override fun close() {
         closed = true
         opened.forEach { it.close() }
+    }
+
+    private companion object {
+        const val BELL_BUFFER = 16
     }
 }
 

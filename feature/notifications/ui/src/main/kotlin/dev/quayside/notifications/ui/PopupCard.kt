@@ -65,7 +65,7 @@ private fun CollapsedBody(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PopupText(popup.summary(), PopupColors.text, 12, Modifier.weight(1f))
+        PopupText(popup.summary(), Small.copy(color = PopupColors.text), Modifier.weight(1f))
         PopupButton(PopupStrings["popup.close"], PopupTags.dismiss(popup.id)) {
             onAction(popup.id, PopupAction.DISMISS)
         }
@@ -79,10 +79,10 @@ private fun FullBody(
     onAction: (PopupId, PopupAction) -> Unit,
 ) {
     Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        PopupText(PopupStrings.title(popup.kind), PopupColors.text, 14, bold = true)
-        PopupText(popup.summary(), PopupColors.muted, 12)
+        PopupText(PopupStrings.title(popup.kind), Title)
+        PopupText(popup.summary(), Small.copy(color = PopupColors.muted))
         if (style == PopupStyle.DETAILED) {
-            PopupText(popup.detail.orEmpty(), PopupColors.text, 12, Modifier.weight(1f), maxLines = 2)
+            PopupText(popup.detail.orEmpty(), Small.copy(color = PopupColors.text), Modifier.weight(1f), maxLines = 2)
         }
         PopupButtons(popup, onAction)
     }
@@ -114,25 +114,21 @@ private fun PopupButton(
     tag: String,
     onClick: () -> Unit,
 ) {
-    PopupText(label, PopupColors.accent, 12, Modifier.clickable(onClick = onClick).testTag(tag), bold = true)
+    PopupText(label, Button, Modifier.clickable(onClick = onClick).testTag(tag))
 }
+
+private val Title = TextStyle(color = PopupColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+private val Small = TextStyle(fontSize = 12.sp)
+private val Button = TextStyle(color = PopupColors.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
 
 @Composable
 private fun PopupText(
     text: String,
-    color: Color,
-    size: Int,
+    style: TextStyle,
     modifier: Modifier = Modifier,
-    bold: Boolean = false,
     maxLines: Int = 1,
 ) {
-    BasicText(
-        text = text,
-        modifier = modifier,
-        style = TextStyle(color = color, fontSize = size.sp, fontWeight = if (bold) FontWeight.SemiBold else null),
-        maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis,
-    )
+    BasicText(text = text, modifier = modifier, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
 }
 
 /** "project · session" for the line under the title; just the title when both are unknown. */

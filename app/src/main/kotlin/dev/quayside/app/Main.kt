@@ -104,13 +104,9 @@ private fun terminalDeps(
     stored: StoredSettings,
 ): TerminalDeps {
     val api = startTerminals(core, shell, stored.terminal.settings)
-    val center = notificationCenterModule(stored.notifications)
-    forwardBells(
-        api.bells,
-        stored.terminal.settings,
-        center,
-        CoroutineScope(SupervisorJob() + core.dispatchers.default),
-    )
+    val scope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
+    val center = notificationCenterModule(stored.notifications, scope, core.clock)
+    forwardBells(api.bells, stored.terminal.settings, center, scope)
     return TerminalDeps(api, stored.terminal, shell, runtime::attachCommand)
 }
 

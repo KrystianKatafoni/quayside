@@ -3,6 +3,10 @@ package dev.quayside.notifications.impl
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.PopupDuration
+import dev.quayside.notifications.api.PopupPosition
+import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.notifications.api.PopupStyle
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
@@ -30,6 +34,29 @@ class NotificationSettingsSerializerTest {
             it.runningLongMinutes shouldBe 45
             NotificationKind.entries.forEach { kind -> it.channelsFor(kind) shouldBe settings.channelsFor(kind) }
         }
+    }
+
+    @Test
+    fun `popup settings survive a round trip`() {
+        val popup = PopupSettings(PopupPosition.TOP_LEFT, PopupDuration.ALWAYS_STAY, 5, PopupStyle.COMPACT)
+
+        val text = Json.encodeToString(NotificationSettingsSerializer, NotificationSettings(popup = popup))
+
+        decode(text).popup shouldBe popup
+    }
+
+    @Test
+    fun `unknown popup values fall back to the defaults and the count is clamped`() {
+        val settings =
+            decode("""{"popup": {"position": "moon", "duration": "x", "style": "y", "maxVisible": 99}}""")
+
+        settings.popup shouldBe PopupSettings(maxVisible = PopupSettings.MAX_VISIBLE_LIMIT)
+    }
+
+    @Test
+    fun `a popup entry of the wrong type is rejected`() {
+        shouldThrow<SerializationException> { decode("""{"popup": []}""") }
+        shouldThrow<SerializationException> { decode("""{"popup": {"position": 1}}""") }
     }
 
     @Test

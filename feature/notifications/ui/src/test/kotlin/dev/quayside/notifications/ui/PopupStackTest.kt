@@ -1,8 +1,6 @@
 package dev.quayside.notifications.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertDoesNotExist
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick

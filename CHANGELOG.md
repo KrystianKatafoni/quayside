@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Procesy `claude --bg` i `respawn` dostają `AM_HOOK_TOKEN` z Keychain, więc hooki HTTP przechodzą uwierzytelnienie serwera hooków (AM-605).
 - Dokumentacja koncepcyjna, plan wdrożenia i roadmapa.
 - Konfiguracja agenta Claude Code: CLAUDE.md, subagenci, skille, hooki i uprawnienia.
 - Automatyzacja GitHub: CI, `@claude`, review PR, cotygodniowy przegląd kompatybilności, wydania.

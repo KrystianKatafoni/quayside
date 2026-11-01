@@ -30,12 +30,14 @@ import kotlin.time.Duration
  * @property executable `claude` on the login-shell PATH, or an absolute path.
  * @property commandTimeout limit of `agents`, `logs`, `stop`, `respawn`, `rm` and of each health command.
  * @property startTimeout limit of `--bg`.
+ * @property hookTokens when set, `start` and `respawn` put its token in `AM_HOOK_TOKEN` (NFR-4, ADR 0004).
  */
 internal data class CliConfig(
     val homeDir: Path,
     val executable: String,
     val commandTimeout: Duration,
     val startTimeout: Duration,
+    val hookTokens: HookTokenStore? = null,
 )
 
 /** [AgentRuntime] over the `claude` CLI (Agent View, ADR 0002); see docs/plans/AM-203.md. */
@@ -55,8 +57,10 @@ internal class ClaudeCliAdapter(
     override suspend fun listSessions(under: Path?): Outcome<List<RuntimeSession>, RuntimeError> =
         list().map { sessions -> if (under == null) sessions else sessions.filter { it.isUnder(under) } }
 
-    override suspend fun start(spec: StartSpec): Outcome<SessionId, RuntimeError> =
-        process.exec(ClaudeCommands.start(exe, spec), spec.cwd, config.startTimeout).flatMap { result ->
+    override suspend fun start(spec: StartSpec): Outcome<SessionId, RuntimeError> {
+        val env = config.hookTokens.hookEnv(logger)
+        val argv = ClaudeCommands.start(exe, spec)
+        return process.exec(argv, spec.cwd, config.startTimeout, env = env).flatMap { result ->
             val id = BgOutput.sessionId(result.stdout)
             when {
                 !result.isSuccess -> Outcome.Err(commandFailed(result, secrets = listOf(spec.prompt)))
@@ -64,10 +68,12 @@ internal class ClaudeCliAdapter(
                 else -> Outcome.Ok(id).also { logger.debug("claude started", "sessionId" to id.value) }
             }
         }
+    }
 
     override suspend fun stop(id: SessionId): Outcome<Unit, RuntimeError> = byId("stop", id).map { }
 
-    override suspend fun respawn(id: SessionId): Outcome<Unit, RuntimeError> = byId("respawn", id).map { }
+    override suspend fun respawn(id: SessionId): Outcome<Unit, RuntimeError> =
+        byId("respawn", id, env = config.hookTokens.hookEnv(logger)).map { }
 
     override suspend fun remove(id: SessionId): Outcome<Unit, RuntimeError> =
         byId("rm", id).flatMap { result ->
@@ -110,6 +116,7 @@ internal class ClaudeCliAdapter(
         verb: String,
         id: SessionId,
         maxOutputBytes: Int = DEFAULT_MAX_BYTES,
+        env: Map<String, String> = emptyMap(),
     ): Outcome<ProcessResult, RuntimeError> {
         logger.debug("claude command", "verb" to verb, "sessionId" to id.value)
         val ran =
@@ -118,6 +125,7 @@ internal class ClaudeCliAdapter(
                 config.homeDir,
                 config.commandTimeout,
                 maxOutputBytes,
+                env,
             )
         val result = (ran as? Outcome.Ok)?.value
         return when {
@@ -141,8 +149,9 @@ internal suspend fun ProcessRunner.exec(
     workDir: Path,
     timeout: Duration,
     maxOutputBytes: Int = DEFAULT_MAX_BYTES,
+    env: Map<String, String> = emptyMap(),
 ): Outcome<ProcessResult, RuntimeError> =
-    run(ShellCommand(argv, workDir), RunOptions(timeout, maxOutputBytes)).mapError(::toRuntimeError)
+    run(ShellCommand(argv, workDir, env), RunOptions(timeout, maxOutputBytes)).mapError(::toRuntimeError)
 
 private fun toRuntimeError(error: ProcessError): RuntimeError =
     when (error) {

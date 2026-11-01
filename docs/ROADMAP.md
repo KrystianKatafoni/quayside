@@ -76,6 +76,7 @@
 
 - [~] AM-601 · KtorHookServer (127.0.0.1, token z Keychain) · moduły: agent-runtime:impl · zależy: AM-203 · wymagania: NFR-4 · issue: #4
 - [~] AM-602 · HookInstaller z backupem i odinstalowaniem · moduły: agent-runtime:impl · zależy: AM-601 · wymagania: NFR-5 · issue: #5
+- [~] AM-605 · Wstrzyknięcie `AM_HOOK_TOKEN` (token z Keychain) do środowiska `claude --bg` i `respawn` · moduły: agent-runtime:impl, app · zależy: AM-601, AM-602 · wymagania: NFR-4 · issue: —
 - [ ] AM-603 · Scalanie hooków z pollingiem w reducerze · moduły: sessions:impl · zależy: AM-601, AM-403 · wymagania: NFR-2 · issue: #6
 - [ ] AM-604 · Summarizer (last_assistant_message, opcjonalnie Haiku) · moduły: summaries:* · zależy: AM-603 · wymagania: FR-S7 · issue: #7
 

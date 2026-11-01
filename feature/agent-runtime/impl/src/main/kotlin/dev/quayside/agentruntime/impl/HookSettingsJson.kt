@@ -36,7 +36,7 @@ internal object HookSettingsJson {
             HookKind.SESSION_END to "SessionEnd",
         )
     private const val TOKEN_HEADER = "X-AM-Token"
-    private const val TOKEN_VARIABLE = "AM_HOOK_TOKEN"
+    private const val TOKEN_VARIABLE = HOOK_TOKEN_ENV
     private val PRETTY = Json { prettyPrint = true }
 
     /** Parses [text] to the root object; `Err` is a [SettingsProblem] category. */

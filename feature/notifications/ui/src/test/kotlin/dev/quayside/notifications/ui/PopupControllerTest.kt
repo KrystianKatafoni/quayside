@@ -10,7 +10,7 @@ import dev.quayside.notifications.api.RecordingNotificationCenter
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
@@ -35,7 +35,7 @@ class PopupControllerTest {
         runTest {
             val controller = PopupController(center, repo, backgroundScope)
             center.show(aPopup("a"), aPopup("b"))
-            advanceUntilIdle()
+            runCurrent()
             controller.state.value.popups
                 .map { it.id.value } shouldBe listOf("a", "b")
         }
@@ -47,7 +47,7 @@ class PopupControllerTest {
             repo.update {
                 it.copy(popup = PopupSettings(position = PopupPosition.TOP_LEFT, style = PopupStyle.COMPACT))
             }
-            advanceUntilIdle()
+            runCurrent()
             controller.state.value.position shouldBe PopupPosition.TOP_LEFT
             controller.state.value.style shouldBe PopupStyle.COMPACT
         }
@@ -57,7 +57,7 @@ class PopupControllerTest {
         runTest {
             val controller = PopupController(center, repo, backgroundScope)
             controller.onAction(PopupId("a"), PopupAction.MUTE)
-            advanceUntilIdle()
+            runCurrent()
             center.received shouldBe listOf(PopupId("a") to PopupAction.MUTE)
         }
 
@@ -67,7 +67,7 @@ class PopupControllerTest {
             val controller = PopupController(center, repo, backgroundScope)
             val before = controller.state.value
             repo.update { it.copy(voice = !it.voice) }
-            advanceUntilIdle()
+            runCurrent()
             controller.state.value shouldBe before
         }
 }

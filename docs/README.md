@@ -30,6 +30,7 @@ Aplikacja **nie uruchamia własnego orkiestratora**. Steruje oficjalnym supervis
 | [14-agent-claude-code.md](14-agent-claude-code.md) | Agent Claude Code budujący i utrzymujący aplikację: role, skille, hooki, uprawnienia, GitHub Actions |
 | [15-stan-projektu.md](15-stan-projektu.md) | Notatka przekazania: stan prac, gdzie i jak pracujemy, ustalenia o środowisku, pułapki |
 | [ROADMAP.md](ROADMAP.md) | Zadania AM-XXX z zależnościami i statusami, źródło prawdy dla agenta |
+| [IDEAS.md](IDEAS.md) | Backlog pomysłów bez konceptu (poza zakresem roadmapy) |
 | [compat.md](compat.md) | Zgodność z wersjami Claude Code i historia przeglądów |
 | [adr/](adr/) | Decyzje architektoniczne (ADR) |
 | [plans/](plans/) | Plany zadań tworzone przez agenta `architect` |

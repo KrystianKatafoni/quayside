@@ -49,7 +49,11 @@ internal fun notificationDeps(
             scope,
             core.clock,
             sessions.monitor.events,
-            { id -> projects.projects.value.firstOrNull { it.id == id }?.displayName },
+            { id ->
+                projects.projects.value
+                    .firstOrNull { it.id == id }
+                    ?.displayName
+            },
             attach::attach,
         )
     return NotificationDeps(center, PopupController(center, settings, scope), attach)

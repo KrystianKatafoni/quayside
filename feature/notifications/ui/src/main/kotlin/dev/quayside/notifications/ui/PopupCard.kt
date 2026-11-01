@@ -141,16 +141,23 @@ internal object PopupColors {
     val text = Color(0xFFE6E8EB)
     val muted = Color(0xFF9AA0A8)
     val accent = Color(0xFF6CB2FF)
+    private val amber = Color(0xFFF2B01E)
+    private val orange = Color(0xFFF2711E)
+    private val red = Color(0xFFE5484D)
+    private val green = Color(0xFF3FB950)
+    private val blue = Color(0xFF4C8DFF)
+    private val purple = Color(0xFFA371F7)
+    private val grey = Color(0xFF8B949E)
 
     /** The bar by kind: amber asks for input, orange for permission, red failed, green done, blue PR. */
     fun barOf(kind: NotificationKind): Color =
         when (kind) {
-            NotificationKind.NEEDS_INPUT -> Color(0xFFF2B01E)
-            NotificationKind.PERMISSION -> Color(0xFFF2711E)
-            NotificationKind.FAILED -> Color(0xFFE5484D)
-            NotificationKind.TURN_ENDED -> Color(0xFF3FB950)
-            NotificationKind.PULL_REQUEST -> Color(0xFF4C8DFF)
-            NotificationKind.RUNNING_LONG -> Color(0xFFA371F7)
-            NotificationKind.TERMINAL_BELL -> Color(0xFF8B949E)
+            NotificationKind.NEEDS_INPUT -> amber
+            NotificationKind.PERMISSION -> orange
+            NotificationKind.FAILED -> red
+            NotificationKind.TURN_ENDED -> green
+            NotificationKind.PULL_REQUEST -> blue
+            NotificationKind.RUNNING_LONG -> purple
+            NotificationKind.TERMINAL_BELL -> grey
         }
 }

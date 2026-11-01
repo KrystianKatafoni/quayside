@@ -7,11 +7,14 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.impl.agentRuntimeModule
+import dev.quayside.agentruntime.impl.hookEventSourceModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
+import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.impl.projectInspectorModule
 import dev.quayside.projects.impl.projectsModule
+import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.impl.sessionsModule
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalSettings
@@ -39,7 +42,7 @@ fun main() {
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
     // Lives as long as the app, not the window (AM-405 risks).
     val sessionsScope = CoroutineScope(SupervisorJob() + core.dispatchers.io)
-    val sessions = sessionsModule(runtime, projects, sessionsScope, core.clock, core.logger)
+    val sessions = sessionsDeps(core, runtime, projects, sessionsScope)
     // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
     val commandsScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
     val registry = commandPaletteModule(commandsScope, core.logger)
@@ -62,6 +65,17 @@ fun main() {
             MainWindow(core, modules, keys)
         }
     }
+}
+
+/** The sessions module fed by the hook server (AM-601, AM-603); both live in [scope], as long as the app. */
+private fun sessionsDeps(
+    core: CoreDeps,
+    runtime: AgentRuntime,
+    projects: ProjectsApi,
+    scope: CoroutineScope,
+): SessionsApi {
+    val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir)
+    return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger)
 }
 
 /** The terminal module on [shell] over [repo] (read in `main`, before the window opens, like the project list). */

@@ -2,6 +2,7 @@
 
 package dev.quayside.sessions.impl
 
+import dev.quayside.agentruntime.api.FakeAgentEventSource
 import dev.quayside.agentruntime.api.FakeAgentRuntime
 import dev.quayside.agentruntime.api.RuntimePhase
 import dev.quayside.agentruntime.api.RuntimeSession
@@ -28,10 +29,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /** What one test drives: the fakes behind the monitor and the monitor itself. */
+@Suppress("LongParameterList") // a bag of the test's collaborators, built in one place
 internal class MonitorWorld(
     val fake: FakeAgentRuntime,
     val runtime: SwitchableRuntime,
     val projects: FakeProjectsApi,
+    val hooks: FakeAgentEventSource,
     val logger: RecordingLogger,
     val monitor: SessionMonitor,
     private val scope: CoroutineScope,
@@ -63,12 +66,14 @@ internal fun TestScope.monitorWorld(
     val projects = FakeProjectsApi(listOf(Project(P1, P1_DIR, "p1")))
     val logger = RecordingLogger()
     val clock = virtualClock()
+    val hooks = FakeAgentEventSource()
     val monitor =
         if (pollInterval == null) {
-            sessionsModule(runtime, projects, scope, clock, logger).monitor
+            sessionsModule(runtime, hooks, projects, scope, clock, logger).monitor
         } else {
             sessionsModule(
                 runtime,
+                hooks,
                 projects,
                 scope,
                 clock,
@@ -77,7 +82,7 @@ internal fun TestScope.monitorWorld(
                 maxRetryInterval = 15.seconds,
             ).monitor
         }
-    return MonitorWorld(fake, runtime, projects, logger, monitor, scope)
+    return MonitorWorld(fake, runtime, projects, hooks, logger, monitor, scope)
 }
 
 /** Shared data of the monitor tests: project P1 at [P1_DIR] is registered, P2 is not. */

@@ -1,5 +1,6 @@
 package dev.quayside.sessions.impl
 
+import dev.quayside.agentruntime.api.AgentEventSource
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Logger
@@ -27,6 +28,11 @@ import kotlin.time.Duration.Companion.seconds
  * the command's effect laid over it until the supervisor reports it (at most [COMMAND_OVERLAY_TTL]).
  * Commands never throw.
  *
+ * Hook events (ADR 0004, AM-603) change the snapshot between two listings: a session that [hooks] report as
+ * waiting, finished or failed shows that state at once, with the question or tool, and the next listing confirms
+ * or corrects it. A listing that still says `WORKING` is overruled for at most [HOOK_LEAD].
+ *
+ * @param hooks hook events from `agent-runtime`; a hot stream without replay.
  * @param scope owner of the loop, e.g. the app scope with a SupervisorJob; tests pass `backgroundScope`.
  * @param clock time of each listing ([SnapshotStatus.Fresh.at], `lastActivityAt`).
  * @param logger gets session ids, counts and [RuntimeProblem] only, never cwd, names or prompts (ENG-C8).
@@ -35,6 +41,7 @@ import kotlin.time.Duration.Companion.seconds
 @Suppress("LongParameterList")
 public fun sessionsModule(
     runtime: AgentRuntime,
+    hooks: AgentEventSource,
     projects: ProjectsApi,
     scope: CoroutineScope,
     clock: Clock,
@@ -50,6 +57,7 @@ public fun sessionsModule(
             schedule = PollSchedule(pollInterval, maxRetryInterval),
             logger = logger,
             reader = RecentOutputReader(runtime, logger),
+            hooks = hooks,
         ).also { it.start(scope) }
     val commands = RuntimeSessionCommands(runtime, projects, state, clock, logger)
     return SessionsApi(monitor = monitor, commands = commands)

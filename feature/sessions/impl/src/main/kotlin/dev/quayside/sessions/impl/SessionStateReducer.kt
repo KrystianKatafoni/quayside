@@ -4,6 +4,7 @@ import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
+import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionRules
@@ -35,6 +36,9 @@ internal data class Reduction(
  *   [SessionState.Done] → [SessionEvent.TurnFinished], [SessionState.Failed] → [SessionEvent.Failed].
  * - A failed listing keeps the sessions with their states and `lastActivityAt`, emits no events and
  *   yields [SnapshotStatus.Stale] with the last known `lastFreshAt`.
+ * - Hook details (AM-603, `details` by session id): the question goes into [SessionState.AwaitingInput],
+ *   the tool into [SessionState.AwaitingPermission], and `lastActivityAt` is never before the hook's time.
+ *   Details do not count as a change of kind, so they never make an event of their own.
  * - [Session.project] is recomputed from `projects` on every call, without events.
  */
 internal object SessionStateReducer {
@@ -43,6 +47,7 @@ internal object SessionStateReducer {
      * @param listing result of `AgentRuntime.listSessions()`; AM-404 passes it through its command overlay first.
      * @param projects registered project dirs for [SessionRules.projectFor].
      * @param now time of the listing (from the injected `Clock` in AM-403).
+     * @param details what hooks add to a session, by id; see [HookOverlay].
      * @return sessions ordered by startedAt, then id; events in the same order, only for transitions.
      */
     fun reduce(
@@ -50,9 +55,10 @@ internal object SessionStateReducer {
         listing: Outcome<List<RuntimeSession>, RuntimeError>,
         projects: Map<ProjectId, Path>,
         now: Instant,
+        details: Map<SessionId, HookDetail> = emptyMap(),
     ): Reduction =
         when (listing) {
-            is Outcome.Ok -> listed(previous, listing.value, projects, now)
+            is Outcome.Ok -> listed(previous, listing.value, projects, now, details)
             is Outcome.Err -> failed(previous, listing.error, projects)
         }
 
@@ -61,6 +67,7 @@ internal object SessionStateReducer {
         listing: List<RuntimeSession>,
         projects: Map<ProjectId, Path>,
         now: Instant,
+        details: Map<SessionId, HookDetail>,
     ): Reduction {
         val baseline = lastFreshAt(previous.status) == null
         val known = previous.sessions.associateBy { it.id }
@@ -71,7 +78,7 @@ internal object SessionStateReducer {
                 .map { runtime ->
                     known[runtime.id].let { before ->
                         before to
-                            runtime.toSession(before, projects, now, baseline)
+                            runtime.toSession(before, projects, now, baseline, details[runtime.id])
                     }
                 }
         val events = if (baseline) emptyList() else pairs.mapNotNull { (before, after) -> eventFor(before, after) }
@@ -93,14 +100,16 @@ internal object SessionStateReducer {
         projects: Map<ProjectId, Path>,
         now: Instant,
         baseline: Boolean,
+        detail: HookDetail?,
     ): Session {
-        val state = toSessionState()
-        val lastActivityAt =
+        val state = toSessionState().withDetail(detail)
+        val observed =
             when {
                 baseline -> startedAt
                 before == null || before.state != state -> now
                 else -> before.lastActivityAt
             }
+        val lastActivityAt = if (detail != null && detail.at > observed) detail.at else observed
         return Session(
             id = id,
             project = SessionRules.projectFor(cwd, projects),
@@ -112,6 +121,14 @@ internal object SessionStateReducer {
             summary = before?.summary,
         )
     }
+
+    private fun SessionState.withDetail(detail: HookDetail?): SessionState =
+        when {
+            detail == null -> this
+            this is SessionState.AwaitingInput -> SessionState.AwaitingInput(detail.question)
+            this is SessionState.AwaitingPermission -> SessionState.AwaitingPermission(detail.tool ?: tool)
+            else -> this
+        }
 
     private fun eventFor(
         before: Session?,

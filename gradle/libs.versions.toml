@@ -13,6 +13,7 @@ detekt = "2.0.0-alpha.6"
 kover = "0.9.11"
 jediterm = "3.76"
 pty4j = "0.14.0"
+ktor = "3.5.2"
 
 [libraries]
 # Gradle plugins used by build-logic
@@ -33,6 +34,8 @@ slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 jediterm-core = { module = "org.jetbrains.jediterm:jediterm-core", version.ref = "jediterm" }
 jediterm-ui = { module = "org.jetbrains.jediterm:jediterm-ui", version.ref = "jediterm" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 pty4j = { module = "org.jetbrains.pty4j:pty4j", version.ref = "pty4j" }
 
 # Tests

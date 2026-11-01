@@ -1,5 +1,5 @@
 // Adapters of the agent-runtime port (docs/11 §4, ADR 0002): the parser of `claude agents --json`
-// (AM-202) and ClaudeCliAdapter with its module factory (AM-203).
+// (AM-202), ClaudeCliAdapter with its module factory (AM-203) and the hook server (AM-601).
 plugins {
     id("am.feature.impl")
 }
@@ -10,6 +10,9 @@ dependencies {
     implementation(project(":core:process"))
     // Tree parsing only (Json.parseToJsonElement), so the serialization compiler plugin is not needed.
     implementation(libs.kotlinx.serialization.json)
+    // Hook server on 127.0.0.1 (AM-601, docs/11 §6).
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.cio)
 
     // aRuntimeSession and other builders (they bring core:testing with T0).
     testImplementation(testFixtures(project(":feature:agent-runtime:api")))

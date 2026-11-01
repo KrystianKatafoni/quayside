@@ -43,12 +43,14 @@ public enum class NotificationChannel {
  * @property matrix channels chosen per kind; see [channelsFor].
  * @property runningLongMinutes how long a session works before [NotificationKind.RUNNING_LONG] (N in
  *   FR-N2), within [MIN_RUNNING_LONG_MINUTES]..[MAX_RUNNING_LONG_MINUTES].
+ * @property popup how popups look and behave (FR-N3).
  */
 public data class NotificationSettings(
     val popups: Boolean = true,
     val voice: Boolean = true,
     val matrix: Map<NotificationKind, Set<NotificationChannel>> = emptyMap(),
     val runningLongMinutes: Int = DEFAULT_RUNNING_LONG_MINUTES,
+    val popup: PopupSettings = PopupSettings(),
 ) {
     init {
         require(runningLongMinutes in MIN_RUNNING_LONG_MINUTES..MAX_RUNNING_LONG_MINUTES) {

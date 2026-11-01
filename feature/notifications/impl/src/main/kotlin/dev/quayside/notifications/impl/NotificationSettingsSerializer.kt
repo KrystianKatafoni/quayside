@@ -3,6 +3,10 @@ package dev.quayside.notifications.impl
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.PopupDuration
+import dev.quayside.notifications.api.PopupPosition
+import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.notifications.api.PopupStyle
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -49,6 +53,10 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
             NotificationChannel.SOUND to "sound",
             NotificationChannel.DOCK_BADGE to "dockBadge",
         )
+    private val POSITIONS = PopupPosition.entries.associateWith { it.name }
+    private val DURATIONS = PopupDuration.entries.associateWith { it.name }
+    private val STYLES = PopupStyle.entries.associateWith { it.name }
+    private const val POPUP = "popup"
     private const val POPUPS = "popups"
     private const val VOICE = "voice"
     private const val MINUTES = "runningLongMinutes"
@@ -66,6 +74,12 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
                 put(POPUPS, value.popups)
                 put(VOICE, value.voice)
                 put(MINUTES, value.runningLongMinutes)
+                putJsonObject(POPUP) {
+                    put("position", value.popup.position.name)
+                    put("duration", value.popup.duration.name)
+                    put("maxVisible", value.popup.maxVisible)
+                    put("style", value.popup.style.name)
+                }
                 putJsonObject(CHANNELS_KEY) {
                     KINDS.forEach { (kind, name) ->
                         putJsonArray(
@@ -85,12 +99,37 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
             popups = root.flag(POPUPS) ?: defaults.popups,
             voice = root.flag(VOICE) ?: defaults.voice,
             matrix = matrix(root[CHANNELS_KEY]),
+            popup = popup(root[POPUP]),
             runningLongMinutes =
                 root.number(MINUTES)?.coerceIn(
                     NotificationSettings.MIN_RUNNING_LONG_MINUTES,
                     NotificationSettings.MAX_RUNNING_LONG_MINUTES,
                 ) ?: defaults.runningLongMinutes,
         )
+    }
+
+    private fun popup(element: JsonElement?): PopupSettings {
+        val defaults = PopupSettings()
+        if (element == null) return defaults
+        val obj = element as? JsonObject ?: invalid("$POPUP is not an object")
+        return PopupSettings(
+            position = obj.choice("position", POSITIONS, defaults.position),
+            duration = obj.choice("duration", DURATIONS, defaults.duration),
+            maxVisible =
+                obj.number("maxVisible")?.coerceIn(1, PopupSettings.MAX_VISIBLE_LIMIT) ?: defaults.maxVisible,
+            style = obj.choice("style", STYLES, defaults.style),
+        )
+    }
+
+    /** The value named by [key], [default] when the key is missing or names something unknown. */
+    private fun <E> JsonObject.choice(
+        key: String,
+        names: Map<E, String>,
+        default: E,
+    ): E {
+        val primitive = get(key) ?: return default
+        val text = (primitive as? JsonPrimitive)?.takeIf { it.isString }?.content ?: invalid("bad $key")
+        return names.entries.firstOrNull { it.value == text }?.key ?: default
     }
 
     private fun matrix(element: JsonElement?): Map<NotificationKind, Set<NotificationChannel>> {

@@ -41,6 +41,36 @@ class NotificationSettingsTest {
         on.channelsFor(NotificationKind.FAILED) shouldBe NotificationChannel.entries.toSet()
     }
 
+    @Test
+    fun `popup defaults follow docs 07`() {
+        NotificationSettings().popup shouldBe
+            PopupSettings(PopupPosition.BOTTOM_RIGHT, PopupDuration.QUESTIONS_STAY, 3, PopupStyle.DETAILED)
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [0, 11])
+    fun `popup count outside the range is rejected`(count: Int) {
+        shouldThrow<IllegalArgumentException> { PopupSettings(maxVisible = count) }
+    }
+
+    @Test
+    fun `popup model hides user data in toString`() {
+        val popup =
+            PopupModel(
+                PopupId("p"),
+                NotificationKind.NEEDS_INPUT,
+                null,
+                "Secret project",
+                "secret-name",
+                "secret?",
+                true,
+                false,
+            )
+
+        popup.toString().contains("secret") shouldBe false
+        popup.toString().contains("Secret") shouldBe false
+    }
+
     @ParameterizedTest
     @ValueSource(ints = [0, -1, 1441])
     fun `threshold outside the range is rejected`(minutes: Int) {

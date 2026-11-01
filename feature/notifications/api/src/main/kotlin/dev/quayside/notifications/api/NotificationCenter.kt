@@ -2,6 +2,7 @@ package dev.quayside.notifications.api
 
 import dev.quayside.core.domain.SessionId
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * One notification to deliver on one [channel] (FR-N1), decided from the user's [NotificationSettings].
@@ -25,6 +26,18 @@ public interface NotificationCenter {
      * falls behind loses the oldest ones. Until the channel adapters exist (AM-702, AM-703) nothing collects it.
      */
     public val deliveries: SharedFlow<NotificationDelivery>
+
+    /**
+     * The popups on screen, newest first (FR-N3); `notifications:ui` draws them. A popup is added for every delivery
+     * on [NotificationChannel.POPUP] and leaves with [onAction], after a few seconds or when its session is muted.
+     */
+    public val popups: StateFlow<List<PopupModel>>
+
+    /** The user chose [action] on popup [popup]. An unknown or already closed popup is ignored. */
+    public suspend fun onAction(
+        popup: PopupId,
+        action: PopupAction,
+    )
 
     /** A terminal rang its bell (AM-509): emits a delivery per channel chosen for [NotificationKind.TERMINAL_BELL]. */
     public suspend fun notifyTerminalBell()

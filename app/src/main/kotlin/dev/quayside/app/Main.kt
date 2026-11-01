@@ -37,7 +37,7 @@ fun main() {
     System.setProperty("apple.awt.fileDialogForDirectories", "true")
     val core = productionCoreDeps()
     core.logger.info("app start")
-    val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir)
+    val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir, injectHookToken = true)
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
     // Lives as long as the app, not the window (AM-405 risks).

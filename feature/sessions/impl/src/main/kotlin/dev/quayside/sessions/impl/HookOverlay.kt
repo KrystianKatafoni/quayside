@@ -44,6 +44,17 @@ internal data class HookDetail(
     val tool: String?,
 )
 
+/**
+ * What hooks add to the sessions of one listing, by id: state [details] (AM-603) and the [summaries] made from the
+ * last message of a turn (AM-604). Summaries are user data (ENG-C8).
+ */
+internal data class HookData(
+    val details: Map<SessionId, HookDetail> = emptyMap(),
+    val summaries: Map<SessionId, String> = emptyMap(),
+) {
+    override fun toString(): String = "HookData(details=${details.keys}, summaries=${summaries.keys})"
+}
+
 /** The note of an event, or null for `SessionEnded`: how a session ended is for polling to decide. */
 internal fun AgentEvent.toNote(): HookNote? {
     val id = meta.conversationId

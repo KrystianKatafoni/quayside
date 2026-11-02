@@ -13,6 +13,7 @@ import dev.quayside.agentruntime.api.WaitingFor
 import dev.quayside.agentruntime.api.aConversationId
 import dev.quayside.agentruntime.api.aRuntimeSession
 import dev.quayside.agentruntime.api.anEventMeta
+import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.testing.TestClock
 import dev.quayside.projects.api.FakeProjectsApi
@@ -21,8 +22,14 @@ import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
+import dev.quayside.sessions.impl.MonitorFixtures.S1
+import dev.quayside.sessions.impl.MonitorFixtures.working
+import dev.quayside.summaries.api.FakeSummarizer
+import dev.quayside.summaries.api.SummariesApi
+import dev.quayside.summaries.api.SummaryError
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -39,6 +46,21 @@ class SessionsStateHooksTest {
     private val session = aRuntimeSession()
     private val runtime = FakeAgentRuntime(RuntimeWorld(sessions = listOf(session)))
     private val state = SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL, hookLead = 5.seconds)
+
+    private val summarizer =
+        FakeSummarizer(mapOf(MESSAGE to Outcome.Ok(SUMMARY), BLANK to Outcome.Err(SummaryError.Empty)))
+    private val summarized =
+        SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL, hookLead = 5.seconds, summarizer = summarizer)
+
+    private fun turnEnded(
+        message: String?,
+        conversation: ConversationId = aConversationId(),
+    ) = AgentEvent.TurnEnded(anEventMeta(conversationId = conversation, at = clock.now()), message)
+
+    private fun summaryOf(from: SessionsState) =
+        from.snapshot.value.sessions
+            .single()
+            .summary
 
     private fun needsInput(question: String? = "Which file?") =
         AgentEvent.NeedsInput(anEventMeta(conversationId = aConversationId(), at = clock.now()), question)
@@ -152,4 +174,143 @@ class SessionsStateHooksTest {
             state.snapshot.value.status shouldBe stale
             current().state shouldBe SessionState.AwaitingInput("Which file?")
         }
+
+    @Test
+    fun `turn ended with a message sets the summary`() =
+        runTest {
+            summarized.refresh()
+
+            summarized.onHook(turnEnded(MESSAGE))
+
+            summaryOf(summarized) shouldBe SUMMARY
+        }
+
+    @Test
+    fun `turn finished event carries the summary`() =
+        runTest {
+            summarized.refresh()
+            val events = mutableListOf<SessionEvent>()
+            backgroundScope.launch(
+                UnconfinedTestDispatcher(testScheduler),
+            ) { summarized.events.collect { events += it } }
+
+            summarized.onHook(turnEnded(MESSAGE))
+            runCurrent()
+
+            events
+                .single()
+                .shouldBeInstanceOf<SessionEvent.TurnFinished>()
+                .session.summary shouldBe SUMMARY
+        }
+
+    @Test
+    fun `empty summary keeps the previous one`() =
+        runTest {
+            summarized.refresh()
+            summarized.onHook(turnEnded(MESSAGE))
+
+            summarized.onHook(turnEnded(BLANK))
+
+            summaryOf(summarized) shouldBe SUMMARY
+        }
+
+    @Test
+    fun `turn ended without a message keeps the summary`() =
+        runTest {
+            summarized.refresh()
+            summarized.onHook(turnEnded(MESSAGE))
+
+            summarized.onHook(turnEnded(null))
+            summarized.onHook(turnEnded(""))
+
+            summaryOf(summarized) shouldBe SUMMARY
+            summarizer.calls shouldBe listOf(MESSAGE)
+        }
+
+    @Test
+    fun `turn ended of an unlisted conversation is not summarized`() =
+        runTest {
+            summarized.refresh()
+
+            summarized.onHook(turnEnded(MESSAGE, ConversationId("nobody")))
+
+            summaryOf(summarized) shouldBe null
+            summarizer.calls.shouldBeEmpty()
+        }
+
+    @Test
+    fun `turn ended before the first listing is not summarized`() =
+        runTest {
+            summarized.onHook(turnEnded(MESSAGE))
+            summarized.refresh()
+
+            summaryOf(summarized) shouldBe null
+            summarizer.calls.shouldBeEmpty()
+        }
+
+    @Test
+    fun `summary stays after polling overrules the hook`() =
+        runTest {
+            summarized.refresh()
+            summarized.onHook(turnEnded(MESSAGE))
+
+            clock.advanceBy(10.seconds)
+            summarized.refresh()
+
+            summarized.snapshot.value.sessions
+                .single()
+                .state shouldBe SessionState.Working
+            summaryOf(summarized) shouldBe SUMMARY
+        }
+
+    @Test
+    fun `summary of a conversation that is no longer listed is dropped`() =
+        runTest {
+            summarized.refresh()
+            summarized.onHook(turnEnded(MESSAGE))
+            runtime.remove(session.id)
+            summarized.refresh()
+            summarized.snapshot.value.sessions
+                .shouldBeEmpty()
+
+            runtime.hasSession(session)
+            summarized.refresh()
+
+            summaryOf(summarized) shouldBe null
+        }
+
+    @Test
+    fun `no summaries module means no summary`() =
+        runTest {
+            val world = monitorWorld(sessions = listOf(working(S1)))
+            runCurrent()
+
+            world.hooks.emit(turnEnded(MESSAGE))
+            runCurrent()
+
+            world.session(S1).summary shouldBe null
+        }
+
+    @Test
+    fun `summary never reaches the log`() =
+        runTest {
+            val world = monitorWorld(sessions = listOf(working(S1)), summaries = SummariesApi(summarizer))
+            runCurrent()
+
+            world.hooks.emit(turnEnded(MESSAGE))
+            runCurrent()
+
+            world.session(S1).summary shouldBe SUMMARY
+            world.logger.entries.forEach { entry ->
+                val text = "${entry.message} ${entry.fields} ${entry.cause}"
+                text shouldNotContain MESSAGE
+                text shouldNotContain SUMMARY
+            }
+        }
+
+    private companion object {
+        const val MESSAGE = "Confidential last message of the turn."
+        const val SUMMARY = "Confidential short summary."
+        const val BLANK = "only code"
+    }
 }

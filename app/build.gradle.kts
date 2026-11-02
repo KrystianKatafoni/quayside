@@ -34,6 +34,9 @@ dependencies {
     implementation(project(":feature:notifications:impl"))
     // The popup window and its Attach action (AM-702).
     implementation(project(":feature:notifications:ui"))
+    // Session summaries from the last message of a turn (AM-604).
+    implementation(project(":feature:summaries:api"))
+    implementation(project(":feature:summaries:impl"))
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.slf4j.api)
     runtimeOnly(libs.slf4j.simple)
@@ -48,6 +51,8 @@ dependencies {
     testImplementation(testFixtures(project(":feature:command-palette:api")))
     // FakeTerminalApi behind the terminal panel in the window test (AM-503).
     testImplementation(testFixtures(project(":feature:terminal:api")))
+    // FakeAgentRuntime and FakeAgentEventSource behind sessionsModule in the summary flow test (AM-604).
+    testImplementation(testFixtures(project(":feature:agent-runtime:api")))
     // RecordingNotificationCenter for the bell forwarding (AM-509).
     testImplementation(testFixtures(project(":feature:notifications:api")))
 }

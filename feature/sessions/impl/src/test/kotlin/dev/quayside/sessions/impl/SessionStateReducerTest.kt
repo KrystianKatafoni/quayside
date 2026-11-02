@@ -149,6 +149,52 @@ class SessionStateReducerTest {
     }
 
     @Test
+    fun `summary from hooks replaces the previous one`() {
+        val previous = fresh(listOf(aSession(summary = "Old summary.", lastActivityAt = EARLIER)))
+        val hooks = HookData(summaries = mapOf(aSessionId() to "New summary."))
+
+        val session = reduce(previous, ok(runtime()), hooks = hooks).snapshot.sessions.single()
+
+        session.summary shouldBe "New summary."
+    }
+
+    @Test
+    fun `session without a new summary keeps the previous one`() {
+        val previous = fresh(listOf(aSession(summary = "Old summary.", lastActivityAt = EARLIER)))
+        val hooks = HookData(summaries = mapOf(aSessionId("other") to "Someone else."))
+
+        val session = reduce(previous, ok(runtime()), hooks = hooks).snapshot.sessions.single()
+
+        session.summary shouldBe "Old summary."
+    }
+
+    @Test
+    fun `a new summary alone emits no event`() {
+        val previous = fresh(listOf(aSession(state = SessionState.Done, summary = "Old.", lastActivityAt = EARLIER)))
+        val hooks = HookData(summaries = mapOf(aSessionId() to "New."))
+
+        val reduction = reduce(previous, ok(runtime(phase = RuntimePhase.DONE)), hooks = hooks)
+
+        reduction.events.shouldBeEmpty()
+        reduction.snapshot.sessions
+            .single()
+            .summary shouldBe "New."
+    }
+
+    // Guards against `hooks` ever being passed to `failed`: a failed listing must not change summaries.
+    @Test
+    fun `summary is kept after a failed listing`() {
+        val previous = fresh(listOf(aSession(summary = "Old summary.", lastActivityAt = EARLIER)))
+        val hooks = HookData(summaries = mapOf(aSessionId() to "Ignored."))
+
+        val snapshot = reduce(previous, Outcome.Err(RuntimeError.Timeout), hooks = hooks).snapshot
+
+        snapshot.sessions
+            .single()
+            .summary shouldBe "Old summary."
+    }
+
+    @Test
     fun `duplicate id keeps the first entry`() {
         val listing =
             ok(
@@ -290,7 +336,8 @@ class SessionStateReducerTest {
             previous: SessionsSnapshot,
             listing: Outcome<List<RuntimeSession>, RuntimeError>,
             projects: Map<ProjectId, Path> = PROJECTS,
-        ): Reduction = SessionStateReducer.reduce(previous, listing, projects, NOW)
+            hooks: HookData = HookData(),
+        ): Reduction = SessionStateReducer.reduce(previous, listing, projects, NOW, hooks)
 
         private fun fresh(sessions: List<Session>): SessionsSnapshot =
             SessionsSnapshot(sessions, SnapshotStatus.Fresh(LAST_FRESH))

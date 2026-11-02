@@ -19,6 +19,7 @@ import dev.quayside.projects.impl.projectInspectorModule
 import dev.quayside.projects.impl.projectsModule
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.impl.sessionsModule
+import dev.quayside.summaries.impl.summariesModule
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalSettings
 import dev.quayside.terminal.api.TerminalSettingsRepo
@@ -86,7 +87,7 @@ private fun sessionsDeps(
     scope: CoroutineScope,
 ): SessionsApi {
     val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir)
-    return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger)
+    return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger, summaries = summariesModule())
 }
 
 /** The settings files read in `main` before the window opens, like the project list. */

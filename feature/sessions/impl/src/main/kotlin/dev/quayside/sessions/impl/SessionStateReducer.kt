@@ -28,7 +28,8 @@ internal data class Reduction(
  *   ([SnapshotStatus.Loading] or [SnapshotStatus.Stale] without `lastFreshAt`), the first successful
  *   listing emits no events and sets `lastActivityAt` to `startedAt`.
  * - A successful listing is [SnapshotStatus.Fresh] at `now`; sessions missing from it vanish without
- *   an event, a repeated id keeps its first entry, `summary` is kept from the previous session.
+ *   an event, a repeated id keeps its first entry, `summary` is kept from the previous session
+ *   unless hooks bring a new one (`summaries`, AM-604).
  * - `lastActivityAt` becomes `now` for a session that appears after the baseline or whose state
  *   changed (`!=`); otherwise it is kept.
  * - Events come only when the *kind* of state changes (details such as `question` or `tool` do not
@@ -47,7 +48,7 @@ internal object SessionStateReducer {
      * @param listing result of `AgentRuntime.listSessions()`; AM-404 passes it through its command overlay first.
      * @param projects registered project dirs for [SessionRules.projectFor].
      * @param now time of the listing (from the injected `Clock` in AM-403).
-     * @param details what hooks add to a session, by id; see [HookOverlay].
+     * @param hooks what hooks add to a session, by id: details and summaries; see [HookOverlay].
      * @return sessions ordered by startedAt, then id; events in the same order, only for transitions.
      */
     fun reduce(
@@ -55,10 +56,10 @@ internal object SessionStateReducer {
         listing: Outcome<List<RuntimeSession>, RuntimeError>,
         projects: Map<ProjectId, Path>,
         now: Instant,
-        details: Map<SessionId, HookDetail> = emptyMap(),
+        hooks: HookData = HookData(),
     ): Reduction =
         when (listing) {
-            is Outcome.Ok -> listed(previous, listing.value, projects, now, details)
+            is Outcome.Ok -> listed(previous, listing.value, projects, now, hooks)
             is Outcome.Err -> failed(previous, listing.error, projects)
         }
 
@@ -67,7 +68,7 @@ internal object SessionStateReducer {
         listing: List<RuntimeSession>,
         projects: Map<ProjectId, Path>,
         now: Instant,
-        details: Map<SessionId, HookDetail>,
+        hooks: HookData,
     ): Reduction {
         val baseline = lastFreshAt(previous.status) == null
         val known = previous.sessions.associateBy { it.id }
@@ -78,7 +79,7 @@ internal object SessionStateReducer {
                 .map { runtime ->
                     known[runtime.id].let { before ->
                         before to
-                            runtime.toSession(before, projects, now, baseline, details[runtime.id])
+                            runtime.toSession(before, projects, now, baseline, hooks)
                     }
                 }
         val events = if (baseline) emptyList() else pairs.mapNotNull { (before, after) -> eventFor(before, after) }
@@ -100,8 +101,9 @@ internal object SessionStateReducer {
         projects: Map<ProjectId, Path>,
         now: Instant,
         baseline: Boolean,
-        detail: HookDetail?,
+        hooks: HookData,
     ): Session {
+        val detail = hooks.details[id]
         val state = toSessionState().withDetail(detail)
         val observed =
             when {
@@ -118,7 +120,7 @@ internal object SessionStateReducer {
             state = state,
             startedAt = startedAt,
             lastActivityAt = lastActivityAt,
-            summary = before?.summary,
+            summary = hooks.summaries[id] ?: before?.summary,
         )
     }
 

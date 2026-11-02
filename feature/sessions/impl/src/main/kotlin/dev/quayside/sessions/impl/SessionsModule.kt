@@ -10,6 +10,7 @@ import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
+import dev.quayside.summaries.api.SummariesApi
 import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -36,6 +37,8 @@ import kotlin.time.Duration.Companion.seconds
  * @param scope owner of the loop, e.g. the app scope with a SupervisorJob; tests pass `backgroundScope`.
  * @param clock time of each listing ([SnapshotStatus.Fresh.at], `lastActivityAt`).
  * @param logger gets session ids, counts and [RuntimeProblem] only, never cwd, names or prompts (ENG-C8).
+ * @param summaries gives each session a short summary of its last message after a `Stop` hook (FR-S7, AM-604); null
+ * means no summaries.
  * @throws IllegalArgumentException if [pollInterval] is not positive or [maxRetryInterval] is shorter.
  */
 @Suppress("LongParameterList")
@@ -48,8 +51,9 @@ public fun sessionsModule(
     logger: Logger,
     pollInterval: Duration = 2.seconds,
     maxRetryInterval: Duration = 15.seconds,
+    summaries: SummariesApi? = null,
 ): SessionsApi {
-    val state = SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL)
+    val state = SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL, summarizer = summaries?.summarizer)
     val monitor =
         PollingSessionMonitor(
             projects = projects,

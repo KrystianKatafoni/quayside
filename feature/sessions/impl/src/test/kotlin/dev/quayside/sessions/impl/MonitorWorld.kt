@@ -20,6 +20,7 @@ import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.impl.MonitorFixtures.P1
 import dev.quayside.sessions.impl.MonitorFixtures.P1_DIR
+import dev.quayside.summaries.api.SummariesApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -60,6 +61,7 @@ internal fun TestScope.monitorWorld(
     listingTime: Duration = Duration.ZERO,
     pollInterval: Duration? = 2.seconds,
     scope: CoroutineScope = backgroundScope,
+    summaries: SummariesApi? = null,
 ): MonitorWorld {
     val runtime = SwitchableRuntime(fake, now = { testScheduler.currentTime }, listingTime = listingTime)
     runtime.available(available)
@@ -69,7 +71,7 @@ internal fun TestScope.monitorWorld(
     val hooks = FakeAgentEventSource()
     val monitor =
         if (pollInterval == null) {
-            sessionsModule(runtime, hooks, projects, scope, clock, logger).monitor
+            sessionsModule(runtime, hooks, projects, scope, clock, logger, summaries = summaries).monitor
         } else {
             sessionsModule(
                 runtime,
@@ -80,6 +82,7 @@ internal fun TestScope.monitorWorld(
                 logger,
                 pollInterval,
                 maxRetryInterval = 15.seconds,
+                summaries = summaries,
             ).monitor
         }
     return MonitorWorld(fake, runtime, projects, hooks, logger, monitor, scope)

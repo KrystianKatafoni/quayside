@@ -7,6 +7,9 @@ import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.NotificationSettingsError
 import dev.quayside.notifications.api.NotificationSettingsRepo
+import dev.quayside.notifications.api.VoiceCatalog
+import dev.quayside.notifications.api.VoiceCatalogError
+import dev.quayside.notifications.api.VoiceOption
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -38,5 +41,24 @@ internal class ScriptedRepo(
         if (hold) release.await()
         val refused = failure
         return if (refused != null) Outcome.Err(refused) else inner.update(change)
+    }
+}
+
+/**
+ * A [VoiceCatalog] whose answer a test can change ([result]), count ([calls]) and hold until [release] completes
+ * (when [hold] is true). The answer is returned as it is, so give it sorted.
+ */
+internal class ScriptedVoiceCatalog(
+    var result: Outcome<List<VoiceOption>, VoiceCatalogError>,
+    private val hold: Boolean = false,
+) : VoiceCatalog {
+    val release = CompletableDeferred<Unit>()
+    var calls: Int = 0
+        private set
+
+    override suspend fun voices(): Outcome<List<VoiceOption>, VoiceCatalogError> {
+        calls++
+        if (hold) release.await()
+        return result
     }
 }

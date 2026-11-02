@@ -77,6 +77,7 @@ private fun SettingsPanel(
         ChannelMatrix(state.draft, controller)
         ThresholdRow(state, controller)
         PopupSection(state, controller)
+        VoiceSection(state, controller)
         SettingsFooter(state.saveError, controller)
     }
 }
@@ -101,8 +102,8 @@ private fun ThresholdRow(
     controller: NotificationSettingsController,
 ) {
     val invalid = state.invalid?.takeIf { it.field == NotificationField.RUNNING_LONG_MINUTES }
-    SettingRow("settings.runningLongMinutes", invalid) {
-        TextSetting(SettingsTags.RUNNING_LONG_MINUTES, state.draft.runningLongMinutes) { text ->
+    SettingRow(SettingsStrings["settings.runningLongMinutes"], invalid) { named ->
+        TextSetting(SettingsTags.RUNNING_LONG_MINUTES, state.draft.runningLongMinutes, named) { text ->
             controller.edit { it.copy(runningLongMinutes = text) }
         }
     }
@@ -135,8 +136,8 @@ private fun SettingsFooter(
             Label(SettingsStrings.of(it), Modifier.testTag(SettingsTags.SAVE_ERROR), SettingsColors.error)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(space = 8.dp)) {
-            DialogButton(SettingsTags.SAVE, "settings.save", controller::save)
-            DialogButton(SettingsTags.CANCEL, "settings.cancel", controller::cancel)
+            DialogButton(SettingsTags.SAVE, "settings.save", onClick = controller::save)
+            DialogButton(SettingsTags.CANCEL, "settings.cancel", onClick = controller::cancel)
         }
     }
 }

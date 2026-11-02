@@ -27,6 +27,8 @@ import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.TestClock
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.VoiceCatalog
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.projects.api.FakeProjectInspector
@@ -59,7 +61,7 @@ import kotlin.time.Duration.Companion.hours
  * their label and directory from [SettingsShellStart]; without, from [PlainShellStart].
  *
  * With a notification repo in [settings] it also gets the notification settings dialog and its palette command
- * (AM-704).
+ * (AM-704); its list of voices comes from [SettingsRepos.voices].
  *
  * With [terminal] the window also registers [AttachCommands] (AM-505); [attachCommand] stands for
  * `AgentRuntime.attachCommand`.
@@ -109,6 +111,7 @@ internal fun ComposeUiTest.showWindow(
 internal class SettingsRepos(
     val terminal: FakeTerminalSettingsRepo? = null,
     val notifications: FakeNotificationSettingsRepo? = null,
+    val voices: VoiceCatalog = FakeVoiceCatalog(emptyList()),
 )
 
 /** What the settings dialog and its command need from the window. */
@@ -125,7 +128,8 @@ private fun SettingsHosts(
     registry: FakeCommandRegistry,
     window: WindowParts,
 ) {
-    val notifications = remember { repos.notifications?.let { NotificationSettingsController(it, window.scope) } }
+    val notifications =
+        remember { repos.notifications?.let { NotificationSettingsController(it, repos.voices, window.scope) } }
     SettingsDialogHost(repos.terminal, registry, window, notifications?.dialogOpen(window.scope))
     NotificationDialogHost(notifications, registry, window)
 }

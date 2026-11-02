@@ -234,14 +234,17 @@ interface NotificationSettingsRepo {
     val settings: StateFlow<NotificationSettings>
     suspend fun update(change: (NotificationSettings) -> NotificationSettings)
 }
+data class VoiceOption(val id: VoiceId, val locale: String)   // np. Zosia / pl_PL
+enum class VoiceCatalogError { UNAVAILABLE, FAILED }          // program nie startuje | wystartował i zawiódł
 interface VoiceCatalog {                          // AM-704: głosy zainstalowane w systemie (`say -v ?`)
-    suspend fun voices(): Outcome<List<VoiceOption>, VoiceCatalogError>   // UNAVAILABLE | FAILED
+    suspend fun voices(): Outcome<List<VoiceOption>, VoiceCatalogError>   // posortowane po nazwie, bez cache
 }
 enum class TemplateProblem { EMBEDDED_COMMAND, TOO_LONG }   // SpeechSettings.templateProblem(text)
 
 // notifications:impl (internal) — czysty rdzeń decyzji
 internal fun decide(event: SessionEvent, settings: NotificationSettings, ctx: DeliveryContext): List<Delivery>
 internal interface SpeechPort { suspend fun speak(text: String, voice: VoiceId, rate: Int) }  // adapter: MacSayAdapter
+// Fabryki modułu (public): notificationCenterModule(...) oraz voiceCatalogModule(process, workDir): VoiceCatalog
 ```
 
 ```kotlin
@@ -362,6 +365,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 
 - Każdy plik ma **jednego właściciela**. Inne moduły nie czytają cudzych plików.
 - `JsonStore<T>` z `core:storage`: zapis do pliku tymczasowego i `ATOMIC_MOVE`, pole `schemaVersion`, lista migracji `vN → vN+1`. Uszkodzony plik jest odkładany jako `*.broken` i zastępowany domyślnymi wartościami z komunikatem w UI.
+- Lista głosów systemowych (`VoiceCatalog`) nie jest zapisywana na dysku: `notifications:ui` wczytuje ją raz na kontroler przy pierwszym otwarciu dialogu (po błędzie: ponownie przy kolejnym otwarciu); do `notifications.json` trafia tylko wybrana nazwa głosu.
 - Token hooków przechowywany w Keychain macOS (adapter w `agent-runtime:impl`), nie w plikach.
 
 ## 9. Composition root

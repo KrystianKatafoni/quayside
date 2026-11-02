@@ -25,6 +25,9 @@ internal object SettingsStrings {
     /** The name of [kind] in the matrix. */
     fun of(kind: NotificationKind): String = get("kind.${kind.name}")
 
+    /** The accessibility label of a "restore default" button: `<restore>: <kind>`. */
+    fun restoreLabel(kind: NotificationKind): String = "${get("settings.restore")}: ${of(kind)}"
+
     /** The name of [channel] in the matrix header. */
     fun of(channel: NotificationChannel): String = get("channel.${channel.name}")
 
@@ -73,6 +76,17 @@ internal object SettingsStrings {
         min: Int,
         max: Int,
     ): String = get(key).replace("{min}", min.toString()).replace("{max}", max.toString())
+
+    /** The label of a voice choice: system voice, `<name> (<locale>)` or `<name> (niezainstalowany)`. */
+    fun of(choice: VoiceChoice): String {
+        val name = choice.id?.name ?: return get("voice.system")
+        val locale = choice.locale
+        return when {
+            choice.missing -> get("voice.missing").replace("{name}", name)
+            locale == null -> name
+            else -> get("voice.installed").replace("{name}", name).replace("{locale}", locale)
+        }
+    }
 
     /** The message of a write that changed nothing. */
     fun of(error: NotificationSettingsError): String = get("error.${error.name}")

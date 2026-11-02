@@ -13,6 +13,14 @@ internal object SettingsTags {
     const val POPUP_DURATION = "notifications.settings.popup.duration"
     const val MAX_VISIBLE = "notifications.settings.popup.maxVisible"
     const val POPUP_STYLE = "notifications.settings.popup.style"
+    const val SPEECH_VOICE = "notifications.settings.speech.voice"
+    const val RATE = "notifications.settings.speech.rate"
+    const val VOLUME = "notifications.settings.speech.volume"
+    const val READ_QUESTION = "notifications.settings.speech.readQuestion"
+    const val ONLY_IN_BACKGROUND = "notifications.settings.speech.onlyInBackground"
+    const val MUTE_MICROPHONE = "notifications.settings.speech.muteMicrophone"
+    const val MIC_NOTE = "notifications.settings.speech.micNote"
+    const val VOICES_FAILED = "notifications.settings.speech.voicesFailed"
     const val SAVE = "notifications.settings.save"
     const val CANCEL = "notifications.settings.cancel"
 
@@ -24,6 +32,12 @@ internal object SettingsTags {
         kind: NotificationKind,
         channel: NotificationChannel,
     ): String = "notifications.settings.matrix.${kind.name}.${channel.name}"
+
+    /** The template field of [kind]. */
+    fun template(kind: NotificationKind): String = "notifications.settings.speech.template.${kind.name}"
+
+    /** The "restore default" button of the template of [kind]. */
+    fun restore(kind: NotificationKind): String = "notifications.settings.speech.restore.${kind.name}"
 
     /** The message under [field]; absent while the field is valid. */
     fun invalid(field: NotificationField): String = "notifications.settings.invalid.${field.name}"

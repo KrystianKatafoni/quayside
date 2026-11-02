@@ -4,20 +4,26 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
+import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.api.FakeVoiceCatalog
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.PopupPosition
+import dev.quayside.notifications.api.VoiceId
+import dev.quayside.notifications.api.VoiceOption
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.FakeSessions
@@ -64,11 +70,14 @@ class NotificationSettingsDialogWindowTest {
             ),
         )
 
+    private val voices =
+        FakeVoiceCatalog(listOf(VoiceOption(VoiceId("Zosia"), "pl_PL"), VoiceOption(VoiceId("Alex"), "en_US")))
+
     private fun ComposeUiTest.window(): CommandPaletteController =
         showWindow(
             FakeProjectsApi(initial = listOf(project)),
             sessions(),
-            settings = SettingsRepos(notifications = repo),
+            settings = SettingsRepos(notifications = repo, voices = voices),
         )
 
     private fun ComposeUiTest.openSettings(palette: CommandPaletteController) {
@@ -128,6 +137,25 @@ class NotificationSettingsDialogWindowTest {
 
             // Then the repo holds the new position at once
             repo.settings.value.popup.position shouldBe PopupPosition.TOP_LEFT
+        }
+
+    @Test
+    fun `FR-N4 saved voice and rate reach the repo`() =
+        runComposeUiTest {
+            // Given the open dialog; the saved voice is Zosia at 190 words per minute, and the list is loaded
+            val palette = window()
+            openSettings(palette)
+            waitUntilExactlyOneExists(hasTestTag(WindowTags.NOTIFICATION_SPEECH_VOICE) and hasText("Zosia (pl_PL)"))
+
+            // When the user clicks the voice field (one step forward, to Alex), types a rate and saves
+            await(WindowTags.NOTIFICATION_SPEECH_VOICE).performScrollTo().performClick()
+            await(WindowTags.NOTIFICATION_SPEECH_RATE).performScrollTo().performTextReplacement("250")
+            await(WindowTags.NOTIFICATION_SETTINGS_SAVE).performScrollTo().performClick()
+            waitUntilDoesNotExist(hasTestTag(WindowTags.NOTIFICATION_SETTINGS_DIALOG))
+
+            // Then the repo holds the new voice and rate at once
+            repo.settings.value.speech.voice shouldBe VoiceId("Alex")
+            repo.settings.value.speech.rate shouldBe 250
         }
 
     /**

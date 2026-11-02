@@ -90,3 +90,4 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - ktlint nie zgłasza nieużywanych importów — po przeniesieniu kodu między plikami sprawdź je ręcznie.
 - Kolory kopiowane z innego modułu `ui` przenoszą jego błędy kontrastu — przy kopiowaniu sprawdź NFR-6 (≥ 4.5:1).
 - Test porzuconej grupy i zwolnienia chłodzenia w `VoiceNotifier` wymagał mutacji, by udowodnić, że pada; metoda testowa zwracająca wartość (np. `Boolean` z `runBlocking`) jest po cichu pomijana przez JUnit — testy mają zwracać `Unit`.
+- Asercja `shouldContain "1"` na komunikacie z zakresem „1–10” jest zawsze prawdziwa („10” zawiera „1”) — asercję zakresu pisz pełnym fragmentem „od 1 do N”.

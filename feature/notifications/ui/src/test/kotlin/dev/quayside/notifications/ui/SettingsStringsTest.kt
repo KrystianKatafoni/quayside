@@ -3,6 +3,10 @@ package dev.quayside.notifications.ui
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettingsError
+import dev.quayside.notifications.api.PopupDuration
+import dev.quayside.notifications.api.PopupPosition
+import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.notifications.api.PopupStyle
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -47,8 +51,32 @@ class SettingsStringsTest {
     fun `the threshold message names the allowed range`() {
         val message = SettingsStrings.of(InvalidField(NotificationField.RUNNING_LONG_MINUTES))
 
-        message shouldContain "1"
-        message shouldContain "1440"
+        message shouldContain "od 1 do 1440"
+    }
+
+    @Test
+    fun `every popup option has its own label`() {
+        fun labels(
+            prefix: String,
+            values: List<Enum<*>>,
+        ): List<String> = values.map { SettingsStrings.option(prefix, it) }
+
+        val position = labels("position", PopupPosition.entries)
+        val duration = labels("duration", PopupDuration.entries)
+        val style = labels("style", PopupStyle.entries)
+
+        (position + duration + style).forEach { it.shouldNotBeBlank() }
+        position.distinct().size shouldBe 6
+        duration.distinct().size shouldBe 3
+        style.distinct().size shouldBe 2
+    }
+
+    @Test
+    fun `the max visible message names the allowed range`() {
+        val message = SettingsStrings.of(InvalidField(NotificationField.MAX_VISIBLE))
+
+        message shouldContain "od 1 do ${PopupSettings.MAX_VISIBLE_LIMIT}"
+        message shouldNotBe SettingsStrings["invalid.other"]
     }
 
     @Test

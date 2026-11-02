@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 /**
  * The open dialog. [invalid]: the field the last save refused. [saveError]: why the last write changed nothing.
- * Part B adds the list of voices.
+ * Part B1 adds the popup to the draft; part B2 adds the list of voices.
  */
 public data class NotificationDialogState(
     val draft: NotificationDraft,

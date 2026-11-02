@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Sekcja „Popup” w ustawieniach powiadomień: pozycja (6 miejsc), czas wyświetlania, maksymalna liczba popupów naraz (1–10) i styl; działa od razu po zapisaniu, także przy wyłączonych popupach (AM-704, część B1).
 - Ekran „Ustawienia powiadomień” (Widok → Ustawienia powiadomień… i paleta komend): przełączniki Popupy i Głos, macierz 7 rodzajów × 4 kanały i próg minut dla długiej pracy sesji; zmiany działają od razu po zapisaniu (AM-704, część A).
 - Głos powiadomień: kanał VOICE mówi przez macOS `say` wybranym głosem, tempem i głośnością, z szablonem wiadomości na rodzaj, najwyżej 1 komunikatem na 20 s (kolejne łączone, np. „3 agenty czekają”) i ciszą, gdy okno aplikacji jest aktywne; sekcja `speech` w `notifications.json` (AM-703).
 - Popupy powiadomień: okno zawsze na wierzchu w rogu ekranu ze stosem kart (pasek koloru wg rodzaju, projekt · sesja, pytanie) i akcjami Otwórz (attach), Wycisz 15 min i Zamknij; nie kradnie fokusu terminalowi (AM-702).

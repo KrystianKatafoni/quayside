@@ -58,6 +58,7 @@
 - [x] AM-409 · Skróty j/k i g p · moduły: command-palette:ui, mission-control:ui, app · zależy: AM-408 · wymagania: FR-K2 (część), FR-S9 (komendy filtra) · issue: —
 - [x] AM-410 · Akcje sesji: x stop, Zatrzymaj/Respawn/Usuń w panelu i palecie · moduły: mission-control:ui, app · zależy: AM-409 · wymagania: FR-K2 (część) · issue: —
 - [x] AM-411 · sessions:api: recentOutput i podgląd space · moduły: sessions:api, sessions:impl, mission-control:ui, app · zależy: AM-410 · wymagania: FR-K2 (część) · issue: —
+- [ ] AM-608 · Ekran/okno startu agenta: projekt, prompt, opcjonalnie nazwa, subagent, model, tryb uprawnień (FR-S3), skrót i komenda palety · moduły: mission-control:ui, command-palette:ui, app · zależy: AM-404, AM-408 · wymagania: FR-S3 · issue: —
 
 ## M5 · Terminal
 
@@ -77,6 +78,7 @@
 
 - [x] AM-601 · KtorHookServer (127.0.0.1, token z Keychain) · moduły: agent-runtime:impl · zależy: AM-203 · wymagania: NFR-4 · issue: #4
 - [x] AM-602 · HookInstaller z backupem i odinstalowaniem · moduły: agent-runtime:impl · zależy: AM-601 · wymagania: NFR-5 · issue: #5
+- [ ] AM-607 · Podpięcie HookInstaller: propozycja instalacji hooków przy pierwszym uruchomieniu i w ustawieniach (zgoda, backup, odinstalowanie), status hooków · moduły: agent-runtime:impl (tylko jeśli potrzeba), app, projects:ui (opcjonalnie) · zależy: AM-602, AM-405 · wymagania: NFR-5 · issue: —
 - [x] AM-605 · Wstrzyknięcie `AM_HOOK_TOKEN` (token z Keychain) do środowiska `claude --bg` i `respawn` · moduły: agent-runtime:impl, app · zależy: AM-601, AM-602 · wymagania: NFR-4 · issue: #48
 - [x] AM-603 · Scalanie hooków z pollingiem w reducerze · moduły: sessions:impl · zależy: AM-601, AM-403 · wymagania: NFR-2 · issue: #6
 - [~] AM-604 · Summarizer (last_assistant_message, opcjonalnie Haiku; A: bez modelu) · moduły: summaries:* · zależy: AM-603 · wymagania: FR-S7 · issue: #7

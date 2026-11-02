@@ -13,7 +13,6 @@ import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
-import dev.quayside.summaries.api.Summarizer
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -42,7 +41,7 @@ internal class SessionsState(
     private val clock: Clock,
     private val overlayTtl: Duration,
     private val hookLead: Duration = HOOK_LEAD,
-    private val summarizer: Summarizer? = null,
+    private val summaries: TurnSummaries = TurnSummaries(null),
 ) {
     private val mutex = Mutex()
     private val current = MutableStateFlow(SessionsSnapshot.Initial)
@@ -53,9 +52,6 @@ internal class SessionsState(
 
     /** Latest hook of each conversation still in force (AM-603); guarded by [mutex]. */
     private var notes: Map<ConversationId, HookNote> = emptyMap()
-
-    /** Summary of the last message of each listed conversation (AM-604); user data (ENG-C8). Guarded by [mutex]. */
-    private var summaries: Map<ConversationId, String> = emptyMap()
 
     /** The last successful listing with command effects, before hooks; null until there is one. Guarded by [mutex]. */
     private var lastListing: List<RuntimeSession>? = null
@@ -96,7 +92,9 @@ internal class SessionsState(
         mutex.withLock {
             notes = notes + (note.conversationId to note)
             val listing = lastListing ?: return@withLock
-            if (event is AgentEvent.TurnEnded) summarize(event, listing)
+            if (event is AgentEvent.TurnEnded) {
+                summaries.onStop(event, listing) { turn, text -> acceptRefined(event.meta.conversationId, turn, text) }
+            }
             val status = current.value.status
             publish(Outcome.Ok(listing), clock.now(), status)
         }
@@ -112,7 +110,7 @@ internal class SessionsState(
         if (merged != null) notes = merged.notes
         val dirs = projects.projects.value.associate { it.id to it.dir }
         val input = merged?.let { Outcome.Ok(it.sessions) } ?: listing
-        val hooks = HookData(merged?.details.orEmpty(), listedSummaries((listing as? Outcome.Ok)?.value))
+        val hooks = HookData(merged?.details.orEmpty(), summaries.forListing((listing as? Outcome.Ok)?.value))
         val reduction = SessionStateReducer.reduce(current.value, input, dirs, now, hooks)
         val snapshot = if (status == null) reduction.snapshot else reduction.snapshot.copy(status = status)
         current.value = snapshot
@@ -120,22 +118,20 @@ internal class SessionsState(
         return reduction.copy(snapshot = snapshot)
     }
 
-    /** Summarizes the message of [event] for a conversation of [listing]; keeps the old summary otherwise. */
-    private fun summarize(
-        event: AgentEvent.TurnEnded,
-        listing: List<RuntimeSession>,
-    ) {
-        val id = event.meta.conversationId
-        val message = event.lastMessage?.takeIf { it.isNotEmpty() && listing.any { s -> s.conversationId == id } }
-        val summary = message?.let { summarizer?.summarize(it) } as? Outcome.Ok ?: return
-        summaries = summaries + (id to summary.value)
-    }
-
-    /** Drops the summaries of conversations not in [listing] and maps the rest to session ids; under [mutex]. */
-    private fun listedSummaries(listing: List<RuntimeSession>?): Map<SessionId, String> {
-        if (listing == null) return emptyMap()
-        summaries = summaries.filterKeys { id -> listing.any { it.conversationId == id } }
-        return listing.mapNotNull { s -> s.conversationId?.let(summaries::get)?.let { s.id to it } }.toMap()
+    /**
+     * Publishes the model summary [text] of [turn] without an event, but only when [turn] is still the newest of
+     * [id] and the conversation is listed: a late result of an older turn is dropped.
+     */
+    private suspend fun acceptRefined(
+        id: ConversationId,
+        turn: Long,
+        text: String,
+    ) = mutex.withLock {
+        val listing = lastListing
+        if (listing == null || listing.none { it.conversationId == id } || !summaries.accept(id, turn, text)) {
+            return@withLock
+        }
+        publish(Outcome.Ok(listing), clock.now(), current.value.status)
     }
 
     /** Lays [pending] over a successful [listing] and keeps the expectations still pending; under [mutex]. */

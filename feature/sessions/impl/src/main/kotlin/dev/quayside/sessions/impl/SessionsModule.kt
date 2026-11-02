@@ -38,7 +38,9 @@ import kotlin.time.Duration.Companion.seconds
  * @param clock time of each listing ([SnapshotStatus.Fresh.at], `lastActivityAt`).
  * @param logger gets session ids, counts and [RuntimeProblem] only, never cwd, names or prompts (ENG-C8).
  * @param summaries gives each session a short summary of its last message after a `Stop` hook (FR-S7, AM-604); null
- * means no summaries.
+ * means no summaries. With a refiner, the model summary replaces the quick one in the background (ADR 0019): one
+ * model call at a time, a newer `Stop` of a conversation cancels the older refinement, and the result is published
+ * without an event. A refinement error logs one warning with a fixed category.
  * @throws IllegalArgumentException if [pollInterval] is not positive or [maxRetryInterval] is shorter.
  */
 @Suppress("LongParameterList")
@@ -53,7 +55,15 @@ public fun sessionsModule(
     maxRetryInterval: Duration = 15.seconds,
     summaries: SummariesApi? = null,
 ): SessionsApi {
-    val state = SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL, summarizer = summaries?.summarizer)
+    val refinement = summaries?.refiner?.let { SummaryRefinement(it, scope, logger) }
+    val state =
+        SessionsState(
+            runtime,
+            projects,
+            clock,
+            COMMAND_OVERLAY_TTL,
+            summaries = TurnSummaries(summaries?.summarizer, refinement),
+        )
     val monitor =
         PollingSessionMonitor(
             projects = projects,

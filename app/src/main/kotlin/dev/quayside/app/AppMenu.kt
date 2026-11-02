@@ -37,22 +37,27 @@ internal fun FrameWindowScope.AppMenu(
     val sessionActions by missionControl.actions.collectAsState()
     val settingsDialog by terminalSettings.state.collectAsState()
     val notificationDialog by controllers.notificationSettings.state.collectAsState()
-    val dialogOpen = sessionActions.dialogOpen || settingsDialog != null || notificationDialog != null
+    val hookDialog by controllers.hookSetup.state.collectAsState()
+    val dialogOpen =
+        sessionActions.dialogOpen || settingsDialog != null || notificationDialog != null || hookDialog != null
     val enabled = AppMenuState.of(menu, paletteOpen, dialogOpen)
     MenuBar {
         Menu(Strings["menu.projects"]) { ProjectItems(projects, enabled) }
         Menu(Strings["menu.terminal"]) {
             TerminalItems(terminal, terminalSettings, selectedTerminalProject(list, selection), !enabled.palette)
         }
-        Menu(Strings["menu.view"]) { ViewItems(palette, controllers.notificationSettings, enabled) }
+        Menu(
+            Strings["menu.view"],
+        ) { ViewItems(palette, controllers.notificationSettings, controllers.hookSetup, enabled) }
     }
 }
 
-/** The palette and the notification settings (AM-704); both wait for dialogs, like the palette shortcut. */
+/** The palette, the notification settings (AM-704) and the hooks (AM-607); all wait for dialogs like the palette. */
 @Composable
 private fun MenuScope.ViewItems(
     palette: CommandPaletteController,
     notificationSettings: NotificationSettingsController,
+    hookSetup: HookSetupController,
     enabled: AppMenuState,
 ) {
     Item(
@@ -65,6 +70,11 @@ private fun MenuScope.ViewItems(
         text = Strings["menu.notificationSettings"],
         enabled = enabled.palette,
         onClick = { notificationSettings.open() },
+    )
+    Item(
+        text = Strings["menu.hookSetup"],
+        enabled = enabled.palette,
+        onClick = { hookSetup.open() },
     )
 }
 

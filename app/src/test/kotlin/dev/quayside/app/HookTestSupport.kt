@@ -1,0 +1,68 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
+package dev.quayside.app
+
+import dev.quayside.agentruntime.api.BackupRef
+import dev.quayside.agentruntime.api.HookError
+import dev.quayside.agentruntime.api.HookInstaller
+import dev.quayside.agentruntime.api.HookScope
+import dev.quayside.agentruntime.api.HookStatus
+import dev.quayside.core.domain.Outcome
+import dev.quayside.core.storage.JsonStorage
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import java.nio.file.Files
+import java.nio.file.Path
+
+/** The offer file in [dir] (a temp directory of the test, never the real app support folder); file IO runs inline. */
+internal fun hookOfferStore(dir: Path): HookOfferStore = HookOfferStore(JsonStorage(dir, UnconfinedTestDispatcher()))
+
+/** An offer store whose directory is a regular file, so every save fails. */
+internal fun unwritableHookOfferStore(root: Path): HookOfferStore =
+    hookOfferStore(Files.createFile(root.resolve("not-a-directory")))
+
+/** Holds `install` and `uninstall` of [delegate] until [release], so a test sees the busy state. */
+internal class GatedHookInstaller(
+    private val delegate: HookInstaller,
+) : HookInstaller by delegate {
+    private val gate = CompletableDeferred<Unit>()
+
+    fun release() {
+        gate.complete(Unit)
+    }
+
+    override suspend fun install(scope: HookScope): Outcome<BackupRef, HookError> {
+        gate.await()
+        return delegate.install(scope)
+    }
+
+    override suspend fun uninstall(
+        scope: HookScope,
+        backup: BackupRef?,
+    ): Outcome<Unit, HookError> {
+        gate.await()
+        return delegate.uninstall(scope, backup)
+    }
+
+    override suspend fun status(scope: HookScope): HookStatus = delegate.status(scope)
+}
+
+/** Holds the first `status` of [delegate] until [release]; later calls pass at once. */
+internal class HoldFirstStatusInstaller(
+    private val delegate: HookInstaller,
+) : HookInstaller by delegate {
+    private val gate = CompletableDeferred<Unit>()
+    private var held = false
+
+    fun release() {
+        gate.complete(Unit)
+    }
+
+    override suspend fun status(scope: HookScope): HookStatus {
+        val first = !held
+        held = true
+        if (first) gate.await()
+        return delegate.status(scope)
+    }
+}

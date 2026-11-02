@@ -9,6 +9,9 @@ import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.terminal.ui.TerminalController
 import dev.quayside.terminal.ui.TerminalSettingsController
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 
 /**
  * The controllers and command providers of one main window; they live as long as the window and run in [scope]
@@ -19,6 +22,7 @@ internal class WindowControllers(
     modules: AppModules,
     picker: DirectoryPicker,
     scope: CoroutineScope,
+    hooks: HookDeps,
 ) {
     val projects = ProjectsController(modules.projects, modules.inspector, modules.sessions, picker, scope, core.logger)
     val missionControl =
@@ -40,6 +44,13 @@ internal class WindowControllers(
 
     private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
 
+    val hookSetup = HookSetupController(hooks.installer, hooks.offer, scope, core.logger)
+
+    private val settingsDialogOpen =
+        combine(terminalSettings.state, notificationDialogOpen) { terminal, notification ->
+            terminal != null || notification
+        }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
+
     /** ⌘ keys of a focused terminal, bridged to the palette and the shortcuts. */
     val terminalKeys = TerminalKeys(modules.registry, palette, scope)
 
@@ -56,5 +67,6 @@ internal class WindowControllers(
             AttachCommands(projects, missionControl, attacher, scope),
             TerminalSettingsCommands(projects, missionControl, terminalSettings, scope, notificationDialogOpen),
             NotificationSettingsCommands(projects, missionControl, notificationSettings, scope),
+            HookSetupCommands(projects, missionControl, hookSetup, scope, settingsDialogOpen),
         )
 }

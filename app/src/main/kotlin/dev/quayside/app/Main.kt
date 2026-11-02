@@ -8,6 +8,7 @@ import androidx.compose.ui.window.rememberWindowState
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.impl.agentRuntimeModule
 import dev.quayside.agentruntime.impl.hookEventSourceModule
+import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.agentruntime.impl.oneShotPromptModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.domain.info
@@ -33,6 +34,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
 
+/** Port of the hook server and of the URLs the installer writes into the settings file (docs/11 §9). */
+internal const val HOOK_PORT = 47321
+
 /**
  * Entry point: builds the dependency graph once, then opens the main window. The project list is read before
  * the window opens: `main` is the one place allowed to block (ENG-C3).
@@ -45,6 +49,7 @@ fun main() {
     core.logger.info("app start")
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
     val modules = appModules(core, projects, runBlocking { storedSettings(core) })
+    val hooks = hookDeps(core)
     val keys = WindowKeys()
     // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
     System.setProperty("compose.interop.blending", "true")
@@ -58,7 +63,7 @@ fun main() {
             title = Strings["app.title"],
             state = rememberWindowState(size = DpSize(width = 1280.dp, height = 800.dp)),
         ) {
-            MainWindow(core, modules, keys)
+            MainWindow(core, modules, keys, hooks)
         }
         PopupWindow(modules.notifications.popups)
     }
@@ -96,8 +101,19 @@ private fun sessionsDeps(
     summaries: SummariesApi,
     scope: CoroutineScope,
 ): SessionsApi {
-    val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir)
+    val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir, port = HOOK_PORT)
     return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger, summaries = summaries)
+}
+
+/**
+ * The hooks setup: the installer writes URLs with the same [HOOK_PORT] the hook server listens on; its backups go
+ * to `hooks-backup` in the app support directory, never into the user's files (AM-607).
+ */
+private fun hookDeps(core: CoreDeps): HookDeps {
+    val backupDir = appSupportDir(core.homeDir).resolve("hooks-backup")
+    val installer =
+        hookInstallerModule(core.homeDir, backupDir, core.clock, core.dispatchers.io, core.logger, port = HOOK_PORT)
+    return HookDeps(installer, backupDir, HookOfferStore(core.storage))
 }
 
 /** The settings files read in `main` before the window opens, like the project list. */

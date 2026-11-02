@@ -34,7 +34,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller` | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller` | – |
 | `projects` | `ProjectsApi` | `JsonProjectStore`, `DirectoryInspector` (git, `CLAUDE.md`, hooki) | sidebar, dialogi dodaj/usuń |
 | `sessions` | `SessionMonitor`, `SessionCommands` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami | – |
-| `summaries` | `Summarizer` | z `last_assistant_message`; opcjonalnie `claude -p --model haiku` | – |
+| `summaries` | `Summarizer`, `SummariesApi` | `LastMessageSummary` (czysty) z `last_assistant_message`; model Haiku przez `claude -p` w części B (ADR 0019) | – |
 | `notifications` | `NotificationCenter`, `NotificationSettingsRepo` | `NotificationPolicy` (czysta), `MacSayAdapter`, `SoundAdapter`, `DockBadgeAdapter` | okna popupów, ekran ustawień |
 | `terminal` | `TerminalApi`, `TerminalSession` | JediTerm + pty4j, profile powłoki, OSC 133 | karty, panele, szukanie |
 | `appearance` | `AppearanceApi`, katalog schematów i typografii | `JsonThemeStore`, wbudowany katalog, przełączanie dzień/noc | ekran Wygląd |
@@ -222,6 +222,14 @@ interface SessionCommands {
     suspend fun remove(id: SessionId): Outcome<Unit, SessionError>
     suspend fun reply(id: SessionId, text: String): Outcome<Unit, SessionError>  // AM-506; strategia: otwarta kwestia (09)
 }
+
+// summaries:api — podsumowanie ostatniej wiadomości tury, bez IO (FR-S7, ADR 0019)
+fun interface Summarizer {
+    fun summarize(lastMessage: String): Outcome<String, SummaryError>  // jedna linia, ≤ 160 code pointów
+    companion object { const val MAX_LENGTH: Int = 160 }
+}
+sealed interface SummaryError { data object Empty : SummaryError }  // błąd zostawia poprzednie podsumowanie
+data class SummariesApi(val summarizer: Summarizer)                 // fabryka: summariesModule()
 ```
 
 ```kotlin
@@ -378,8 +386,8 @@ fun main() = application {
 
     val runtime       = agentRuntimeModule(core, RuntimeConfig(minVersion = "2.1.139", hookPort = 47321))
     val projects      = projectsModule(core)
-    val summaries     = summariesModule(core, runtime.agentRuntime)
-    val sessions      = sessionsModule(core, runtime, projects, summaries)
+    val summaries     = summariesModule()
+    val sessions      = sessionsModule(core, runtime, projects, summaries)  // summaries: SummariesApi?, null = bez podsumowań
     val notifications = notificationsModule(core, sessions.monitor, sessions.commands)
     val terminal      = terminalModule(core)
     val appearance    = appearanceModule(core)

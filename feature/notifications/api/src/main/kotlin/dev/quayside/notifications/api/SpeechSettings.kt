@@ -10,6 +10,9 @@ public value class VoiceId(
     }
 }
 
+/** Why a template typed by the user cannot be saved. */
+public enum class TemplateProblem { EMBEDDED_COMMAND, TOO_LONG }
+
 /**
  * How spoken messages sound and when they are silenced (FR-N4, FR-N5, docs/07 defaults).
  * A kind missing from [templates] uses [defaultTemplate], so "restore default" (AM-704) is a removal.
@@ -34,7 +37,7 @@ public data class SpeechSettings(
 ) {
     init {
         require(rate in MIN_RATE..MAX_RATE) { "rate out of range" }
-        require(volume in 0..MAX_VOLUME) { "volume out of range" }
+        require(volume in MIN_VOLUME..MAX_VOLUME) { "volume out of range" }
     }
 
     /** The template of [kind]: the entry in [templates] or [defaultTemplate]. */
@@ -46,7 +49,21 @@ public data class SpeechSettings(
         public const val MIN_RATE: Int = 90
         public const val MAX_RATE: Int = 360
         public const val DEFAULT_VOLUME: Int = 70
-        private const val MAX_VOLUME = 100
+        public const val MIN_VOLUME: Int = 0
+        public const val MAX_VOLUME: Int = 100
+        public const val MAX_TEMPLATE_LENGTH: Int = 200
+
+        /**
+         * [TemplateProblem.EMBEDDED_COMMAND] for `[[` or `]]` (embedded `say` commands), checked first;
+         * [TemplateProblem.TOO_LONG] above [MAX_TEMPLATE_LENGTH] characters; else null.
+         * Placeholders are not checked.
+         */
+        public fun templateProblem(template: String): TemplateProblem? =
+            when {
+                "[[" in template || "]]" in template -> TemplateProblem.EMBEDDED_COMMAND
+                template.length > MAX_TEMPLATE_LENGTH -> TemplateProblem.TOO_LONG
+                else -> null
+            }
 
         /** The default message of [kind] (docs/07). */
         public fun defaultTemplate(kind: NotificationKind): String =

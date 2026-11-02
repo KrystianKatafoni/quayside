@@ -82,7 +82,7 @@ class NotificationSettingsControllerTest {
         }
 
     @Test
-    fun `save keeps fields the dialog does not show`() =
+    fun `save writes back the saved settings with only the edited field changed`() =
         runTest {
             val repo = scripted()
             val controller = controllerOver(repo)
@@ -92,22 +92,6 @@ class NotificationSettingsControllerTest {
             act { controller.save() }
 
             repo.settings.value shouldBe saved.copy(voice = false)
-        }
-
-    @Test
-    fun `save starts from the settings of the moment of the write, not of open`() =
-        runTest {
-            val repo = scripted()
-            val controller = controllerOver(repo)
-            act { controller.open() }
-            act { controller.edit { it.copy(voice = false) } }
-            val newer = SpeechSettings(rate = 300)
-            repo.update { it.copy(speech = newer) }
-
-            act { controller.save() }
-
-            repo.settings.value.speech shouldBe newer
-            repo.settings.value.voice shouldBe false
         }
 
     @Test

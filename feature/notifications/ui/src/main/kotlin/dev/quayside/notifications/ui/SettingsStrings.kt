@@ -5,6 +5,7 @@ import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.NotificationSettingsError
 import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.notifications.api.SpeechSettings
 import java.util.Locale
 import java.util.ResourceBundle
 
@@ -51,11 +52,19 @@ internal object SettingsStrings {
             }
 
             NotificationField.MAX_VISIBLE -> {
-                range("invalid.MAX_VISIBLE", 1, PopupSettings.MAX_VISIBLE_LIMIT)
+                range("invalid.MAX_VISIBLE", PopupSettings.MIN_VISIBLE, PopupSettings.MAX_VISIBLE_LIMIT)
             }
 
-            else -> {
-                get("invalid.other")
+            NotificationField.RATE -> {
+                range("invalid.RATE", SpeechSettings.MIN_RATE, SpeechSettings.MAX_RATE)
+            }
+
+            NotificationField.VOLUME -> {
+                range("invalid.VOLUME", SpeechSettings.MIN_VOLUME, SpeechSettings.MAX_VOLUME)
+            }
+
+            NotificationField.TEMPLATE -> {
+                get("invalid.TEMPLATE").replace("{max}", SpeechSettings.MAX_TEMPLATE_LENGTH.toString())
             }
         }
 

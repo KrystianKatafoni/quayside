@@ -78,7 +78,43 @@ class SpeechSettingsTest {
         shouldThrow<IllegalArgumentException> { VoiceId(name) }
     }
 
+    @Test
+    fun `init accepts MIN_VOLUME and MAX_VOLUME`() {
+        SpeechSettings(volume = SpeechSettings.MIN_VOLUME).volume shouldBe 0
+        SpeechSettings(volume = SpeechSettings.MAX_VOLUME).volume shouldBe 100
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("templateProblems")
+    fun `template problems`(
+        template: String,
+        expected: TemplateProblem?,
+    ) {
+        SpeechSettings.templateProblem(template) shouldBe expected
+    }
+
+    @Test
+    fun `every default template has no problem`() {
+        NotificationKind.entries.forEach {
+            SpeechSettings.templateProblem(SpeechSettings.defaultTemplate(it)) shouldBe null
+        }
+    }
+
     companion object {
+        private val OVER_LIMIT = SpeechSettings.MAX_TEMPLATE_LENGTH + 1
+
+        @JvmStatic
+        fun templateProblems(): List<Arguments> =
+            listOf(
+                arguments("{sesja} ]] x", TemplateProblem.EMBEDDED_COMMAND),
+                arguments("[[", TemplateProblem.EMBEDDED_COMMAND),
+                arguments("[ x ]", null),
+                arguments("a".repeat(SpeechSettings.MAX_TEMPLATE_LENGTH), null),
+                arguments("a".repeat(OVER_LIMIT), TemplateProblem.TOO_LONG),
+                arguments("[[" + "a".repeat(OVER_LIMIT - 2), TemplateProblem.EMBEDDED_COMMAND),
+                arguments("{nieznana}", null),
+            )
+
         @JvmStatic
         fun defaultTemplates(): List<Arguments> =
             listOf(

@@ -9,6 +9,7 @@ import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.PopupStyle
 import dev.quayside.notifications.api.SpeechSettings
+import dev.quayside.notifications.api.VoiceId
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -114,13 +115,34 @@ class NotificationDraftTest {
     }
 
     @Test
-    fun `fields the dialog does not show are kept from the current settings`() {
+    fun `a saved non default draft round trips unchanged`() {
         val current =
-            defaults.copy(speech = SpeechSettings(rate = 250, readQuestion = false))
+            defaults
+                .withChannel(NotificationKind.TURN_ENDED, NotificationChannel.VOICE, true)
+                .copy(
+                    runningLongMinutes = 45,
+                    popup = PopupSettings(PopupPosition.TOP_LEFT, PopupDuration.ALWAYS_STAY, 5, PopupStyle.COMPACT),
+                    speech =
+                        SpeechSettings(
+                            voice = VoiceId("Ewa"),
+                            rate = 250,
+                            volume = 40,
+                            templates = mapOf(NotificationKind.FAILED to "Ups, {sesja}"),
+                            readQuestion = false,
+                            onlyInBackground = false,
+                            muteWhenMicrophoneActive = false,
+                        ),
+                )
 
-        val result = (settingsOf(draftOf(current).copy(popups = false), current) as Outcome.Ok).value
+        settingsOf(draftOf(current), current) shouldBe Outcome.Ok(current)
+    }
 
-        result shouldBe current.copy(popups = false)
+    @Test
+    fun `voice null round trips as the system voice`() {
+        val current = defaults.copy(speech = SpeechSettings(voice = null))
+
+        draftOf(current).speech.voice shouldBe null
+        settingsOf(draftOf(current), current) shouldBe Outcome.Ok(current)
     }
 
     @ParameterizedTest(name = "\"{0}\" is {1} minutes")

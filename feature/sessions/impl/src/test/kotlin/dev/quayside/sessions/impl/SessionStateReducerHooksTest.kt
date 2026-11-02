@@ -31,7 +31,7 @@ class SessionStateReducerHooksTest {
         Outcome.Ok(listOf(session)),
         emptyMap(),
         now,
-        listOfNotNull(detail?.let { session.id to it }).toMap(),
+        hooks = HookData(details = listOfNotNull(detail?.let { session.id to it }).toMap()),
     )
 
     private fun fresh(vararg state: SessionState) =

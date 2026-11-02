@@ -96,3 +96,4 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Check Gradle nie obejmuje lintu Markdown, a CI ma „Docs lint”: przed pushem zmian w `.md` uruchom lokalnie `npx --yes markdownlint-cli2@0.18.1` (musi dać 0 błędów).
 - Test skoku po literze i skrótów klawiszowych potrzebuje danych z małą literą oraz klawisza z modyfikatorem, inaczej mutacje `ignoreCase` i `!isMetaPressed` przeżywają.
 - `value class` nullable w parametrach `@MethodSource` JUnit odpakowuje do `String?` — przekazuj `String?` i opakowuj w teście.
+- Test progu liczonego w code pointach zamiast znaków UTF-16 musi mieć dane, w których oba sposoby dają różny wynik (np. 45 emoji przed spacją), inaczej mutacja przeżywa; dopisanie wierszy do tabeli `@MethodSource` łatwo przekracza LongMethod (30) — wydziel funkcję źródła.

@@ -11,6 +11,8 @@ dependencies {
     implementation(project(":feature:agent-runtime:api"))
     // ProjectsApi and Project: the project dirs the monitor attributes sessions to (AM-403).
     implementation(project(":feature:projects:api"))
+    // Summarizer: the summary of the last message of a turn (AM-604).
+    implementation(project(":feature:summaries:api"))
     // Outcome, ProjectId, SessionId, Clock and Logger.
     implementation(project(":core:domain"))
 
@@ -20,6 +22,8 @@ dependencies {
     testImplementation(testFixtures(project(":feature:agent-runtime:api")))
     // FakeProjectsApi for the project map of the monitor (AM-403).
     testImplementation(testFixtures(project(":feature:projects:api")))
+    // FakeSummarizer for the summaries put into sessions (AM-604).
+    testImplementation(testFixtures(project(":feature:summaries:api")))
     // T0, aSessionId, TestClock and RecordingLogger.
     testImplementation(project(":core:testing"))
 }

@@ -33,8 +33,8 @@ private fun MaxVisibleRow(
     controller: NotificationSettingsController,
 ) {
     val invalid = state.invalid?.takeIf { it.field == NotificationField.MAX_VISIBLE }
-    SettingRow("settings.maxVisible", invalid) {
-        TextSetting(SettingsTags.MAX_VISIBLE, state.draft.popup.maxVisible) { text ->
+    SettingRow(SettingsStrings["settings.maxVisible"], invalid) { named ->
+        TextSetting(SettingsTags.MAX_VISIBLE, state.draft.popup.maxVisible, named) { text ->
             controller.edit { it.copy(popup = it.popup.copy(maxVisible = text)) }
         }
     }
@@ -49,8 +49,9 @@ private inline fun <reified T : Enum<T>> EnumRow(
     noinline onSelect: (T) -> Unit,
 ) {
     val entries = enumValues<T>()
-    SettingRow("settings.popup${prefix.replaceFirstChar { it.uppercase() }}", invalid = null) {
-        ChoiceField(tag, entries.map { SettingsStrings.option(prefix, it) }, selected.ordinal) { index ->
+    val label = SettingsStrings["settings.popup${prefix.replaceFirstChar { it.uppercase() }}"]
+    SettingRow(label, invalid = null) { named ->
+        ChoiceField(tag, entries.map { SettingsStrings.option(prefix, it) }, selected.ordinal, named) { index ->
             onSelect(entries[index])
         }
     }

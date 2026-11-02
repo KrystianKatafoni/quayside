@@ -31,6 +31,8 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,17 +61,23 @@ internal fun Label(
     BasicText(text, modifier, TextStyle(color = color, fontSize = size.sp), maxLines = 1)
 }
 
-/** A label and its [control]; [invalid] shows its message under the row. */
+/**
+ * A [label] and its [control]; [invalid] shows its message under the row. The control gets a modifier that names it
+ * for the screen reader with the [label] (NFR-6, S3).
+ */
 @Composable
 internal fun SettingRow(
-    labelKey: String,
+    label: String,
     invalid: InvalidField?,
-    control: @Composable () -> Unit,
+    control: @Composable (Modifier) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(space = 2.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Label(SettingsStrings[labelKey], Modifier.width(width = 200.dp))
-            control()
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Label(label, Modifier.width(width = 200.dp))
+            control(Modifier.semantics { contentDescription = label })
         }
         invalid?.let {
             Label(
@@ -87,13 +95,14 @@ internal fun SettingRow(
 internal fun TextSetting(
     tag: String,
     value: String,
+    modifier: Modifier = Modifier,
     onChange: (String) -> Unit,
 ) {
     BasicTextField(
         value = value,
         onValueChange = onChange,
         modifier =
-            Modifier
+            modifier
                 .width(width = 260.dp)
                 .testTag(tag)
                 .background(color = SettingsColors.field, shape = controlShape)
@@ -183,11 +192,13 @@ internal fun ToggleSetting(
 internal fun DialogButton(
     tag: String,
     textKey: String,
+    description: String? = null,
     onClick: () -> Unit,
 ) {
     Box(
         Modifier
             .testTag(tag)
+            .semantics { description?.let { contentDescription = it } }
             .focusFrame()
             .background(color = SettingsColors.field, shape = controlShape)
             .clickable(role = Role.Button, onClick = onClick)

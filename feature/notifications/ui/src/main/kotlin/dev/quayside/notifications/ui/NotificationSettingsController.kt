@@ -1,8 +1,12 @@
 package dev.quayside.notifications.ui
 
 import dev.quayside.core.domain.Outcome
+import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettingsError
 import dev.quayside.notifications.api.NotificationSettingsRepo
+import dev.quayside.notifications.api.SpeechSettings
+import dev.quayside.notifications.api.VoiceCatalog
+import dev.quayside.notifications.api.VoiceOption
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,12 +15,14 @@ import kotlinx.coroutines.launch
 
 /**
  * The open dialog. [invalid]: the field the last save refused. [saveError]: why the last write changed nothing.
- * Part B1 adds the popup to the draft; part B2 adds the list of voices.
+ * [voices]: the installed voices; null while loading or after a failure, then [voicesFailed] tells which.
  */
 public data class NotificationDialogState(
     val draft: NotificationDraft,
     val invalid: InvalidField?,
     val saveError: NotificationSettingsError?,
+    val voices: List<VoiceOption>? = null,
+    val voicesFailed: Boolean = false,
 )
 
 /**
@@ -27,6 +33,7 @@ public data class NotificationDialogState(
  */
 public class NotificationSettingsController(
     private val repo: NotificationSettingsRepo,
+    private val voices: VoiceCatalog,
     private val scope: CoroutineScope,
 ) {
     private val dialog = MutableStateFlow<NotificationDialogState?>(null)
@@ -36,12 +43,15 @@ public class NotificationSettingsController(
 
     private var generation = 0
     private var saving = false
+    private var voiceList: List<VoiceOption>? = null
+    private var loadingVoices = false
 
-    /** Opens the dialog with a draft of the saved settings. */
+    /** Opens the dialog with a draft of the saved settings; the first open also starts loading the voices. */
     public fun open() {
         generation++
         saving = false
-        dialog.value = NotificationDialogState(draftOf(repo.settings.value), null, null)
+        dialog.value = NotificationDialogState(draftOf(repo.settings.value), null, null, voiceList)
+        loadVoices()
     }
 
     /** Changes the draft; clears the invalid field and the save error. */
@@ -67,11 +77,42 @@ public class NotificationSettingsController(
         }
     }
 
+    /** Sets the template of [kind] in the draft to the default text; save then leaves it out. */
+    public fun restoreTemplate(kind: NotificationKind) {
+        val default = SpeechSettings.defaultTemplate(kind)
+        edit { it.copy(speech = it.speech.copy(templates = it.speech.templates + (kind to default))) }
+    }
+
     /** Closes the dialog and drops the draft. */
     public fun cancel() {
         generation++
         saving = false
         dialog.value = null
+    }
+
+    /** One load at a time; a list that arrived is kept for good, a failure is tried again at the next open. */
+    private fun loadVoices() {
+        if (voiceList != null || loadingVoices) return
+        loadingVoices = true
+        scope.launch {
+            val result =
+                try {
+                    voices.voices()
+                } finally {
+                    // Defensive: the catalog returns Outcome, but the flag must not stay set if it ever throws.
+                    loadingVoices = false
+                }
+            when (result) {
+                is Outcome.Ok -> {
+                    voiceList = result.value
+                    dialog.update { it?.copy(voices = result.value) }
+                }
+
+                is Outcome.Err -> {
+                    dialog.update { it?.copy(voicesFailed = true) }
+                }
+            }
+        }
     }
 
     private fun finish(result: Outcome<Unit, NotificationSettingsError>) {

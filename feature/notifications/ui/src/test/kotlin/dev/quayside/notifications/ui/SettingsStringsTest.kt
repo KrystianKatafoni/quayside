@@ -8,6 +8,7 @@ import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.PopupStyle
 import dev.quayside.notifications.api.SpeechSettings
+import dev.quayside.notifications.api.VoiceId
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -132,5 +133,32 @@ class SettingsStringsTest {
     @Test
     fun `every text key is not blank`() {
         SettingsStrings.keys.forEach { SettingsStrings[it].shouldNotBeBlank() }
+    }
+
+    @Test
+    fun `voice labels show system, locale and not installed`() {
+        SettingsStrings.of(VoiceChoice(id = null, locale = null, missing = false)) shouldBe "Głos systemowy"
+        SettingsStrings.of(VoiceChoice(VoiceId("Zosia"), "pl_PL", missing = false)) shouldBe "Zosia (pl_PL)"
+        SettingsStrings.of(VoiceChoice(VoiceId("Eddy (polski (Polska))"), "pl_PL", missing = false)) shouldBe
+            "Eddy (polski (Polska)) (pl_PL)"
+        SettingsStrings.of(VoiceChoice(VoiceId("Zosia"), locale = null, missing = true)) shouldBe
+            "Zosia (niezainstalowany)"
+        // The list is not loaded yet: the saved voice is shown by its name alone.
+        SettingsStrings.of(VoiceChoice(VoiceId("Zosia"), locale = null, missing = false)) shouldBe "Zosia"
+    }
+
+    @Test
+    fun `the speech section has its texts`() {
+        SettingsStrings["settings.speech"] shouldBe "Głos"
+        SettingsStrings["settings.speechVoice"] shouldBe "Głos lektora"
+        SettingsStrings["voices.failed"] shouldBe "Nie udało się wczytać listy głosów."
+        SettingsStrings["settings.rate"] shouldBe "Tempo (słowa na minutę)"
+        SettingsStrings["settings.volume"] shouldBe "Głośność (%)"
+        SettingsStrings["settings.templates"] shouldBe "Komunikaty"
+        SettingsStrings["settings.restore"] shouldBe "Przywróć domyślny"
+        SettingsStrings["settings.readQuestion"] shouldBe "Czytaj treść pytania"
+        SettingsStrings["settings.onlyInBackground"] shouldBe "Tylko gdy aplikacja jest w tle"
+        SettingsStrings["settings.muteWhenMicrophoneActive"] shouldBe "Wycisz przy aktywnym mikrofonie"
+        SettingsStrings["settings.micNote"] shouldBe "Jeszcze nie działa: wykrywanie mikrofonu czeka na ADR 0018"
     }
 }

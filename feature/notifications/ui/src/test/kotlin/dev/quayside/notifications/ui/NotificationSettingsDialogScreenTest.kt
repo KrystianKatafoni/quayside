@@ -21,6 +21,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.api.FakeVoiceCatalog
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.PopupDuration
@@ -49,7 +50,10 @@ class NotificationSettingsDialogScreenTest {
         val built = mutableListOf<NotificationSettingsController>()
         setContent {
             val scope = rememberCoroutineScope()
-            val controller = remember { NotificationSettingsController(repo, scope).also { built += it } }
+            val controller =
+                remember {
+                    NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), scope).also(built::add)
+                }
             NotificationSettingsDialog(controller)
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }

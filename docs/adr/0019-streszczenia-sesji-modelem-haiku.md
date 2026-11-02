@@ -37,7 +37,8 @@ Decyzje człowieka z 2026-11-02:
 ## Konsekwencje
 
 - Nowy plik konfiguracji `summaries.json` w tabeli docs/11 §8; nowy port w docs/11 §4.
-- Flagi `-p`, `--output-format json`, `--settings`, `--no-session-persistence` trafiają do `docs/compat.md` i `/compat-check`.
+- Flagi `-p`, `--output-format json`, `--settings`, `--no-session-persistence`, `--tools ""`, `--strict-mcp-config`, `--disable-slash-commands` trafiają do `docs/compat.md` i `/compat-check`.
 - Testy bez sieci i bez prawdziwego `claude`: fałszywy `claude` w katalogu tymczasowym (kontrakt `OneShotPrompt`), `FakeOneShotPrompt` w `summaries`.
 - Prywatność: treść wiadomości trafia do modelu tylko po `useModel: true`; nigdy do logów. W argv jest widoczna w `ps` dla tego samego użytkownika.
+- Ryzyko prompt injection: wiadomość agenta to niezaufana treść, a trafia do promptu modelu. Mitygacja: model w `-p` nie ma narzędzi (`--tools ""`), serwerów MCP (`--strict-mcp-config`) ani komend (`--disable-slash-commands`), hooki są wyłączone, a katalog roboczy to katalog domowy, nie projekt. W najgorszym razie model zwróci zmanipulowane streszczenie, które przechodzi przez `LastMessageSummary` (jedna linia, ≤ 160 znaków).
 - Koszt: najwyżej jedno wywołanie Haiku na turę sesji.

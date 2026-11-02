@@ -17,6 +17,7 @@ import dev.quayside.core.testing.T0
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
+import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.FakeSessions
@@ -110,6 +111,23 @@ class NotificationSettingsDialogWindowTest {
             // Then the repo holds the new channels at once
             repo.settings.value.channelsFor(NotificationKind.TURN_ENDED) shouldBe
                 setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
+        }
+
+    @Test
+    fun `FR-N3 saved popup position reaches the repo`() =
+        runComposeUiTest {
+            // Given the open dialog; the popup sits at the bottom right by default
+            val palette = window()
+            openSettings(palette)
+            repo.settings.value.popup.position shouldBe PopupPosition.BOTTOM_RIGHT
+
+            // When the user clicks the position field (one step forward, wrapping to the top left) and saves
+            await(WindowTags.NOTIFICATION_POPUP_POSITION).performScrollTo().performClick()
+            await(WindowTags.NOTIFICATION_SETTINGS_SAVE).performScrollTo().performClick()
+            waitUntilDoesNotExist(hasTestTag(WindowTags.NOTIFICATION_SETTINGS_DIALOG))
+
+            // Then the repo holds the new position at once
+            repo.settings.value.popup.position shouldBe PopupPosition.TOP_LEFT
         }
 
     /**

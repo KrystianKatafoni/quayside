@@ -37,10 +37,11 @@ public data class PopupSettings(
     val style: PopupStyle = PopupStyle.DETAILED,
 ) {
     init {
-        require(maxVisible in 1..MAX_VISIBLE_LIMIT) { "maxVisible out of range" }
+        require(maxVisible in MIN_VISIBLE..MAX_VISIBLE_LIMIT) { "maxVisible out of range" }
     }
 
     public companion object {
+        public const val MIN_VISIBLE: Int = 1
         public const val DEFAULT_MAX_VISIBLE: Int = 3
         public const val MAX_VISIBLE_LIMIT: Int = 10
     }

@@ -44,6 +44,8 @@ internal object WindowTags {
     const val NOTIFICATION_SETTINGS_DIALOG = "notifications.settings"
     const val NOTIFICATION_SETTINGS_SAVE = "notifications.settings.save"
     const val NOTIFICATION_POPUP_POSITION = "notifications.settings.popup.position"
+    const val NOTIFICATION_SPEECH_VOICE = "notifications.settings.speech.voice"
+    const val NOTIFICATION_SPEECH_RATE = "notifications.settings.speech.rate"
 
     fun notificationCell(
         kind: NotificationKind,

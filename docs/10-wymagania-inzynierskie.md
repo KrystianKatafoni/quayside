@@ -37,7 +37,7 @@ Ten dokument określa, **jak** budujemy Quayside. Jest wiążący dla każdego k
 | ID | Wymaganie |
 | --- | --- |
 | ENG-C1 | Styl: oficjalne Kotlin Coding Conventions, formatowanie ktlint (przez Spotless), analiza statyczna detekt z konfiguracją repo. **Zero ostrzeżeń** na gałęzi głównej |
-| ENG-C2 | Limity: funkcja ≤ 30 linii, złożoność cyklomatyczna ≤ 10, plik ≤ 400 linii, klasa ≤ 300 linii, ≤ 5 parametrów (więcej → obiekt parametrów) |
+| ENG-C2 | Limity: funkcja ≤ 30 linii, złożoność cyklomatyczna ≤ 10, plik ≤ 400 linii, klasa ≤ 300 linii, funkcja ≤ 5 parametrów, konstruktor ≤ 6 (więcej → obiekt parametrów) |
 | ENG-C3 | Zakazane: `!!`, `GlobalScope`, `runBlocking` poza `main` i testami, `lateinit` w logice domenowej, `println`, puste `catch`, „magiczne” stringi flag CLI poza adapterem |
 | ENG-C4 | Nazwy mówią **co**, nie **jak**: `SessionStateReducer`, nie `Helper`/`Manager`/`Utils`. Porty z sufiksem `Port` tylko gdy to nie oczywiste; adaptery z sufiksem `Adapter` |
 | ENG-C5 | **Funkcyjny rdzeń, imperatywna powłoka:** logika (reducery, polityki, parsery, walidatory) to czyste funkcje bez IO; IO tylko w adapterach |

@@ -42,6 +42,27 @@ public abstract class NotificationSettingsRepoContract {
         }
 
     @Test
+    public fun `update keeps speech settings`(): Unit =
+        runTest {
+            val repo = create()
+            val speech =
+                SpeechSettings(
+                    voice = VoiceId("Ewa"),
+                    rate = 250,
+                    volume = 40,
+                    templates = mapOf(NotificationKind.FAILED to "Ups, {sesja}"),
+                    readQuestion = false,
+                    onlyInBackground = false,
+                    muteWhenMicrophoneActive = false,
+                )
+
+            repo.update { it.copy(speech = speech) }
+            repo.update { it.copy(voice = false) }
+
+            repo.settings.value.speech shouldBe speech
+        }
+
+    @Test
     public fun `concurrent updates lose no change`(): Unit =
         runTest {
             val repo = create()

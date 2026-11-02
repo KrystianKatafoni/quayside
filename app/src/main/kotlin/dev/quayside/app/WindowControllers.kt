@@ -3,6 +3,7 @@ package dev.quayside.app
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.missioncontrol.ui.MissionControlController
+import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.terminal.ui.TerminalController
@@ -34,6 +35,10 @@ internal class WindowControllers(
 
     val terminalSettings = TerminalSettingsController(modules.terminal.repo, scope)
 
+    val notificationSettings = NotificationSettingsController(modules.notifications.settings, scope)
+
+    private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
+
     /** ⌘ keys of a focused terminal, bridged to the palette and the shortcuts. */
     val terminalKeys = TerminalKeys(modules.registry, palette, scope)
 
@@ -48,6 +53,7 @@ internal class WindowControllers(
             AppCommands(modules.projects, projects, missionControl, palette, scope),
             TerminalCommands(modules.projects, projects, missionControl, terminal, scope),
             AttachCommands(projects, missionControl, attacher, scope),
-            TerminalSettingsCommands(projects, missionControl, terminalSettings, scope),
+            TerminalSettingsCommands(projects, missionControl, terminalSettings, scope, notificationDialogOpen),
+            NotificationSettingsCommands(projects, missionControl, notificationSettings, scope),
         )
 }

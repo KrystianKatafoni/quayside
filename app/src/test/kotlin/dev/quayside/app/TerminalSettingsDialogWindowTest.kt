@@ -64,7 +64,12 @@ class TerminalSettingsDialogWindowTest {
         )
 
     private fun ComposeUiTest.window(): CommandPaletteController =
-        showWindow(FakeProjectsApi(initial = listOf(project)), sessions(), terminals, terminalSettings = repo)
+        showWindow(
+            FakeProjectsApi(initial = listOf(project)),
+            sessions(),
+            terminals,
+            settings = SettingsRepos(terminal = repo),
+        )
 
     private fun ComposeUiTest.selectProject() {
         await(WindowTags.projectRow("project0001")).performClick()

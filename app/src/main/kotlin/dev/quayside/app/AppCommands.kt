@@ -59,15 +59,15 @@ internal data class AppMenuState(
 ) {
     companion object {
         /**
-         * An open palette or a dialog of Mission Control takes the keys (⌘⌫ reaches the palette field), so all items
-         * are off; ⌘K also waits for project dialogs.
+         * An open palette, a dialog of Mission Control or a settings dialog (terminal, notifications) takes the
+         * keys (⌘⌫ reaches the palette field), so all items are off; ⌘K also waits for project dialogs.
          */
         fun of(
             menu: ProjectsMenuState,
             paletteOpen: Boolean,
-            sessionDialogOpen: Boolean = false,
+            settingsDialogOpen: Boolean = false,
         ): AppMenuState {
-            val blocked = paletteOpen || sessionDialogOpen
+            val blocked = paletteOpen || settingsDialogOpen
             return AppMenuState(
                 add = menu.canAdd && !blocked,
                 remove = menu.canRemove && !blocked,

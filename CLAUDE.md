@@ -67,7 +67,7 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Gdy detekt (TooManyFunctions, CyclomaticComplexMethod) wymusza pliki spoza planu, dopisz je do sekcji „Moduły” planu w tym samym PR; wpis w CHANGELOG `[Unreleased]` dodawaj razem z kodem funkcji widocznej dla użytkownika.
 - `data class` z polem-lambdą (np. `Command.run`) nigdy nie jest równa kopii, więc `stateIn` emituje przy każdej zmianie źródła; efekty uboczne w łańcuchu (logi) deduplikuj osobno.
 - `runCurrent` i `flatMapLatest` są eksperymentalne — przy `allWarningsAsErrors` potrzebny `@OptIn(ExperimentalCoroutinesApi::class)`.
-- Plany z nowym composable i kontrolerem zaniżają rozmiar o ok. 30% (ktlint rozbija wywołania z nazwanymi argumentami); przy szacunku > 300 linii zaplanuj podział od razu.
+- Plany z nowym composable i kontrolerem zaniżają rozmiar o ok. 30% (ktlint rozbija wywołania z nazwanymi argumentami); przy szacunku > 300 linii zaplanuj podział od razu; przy kopiowaniu kontrolek z innego modułu dolicz importy.
 - Stan po `stateIn` bywa o krok w tyle przy szybkich klawiszach — gdy plan mówi, skąd czytać stan (np. bieżące `selection` w `update`), kod musi to odwzorować albo plan trzeba poprawić w tym samym PR.
 - Gdy w trakcie zadania dochodzi nowy wariant (np. Remove obok Stop/Respawn), przejrzyj KDoc publicznego API i komentarze pod kątem starych wyliczeń („both”, „X or Y”) — testy tego nie złapią.
 - Strażnik bez obserwowalnego skutku w UI daje test „zawsze zielony” — sprawdź, czy test padnie po usunięciu tej linii, albo opisz strażnik w KDoc jako ochronę przed opóźnionym `stateIn`.
@@ -88,4 +88,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Zwolnienie blokady (zbiór kluczy w trakcie, flaga `pending`) w `finally` wymaga testu ścieżki błędu — po nieudanym starcie kolejne wywołanie znowu otwiera; inaczej przeniesienie zwolnienia do gałęzi `Ok` nie wywróci żadnego testu.
 - `@Suppress("ForbiddenMethodCall")` nie zwalnia z ENG-C3: `runBlocking` tylko w `main`.
 - ktlint nie zgłasza nieużywanych importów — po przeniesieniu kodu między plikami sprawdź je ręcznie.
+- Kolory kopiowane z innego modułu `ui` przenoszą jego błędy kontrastu — przy kopiowaniu sprawdź NFR-6 (≥ 4.5:1).
 - Test porzuconej grupy i zwolnienia chłodzenia w `VoiceNotifier` wymagał mutacji, by udowodnić, że pada; metoda testowa zwracająca wartość (np. `Boolean` z `runBlocking`) jest po cichu pomijana przez JUnit — testy mają zwracać `Unit`.

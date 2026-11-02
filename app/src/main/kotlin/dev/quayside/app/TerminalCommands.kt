@@ -8,6 +8,7 @@ import dev.quayside.commandpalette.api.Shortcut
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.SessionActionsState
+import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.ui.ProjectsController
@@ -22,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /** The project selected in the sidebar as a terminal project; null without a selection. */
@@ -151,25 +153,31 @@ internal fun terminalSettingsCommands(
     }
 
 /**
- * Offers [terminalSettingsCommands], hidden while a dialog of the projects, Mission Control or settings is open.
- * The hiding is a guard only against a late `stateIn` (the open dialog's popup already blocks the palette), so
- * no UI test observes it; [terminalSettingsCommands] carries the tested rule.
+ * Offers [terminalSettingsCommands], hidden while a dialog of the projects, Mission Control or settings is open, also
+ * while another settings dialog is open ([otherDialogOpen], the notification settings of AM-704). The hiding is a
+ * guard only against a late `stateIn` (the open dialog's popup already blocks the palette), so no UI test observes
+ * it; [terminalSettingsCommands] carries the tested rule.
  */
 internal class TerminalSettingsCommands(
     controller: ProjectsController,
     missionControl: MissionControlController,
     settings: TerminalSettingsController,
     scope: CoroutineScope,
+    otherDialogOpen: StateFlow<Boolean>,
 ) : CommandProvider {
     private val offered =
-        { menu: ProjectsMenuState, actions: SessionActionsState, dialog: SettingsDialogState? ->
-            terminalSettingsCommands(menu.dialogOpen || actions.dialogOpen || dialog != null, settings)
+        { menu: ProjectsMenuState, actions: SessionActionsState, dialog: SettingsDialogState?, other: Boolean ->
+            terminalSettingsCommands(menu.dialogOpen || actions.dialogOpen || dialog != null || other, settings)
         }
 
     override val commands: StateFlow<List<Command>> =
-        combine(controller.menu, missionControl.actions, settings.state, offered).stateIn(
+        combine(controller.menu, missionControl.actions, settings.state, otherDialogOpen, offered).stateIn(
             scope,
             SharingStarted.Eagerly,
-            offered(controller.menu.value, missionControl.actions.value, settings.state.value),
+            offered(controller.menu.value, missionControl.actions.value, settings.state.value, otherDialogOpen.value),
         )
 }
+
+/** Whether the notification settings dialog is open, as a flow for providers that hide their commands then. */
+internal fun NotificationSettingsController.dialogOpen(scope: CoroutineScope): StateFlow<Boolean> =
+    state.map { it != null }.stateIn(scope, SharingStarted.Eagerly, state.value != null)

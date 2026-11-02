@@ -24,11 +24,15 @@ internal class AttachBridge {
     }
 }
 
-/** The notification center with the popup controller of the popup window and the [attach] bridge (AM-702). */
+/**
+ * The notification center with the popup controller of the popup window, the [attach] bridge (AM-702) and the
+ * [settings] repo behind the settings dialog (AM-704).
+ */
 internal class NotificationDeps(
     val center: NotificationCenter,
     val popups: PopupController,
     val attach: AttachBridge,
+    val settings: NotificationSettingsRepo,
 )
 
 /**
@@ -60,5 +64,5 @@ internal fun notificationDeps(
             AppForeground().active,
             core.logger,
         )
-    return NotificationDeps(center, PopupController(center, settings, scope), attach)
+    return NotificationDeps(center, PopupController(center, settings, scope), attach, settings)
 }

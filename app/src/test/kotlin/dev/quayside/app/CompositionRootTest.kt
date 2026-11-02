@@ -55,6 +55,8 @@ class CompositionRootTest {
                 "command.view.working",
                 "command.view.failed",
                 "command.terminalSettings",
+                "command.notificationSettings",
+                "menu.notificationSettings",
                 "picker.title",
             )
         Strings.keys.forEach { Strings[it].shouldNotBeBlank() }

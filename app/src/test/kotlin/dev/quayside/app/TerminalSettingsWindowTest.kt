@@ -62,7 +62,7 @@ class TerminalSettingsWindowTest {
             FakeProjectsApi(initial = listOf(project)),
             sessions(),
             terminals,
-            terminalSettings = FakeTerminalSettingsRepo(settings),
+            settings = SettingsRepos(terminal = FakeTerminalSettingsRepo(settings)),
         )
 
     /** Given the project and its session `fix-login` selected. */

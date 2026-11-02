@@ -1,5 +1,8 @@
 package dev.quayside.app
 
+import dev.quayside.notifications.api.NotificationChannel
+import dev.quayside.notifications.api.NotificationKind
+
 /** Semantics tags of other modules that are `internal` there (the same trick as in `MissionControlEmptyTest`). */
 internal object WindowTags {
     const val PALETTE = "palette"
@@ -36,6 +39,15 @@ internal object WindowTags {
     const val SETTINGS_DIALOG = "terminal.settings"
     const val SETTINGS_FONT_SIZE = "terminal.settings.fontSize"
     const val SETTINGS_SAVE = "terminal.settings.save"
+
+    /** The notification settings dialog (AM-704); tags of `notifications:ui`, `internal` there. */
+    const val NOTIFICATION_SETTINGS_DIALOG = "notifications.settings"
+    const val NOTIFICATION_SETTINGS_SAVE = "notifications.settings.save"
+
+    fun notificationCell(
+        kind: NotificationKind,
+        channel: NotificationChannel,
+    ): String = "notifications.settings.matrix.${kind.name}.${channel.name}"
 
     /** Tags of `terminal:ui`, which are `internal` there; tab and pane ids count from 1 in opening order. */
     fun terminalGroup(projectId: String): String = "terminal.group.$projectId"

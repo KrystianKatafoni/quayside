@@ -93,3 +93,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Asercja `shouldContain "1"` na komunikacie z zakresem „1–10” jest zawsze prawdziwa („10” zawiera „1”) — asercję zakresu pisz pełnym fragmentem „od 1 do N”.
 - Test sortowania bez wielkości liter musi mieć dane, dla których wynik różni się od sortowania ASCII (np. bob, Anna, Carl); inaczej mutacja `.lowercase()` przeżywa.
 - Gdy szkic obejmuje wszystkie pola, test „zapis zaczyna od current” przestaje być obserwowalny — usuń go świadomie i opisz w planie, nie przepisuj na „zawsze zielony”.
+- Check Gradle nie obejmuje lintu Markdown, a CI ma „Docs lint”: przed pushem zmian w `.md` uruchom lokalnie `npx --yes markdownlint-cli2@0.18.1` (musi dać 0 błędów).
+- Test skoku po literze i skrótów klawiszowych potrzebuje danych z małą literą oraz klawisza z modyfikatorem, inaczej mutacje `ignoreCase` i `!isMetaPressed` przeżywają.
+- `value class` nullable w parametrach `@MethodSource` JUnit odpakowuje do `String?` — przekazuj `String?` i opakowuj w teście.

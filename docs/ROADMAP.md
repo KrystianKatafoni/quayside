@@ -69,21 +69,21 @@
 - [x] AM-506 · Skrót r: attach wybranej sesji w karcie terminala z fokusem na odpowiedzi (ADR 0013) · moduły: mission-control:ui, app · zależy: AM-503, AM-505, AM-411 · wymagania: FR-K2 (część) · issue: —
 - [x] AM-507 · Spike: odpowiedź przez ukryty attach w PTY (pytanie tekstowe, opcje, zgoda), fallback Agent SDK (ADR 0013) · moduły: terminal:impl · zależy: AM-502 · wymagania: FR-S5 · issue: #1
 - [x] AM-508 · Ustawienia terminala: powłoka, katalog startowy, font i rozmiar, scrollback, ligatury, Option jako Meta (zapis i zastosowanie) · moduły: terminal:*, core:storage, app · zależy: AM-503 · wymagania: FR-T7 (bez dzwonka) · issue: #2
-- [~] AM-509 · Dzwonek terminala → powiadomienie · moduły: terminal:impl, notifications:impl, app · zależy: AM-508, AM-701 · wymagania: FR-T7 (dzwonek) · issue: #3
+- [x] AM-509 · Dzwonek terminala → powiadomienie · moduły: terminal:impl, notifications:impl, app · zależy: AM-508, AM-701 · wymagania: FR-T7 (dzwonek) · issue: #3
 - [x] AM-510 · Karty attach: fokus istniejącej karty sesji i kropka stanu · moduły: terminal:ui, app · zależy: AM-505 · wymagania: FR-T2, FR-K2 (część) · issue: —
 - [x] AM-511 · Obsługa myszą: przyciski Attach i Odpowiedz w panelu, menu kontekstowe wiersza sesji (prawy klik, ⋯), dwuklik = attach, podgląd kliknięciem, zwijana ściągawka skrótów (ADR 0015) · moduły: mission-control:ui, app · zależy: AM-410, AM-505 · wymagania: FR-K3 · issue: #31
 
 ## M6 · Hooki i podsumowania
 
-- [~] AM-601 · KtorHookServer (127.0.0.1, token z Keychain) · moduły: agent-runtime:impl · zależy: AM-203 · wymagania: NFR-4 · issue: #4
-- [~] AM-602 · HookInstaller z backupem i odinstalowaniem · moduły: agent-runtime:impl · zależy: AM-601 · wymagania: NFR-5 · issue: #5
-- [~] AM-605 · Wstrzyknięcie `AM_HOOK_TOKEN` (token z Keychain) do środowiska `claude --bg` i `respawn` · moduły: agent-runtime:impl, app · zależy: AM-601, AM-602 · wymagania: NFR-4 · issue: —
-- [ ] AM-603 · Scalanie hooków z pollingiem w reducerze · moduły: sessions:impl · zależy: AM-601, AM-403 · wymagania: NFR-2 · issue: #6
+- [x] AM-601 · KtorHookServer (127.0.0.1, token z Keychain) · moduły: agent-runtime:impl · zależy: AM-203 · wymagania: NFR-4 · issue: #4
+- [x] AM-602 · HookInstaller z backupem i odinstalowaniem · moduły: agent-runtime:impl · zależy: AM-601 · wymagania: NFR-5 · issue: #5
+- [x] AM-605 · Wstrzyknięcie `AM_HOOK_TOKEN` (token z Keychain) do środowiska `claude --bg` i `respawn` · moduły: agent-runtime:impl, app · zależy: AM-601, AM-602 · wymagania: NFR-4 · issue: #48
+- [x] AM-603 · Scalanie hooków z pollingiem w reducerze · moduły: sessions:impl · zależy: AM-601, AM-403 · wymagania: NFR-2 · issue: #6
 - [ ] AM-604 · Summarizer (last_assistant_message, opcjonalnie Haiku) · moduły: summaries:* · zależy: AM-603 · wymagania: FR-S7 · issue: #7
 
 ## M7 · Powiadomienia
 
-- [~] AM-701 · NotificationPolicy `decide()` + ustawienia · moduły: notifications:api, notifications:impl · zależy: AM-603 · wymagania: FR-N1, FR-N2 · issue: #8
+- [x] AM-701 · NotificationPolicy `decide()` + ustawienia · moduły: notifications:api, notifications:impl · zależy: AM-603 · wymagania: FR-N1, FR-N2 · issue: #8
 - [x] AM-702 · Popupy (okno Compose, stos, akcje) · moduły: notifications:ui · zależy: AM-701 · wymagania: FR-N3 (FR-S5, FR-S6: osobne zadanie SessionReplies, do dopisania po decyzji) · issue: #10
 - [ ] AM-703 · MacSayAdapter, szablony, grupowanie · moduły: notifications:impl · zależy: AM-701 · wymagania: FR-N4, FR-N5 · issue: #11
 - [ ] AM-704 · Ekran ustawień powiadomień · moduły: notifications:ui · zależy: AM-702, AM-703 · wymagania: FR-N1–N4 · issue: #12

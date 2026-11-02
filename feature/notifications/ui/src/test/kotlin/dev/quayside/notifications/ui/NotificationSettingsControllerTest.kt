@@ -129,6 +129,23 @@ class NotificationSettingsControllerTest {
         }
 
     @Test
+    fun `max visible out of range shows its field and writes nothing`() =
+        runTest {
+            val repo = scripted()
+            val controller = controllerOver(repo)
+            act { controller.open() }
+            act { controller.edit { it.copy(popup = it.popup.copy(maxVisible = "11")) } }
+
+            act { controller.save() }
+
+            val state = controller.state.value.shouldNotBeNull()
+            state.invalid shouldBe InvalidField(NotificationField.MAX_VISIBLE)
+            state.draft.popup.maxVisible shouldBe "11"
+            repo.updates shouldBe 0
+            repo.settings.value shouldBe saved
+        }
+
+    @Test
     fun `editing after a refused save clears the invalid field and keeps the draft`() =
         runTest {
             val controller = controllerOver(scripted())

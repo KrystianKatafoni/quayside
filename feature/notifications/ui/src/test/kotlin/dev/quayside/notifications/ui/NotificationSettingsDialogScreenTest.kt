@@ -7,6 +7,7 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
@@ -22,6 +23,9 @@ import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
+import dev.quayside.notifications.api.PopupDuration
+import dev.quayside.notifications.api.PopupPosition
+import dev.quayside.notifications.api.PopupStyle
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
@@ -33,7 +37,7 @@ private val MATRIX_ORDER =
     NotificationKind.entries.flatMap { kind -> NotificationChannel.entries.map { kind to it } }
 
 /**
- * Scenarios of the notification settings dialog (FR-N1, FR-N2, NFR-6) on a fake repo. The dialog is a focusable
+ * Scenarios of the notification settings dialog (FR-N1, FR-N2, FR-N3, NFR-6) on a fake repo. The dialog is a focusable
  * popup, so keys reach its controls and not the window behind it.
  */
 @OptIn(ExperimentalTestApi::class)
@@ -186,5 +190,120 @@ class NotificationSettingsDialogScreenTest {
             waitUntil(timeoutMillis = WAIT_MS) {
                 onAllNodesWithTag(SettingsTags.DIALOG).fetchSemanticsNodes().isEmpty()
             }
+        }
+
+    private fun ComposeUiTest.assertPosition(position: PopupPosition) {
+        await(SettingsTags.POPUP_POSITION).assertTextEquals(SettingsStrings.option("position", position))
+    }
+
+    private fun ComposeUiTest.pressOnPosition(key: Key) {
+        onNodeWithTag(SettingsTags.POPUP_POSITION).performKeyInput { pressKey(key) }
+    }
+
+    @Test
+    fun `arrow keys move the popup position through 6 places`() =
+        runComposeUiTest {
+            // Given the open dialog with the default position at the bottom right
+            showDialog()
+            assertPosition(PopupPosition.BOTTOM_RIGHT)
+
+            // When the user clicks the field (focus and one step forward, wrapping)
+            await(SettingsTags.POPUP_POSITION).performScrollTo().performClick()
+            awaitFocus(SettingsTags.POPUP_POSITION)
+
+            // Then the position wrapped to the top left
+            assertPosition(PopupPosition.TOP_LEFT)
+
+            // When the user presses the right arrow 5 times, the position steps through the whole list
+            PopupPosition.entries.drop(1).forEach { next ->
+                pressOnPosition(Key.DirectionRight)
+                assertPosition(next)
+            }
+
+            // And once more: it wraps to the first place
+            pressOnPosition(Key.DirectionRight)
+            assertPosition(PopupPosition.TOP_LEFT)
+
+            // And the left arrow goes back (wrapping to the last place)
+            pressOnPosition(Key.DirectionLeft)
+            assertPosition(PopupPosition.BOTTOM_RIGHT)
+        }
+
+    @Test
+    fun `tab moves through the popup section in order`() =
+        runComposeUiTest {
+            // Given the open dialog and the focus on the threshold field
+            showDialog()
+            await(SettingsTags.RUNNING_LONG_MINUTES).performScrollTo().performClick()
+            awaitFocus(SettingsTags.RUNNING_LONG_MINUTES)
+            val order =
+                listOf(
+                    SettingsTags.RUNNING_LONG_MINUTES,
+                    SettingsTags.POPUP_POSITION,
+                    SettingsTags.POPUP_DURATION,
+                    SettingsTags.MAX_VISIBLE,
+                    SettingsTags.POPUP_STYLE,
+                )
+
+            // When the user presses Tab, once per field
+            order.zipWithNext().forEach { (from, to) ->
+                onNodeWithTag(from).performKeyInput { pressKey(Key.Tab) }
+
+                // Then the focus moves to the next field: position, duration, max visible, style
+                awaitFocus(to)
+            }
+        }
+
+    @Test
+    fun `max visible out of range shows its message and the dialog stays`() =
+        runComposeUiTest {
+            // Given the open dialog
+            showDialog()
+
+            // When the user types 11 popups at once and saves
+            await(SettingsTags.MAX_VISIBLE).performScrollTo().performTextReplacement("11")
+            await(SettingsTags.SAVE).performScrollTo().performClick()
+
+            // Then the message sits with the field, the dialog is open and nothing is saved
+            val field = InvalidField(NotificationField.MAX_VISIBLE)
+            waitUntilExactlyOneExists(
+                hasTestTag(SettingsTags.invalid(field.field)) and hasText(SettingsStrings.of(field)),
+                WAIT_MS,
+            )
+            onNodeWithTag(SettingsTags.DIALOG).assertExists()
+            repo.settings.value.popup.maxVisible shouldBe 3
+        }
+
+    @Test
+    fun `popup choices are saved`() =
+        runComposeUiTest {
+            // Given the open dialog with the default duration and style
+            showDialog()
+
+            // When the user clicks the style and the duration (each click steps forward) and saves
+            await(SettingsTags.POPUP_STYLE).performScrollTo().performClick()
+            await(SettingsTags.POPUP_DURATION).performScrollTo().performClick()
+            await(SettingsTags.SAVE).performScrollTo().performClick()
+
+            // Then the repo holds the new style and duration, and the position stays
+            waitUntil(timeoutMillis = WAIT_MS) { repo.settings.value.popup.style == PopupStyle.COMPACT }
+            repo.settings.value.popup.duration shouldBe PopupDuration.ALWAYS_TIMED
+            repo.settings.value.popup.position shouldBe PopupPosition.BOTTOM_RIGHT
+        }
+
+    @Test
+    fun `popup section stays editable with popups off`() =
+        runComposeUiTest {
+            // Given the open dialog with popups switched off
+            showDialog()
+            await(SettingsTags.POPUPS).performScrollTo().performClick()
+
+            // When the user clicks the style and saves
+            await(SettingsTags.POPUP_STYLE).performScrollTo().performClick()
+            await(SettingsTags.SAVE).performScrollTo().performClick()
+
+            // Then popups are off and the new style is saved
+            waitUntil(timeoutMillis = WAIT_MS) { repo.settings.value.popup.style == PopupStyle.COMPACT }
+            repo.settings.value.popups shouldBe false
         }
 }

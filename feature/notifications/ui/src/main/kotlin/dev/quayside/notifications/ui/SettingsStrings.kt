@@ -4,6 +4,7 @@ import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.NotificationSettingsError
+import dev.quayside.notifications.api.PopupSettings
 import java.util.Locale
 import java.util.ResourceBundle
 
@@ -32,19 +33,37 @@ internal object SettingsStrings {
         channel: NotificationChannel,
     ): String = "${of(kind)} – ${of(channel)}"
 
+    /** The label of an enum choice: `<prefix>.<NAME>`. */
+    fun option(
+        prefix: String,
+        value: Enum<*>,
+    ): String = get("$prefix.${value.name}")
+
     /** The message under the field the save refused. */
     fun of(field: InvalidField): String =
         when (field.field) {
             NotificationField.RUNNING_LONG_MINUTES -> {
-                get("invalid.RUNNING_LONG_MINUTES")
-                    .replace("{min}", NotificationSettings.MIN_RUNNING_LONG_MINUTES.toString())
-                    .replace("{max}", NotificationSettings.MAX_RUNNING_LONG_MINUTES.toString())
+                range(
+                    "invalid.RUNNING_LONG_MINUTES",
+                    NotificationSettings.MIN_RUNNING_LONG_MINUTES,
+                    NotificationSettings.MAX_RUNNING_LONG_MINUTES,
+                )
+            }
+
+            NotificationField.MAX_VISIBLE -> {
+                range("invalid.MAX_VISIBLE", 1, PopupSettings.MAX_VISIBLE_LIMIT)
             }
 
             else -> {
                 get("invalid.other")
             }
         }
+
+    private fun range(
+        key: String,
+        min: Int,
+        max: Int,
+    ): String = get(key).replace("{min}", min.toString()).replace("{max}", max.toString())
 
     /** The message of a write that changed nothing. */
     fun of(error: NotificationSettingsError): String = get("error.${error.name}")

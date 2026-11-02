@@ -76,6 +76,7 @@ private fun SettingsPanel(
         GlobalSwitches(state.draft, controller)
         ChannelMatrix(state.draft, controller)
         ThresholdRow(state, controller)
+        PopupSection(state, controller)
         SettingsFooter(state.saveError, controller)
     }
 }

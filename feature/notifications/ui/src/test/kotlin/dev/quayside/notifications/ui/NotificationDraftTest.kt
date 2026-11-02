@@ -4,8 +4,10 @@ import dev.quayside.core.domain.Outcome
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.PopupDuration
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.notifications.api.PopupStyle
 import dev.quayside.notifications.api.SpeechSettings
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -13,7 +15,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 
-/** `draftOf` and `settingsOf` (plan AM-704, table 1, part A): pure, the draft keeps numbers as text. */
+/** `draftOf` and `settingsOf` (plan AM-704, table 1, parts A and B1): pure, the draft keeps numbers as text. */
 class NotificationDraftTest {
     private val defaults = NotificationSettings()
 
@@ -114,10 +116,7 @@ class NotificationDraftTest {
     @Test
     fun `fields the dialog does not show are kept from the current settings`() {
         val current =
-            defaults.copy(
-                popup = PopupSettings(position = PopupPosition.TOP_LEFT),
-                speech = SpeechSettings(rate = 250, readQuestion = false),
-            )
+            defaults.copy(speech = SpeechSettings(rate = 250, readQuestion = false))
 
         val result = (settingsOf(draftOf(current).copy(popups = false), current) as Outcome.Ok).value
 
@@ -137,6 +136,69 @@ class NotificationDraftTest {
     @ValueSource(strings = ["0", "1441", "abc", "", "-5", "1.5"])
     fun `threshold outside the range or not a number is refused`(text: String) {
         val result = settingsOf(draftOf(defaults).copy(runningLongMinutes = text), defaults)
+
+        result shouldBe Outcome.Err(InvalidField(NotificationField.RUNNING_LONG_MINUTES))
+    }
+
+    @Test
+    fun `draft shows the saved popup settings`() {
+        val settings =
+            defaults.copy(
+                popup =
+                    PopupSettings(
+                        position = PopupPosition.TOP_CENTER,
+                        duration = PopupDuration.ALWAYS_STAY,
+                        maxVisible = 7,
+                        style = PopupStyle.COMPACT,
+                    ),
+            )
+
+        draftOf(settings).popup shouldBe
+            PopupDraft(PopupPosition.TOP_CENTER, PopupDuration.ALWAYS_STAY, "7", PopupStyle.COMPACT)
+    }
+
+    @Test
+    fun `popup choices are taken from the draft`() {
+        val popup = PopupDraft(PopupPosition.BOTTOM_LEFT, PopupDuration.ALWAYS_TIMED, "6", PopupStyle.COMPACT)
+
+        saved(draftOf(defaults).copy(popup = popup)).popup shouldBe
+            PopupSettings(
+                position = PopupPosition.BOTTOM_LEFT,
+                duration = PopupDuration.ALWAYS_TIMED,
+                maxVisible = 6,
+                style = PopupStyle.COMPACT,
+            )
+    }
+
+    @ParameterizedTest(name = "\"{0}\" is {1} popups")
+    @CsvSource("1,1", "10,10", "' 4 ',4")
+    fun `max visible inside the range is accepted`(
+        text: String,
+        count: Int,
+    ) {
+        val draft = draftOf(defaults)
+
+        saved(draft.copy(popup = draft.popup.copy(maxVisible = text))).popup.maxVisible shouldBe count
+    }
+
+    @ParameterizedTest(name = "\"{0}\" is refused")
+    @ValueSource(strings = ["0", "11", "abc", "", "-1", "2.5"])
+    fun `max visible outside the range or not a number is refused`(text: String) {
+        val draft = draftOf(defaults)
+
+        settingsOf(draft.copy(popup = draft.popup.copy(maxVisible = text)), defaults) shouldBe
+            Outcome.Err(InvalidField(NotificationField.MAX_VISIBLE))
+    }
+
+    @Test
+    fun `threshold is checked before max visible`() {
+        val draft = draftOf(defaults)
+
+        val result =
+            settingsOf(
+                draft.copy(runningLongMinutes = "0", popup = draft.popup.copy(maxVisible = "0")),
+                defaults,
+            )
 
         result shouldBe Outcome.Err(InvalidField(NotificationField.RUNNING_LONG_MINUTES))
     }

@@ -9,6 +9,10 @@ internal object SettingsTags {
     const val POPUPS = "notifications.settings.popups"
     const val VOICE = "notifications.settings.voice"
     const val RUNNING_LONG_MINUTES = "notifications.settings.runningLongMinutes"
+    const val POPUP_POSITION = "notifications.settings.popup.position"
+    const val POPUP_DURATION = "notifications.settings.popup.duration"
+    const val MAX_VISIBLE = "notifications.settings.popup.maxVisible"
+    const val POPUP_STYLE = "notifications.settings.popup.style"
     const val SAVE = "notifications.settings.save"
     const val CANCEL = "notifications.settings.cancel"
 

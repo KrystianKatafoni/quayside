@@ -23,6 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -98,6 +103,43 @@ internal fun TextSetting(
         cursorBrush = SolidColor(SettingsColors.text),
     )
 }
+
+/** One of [labels]; ← and → step through them (wrapping), a click steps forward and takes the focus. */
+@Composable
+internal fun ChoiceField(
+    tag: String,
+    labels: List<String>,
+    selected: Int,
+    modifier: Modifier = Modifier,
+    onSelect: (Int) -> Unit,
+) {
+    val step = { by: Int -> onSelect(Math.floorMod(selected + by, labels.size)) }
+    Row(
+        modifier
+            .width(width = 260.dp)
+            .testTag(tag)
+            .onPreviewKeyEvent { event ->
+                val by = arrowStep(event.key).takeIf { event.type == KeyEventType.KeyDown }
+                by?.let(step)
+                by != null
+            }.focusFrame()
+            .background(color = SettingsColors.field, shape = controlShape)
+            .clickable(role = Role.DropdownList) { step(1) }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+    ) {
+        Label("‹", Modifier.clearAndSetSemantics {}, SettingsColors.secondary)
+        Label(labels[selected], Modifier.weight(weight = 1f))
+        Label("›", Modifier.clearAndSetSemantics {}, SettingsColors.secondary)
+    }
+}
+
+private fun arrowStep(key: Key): Int? =
+    when (key) {
+        Key.DirectionRight -> 1
+        Key.DirectionLeft -> -1
+        else -> null
+    }
 
 /** The box of a checkbox: a tick when [on]. */
 @Composable

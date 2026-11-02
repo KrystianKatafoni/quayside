@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Podsumowanie sesji po zakończeniu tury: najwyżej 2 zdania z ostatniej wiadomości agenta, bez Markdown (AM-604, część A).
 - Sekcja „Głos” w ustawieniach powiadomień: wybór głosu z listy zainstalowanych (polskie na początku, litera przeskakuje do głosu), tempo i głośność, 7 komunikatów z przyciskiem „Przywróć domyślny” oraz przełączniki czytania pytania, trybu tylko w tle i wyciszenia przy mikrofonie (to ostatnie jeszcze nie działa, czeka na ADR 0018); działa od razu po zapisaniu (AM-704, część B2).
 - Sekcja „Popup” w ustawieniach powiadomień: pozycja (6 miejsc), czas wyświetlania, maksymalna liczba popupów naraz (1–10) i styl; działa od razu po zapisaniu, także przy wyłączonych popupach (AM-704, część B1).
 - Ekran „Ustawienia powiadomień” (Widok → Ustawienia powiadomień… i paleta komend): przełączniki Popupy i Głos, macierz 7 rodzajów × 4 kanały i próg minut dla długiej pracy sesji; zmiany działają od razu po zapisaniu (AM-704, część A).

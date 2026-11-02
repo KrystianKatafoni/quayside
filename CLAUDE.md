@@ -88,3 +88,4 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Zwolnienie blokady (zbiór kluczy w trakcie, flaga `pending`) w `finally` wymaga testu ścieżki błędu — po nieudanym starcie kolejne wywołanie znowu otwiera; inaczej przeniesienie zwolnienia do gałęzi `Ok` nie wywróci żadnego testu.
 - `@Suppress("ForbiddenMethodCall")` nie zwalnia z ENG-C3: `runBlocking` tylko w `main`.
 - ktlint nie zgłasza nieużywanych importów — po przeniesieniu kodu między plikami sprawdź je ręcznie.
+- Test porzuconej grupy i zwolnienia chłodzenia w `VoiceNotifier` wymagał mutacji, by udowodnić, że pada; metoda testowa zwracająca wartość (np. `Boolean` z `runBlocking`) jest po cichu pomijana przez JUnit — testy mają zwracać `Unit`.

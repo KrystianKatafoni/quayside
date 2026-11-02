@@ -18,9 +18,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -36,7 +34,7 @@ import kotlinx.serialization.json.putJsonObject
  * Messages are fixed categories and never quote the input (ENG-C8).
  */
 internal object NotificationSettingsSerializer : KSerializer<NotificationSettings> {
-    private val KINDS =
+    internal val KINDS =
         mapOf(
             NotificationKind.NEEDS_INPUT to "needsInput",
             NotificationKind.PERMISSION to "permission",
@@ -57,6 +55,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
     private val DURATIONS = PopupDuration.entries.associateWith { it.name }
     private val STYLES = PopupStyle.entries.associateWith { it.name }
     private const val POPUP = "popup"
+    private const val SPEECH = "speech"
     private const val POPUPS = "popups"
     private const val VOICE = "voice"
     private const val MINUTES = "runningLongMinutes"
@@ -80,6 +79,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
                     put("maxVisible", value.popup.maxVisible)
                     put("style", value.popup.style.name)
                 }
+                put(SPEECH, SpeechSettingsJson.encode(value.speech))
                 putJsonObject(CHANNELS_KEY) {
                     KINDS.forEach { (kind, name) ->
                         putJsonArray(
@@ -100,6 +100,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
             voice = root.flag(VOICE) ?: defaults.voice,
             matrix = matrix(root[CHANNELS_KEY]),
             popup = popup(root[POPUP]),
+            speech = SpeechSettingsJson.decode(root[SPEECH]),
             runningLongMinutes =
                 root.number(MINUTES)?.coerceIn(
                     NotificationSettings.MIN_RUNNING_LONG_MINUTES,
@@ -147,12 +148,4 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
             .mapNotNull { name -> CHANNELS.entries.firstOrNull { it.value == name }?.key }
             .toSet()
     }
-
-    private fun JsonObject.flag(key: String): Boolean? =
-        get(key)?.let { (it as? JsonPrimitive)?.takeIf { p -> !p.isString }?.booleanOrNull ?: invalid("bad $key") }
-
-    private fun JsonObject.number(key: String): Int? =
-        get(key)?.let { (it as? JsonPrimitive)?.takeIf { p -> !p.isString }?.intOrNull ?: invalid("bad $key") }
-
-    private fun invalid(reason: String): Nothing = throw SerializationException(reason)
 }

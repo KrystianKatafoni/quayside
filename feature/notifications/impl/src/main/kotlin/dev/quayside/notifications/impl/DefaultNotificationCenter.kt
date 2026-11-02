@@ -26,6 +26,8 @@ internal class DefaultNotificationCenter(
     private val settings: NotificationSettingsRepo,
     private val manager: PopupManager,
     private val projectName: (ProjectId?) -> String?,
+    private val context: () -> DeliveryContext = { DeliveryContext(appActive = false, microphoneActive = false) },
+    private val voice: (Delivery, String?) -> Unit = { _, _ -> },
 ) : NotificationCenter {
     private val flow =
         MutableSharedFlow<NotificationDelivery>(
@@ -37,7 +39,7 @@ internal class DefaultNotificationCenter(
 
     override val popups: StateFlow<List<PopupModel>> = manager.popups
 
-    override suspend fun notifyTerminalBell() = handle(decideTerminalBell(settings.settings.value))
+    override suspend fun notifyTerminalBell() = handle(decideTerminalBell(settings.settings.value, context()))
 
     override suspend fun onAction(
         popup: PopupId,
@@ -45,13 +47,15 @@ internal class DefaultNotificationCenter(
     ) = manager.act(popup, action)
 
     /** A session changed state (the events of the session monitor). */
-    fun onSessionEvent(event: SessionEvent) = handle(decide(event, settings.settings.value))
+    fun onSessionEvent(event: SessionEvent) = handle(decide(event, settings.settings.value, context()))
 
     private fun handle(deliveries: List<Delivery>) {
         deliveries.filterNot { manager.isMuted(it.session?.id) }.forEach { delivery ->
             flow.tryEmit(NotificationDelivery(delivery.channel, delivery.kind, delivery.session?.id))
-            if (delivery.channel == NotificationChannel.POPUP) {
-                manager.show(delivery, projectName(delivery.session?.project))
+            when (delivery.channel) {
+                NotificationChannel.POPUP -> manager.show(delivery, projectName(delivery.session?.project))
+                NotificationChannel.VOICE -> voice(delivery, projectName(delivery.session?.project))
+                NotificationChannel.SOUND, NotificationChannel.DOCK_BADGE -> Unit
             }
         }
     }

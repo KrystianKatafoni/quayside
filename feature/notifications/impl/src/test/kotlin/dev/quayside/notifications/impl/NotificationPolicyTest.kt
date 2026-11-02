@@ -7,6 +7,7 @@ import dev.quayside.notifications.api.NotificationChannel.SOUND
 import dev.quayside.notifications.api.NotificationChannel.VOICE
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.aSession
@@ -23,11 +24,13 @@ import kotlin.time.Duration.Companion.minutes
 /** `decide()`: event × settings → deliveries (FR-N1, FR-N2). */
 class NotificationPolicyTest {
     private val settings = NotificationSettings()
+    private val background = DeliveryContext(appActive = false, microphoneActive = false)
 
     private fun channels(
         event: SessionEvent,
         settings: NotificationSettings = this.settings,
-    ): List<NotificationChannel> = decide(event, settings).map { it.channel }
+        context: DeliveryContext = background,
+    ): List<NotificationChannel> = decide(event, settings, context).map { it.channel }
 
     private fun waiting(state: SessionState) = SessionEvent.BecameBlocked(aSession(state = state))
 
@@ -46,7 +49,7 @@ class NotificationPolicyTest {
     fun `a delivery names its kind and the session`() {
         val event = SessionEvent.Failed(aSession(state = SessionState.Failed))
 
-        decide(event, settings).forEach {
+        decide(event, settings, background).forEach {
             it.kind shouldBe NotificationKind.FAILED
             it.session shouldBe event.session
         }
@@ -54,7 +57,7 @@ class NotificationPolicyTest {
 
     @Test
     fun `a blocked event whose state is not waiting delivers nothing`() {
-        decide(waiting(SessionState.Working), settings).shouldBeEmpty()
+        decide(waiting(SessionState.Working), settings, background).shouldBeEmpty()
     }
 
     @Test
@@ -123,7 +126,7 @@ class NotificationPolicyTest {
 
     @Test
     fun `a terminal bell delivers on the popup by default and belongs to no session`() {
-        val deliveries = decideTerminalBell(settings)
+        val deliveries = decideTerminalBell(settings, background)
 
         deliveries.map { it.channel } shouldContainExactly listOf(POPUP)
         deliveries.forEach {
@@ -136,12 +139,99 @@ class NotificationPolicyTest {
     fun `a terminal bell follows the matrix and the popup switch`() {
         val loud = settings.withChannel(NotificationKind.TERMINAL_BELL, SOUND, true)
 
-        decideTerminalBell(loud).map { it.channel } shouldContainExactly listOf(POPUP, SOUND)
-        decideTerminalBell(loud.copy(popups = false)).map { it.channel } shouldContainExactly listOf(SOUND)
-        decideTerminalBell(settings.copy(matrix = mapOf(NotificationKind.TERMINAL_BELL to emptySet()))).shouldBeEmpty()
+        decideTerminalBell(loud, background).map { it.channel } shouldContainExactly listOf(POPUP, SOUND)
+        decideTerminalBell(loud.copy(popups = false), background).map { it.channel } shouldContainExactly listOf(SOUND)
+        decideTerminalBell(
+            settings.copy(matrix = mapOf(NotificationKind.TERMINAL_BELL to emptySet())),
+            background,
+        ).shouldBeEmpty()
+    }
+
+    private val needsInput = waiting(SessionState.AwaitingInput("ok?"))
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("voiceTable")
+    fun `voice is allowed by the context and the switches`(
+        label: String,
+        speech: SpeechSettings,
+        appActive: Boolean,
+        microphoneActive: Boolean,
+        allowed: Boolean,
+    ) {
+        label.isNotEmpty() shouldBe true
+        voiceAllowed(speech, DeliveryContext(appActive, microphoneActive)) shouldBe allowed
+    }
+
+    @Test
+    fun `the app in the foreground drops only voice`() {
+        channels(needsInput, context = DeliveryContext(appActive = true, microphoneActive = false)) shouldContainExactly
+            listOf(POPUP, SOUND, DOCK_BADGE)
+    }
+
+    @Test
+    fun `an active microphone drops only voice`() {
+        channels(needsInput, context = DeliveryContext(appActive = false, microphoneActive = true)) shouldContainExactly
+            listOf(POPUP, SOUND, DOCK_BADGE)
+    }
+
+    @Test
+    fun `switches off keep voice in the foreground`() {
+        val speech = SpeechSettings(onlyInBackground = false, muteWhenMicrophoneActive = false)
+        val busy = DeliveryContext(appActive = true, microphoneActive = true)
+
+        channels(needsInput, settings.copy(speech = speech), busy) shouldContainExactly
+            listOf(POPUP, VOICE, SOUND, DOCK_BADGE)
+    }
+
+    @Test
+    fun `the global voice switch still wins over the context`() {
+        val speech = SpeechSettings(onlyInBackground = false, muteWhenMicrophoneActive = false)
+
+        channels(needsInput, settings.copy(voice = false, speech = speech)) shouldContainExactly
+            listOf(POPUP, SOUND, DOCK_BADGE)
+    }
+
+    @Test
+    fun `terminal bell follows the same context`() {
+        val loud = settings.withChannel(NotificationKind.TERMINAL_BELL, VOICE, true)
+
+        decideTerminalBell(loud, background).map { it.channel } shouldContainExactly listOf(POPUP, VOICE)
+        decideTerminalBell(loud, DeliveryContext(appActive = true, microphoneActive = false))
+            .map { it.channel } shouldContainExactly listOf(POPUP)
+        decideTerminalBell(loud, DeliveryContext(appActive = false, microphoneActive = true))
+            .map { it.channel } shouldContainExactly listOf(POPUP)
     }
 
     companion object {
+        @JvmStatic
+        fun voiceTable(): List<Arguments> {
+            fun row(
+                label: String,
+                onlyInBackground: Boolean,
+                muteWhenMicrophone: Boolean,
+                appActive: Boolean,
+                microphoneActive: Boolean,
+                allowed: Boolean,
+            ) = arguments(
+                label,
+                SpeechSettings(onlyInBackground = onlyInBackground, muteWhenMicrophoneActive = muteWhenMicrophone),
+                appActive,
+                microphoneActive,
+                allowed,
+            )
+            return listOf(
+                row("quiet desktop", true, true, false, false, true),
+                row("app active, only in background", true, true, true, false, false),
+                row("app active, switch off", false, true, true, false, true),
+                row("microphone active, muting", true, true, false, true, false),
+                row("microphone active, switch off", true, false, false, true, true),
+                row("both active, both switches", true, true, true, true, false),
+                row("both active, only app switch", true, false, true, true, false),
+                row("both active, only microphone switch", false, true, true, true, false),
+                row("both active, both switches off", false, false, true, true, true),
+            )
+        }
+
         @JvmStatic
         @Suppress("LongMethod")
         fun defaults(): List<Arguments> {

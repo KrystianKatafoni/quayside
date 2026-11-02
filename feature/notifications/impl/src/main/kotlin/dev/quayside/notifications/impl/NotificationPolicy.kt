@@ -15,27 +15,33 @@ import kotlin.time.Duration.Companion.minutes
  * - A session that waits maps to [NotificationKind.NEEDS_INPUT] or [NotificationKind.PERMISSION] by its state.
  * - [SessionEvent.RunningLong] counts only from [NotificationSettings.runningLongMinutes] on.
  * - [NotificationSettings.popups] and [NotificationSettings.voice] silence their channel for every kind.
+ * - [NotificationChannel.VOICE] also needs [voiceAllowed] in [context] (window active, microphone in use).
  * - The order of the result is the order of [NotificationChannel].
  */
 internal fun decide(
     event: SessionEvent,
     settings: NotificationSettings,
+    context: DeliveryContext,
 ): List<Delivery> {
     val kind = kindOf(event, settings) ?: return emptyList()
-    return deliveriesOf(kind, event.session, settings)
+    return deliveriesOf(kind, event.session, settings, context)
 }
 
 /** The deliveries of a terminal bell (FR-T7): the channels chosen for [NotificationKind.TERMINAL_BELL]. */
-internal fun decideTerminalBell(settings: NotificationSettings): List<Delivery> =
-    deliveriesOf(NotificationKind.TERMINAL_BELL, null, settings)
+internal fun decideTerminalBell(
+    settings: NotificationSettings,
+    context: DeliveryContext,
+): List<Delivery> = deliveriesOf(NotificationKind.TERMINAL_BELL, null, settings, context)
 
 private fun deliveriesOf(
     kind: NotificationKind,
     session: Session?,
     settings: NotificationSettings,
+    context: DeliveryContext,
 ): List<Delivery> =
     NotificationChannel.entries
         .filter { it in settings.channelsFor(kind) && globallyOn(it, settings) }
+        .filter { it != NotificationChannel.VOICE || voiceAllowed(settings.speech, context) }
         .map { Delivery(it, kind, session) }
 
 private fun kindOf(

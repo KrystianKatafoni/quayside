@@ -51,6 +51,7 @@ public data class NotificationSettings(
     val matrix: Map<NotificationKind, Set<NotificationChannel>> = emptyMap(),
     val runningLongMinutes: Int = DEFAULT_RUNNING_LONG_MINUTES,
     val popup: PopupSettings = PopupSettings(),
+    val speech: SpeechSettings = SpeechSettings(),
 ) {
     init {
         require(runningLongMinutes in MIN_RUNNING_LONG_MINUTES..MAX_RUNNING_LONG_MINUTES) {

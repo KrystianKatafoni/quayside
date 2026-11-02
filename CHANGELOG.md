@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Głos powiadomień: kanał VOICE mówi przez macOS `say` wybranym głosem, tempem i głośnością, z szablonem wiadomości na rodzaj, najwyżej 1 komunikatem na 20 s (kolejne łączone, np. „3 agenty czekają”) i ciszą, gdy okno aplikacji jest aktywne; sekcja `speech` w `notifications.json` (AM-703).
 - Popupy powiadomień: okno zawsze na wierzchu w rogu ekranu ze stosem kart (pasek koloru wg rodzaju, projekt · sesja, pytanie) i akcjami Otwórz (attach), Wycisz 15 min i Zamknij; nie kradnie fokusu terminalowi (AM-702).
 - Dzwonek terminala (BEL) zamienia się w powiadomienie (rodzaj `TERMINAL_BELL`, domyślnie popup); przełącznik „Dzwonek terminala pokazuje powiadomienie” w ustawieniach terminala (AM-509).
 - Moduły `feature:notifications:api|impl`: `decide()` i ustawienia powiadomień w `notifications.json` (AM-701).

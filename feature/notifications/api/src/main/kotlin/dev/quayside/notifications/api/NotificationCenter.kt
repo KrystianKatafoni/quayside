@@ -23,7 +23,7 @@ public data class NotificationDelivery(
 public interface NotificationCenter {
     /**
      * The deliveries decided so far. Hot, no replay: a delivery with no collector is lost, and a collector that
-     * falls behind loses the oldest ones. Until the channel adapters exist (AM-702, AM-703) nothing collects it.
+     * falls behind loses the oldest ones. The module serves the popup and voice channels itself.
      */
     public val deliveries: SharedFlow<NotificationDelivery>
 

@@ -13,6 +13,7 @@ import dev.quayside.notifications.api.PopupAction
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.aSession
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -173,5 +174,97 @@ class DefaultNotificationCenterTest {
 
             attached shouldBe listOf(waiting.id)
             center.popups.value shouldBe emptyList()
+        }
+
+    /** A center built directly, so the voice hand-off and the context can be observed. */
+    private class Voiced {
+        val received = mutableListOf<Pair<Delivery, String?>>()
+        var appActive = false
+    }
+
+    private fun TestScope.direct(
+        voiced: Voiced,
+        repo: FakeNotificationSettingsRepo = FakeNotificationSettingsRepo(),
+    ): DefaultNotificationCenter =
+        DefaultNotificationCenter(
+            settings = repo,
+            manager = PopupManager(repo.settings, backgroundScope, clock) { attached += it },
+            projectName = { id: ProjectId? -> id?.let { "Quayside" } },
+            context = { DeliveryContext(appActive = voiced.appActive, microphoneActive = false) },
+            voice = { delivery, project -> voiced.received += delivery to project },
+        )
+
+    @Test
+    fun `voice delivery goes to the notifier with the project name`() =
+        runTest {
+            val voiced = Voiced()
+            val center = direct(voiced)
+            val seen = collected(center)
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            voiced.received shouldBe
+                listOf(Delivery(NotificationChannel.VOICE, NotificationKind.NEEDS_INPUT, waiting) to "Quayside")
+            seen.map { it.channel } shouldContain NotificationChannel.VOICE
+        }
+
+    @Test
+    fun `only voice deliveries reach the notifier`() =
+        runTest {
+            val voiced = Voiced()
+            val center = direct(voiced)
+
+            center.onSessionEvent(SessionEvent.TurnFinished(aSession(state = SessionState.Done)))
+
+            voiced.received shouldBe emptyList()
+        }
+
+    @Test
+    fun `muted session gets no voice`() =
+        runTest {
+            val voiced = Voiced()
+            val center = direct(voiced)
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+            center.onAction(
+                center.popups.value
+                    .single()
+                    .id,
+                PopupAction.MUTE,
+            )
+            voiced.received.clear()
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            voiced.received shouldBe emptyList()
+        }
+
+    @Test
+    fun `active app gives no voice delivery`() =
+        runTest {
+            val voiced = Voiced().apply { appActive = true }
+            val center = direct(voiced)
+            val seen = collected(center)
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            voiced.received shouldBe emptyList()
+            seen.map { it.channel } shouldBe
+                listOf(NotificationChannel.POPUP, NotificationChannel.SOUND, NotificationChannel.DOCK_BADGE)
+        }
+
+    @Test
+    fun `a bell with the voice channel reaches the notifier without a session`() =
+        runTest {
+            val voiced = Voiced()
+            val repo =
+                FakeNotificationSettingsRepo(
+                    NotificationSettings().withChannel(NotificationKind.TERMINAL_BELL, NotificationChannel.VOICE, true),
+                )
+            val center = direct(voiced, repo)
+
+            center.notifyTerminalBell()
+
+            voiced.received shouldBe
+                listOf(Delivery(NotificationChannel.VOICE, NotificationKind.TERMINAL_BELL, null) to null)
         }
 }

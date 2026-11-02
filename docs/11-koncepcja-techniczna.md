@@ -386,6 +386,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 | `terminal.json` | `terminal:impl` |
 | `summaries.json` | `summaries:impl` (`{"useModel": false}`: streszczenia modelem Haiku, domyślnie wyłączone; brak lub uszkodzony plik = wyłączone) |
 | `theme.json` | `appearance:impl` |
+| `hook-offer.json` | `app` (`{"dismissed": true}`: użytkownik pominął propozycję instalacji hooków albo je odinstalował; brak lub uszkodzony plik = nie odrzucono; [ADR 0020](adr/0020-format-hook-offer-json.md)) |
 | `hooks-backup/*.json` | `agent-runtime:impl` |
 
 - Każdy plik ma **jednego właściciela**. Inne moduły nie czytają cudzych plików.
@@ -402,6 +403,7 @@ fun main() = application {
                         process = LoginShellProcessRunner(), storage = JsonStorage(appSupportDir()))
 
     val runtime       = agentRuntimeModule(core, RuntimeConfig(minVersion = "2.1.139", hookPort = 47321))
+    val hookInstaller = hookInstallerModule(core.homeDir, backupDir, core.clock, io, core.logger, port = HOOK_PORT)  // HOOK_PORT = 47321, ten sam co w hookEventSourceModule
     val projects      = projectsModule(core)
     val oneShot       = oneShotPromptModule(core.process, core.homeDir)
     val summaries     = summariesModule(core.storage, oneShot, core.logger)
@@ -411,7 +413,7 @@ fun main() = application {
     val appearance    = appearanceModule(core)
     val palette       = commandPaletteModule(core)
 
-    QuaysideApp(projects, sessions, notifications, terminal, appearance, palette, runtime.hookInstaller)
+    QuaysideApp(projects, sessions, notifications, terminal, appearance, palette, hookInstaller)
 }
 ```
 

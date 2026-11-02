@@ -234,6 +234,10 @@ interface NotificationSettingsRepo {
     val settings: StateFlow<NotificationSettings>
     suspend fun update(change: (NotificationSettings) -> NotificationSettings)
 }
+interface VoiceCatalog {                          // AM-704: głosy zainstalowane w systemie (`say -v ?`)
+    suspend fun voices(): Outcome<List<VoiceOption>, VoiceCatalogError>   // UNAVAILABLE | FAILED
+}
+enum class TemplateProblem { EMBEDDED_COMMAND, TOO_LONG }   // SpeechSettings.templateProblem(text)
 
 // notifications:impl (internal) — czysty rdzeń decyzji
 internal fun decide(event: SessionEvent, settings: NotificationSettings, ctx: DeliveryContext): List<Delivery>

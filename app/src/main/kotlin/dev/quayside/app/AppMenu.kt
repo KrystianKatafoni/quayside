@@ -9,6 +9,7 @@ import androidx.compose.ui.window.MenuScope
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.commandpalette.ui.toKeyShortcut
 import dev.quayside.missioncontrol.ui.MissionControlController
+import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
@@ -35,21 +36,36 @@ internal fun FrameWindowScope.AppMenu(
     val paletteOpen by palette.isOpen.collectAsState()
     val sessionActions by missionControl.actions.collectAsState()
     val settingsDialog by terminalSettings.state.collectAsState()
-    val enabled = AppMenuState.of(menu, paletteOpen, sessionActions.dialogOpen || settingsDialog != null)
+    val notificationDialog by controllers.notificationSettings.state.collectAsState()
+    val dialogOpen = sessionActions.dialogOpen || settingsDialog != null || notificationDialog != null
+    val enabled = AppMenuState.of(menu, paletteOpen, dialogOpen)
     MenuBar {
         Menu(Strings["menu.projects"]) { ProjectItems(projects, enabled) }
         Menu(Strings["menu.terminal"]) {
             TerminalItems(terminal, terminalSettings, selectedTerminalProject(list, selection), !enabled.palette)
         }
-        Menu(Strings["menu.view"]) {
-            Item(
-                text = Strings["menu.palette"],
-                enabled = enabled.palette,
-                shortcut = AppShortcuts.PALETTE.toKeyShortcut(),
-                onClick = { palette.open() },
-            )
-        }
+        Menu(Strings["menu.view"]) { ViewItems(palette, controllers.notificationSettings, enabled) }
     }
+}
+
+/** The palette and the notification settings (AM-704); both wait for dialogs, like the palette shortcut. */
+@Composable
+private fun MenuScope.ViewItems(
+    palette: CommandPaletteController,
+    notificationSettings: NotificationSettingsController,
+    enabled: AppMenuState,
+) {
+    Item(
+        text = Strings["menu.palette"],
+        enabled = enabled.palette,
+        shortcut = AppShortcuts.PALETTE.toKeyShortcut(),
+        onClick = { palette.open() },
+    )
+    Item(
+        text = Strings["menu.notificationSettings"],
+        enabled = enabled.palette,
+        onClick = { notificationSettings.open() },
+    )
 }
 
 @Composable

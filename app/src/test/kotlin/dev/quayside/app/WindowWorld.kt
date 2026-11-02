@@ -26,6 +26,9 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.TestClock
 import dev.quayside.missioncontrol.ui.MissionControlController
+import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.ui.NotificationSettingsController
+import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.ui.DirectoryPicker
@@ -39,6 +42,8 @@ import dev.quayside.terminal.ui.TerminalController
 import dev.quayside.terminal.ui.TerminalSettingsController
 import dev.quayside.terminal.ui.TerminalSettingsDialog
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import java.nio.file.Path
 import kotlin.time.Duration.Companion.hours
 
@@ -50,8 +55,11 @@ import kotlin.time.Duration.Companion.hours
  * With [terminal] the window also gets the terminal panel and its palette commands; the widgets of the fake sessions
  * are replaced by markers tagged `terminal.content.<session id>` (see [RecordingTerminals]).
  *
- * With [terminalSettings] the window also gets the settings dialog and its palette command (AM-508); shell tabs get
+ * With [settings] the window also gets the settings dialog and its palette command (AM-508); shell tabs get
  * their label and directory from [SettingsShellStart]; without, from [PlainShellStart].
+ *
+ * With a notification repo in [settings] it also gets the notification settings dialog and its palette command
+ * (AM-704).
  *
  * With [terminal] the window also registers [AttachCommands] (AM-505); [attachCommand] stands for
  * `AgentRuntime.attachCommand`.
@@ -66,7 +74,7 @@ internal fun ComposeUiTest.showWindow(
     sessions: FakeSessions = FakeSessions(),
     terminal: RecordingTerminals? = null,
     attachCommand: (SessionId) -> ShellCommand = ::defaultAttachCommand,
-    terminalSettings: FakeTerminalSettingsRepo? = null,
+    settings: SettingsRepos = SettingsRepos(),
 ): CommandPaletteController {
     val built = mutableListOf<CommandPaletteController>()
     val keys = WindowKeys()
@@ -77,7 +85,7 @@ internal fun ComposeUiTest.showWindow(
         val registry = remember { FakeCommandRegistry(scope) }
         val palette = remember { CommandPaletteController(registry, scope, NoOpLogger).also { built += it } }
         remember { registry.register(AppCommands(projects, controller, missionControl, palette, scope)) }
-        val shellStart = remember { shellStartOf(terminalSettings, missionControl, sessions) }
+        val shellStart = remember { shellStartOf(settings.terminal, missionControl, sessions) }
         val wiring = remember { TerminalWiring(projects, sessions, controller, missionControl, scope) }
         val terminalController =
             rememberTerminal(terminal, scope, shellStart) { wiring.register(registry, it, attachCommand) }
@@ -90,12 +98,18 @@ internal fun ComposeUiTest.showWindow(
                 terminalPanel = terminalPanel(terminalController, terminal),
                 attacher = wiring.attacher,
             )
-            SettingsDialogHost(terminalSettings, registry, WindowParts(controller, missionControl, scope))
+            SettingsHosts(settings, registry, WindowParts(controller, missionControl, scope))
         }
     }
     waitUntil { built.isNotEmpty() }
     return built.single()
 }
+
+/** The settings repos whose dialogs the window shows; a dialog without its repo is not shown. */
+internal class SettingsRepos(
+    val terminal: FakeTerminalSettingsRepo? = null,
+    val notifications: FakeNotificationSettingsRepo? = null,
+)
 
 /** What the settings dialog and its command need from the window. */
 private class WindowParts(
@@ -104,20 +118,51 @@ private class WindowParts(
     val scope: CoroutineScope,
 )
 
+/** The settings dialogs of [repos] with their palette commands. */
+@Composable
+private fun SettingsHosts(
+    repos: SettingsRepos,
+    registry: FakeCommandRegistry,
+    window: WindowParts,
+) {
+    val notifications = remember { repos.notifications?.let { NotificationSettingsController(it, window.scope) } }
+    SettingsDialogHost(repos.terminal, registry, window, notifications?.dialogOpen(window.scope))
+    NotificationDialogHost(notifications, registry, window)
+}
+
 /** The settings dialog over [repo] with its palette command registered; nothing without a repo. */
 @Composable
 private fun SettingsDialogHost(
     repo: FakeTerminalSettingsRepo?,
     registry: FakeCommandRegistry,
     window: WindowParts,
+    otherDialogOpen: StateFlow<Boolean>?,
 ) {
     val controller =
         remember {
             repo?.let { TerminalSettingsController(it, window.scope) }?.also {
-                registry.register(TerminalSettingsCommands(window.projects, window.missionControl, it, window.scope))
+                val other = otherDialogOpen ?: MutableStateFlow(value = false)
+                registry.register(
+                    TerminalSettingsCommands(window.projects, window.missionControl, it, window.scope, other),
+                )
             }
         }
     controller?.let { TerminalSettingsDialog(it) }
+}
+
+/** The notification settings dialog of [controller] with its palette command registered; nothing without one. */
+@Composable
+private fun NotificationDialogHost(
+    controller: NotificationSettingsController?,
+    registry: FakeCommandRegistry,
+    window: WindowParts,
+) {
+    remember {
+        controller?.let {
+            registry.register(NotificationSettingsCommands(window.projects, window.missionControl, it, window.scope))
+        }
+    }
+    controller?.let { NotificationSettingsDialog(it) }
 }
 
 /** Routes the palette's keys through [keys] while the window is shown. */
@@ -227,7 +272,7 @@ private fun rememberTerminal(
         terminals?.let { TerminalController(it, scope, NoOpLogger, shellStart) }?.also(register)
     }
 
-/** Home of the shells started from [terminalSettings] with `StartDirectory.HOME`; a directory that exists. */
+/** Home of the shells started from the terminal repo with `StartDirectory.HOME`; a directory that exists. */
 internal val WINDOW_HOME: Path = Path.of(System.getProperty("java.io.tmpdir"))
 
 /**

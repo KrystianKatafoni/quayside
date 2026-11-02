@@ -8,6 +8,7 @@ import androidx.compose.ui.window.FrameWindowScope
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
+import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.terminal.ui.TerminalArea
 import dev.quayside.terminal.ui.TerminalSettingsDialog
 import kotlinx.coroutines.launch
@@ -35,6 +36,7 @@ internal fun FrameWindowScope.MainWindow(
         attacher = controllers.attacher,
     )
     TerminalSettingsDialog(controllers.terminalSettings)
+    NotificationSettingsDialog(controllers.notificationSettings)
     PopupAttachHandler(modules, controllers.attacher)
 }
 

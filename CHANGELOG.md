@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Okno „Hooki Claude Code” (Widok → Hooki Claude Code… i paleta komend) oraz propozycja instalacji hooków przy pierwszym uruchomieniu: status, instalacja i odinstalowanie tylko globalnie w `~/.claude/settings.json`, po zgodzie użytkownika, z kopią zapasową przed zmianą; „Pomiń” zapamiętuje wybór w `hook-offer.json` (AM-607).
 - Streszczenie sesji modelem Haiku, włączane przez `useModel` w `summaries.json` (domyślnie wyłączone, działa po restarcie): po turze krótkie podsumowanie z ostatniej wiadomości zastępuje model uruchomiony przez `claude -p` bez narzędzi i MCP (AM-604, część B).
 - Podsumowanie sesji po zakończeniu tury: najwyżej 2 zdania z ostatniej wiadomości agenta, bez Markdown (AM-604, część A).
 - Sekcja „Głos” w ustawieniach powiadomień: wybór głosu z listy zainstalowanych (polskie na początku, litera przeskakuje do głosu), tempo i głośność, 7 komunikatów z przyciskiem „Przywróć domyślny” oraz przełączniki czytania pytania, trybu tylko w tle i wyciszenia przy mikrofonie (to ostatnie jeszcze nie działa, czeka na ADR 0018); działa od razu po zapisaniu (AM-704, część B2).

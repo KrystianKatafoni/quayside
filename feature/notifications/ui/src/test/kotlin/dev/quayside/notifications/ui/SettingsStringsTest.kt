@@ -7,11 +7,13 @@ import dev.quayside.notifications.api.PopupDuration
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.PopupStyle
+import dev.quayside.notifications.api.SpeechSettings
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotBeBlank
+import io.kotest.matchers.string.shouldStartWith
 import org.junit.jupiter.api.Test
 
 /** Texts of `i18n/notification-settings.properties` (NFR-6, NFR-10). */
@@ -76,7 +78,45 @@ class SettingsStringsTest {
         val message = SettingsStrings.of(InvalidField(NotificationField.MAX_VISIBLE))
 
         message shouldContain "od 1 do ${PopupSettings.MAX_VISIBLE_LIMIT}"
-        message shouldNotBe SettingsStrings["invalid.other"]
+    }
+
+    @Test
+    fun `every refused field has its own message`() {
+        val messages =
+            NotificationField.entries.map { field ->
+                SettingsStrings.of(
+                    InvalidField(
+                        field,
+                        NotificationKind.FAILED.takeIf {
+                            field ==
+                                NotificationField.TEMPLATE
+                        },
+                    ),
+                )
+            }
+
+        messages.forEach { it.shouldNotBeBlank() }
+        messages.distinct().size shouldBe NotificationField.entries.size
+        SettingsStrings.keys.contains("invalid.other") shouldBe false
+    }
+
+    @Test
+    fun `the rate and volume messages name the allowed range`() {
+        val rate = SettingsStrings.of(InvalidField(NotificationField.RATE))
+        val volume = SettingsStrings.of(InvalidField(NotificationField.VOLUME))
+
+        rate shouldContain "od ${SpeechSettings.MIN_RATE} do ${SpeechSettings.MAX_RATE}"
+        volume shouldContain "liczba od ${SpeechSettings.MIN_VOLUME} do ${SpeechSettings.MAX_VOLUME} (%)"
+    }
+
+    @Test
+    fun `the template message names the length limit`() {
+        val message = SettingsStrings.of(InvalidField(NotificationField.TEMPLATE, NotificationKind.FAILED))
+
+        message shouldStartWith "Komunikat:"
+        message shouldContain "najwyżej ${SpeechSettings.MAX_TEMPLATE_LENGTH} znaków"
+        message shouldContain "[["
+        message shouldContain "]]"
     }
 
     @Test

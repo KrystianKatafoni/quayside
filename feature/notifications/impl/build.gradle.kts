@@ -12,6 +12,8 @@ dependencies {
     implementation(project(":core:domain"))
     // JsonStorage and StoreSpec for notifications.json.
     implementation(project(":core:storage"))
+    // ProcessRunner: the MacSayAdapter runs say through it (AM-703).
+    implementation(project(":core:process"))
 
     // The settings contract and the fake.
     testImplementation(testFixtures(project(":feature:notifications:api")))
@@ -19,5 +21,7 @@ dependencies {
     testImplementation(testFixtures(project(":feature:sessions:api")))
     // InMemoryJsonStore for the repository unit tests.
     testImplementation(testFixtures(project(":core:storage")))
+    // FakeProcessRunner for the adapter and the voice flow.
+    testImplementation(testFixtures(project(":core:process")))
     testImplementation(project(":core:testing"))
 }

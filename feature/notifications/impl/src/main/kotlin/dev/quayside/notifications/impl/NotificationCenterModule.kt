@@ -1,16 +1,22 @@
 package dev.quayside.notifications.impl
 
 import dev.quayside.core.domain.Clock
+import dev.quayside.core.domain.Logger
+import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
+import dev.quayside.core.process.ProcessRunner
 import dev.quayside.notifications.api.NotificationCenter
 import dev.quayside.notifications.api.NotificationSettingsRepo
 import dev.quayside.sessions.api.SessionEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
+import java.nio.file.Path
 
 /**
  * The [NotificationCenter] that decides from [settings] (read at every event, so a change applies at once).
@@ -23,6 +29,9 @@ import kotlinx.coroutines.launch
  * @param onAttach opens the terminal of a session (the popup's Attach action); runs on the thread of the caller of
  *   `onAction`.
  * @param clock times the 15 minutes of a muted session.
+ * @param process runs `say` for the voice channel; null means no voice.
+ * @param appActive true while a window of the app is active; the voice is silent then (FR-N5).
+ * @param logger receives the voice's log lines (a fixed category only, never the spoken text).
  */
 @Suppress("LongParameterList")
 public fun notificationCenterModule(
@@ -32,9 +41,29 @@ public fun notificationCenterModule(
     events: Flow<SessionEvent> = emptyFlow(),
     projectName: (ProjectId?) -> String? = { null },
     onAttach: (SessionId) -> Unit = {},
+    process: ProcessRunner? = null,
+    appActive: StateFlow<Boolean> = MutableStateFlow(false),
+    logger: Logger = NoOpLogger,
 ): NotificationCenter {
     val manager = PopupManager(settings.settings, scope, clock, onAttach)
-    val center = DefaultNotificationCenter(settings, manager, projectName)
+    val context = { DeliveryContext(appActive.value, NoMicrophone.active.value) }
+    val notifier = voiceNotifier(process, settings, scope, context, logger)
+    val center =
+        DefaultNotificationCenter(settings, manager, projectName, context) { delivery, project ->
+            notifier?.offer(delivery, project)
+        }
     scope.launch(start = CoroutineStart.UNDISPATCHED) { events.collect(center::onSessionEvent) }
     return center
 }
+
+private fun voiceNotifier(
+    process: ProcessRunner?,
+    settings: NotificationSettingsRepo,
+    scope: CoroutineScope,
+    context: () -> DeliveryContext,
+    logger: Logger,
+): VoiceNotifier? =
+    process?.let {
+        val say = MacSayAdapter(it, Path.of(System.getProperty("user.home")))
+        VoiceNotifier(say, settings.settings, scope, context, logger)
+    }

@@ -50,7 +50,14 @@ class SessionsStateHooksTest {
     private val summarizer =
         FakeSummarizer(mapOf(MESSAGE to Outcome.Ok(SUMMARY), BLANK to Outcome.Err(SummaryError.Empty)))
     private val summarized =
-        SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL, hookLead = 5.seconds, summarizer = summarizer)
+        SessionsState(
+            runtime,
+            projects,
+            clock,
+            COMMAND_OVERLAY_TTL,
+            hookLead = 5.seconds,
+            summaries = TurnSummaries(summarizer),
+        )
 
     private fun turnEnded(
         message: String?,

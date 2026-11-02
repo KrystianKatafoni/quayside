@@ -228,8 +228,24 @@ fun interface Summarizer {
     fun summarize(lastMessage: String): Outcome<String, SummaryError>  // jedna linia, ≤ 160 code pointów
     companion object { const val MAX_LENGTH: Int = 160 }
 }
-sealed interface SummaryError { data object Empty : SummaryError }  // błąd zostawia poprzednie podsumowanie
-data class SummariesApi(val summarizer: Summarizer)                 // fabryka: summariesModule()
+fun interface SummaryRefiner {                                       // model (Haiku), może trwać sekundy i kosztuje tokeny
+    suspend fun refine(lastMessage: String): Outcome<String, SummaryError>
+}
+sealed interface SummaryError {                                     // błąd zostawia poprzednie podsumowanie
+    data object Empty : SummaryError                                // nic nie zostało po oczyszczeniu
+    data object Unavailable : SummaryError                          // brak `claude` albo brak odpowiedzi w czasie
+    data object Failed : SummaryError                               // błąd modelu lub nieczytelne wyjście
+}
+// refiner == null: model wyłączony (domyślnie; włącza go `summaries.json`, §8)
+data class SummariesApi(val summarizer: Summarizer, val refiner: SummaryRefiner? = null)
+// fabryka: summariesModule(storage, prompt, logger) — czyta summaries.json raz
+
+// agent-runtime:api — jedno pytanie do modelu przez `claude -p`, poza sesją i bez hooków (ADR 0019)
+fun interface OneShotPrompt {
+    suspend fun ask(request: PromptRequest): Outcome<String, RuntimeError>  // NotInstalled, Timeout, CommandFailed, Unparseable
+}
+data class PromptRequest(val prompt: String, val model: String, val timeout: Duration)  // prompt ≤ MAX_PROMPT = 16 000; toString ukrywa prompt
+// fabryka: oneShotPromptModule(process, homeDir, executable = "claude")
 ```
 
 ```kotlin
@@ -368,6 +384,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 | `projects.json` | `projects:impl` |
 | `notifications.json` | `notifications:impl` |
 | `terminal.json` | `terminal:impl` |
+| `summaries.json` | `summaries:impl` (`{"useModel": false}`: streszczenia modelem Haiku, domyślnie wyłączone; brak lub uszkodzony plik = wyłączone) |
 | `theme.json` | `appearance:impl` |
 | `hooks-backup/*.json` | `agent-runtime:impl` |
 
@@ -386,7 +403,8 @@ fun main() = application {
 
     val runtime       = agentRuntimeModule(core, RuntimeConfig(minVersion = "2.1.139", hookPort = 47321))
     val projects      = projectsModule(core)
-    val summaries     = summariesModule()
+    val oneShot       = oneShotPromptModule(core.process, core.homeDir)
+    val summaries     = summariesModule(core.storage, oneShot, core.logger)
     val sessions      = sessionsModule(core, runtime, projects, summaries)  // summaries: SummariesApi?, null = bez podsumowań
     val notifications = notificationsModule(core, sessions.monitor, sessions.commands)
     val terminal      = terminalModule(core)

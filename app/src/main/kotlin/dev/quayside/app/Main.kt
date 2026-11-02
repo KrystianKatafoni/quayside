@@ -8,6 +8,7 @@ import androidx.compose.ui.window.rememberWindowState
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.impl.agentRuntimeModule
 import dev.quayside.agentruntime.impl.hookEventSourceModule
+import dev.quayside.agentruntime.impl.oneShotPromptModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
@@ -19,6 +20,7 @@ import dev.quayside.projects.impl.projectInspectorModule
 import dev.quayside.projects.impl.projectsModule
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.impl.sessionsModule
+import dev.quayside.summaries.api.SummariesApi
 import dev.quayside.summaries.impl.summariesModule
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalSettings
@@ -71,7 +73,14 @@ private fun appModules(
     val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir, injectHookToken = true)
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
     // Lives as long as the app, not the window (AM-405 risks).
-    val sessions = sessionsDeps(core, runtime, projects, CoroutineScope(SupervisorJob() + core.dispatchers.io))
+    val sessions =
+        sessionsDeps(
+            core,
+            runtime,
+            projects,
+            stored.summaries,
+            CoroutineScope(SupervisorJob() + core.dispatchers.io),
+        )
     // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
     val registry = commandPaletteModule(CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger)
     val notifications = notificationDeps(core, stored.notifications, sessions, projects)
@@ -84,22 +93,25 @@ private fun sessionsDeps(
     core: CoreDeps,
     runtime: AgentRuntime,
     projects: ProjectsApi,
+    summaries: SummariesApi,
     scope: CoroutineScope,
 ): SessionsApi {
     val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir)
-    return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger, summaries = summariesModule())
+    return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger, summaries = summaries)
 }
 
 /** The settings files read in `main` before the window opens, like the project list. */
 private class StoredSettings(
     val terminal: TerminalSettingsRepo,
     val notifications: NotificationSettingsRepo,
+    val summaries: SummariesApi,
 )
 
 private suspend fun storedSettings(core: CoreDeps): StoredSettings =
     StoredSettings(
         terminalSettingsModule(core.storage, core.logger),
         notificationSettingsModule(core.storage, core.logger),
+        summariesModule(core.storage, oneShotPromptModule(core.process, core.homeDir), core.logger),
     )
 
 /** The terminal module on [shell] over the stored settings. Its bells become notifications of [notifications]. */

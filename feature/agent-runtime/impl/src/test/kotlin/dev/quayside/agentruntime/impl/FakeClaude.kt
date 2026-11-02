@@ -42,6 +42,14 @@ internal class FakeClaude private constructor(
         stateDir.resolve("mode").writeText(mode)
     }
 
+    /** Sets the raw stdout of later print-mode calls (`claude -p`, AM-604). */
+    fun setPrintResult(stdout: String) {
+        stateDir.resolve("print-result").writeText(stdout)
+    }
+
+    /** Working directory of the latest print-mode call; null before the first one. */
+    fun printCwd(): Path? = stateDir.resolve("print-cwd").takeIf { it.exists() }?.let { Path.of(it.readText().trim()) }
+
     /** Switches how later `agents` calls see Agent View. */
     fun setAgentView(agentView: AgentView) {
         stateDir.resolve("agent-view").writeText("${agentView.token}\n")

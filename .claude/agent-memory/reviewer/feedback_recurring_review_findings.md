@@ -29,8 +29,15 @@ Sprawdzaj od razu przy każdym review:
 - Przykłady „sortowanie bez wielkości liter” w planie/kontrakcie (`zosia`, `Anna`) dają ten sam wynik przy sortowaniu ASCII — mutacja `sortedBy { name }` przeżywa (AM-704 B2a). Wymagaj pary typu `anna`/`Bob`.
 - Uzasadnienie usunięcia testu („byłby zawsze zielony”) weryfikuj ręcznie: w AM-704 B2a test „zapis od current” byłby CZERWONY (szkic nadpisuje wszystkie pola), czyli dokumentował zmianę semantyki, którą trzeba opisać w planie/KDoc.
 
-- Ostatnia część zadania (PR z `Closes #N`) pomija `docs/ROADMAP.md` `[x]`, choć plan go wymienia (AM-704 B2b). Sprawdzaj `git status` pod kątem ROADMAP przy każdym zamykającym PR.
+- Ostatnia część zadania (PR z `Closes #N`) pomija `docs/ROADMAP.md` `[x]`, choć plan go wymienia (AM-704 B2b). Sprawdzaj `git status` pod kątem ROADMAP przy każdym zamykającym PR. To samo dla pierwszej części: `[~]` i CHANGELOG `[Unreleased]` brakowały w AM-604 A, choć plan je wymieniał w „Moduły A”.
+- ENG-C2: docs/10 mówi „≤ 5 parametrów”, ale `config/detekt/detekt.yml` ma `allowedConstructorParameters: 6` — konstruktor z 6 parametrami przechodzi bramkę. Traktuj jako sugestię i wskaż rozjazd (AM-604 `SessionsState`).
+- Limity długości (`<= MAX`) w czystych rdzeniach: sprawdzaj, czy tabela testów ma przypadek dokładnie na granicy dla każdej gałęzi porównania; w AM-604 granica „dwa zdania = 160” nie była przypięta (mutacja `<=`→`<` przeżywa).
 - `remember { wartość z pierwszej kompozycji }` jako „zapamiętany zapis” (np. niezainstalowany głos zostaje na liście) bez testu „odejdź i wróć” — mutacja na bieżącą wartość przeżywa. Tak samo `ignoreCase` przy skoku literą, gdy wszystkie nazwy w fixtures są z wielkiej litery.
+- AM-604 B powtórzyło brak ROADMAP `[x]` i CHANGELOG mimo planu („Moduły B”) — sprawdzaj w KAŻDEJ części, nie tylko ostatniej.
+- Wywołanie modelu (`claude -p`) z treścią spoza kontroli (wiadomość agenta) dziedziczy ustawienia użytkownika: narzędzia, `permissions.allow`, MCP, globalny CLAUDE.md; cwd = home daje Read całego katalogu domowego bez pytania. Sprawdzaj ograniczenie narzędzi/tur i opis ryzyka w ADR (AM-604 B).
+- `JsonPrimitive.booleanOrNull` przyjmuje też string `"true"` — „zły typ = wyłączone” wymaga `!isString`; testy z `"yes"` tego nie łapią.
+- Twierdzenia KDoc o współbieżności („deadlock przy Unconfined”) weryfikuj: `Mutex.lock` zawiesza, nie blokuje, a szybka ścieżka `withLock` nie sprawdza anulowania (więc strażnik pokolenia po anulowaniu jest potrzebny i testowalny).
+- Mapy per rozmowa (`turns`, `jobs`) bez czyszczenia: pytaj o wyciek; licznik pokolenia globalny pozwala czyścić bez ponownego użycia numerów.
 - Zwolnienie flagi w `finally` wokół wywołania zwracającego `Outcome` (bez wyjątków) jest równoważne zwolnieniu po `try` — mutacja przeżywa; to obrona, nie błąd, ale opisz to w KDoc zamiast deklarować „sprawdzone testem”.
 
 Powiązane: [[reviewer-workflow]]

@@ -97,3 +97,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Test skoku po literze i skrótów klawiszowych potrzebuje danych z małą literą oraz klawisza z modyfikatorem, inaczej mutacje `ignoreCase` i `!isMetaPressed` przeżywają.
 - `value class` nullable w parametrach `@MethodSource` JUnit odpakowuje do `String?` — przekazuj `String?` i opakowuj w teście.
 - Test progu liczonego w code pointach zamiast znaków UTF-16 musi mieć dane, w których oba sposoby dają różny wynik (np. 45 emoji przed spacją), inaczej mutacja przeżywa; dopisanie wierszy do tabeli `@MethodSource` łatwo przekracza LongMethod (30) — wydziel funkcję źródła.
+- `claude -p` z niezaufaną treścią (wiadomość agenta) dziedziczy narzędzia, MCP i uprawnienia użytkownika — zawsze `--tools ""`, `--strict-mcp-config`, `--disable-slash-commands` i wyłączone hooki.
+- `booleanOrNull` z kotlinx.serialization przyjmuje też string `"true"` — sprawdzaj `isString` przy ścisłym parsowaniu JSON.
+- Czyszczenie wpisów mapy per rozmowa przy globalnym liczniku tur to higiena pamięci, nieobserwowalna testem — nie dopisuj testów „zawsze zielonych”.

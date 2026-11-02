@@ -15,6 +15,8 @@
 #   daemon        running | stopped | absent: answer of `claude daemon status` (absent = older CLI)
 #   mode          normal | garbage | hang | fail <code> <stderr...> | bg-child | untrusted
 #                 (untrusted: `--bg` refuses the cwd like 2.1.302 in a workspace without trust)
+#   print-result  raw stdout of a print-mode call (`claude -p`, AM-604); a default success JSON when absent
+#   print-cwd     working directory of the latest print-mode call
 #   calls.log     argv of every call: arguments end with \037, calls end with \036
 set -u
 
@@ -275,7 +277,20 @@ daemon_cmd() {
     esac
 }
 
+# `claude -p ... -- <prompt>`: the recorded JSON of `--output-format json` (modes hang and fail act before).
+print_cmd() {
+    pwd -P >"$state/print-cwd"
+    if [ -s "$state/print-result" ]; then
+        cat "$state/print-result"
+    else
+        printf '{"type":"result","subtype":"success","is_error":false,"result":"Fake answer."}\n'
+    fi
+}
+
 case ${1-} in
+-p | --print)
+    print_cmd
+    ;;
 daemon)
     shift
     daemon_cmd "$@"

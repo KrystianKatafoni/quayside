@@ -1,6 +1,7 @@
 package dev.quayside.agentruntime.impl
 
 import dev.quayside.agentruntime.api.PermissionMode
+import dev.quayside.agentruntime.api.PromptRequest
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.StartSpec
 import dev.quayside.core.domain.SessionId
@@ -38,6 +39,34 @@ internal object ClaudeCommands {
             add("--")
             add(spec.prompt)
         }
+
+    /**
+     * `[exe, -p, --model, m, --output-format, json, --settings, {"disableAllHooks":true},
+     * --no-session-persistence, --tools, "", --strict-mcp-config, --disable-slash-commands, --, prompt]`; no hooks,
+     * so the answer cannot trigger our own `Stop` hook, and no tools, MCP servers or slash commands, because the
+     * prompt holds untrusted text (prompt injection, ADR 0019).
+     */
+    fun print(
+        executable: String,
+        request: PromptRequest,
+    ): List<String> =
+        listOf(
+            executable,
+            "-p",
+            "--model",
+            request.model,
+            "--output-format",
+            "json",
+            "--settings",
+            """{"disableAllHooks":true}""",
+            "--no-session-persistence",
+            "--tools",
+            "",
+            "--strict-mcp-config",
+            "--disable-slash-commands",
+            "--",
+            request.prompt,
+        )
 
     /** `[exe, verb, id]` for verb in `attach`, `logs`, `stop`, `respawn`, `rm`. */
     fun byId(

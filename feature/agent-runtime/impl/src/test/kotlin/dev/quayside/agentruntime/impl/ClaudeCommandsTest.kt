@@ -1,6 +1,7 @@
 package dev.quayside.agentruntime.impl
 
 import dev.quayside.agentruntime.api.PermissionMode
+import dev.quayside.agentruntime.api.PromptRequest
 import dev.quayside.agentruntime.api.StartSpec
 import dev.quayside.core.domain.SessionId
 import io.kotest.matchers.shouldBe
@@ -9,6 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import java.nio.file.Path
+import kotlin.time.Duration.Companion.seconds
 
 class ClaudeCommandsTest {
     private val exe = "/opt/test/bin/claude"
@@ -102,5 +104,38 @@ class ClaudeCommandsTest {
     @ValueSource(strings = ["attach", "logs", "stop", "respawn", "rm"])
     fun `byId puts the verb and the id after the executable`(verb: String) {
         ClaudeCommands.byId(exe, verb, SessionId("7c5dcf5d")) shouldBe listOf(exe, verb, "7c5dcf5d")
+    }
+
+    @Test
+    fun `print argv disables hooks and session persistence`() {
+        val request = PromptRequest("Summarize this", "haiku", 30.seconds)
+
+        ClaudeCommands.print(exe, request) shouldBe
+            listOf(
+                exe,
+                "-p",
+                "--model",
+                "haiku",
+                "--output-format",
+                "json",
+                "--settings",
+                """{"disableAllHooks":true}""",
+                "--no-session-persistence",
+                // The prompt holds untrusted text (prompt injection): no tools, no MCP servers, no slash commands.
+                "--tools",
+                "",
+                "--strict-mcp-config",
+                "--disable-slash-commands",
+                "--",
+                "Summarize this",
+            )
+    }
+
+    @Test
+    fun `print keeps a prompt that looks like options as one argument after the double dash`() {
+        val prompt = "-p --help \"quoted\" 'single' \$HOME `id`\nsecond line"
+
+        ClaudeCommands.print(exe, PromptRequest(prompt, "haiku", 30.seconds)).takeLast(2) shouldBe
+            listOf("--", prompt)
     }
 }

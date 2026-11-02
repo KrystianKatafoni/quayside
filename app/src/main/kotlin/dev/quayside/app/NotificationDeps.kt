@@ -33,7 +33,8 @@ internal class NotificationDeps(
 
 /**
  * The notification center fed by the session events of [sessions]; popups show the project name from [projects]. Its
- * scope lives as long as the app (AM-702).
+ * scope lives as long as the app. The voice speaks through `core.process` while no window of the app is active
+ * (AM-702, AM-703).
  */
 internal fun notificationDeps(
     core: CoreDeps,
@@ -55,6 +56,9 @@ internal fun notificationDeps(
                     ?.displayName
             },
             attach::attach,
+            core.process,
+            AppForeground().active,
+            core.logger,
         )
     return NotificationDeps(center, PopupController(center, settings, scope), attach)
 }

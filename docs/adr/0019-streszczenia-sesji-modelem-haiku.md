@@ -1,6 +1,6 @@
 # ADR 0019: Streszczenia sesji modelem Haiku
 
-- **Status:** proponowana
+- **Status:** przyjęta (zaakceptował człowiek 2026-11-03, PR scalony)
 - **Data:** 2026-11-02
 - **Dotyczy:** summaries, agent-runtime, sessions
 

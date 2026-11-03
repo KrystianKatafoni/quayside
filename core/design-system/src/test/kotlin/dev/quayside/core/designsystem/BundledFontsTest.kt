@@ -1,11 +1,15 @@
 package dev.quayside.core.designsystem
 
+import androidx.compose.ui.text.font.FontListFontFamily
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import java.awt.Font
 import java.awt.font.FontRenderContext
@@ -23,9 +27,10 @@ import kotlin.io.path.readBytes
 import kotlin.io.path.readText
 
 /**
- * The OFL fonts of the eight base typographies (ADR 0021), read from the classpath without rendering anything. The
- * font files are listed from `fonts/` itself, so a file that is added without a licence, sources entry or glyph
- * coverage fails here. Layout: `fonts/<directory>/<file>.ttf`, `fonts/<directory>/OFL.txt`, `fonts/SOURCES.md`.
+ * The OFL fonts of the 22 families of the 22 typographies (ADR 0021, AM-802 and AM-805), read from the classpath
+ * without rendering anything. The font files are listed from `fonts/` itself, so a file that is added without a
+ * licence, sources entry or glyph coverage fails here. Layout: `fonts/<directory>/<file>.ttf`,
+ * `fonts/<directory>/OFL.txt`, `fonts/SOURCES.md`.
  */
 class BundledFontsTest {
     @ParameterizedTest(name = "{0}")
@@ -62,10 +67,38 @@ class BundledFontsTest {
     }
 
     @Test
-    fun `families match the eight base typographies of docs 08`() {
-        AmFonts.families shouldBe BASE_FAMILIES
-        BASE_FAMILIES.forEach { (AmFonts.family(it) != null) shouldBe true }
+    fun `families match the typographies of docs 08`() {
+        AmFonts.families shouldBe ALL_FAMILIES
+        AmFonts.families.size shouldBe 22
+        ALL_FAMILIES.forEach { (AmFonts.family(it) != null) shouldBe true }
         AmFonts.family("SF Pro") shouldBe null
+        AmFonts.family("Menlo") shouldBe null
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource(
+        "Plus Jakarta Sans | 400 600",
+        "Outfit | 400 600",
+        "Courier Prime | 400 700",
+        "Inter | 400 600",
+        "DM Sans | 400 600",
+        "Roboto Mono | 400 600",
+        "Source Code Pro | 400 600",
+        "PT Mono | 400",
+        delimiter = '|',
+    )
+    fun `new families offer the planned weights`(
+        name: String,
+        weights: String,
+    ) {
+        val family = AmFonts.family(name).shouldBeInstanceOf<FontListFontFamily>()
+
+        family.fonts.map { it.weight.weight }.sorted() shouldBe weights.split(' ').map { it.toInt() }
+    }
+
+    @Test
+    fun `sources header names 22 typographies`() {
+        sourcesPath().readText() shouldContain "22 typografii"
     }
 
     @Test
@@ -167,9 +200,17 @@ class BundledFontsTest {
                 "atkinsonhyperlegiblenext",
                 "atkinsonhyperlegiblemono",
                 "martianmono",
+                "plusjakartasans",
+                "outfit",
+                "courierprime",
+                "inter",
+                "dmsans",
+                "robotomono",
+                "sourcecodepro",
+                "ptmono",
             )
 
-        private val BASE_FAMILIES =
+        private val ALL_FAMILIES =
             setOf(
                 "IBM Plex Sans",
                 "IBM Plex Mono",
@@ -185,6 +226,14 @@ class BundledFontsTest {
                 "Atkinson Hyperlegible Next",
                 "Atkinson Hyperlegible Mono",
                 "Martian Mono",
+                "Plus Jakarta Sans",
+                "Outfit",
+                "Courier Prime",
+                "Inter",
+                "DM Sans",
+                "Roboto Mono",
+                "Source Code Pro",
+                "PT Mono",
             )
 
         private fun fontsRoot(): Path {

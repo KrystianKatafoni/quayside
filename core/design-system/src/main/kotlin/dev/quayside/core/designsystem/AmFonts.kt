@@ -51,6 +51,18 @@ private val FILES: Map<String, List<FontFile>> =
         "Atkinson Hyperlegible Mono" to
             variable("atkinsonhyperlegiblemono/AtkinsonHyperlegibleMono[wght].ttf", 400, 600),
         "Martian Mono" to variable("martianmono/MartianMono[wdth,wght].ttf", 400, 600),
+        "Plus Jakarta Sans" to variable("plusjakartasans/PlusJakartaSans[wght].ttf", 400, 600),
+        "Outfit" to variable("outfit/Outfit[wght].ttf", 400, 600),
+        "Courier Prime" to
+            listOf(
+                static("courierprime/CourierPrime-Regular.ttf", 400),
+                static("courierprime/CourierPrime-Bold.ttf", 700),
+            ),
+        "Inter" to variable("inter/Inter[opsz,wght].ttf", 400, 600),
+        "DM Sans" to variable("dmsans/DMSans[opsz,wght].ttf", 400, 600),
+        "Roboto Mono" to variable("robotomono/RobotoMono[wght].ttf", 400, 600),
+        "Source Code Pro" to variable("sourcecodepro/SourceCodePro[wght].ttf", 400, 600),
+        "PT Mono" to listOf(static("ptmono/PTM55FT.ttf", 400)),
     )
 
 private fun FontFile.toFont(): Font =
@@ -71,7 +83,7 @@ private fun FontFile.toFont(): Font =
 public object AmFonts {
     private val cache = HashMap<String, FontFamily>()
 
-    /** The 14 bundled family names, spelled as in docs/08. */
+    /** The 22 bundled family names, spelled as in docs/08 (macOS system fonts SF Pro and Menlo are not bundled). */
     public val families: Set<String> = FILES.keys
 
     /** Every font resource path under the classpath (`fonts/<directory>/<file>`), each once. */

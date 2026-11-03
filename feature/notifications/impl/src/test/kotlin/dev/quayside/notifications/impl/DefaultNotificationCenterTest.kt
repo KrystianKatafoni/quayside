@@ -40,6 +40,7 @@ class DefaultNotificationCenterTest {
             settings = repo,
             scope = backgroundScope,
             clock = clock,
+            zone = { WARSAW },
             events = events,
             projectName = { id: ProjectId? -> id?.let { "Quayside" } },
             onAttach = { attached += it },
@@ -190,7 +191,7 @@ class DefaultNotificationCenterTest {
             settings = repo,
             manager = PopupManager(repo.settings, backgroundScope, clock) { attached += it },
             projectName = { id: ProjectId? -> id?.let { "Quayside" } },
-            context = { DeliveryContext(appActive = voiced.appActive, microphoneActive = false) },
+            context = { ctx(appActive = voiced.appActive) },
             voice = { delivery, project -> voiced.received += delivery to project },
         )
 

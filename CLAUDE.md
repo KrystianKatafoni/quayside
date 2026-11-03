@@ -106,3 +106,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - `ChoiceField`/lista wyboru z zawijaniem strzałkami stawia ostatnią wartość obok domyślnej — wartość groźna (np. „Pomiń zgody”/bypassPermissions) nie może być osiągalna jedną strzałką od wartości domyślnej: strzałki nie zawijają, klik może.
 - Kolory kopiowane z innego modułu `ui` (`Colors` MC) nie dawały 4.5:1 dla `secondary`, tonu błędu i ramki fokusu — okno z formularzem dostaje własne kolory z testem kontrastu (jak `HookColors`/`NewAgentColors`).
 - Strażnik w kontrolerze, którego UI i tak nie dopuszcza (np. `Edit` przy `busy` — kontrolki wyłączone), wymaga testu jednostkowego kontrolera, inaczej mutacja przeżywa.
+- Warunkowy zapis domyślnej sekcji w JSON (`if (value.x != X())`) wymaga testu, że domyślne ustawienia nie zapisują sekcji; round trip przechodzi także po mutacji `if (true)`.
+- Czas lokalny czytaj przy każdym zdarzeniu (`zone: () -> ZoneId`), nie raz przy starcie; test potrzebuje dwóch stref albo zmiany strefy w trakcie.

@@ -49,4 +49,8 @@ Sprawdzaj od razu przy każdym review:
 - AM-608 znów bez CHANGELOG `[Unreleased]` i ROADMAP `[x]` mimo planu — sprawdzaj `git status CHANGELOG.md` na starcie każdego review.
 - Strażnik `busy` w kontrolerze (np. `Edit` przy `busy`) bywa testowany tylko przez UI z wyłączonymi kontrolkami — mutacja strażnika przeżywa; oczekuj testu jednostkowego kontrolera.
 
+- AM-705 A: znów brak `docs/ROADMAP.md` `[~]` mimo „Moduły A” — to już wzorzec w każdej części; sprawdzaj `git status docs/ROADMAP.md` jako pierwszy krok.
+- Warunkowy zapis sekcji JSON („nie zapisuj domyślnej”, `if (x != X()) put(...)`) bywa bez testu — round trip przechodzi także bez warunku, mutacja przeżywa. Oczekuj testu `shouldNotContain "<klucz>"` dla domyślnych ustawień.
+- Nazwy testów parametryzowanych zawężone do pierwszego przypadku (`wrong type of enabled throws` dla 6 pól) i asercja `shouldNotContain "yes"` sensowna tylko dla jednego wiersza — sugestia nazwy i asercji per wiersz.
+
 Powiązane: [[reviewer-workflow]]

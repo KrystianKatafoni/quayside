@@ -7,6 +7,7 @@ import dev.quayside.core.process.ProcessError
 import dev.quayside.core.testing.TestClock
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
 import dev.quayside.sessions.api.SessionEvent
@@ -21,6 +22,8 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.ZoneId
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -34,6 +37,8 @@ class VoiceFlowTest {
     private val runner = FakeProcessRunner()
     private val appActive = MutableStateFlow(false)
     private val repo = FakeNotificationSettingsRepo()
+    private val clock = TestClock()
+    private var zone: ZoneId = WARSAW
 
     private fun TestScope.start(
         process: FakeProcessRunner? = runner,
@@ -41,7 +46,8 @@ class VoiceFlowTest {
     ) = notificationCenterModule(
         settings = settings,
         scope = backgroundScope,
-        clock = TestClock(),
+        clock = clock,
+        zone = { zone },
         events = events,
         projectName = { id: ProjectId? -> id?.value },
         process = process,
@@ -204,5 +210,42 @@ class VoiceFlowTest {
 
             center.popups.value.size shouldBe 1
             runner.commands shouldBe emptyList()
+        }
+
+    private val nightOn = NotificationSettings(quietHours = QuietHours(enabled = true))
+
+    @Test
+    fun `enabled quiet hours silence the voice but keep the popup`() =
+        runTest {
+            // Given quiet hours 22:00-07:00 and 22:30 in Warsaw
+            clock.setTo(Instant.parse("2026-11-03T21:30:00Z"))
+            val center = start(settings = FakeNotificationSettingsRepo(nightOn))
+
+            // When a session waits
+            send(waiting("a"))
+            pass(30.seconds)
+
+            // Then the popup shows and say is not started
+            center.popups.value.size shouldBe 1
+            runner.commands shouldBe emptyList()
+
+            // And at noon the same settings speak again
+            clock.setTo(Instant.parse("2026-11-04T11:00:00Z"))
+            send(waiting("b"))
+            runner.commands.size shouldBe 1
+        }
+
+    @Test
+    fun `the zone is read at every event`() =
+        runTest {
+            clock.setTo(Instant.parse("2026-11-03T21:30:00Z"))
+            start(settings = FakeNotificationSettingsRepo(nightOn))
+            send(waiting("a"))
+            runner.commands shouldBe emptyList()
+
+            zone = ZoneId.of("UTC")
+            send(waiting("b"))
+
+            runner.commands.size shouldBe 1
         }
 }

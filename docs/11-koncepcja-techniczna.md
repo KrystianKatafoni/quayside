@@ -264,11 +264,16 @@ interface VoiceCatalog {                          // AM-704: głosy zainstalowan
     suspend fun voices(): Outcome<List<VoiceOption>, VoiceCatalogError>   // posortowane po nazwie, bez cache
 }
 enum class TemplateProblem { EMBEDDED_COMMAND, TOO_LONG }   // SpeechSettings.templateProblem(text)
+data class QuietHours(val enabled: Boolean = false, val from: LocalTime = 22:00, val to: LocalTime = 07:00,
+                     val respectFocus: Boolean = true)   // AM-705 (FR-N6): pełne minuty; to < from = przez północ; from == to = nigdy
+// NotificationSettings.quietHours; w ciszy odpadają VOICE i SOUND, POPUP i DOCK_BADGE zostają
 
 // notifications:impl (internal) — czysty rdzeń decyzji
 internal fun decide(event: SessionEvent, settings: NotificationSettings, ctx: DeliveryContext): List<Delivery>
+// DeliveryContext(appActive, microphoneActive, localTime, focusActive); quietNow(quiet, ctx) = (enabled && covers(localTime)) || (respectFocus && focusActive)
+internal interface FocusMonitor { val active: StateFlow<Boolean> }   // AM-705: tylko port; NoFocus (zawsze false), adapter Skupienia osobno
 internal interface SpeechPort { suspend fun speak(text: String, voice: VoiceId, rate: Int) }  // adapter: MacSayAdapter
-// Fabryki modułu (public): notificationCenterModule(...) oraz voiceCatalogModule(process, workDir): VoiceCatalog
+// Fabryki modułu (public): notificationCenterModule(settings, scope, clock, zone: () -> ZoneId, ...) (strefa czytana przy każdym zdarzeniu) oraz voiceCatalogModule(process, workDir): VoiceCatalog
 ```
 
 ```kotlin

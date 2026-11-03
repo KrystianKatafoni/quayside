@@ -6,6 +6,7 @@ import dev.quayside.core.testing.RecordingLogger
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
 import dev.quayside.sessions.api.SessionState
@@ -23,6 +24,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import java.time.LocalTime
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -45,7 +47,7 @@ class VoiceNotifierTest {
     private val speech = RecordingSpeech()
     private val logger = RecordingLogger()
     private val settings = MutableStateFlow(NotificationSettings())
-    private var context = DeliveryContext(appActive = false, microphoneActive = false)
+    private var context = ctx()
 
     private fun TestScope.notifier(
         port: SpeechPort = speech,
@@ -207,7 +209,7 @@ class VoiceNotifierTest {
             notifier.offer(delivery("b", "s2"), "p")
             notifier.offer(delivery("c", "s3"), "p")
 
-            context = DeliveryContext(appActive = true, microphoneActive = false)
+            context = ctx(appActive = true)
             pass(25.seconds)
 
             speech.texts.size shouldBe 1
@@ -220,11 +222,11 @@ class VoiceNotifierTest {
             notifier.offer(delivery("a", "s1"), "p")
             runCurrent()
             notifier.offer(delivery("b", "s2"), "p")
-            context = DeliveryContext(appActive = true, microphoneActive = false)
+            context = ctx(appActive = true)
             pass(20.seconds)
             speech.texts.size shouldBe 1
 
-            context = DeliveryContext(appActive = false, microphoneActive = false)
+            context = ctx()
             notifier.offer(delivery("c", "s3"), "p")
             runCurrent()
 
@@ -240,7 +242,70 @@ class VoiceNotifierTest {
             runCurrent()
             notifier.offer(delivery("b", "s2"), "p")
 
-            context = DeliveryContext(appActive = false, microphoneActive = true)
+            context = ctx(microphoneActive = true)
+            pass(25.seconds)
+
+            speech.texts.size shouldBe 1
+        }
+
+    @Test
+    fun `group is dropped when quiet hours start during the cooldown`() =
+        runTest {
+            settings.value = settings.value.copy(quietHours = QuietHours(enabled = true))
+            val notifier = notifier()
+            notifier.offer(delivery("a", "s1"), "p")
+            runCurrent()
+            notifier.offer(delivery("b", "s2"), "p")
+
+            context = ctx(localTime = LocalTime.of(22, 0))
+            pass(25.seconds)
+
+            speech.texts.size shouldBe 1
+        }
+
+    @Test
+    fun `after a group dropped by quiet hours the next message is spoken at once`() =
+        runTest {
+            settings.value = settings.value.copy(quietHours = QuietHours(enabled = true))
+            val notifier = notifier()
+            notifier.offer(delivery("a", "s1"), "p")
+            runCurrent()
+            notifier.offer(delivery("b", "s2"), "p")
+            context = ctx(localTime = LocalTime.of(23, 0))
+            pass(20.seconds)
+
+            context = ctx(localTime = LocalTime.of(7, 0))
+            notifier.offer(delivery("c", "s3"), "p")
+            runCurrent()
+
+            speech.texts.size shouldBe 2
+            speech.texts.last() shouldBe "Agent c w projekcie p czeka na odpowiedź"
+        }
+
+    @Test
+    fun `group is spoken when the hours do not cover the time`() =
+        runTest {
+            settings.value = settings.value.copy(quietHours = QuietHours(enabled = true))
+            val notifier = notifier()
+            notifier.offer(delivery("a", "s1"), "p")
+            runCurrent()
+            notifier.offer(delivery("b", "s2"), "p")
+            notifier.offer(delivery("c", "s3"), "p")
+
+            pass(20.seconds)
+
+            speech.texts.size shouldBe 2
+        }
+
+    @Test
+    fun `group is dropped when a Focus started during the cooldown`() =
+        runTest {
+            val notifier = notifier()
+            notifier.offer(delivery("a", "s1"), "p")
+            runCurrent()
+            notifier.offer(delivery("b", "s2"), "p")
+
+            context = ctx(focusActive = true)
             pass(25.seconds)
 
             speech.texts.size shouldBe 1

@@ -30,7 +30,7 @@ Sprawdzaj od razu przy każdym review:
 - Uzasadnienie usunięcia testu („byłby zawsze zielony”) weryfikuj ręcznie: w AM-704 B2a test „zapis od current” byłby CZERWONY (szkic nadpisuje wszystkie pola), czyli dokumentował zmianę semantyki, którą trzeba opisać w planie/KDoc.
 
 - Ostatnia część zadania (PR z `Closes #N`) pomija `docs/ROADMAP.md` `[x]`, choć plan go wymienia (AM-704 B2b). Sprawdzaj `git status` pod kątem ROADMAP przy każdym zamykającym PR. To samo dla pierwszej części: `[~]` i CHANGELOG `[Unreleased]` brakowały w AM-604 A, choć plan je wymieniał w „Moduły A”.
-- ENG-C2: docs/10 mówi „≤ 5 parametrów”, ale `config/detekt/detekt.yml` ma `allowedConstructorParameters: 6` — konstruktor z 6 parametrami przechodzi bramkę. Traktuj jako sugestię i wskaż rozjazd (AM-604 `SessionsState`).
+- ENG-C2 (stan 2026-11-03): docs/10 mówi „funkcja ≤ 5 parametrów, konstruktor ≤ 6” — zgodne z detekt `allowedConstructorParameters: 6`; funkcje i composable z 6+ parametrami sprawdzaj ręcznie (lekcja w CLAUDE.md).
 - Limity długości (`<= MAX`) w czystych rdzeniach: sprawdzaj, czy tabela testów ma przypadek dokładnie na granicy dla każdej gałęzi porównania; w AM-604 granica „dwa zdania = 160” nie była przypięta (mutacja `<=`→`<` przeżywa).
 - `remember { wartość z pierwszej kompozycji }` jako „zapamiętany zapis” (np. niezainstalowany głos zostaje na liście) bez testu „odejdź i wróć” — mutacja na bieżącą wartość przeżywa. Tak samo `ignoreCase` przy skoku literą, gdy wszystkie nazwy w fixtures są z wielkiej litery.
 - AM-604 B powtórzyło brak ROADMAP `[x]` i CHANGELOG mimo planu („Moduły B”) — sprawdzaj w KAŻDEJ części, nie tylko ostatniej.
@@ -57,5 +57,13 @@ Sprawdzaj od razu przy każdym review:
 - Test „kolejność filtrów” przy łańcuchu `.filter {}` z niezależnych predykatów jednego kanału: kolejność jest nieobserwowalna (filtry są przemienne), więc nazwa testu obiecuje więcej, niż sprawdza. Sugeruj zmianę nazwy na „profil łączy się z X”.
 - Podwójny strażnik zapisu sekcji (warunek `any { != default }` przed `put` + `filterValues` w `encode`): test „tylko domyślne wpisy” sprawdza brak id, nie brak klucza sekcji — mutacja `any {…}` → `isNotEmpty()` przeżywa. Oczekuj `shouldNotContain "<sekcja>"`.
 - Parametr opisowy testu parametryzowanego „użyty” asercją `label.isNotEmpty() shouldBe true` tylko dla detektu — asercja zawsze zielona; sugeruj `@Suppress("UnusedParameter")` albo `name = "{0}"` bez parametru.
+
+- AM-801: znów ROADMAP `[ ]` mimo „Closes #N, roadmapa `[x]`” w planie (wcześniejsze PR-y miały commit `docs(roadmap): mark AM-XXX done` w gałęzi zadania).
+- Dane testu tablicowego czystej funkcji mieszającej wejścia (np. `deriveTokens`: bg = panel, text = accent = warn) czynią źródło każdej reguły nieobserwowalnym — mutacja `mix(text)`→`mix(accent)` przeżywa. Wymagaj wejść rozróżnialnych po kanale (np. bg `#0000C8`, accent `#FF0000`, warn `#00FF00`).
+  **Why:** plan sam dobrał „szare” dane; implementer je przepisał, testy zielone.
+  **How to apply:** dla każdej reguły X = f(A, B) zapytaj, czy zamiana A na inną kolumnę zmienia oczekiwaną wartość.
+- Korekta wartości w tabeli docs zostawia starą wartość cytowaną w innej sekcji tego samego pliku (AM-801: `paper` `warn` poprawione, „Luki 1” dalej każe brać `#B45309` z `paper`). Po korekcie grepuj starą wartość w `docs/`.
+- Test fake'a „serwuje podany katalog” z argumentem równym domyślnemu (`FakeX(defaultCatalog())` vs `FakeX()`) jest zawsze zielony — oczekuj innej wartości i `shouldBeSameInstanceAs`.
+- `require` w typach `api`/`core` bez `@throws` w KDoc (precedens w repo: `Shortcut`, `OneShotPrompt` mają `@throws IllegalArgumentException`). Wyjątek z warunku wstępnego na stałych to błąd programisty (OK wobec ENG-I4), ale musi być opisany; dane użytkownika (theme.json) wymagają `parse(): T?`.
 
 Powiązane: [[reviewer-workflow]]

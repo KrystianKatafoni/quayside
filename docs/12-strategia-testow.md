@@ -38,7 +38,7 @@ class SessionStateReducerTest {
 }
 ```
 
-Analogicznie testujemy: `decide()` w powiadomieniach (zdarzenie × ustawienia × cisza nocna × okno w tle → lista dostarczeń), renderowanie szablonów głosu (`{sesja}` → „opcua connector”), walidację katalogu projektu, parser `claude agents --json` na nagranych odpowiedziach (`fixtures/agents-json/*.json`, także z nieznanymi polami i nowymi stanami) oraz **kontrast każdego schematu kolorów** (test liczy WCAG dla par `text/bg`, `muted/bg`, `accentInk/accent` i wymaga ≥ 4.5:1).
+Analogicznie testujemy: `decide()` w powiadomieniach (zdarzenie × ustawienia × cisza nocna × okno w tle → lista dostarczeń), renderowanie szablonów głosu (`{sesja}` → „opcua connector”), walidację katalogu projektu, parser `claude agents --json` na nagranych odpowiedziach (`fixtures/agents-json/*.json`, także z nieznanymi polami i nowymi stanami) oraz **kontrast każdego z 29 motywów** ([08](08-wyglad.md), „Luki”): test liczy WCAG dla par `text/bg`, `text/panel`, `muted/bg`, `muted/panel`, `accentInk/accent` i `warnInk/warn` i wymaga ≥ 4.5:1; statusy `warn`, `ok`, `err`, `work` mają ≥ 3:1 z `bg` i `panel`, a odcień `warn` różni się od `accent`, `ok` i `err` (oraz `ok` i `err` od `accent`) o ≥ 30°. Półprzezroczysty `panel` liczymy jako kolor złożony na `bg`.
 
 ViewModele testujemy przez `Turbine`: intent → sekwencja `UiState`.
 

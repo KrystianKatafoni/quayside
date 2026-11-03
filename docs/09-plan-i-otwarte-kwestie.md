@@ -13,7 +13,7 @@ Każdy etap kończy się czymś, czego da się realnie używać.
 | 4 | Terminal | Karty attach/zsh/logs, panele, szukanie, ustawienia terminala | FR-T1–T3, T7 |
 | 5 | Hooki i podsumowania | `HookServer` (Ktor), instalator hooków z backupem, scalanie z pollingiem, `Summarizer` | FR-S7, NFR-4, NFR-5 |
 | 6 | Powiadomienia | Własny popup, głos `say`, macierz reguł, ciche godziny, wyjątki per projekt | FR-N1–N7 |
-| 7 | Wygląd | 9 schematów, 8 typografii (fonty w zasobach), ustawienia z podglądem, dzień/noc | FR-A1–A5 |
+| 7 | Wygląd | 29 motywów (9 schematów kolorów i 20 motywów z kształtem), 22 typografie (fonty w zasobach), ustawienia z podglądem, dzień/noc | FR-A1–A5, FR-A7 |
 | 8 | Szlif i dystrybucja | Badge w Docku, ikona w pasku menu, odpowiedź i zgoda z popupu, podpis Developer ID, notaryzacja, `.dmg` | Wersja 1.0 |
 
 ## Ryzyka

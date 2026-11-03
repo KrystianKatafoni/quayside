@@ -58,12 +58,13 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 
 | ID | Wymaganie | Prio |
 | --- | --- | --- |
-| FR-A1 | 9 wbudowanych schematów kolorów, w tym 2 jasne i 1 wysokiego kontrastu | M |
-| FR-A2 | 8 typografii (para font UI + font terminala), wybieranych **niezależnie** od schematu | M |
+| FR-A1 | 29 wbudowanych motywów ([08](08-wyglad.md)): 9 podstawowych schematów kolorów i 20 motywów z kształtem; 12 jasnych i 17 ciemnych, w tym 2 wysokiego kontrastu (1 jasny, 1 ciemny) | M |
+| FR-A2 | 22 typografie (para font UI + font terminala): 8 podstawowych i 14 par domyślnych motywów, wybierane **niezależnie** od motywu; motyw tylko podpowiada swoją domyślną typografię | M |
 | FR-A3 | Podgląd na żywo w ustawieniach | S |
 | FR-A4 | Rozmiar interfejsu S/M/L, gęstość listy, osobny font i rozmiar terminala | S |
 | FR-A5 | Automatyczne przełączanie schematu dzień/noc razem z trybem macOS | S |
 | FR-A6 | Własny schemat, import i eksport `theme.json` | C |
+| FR-A7 | Tokeny kształtu w motywie: promień, grubość ramki, cień, półprzezroczyste tło panelu (przybliżenie bez rozmycia) | S |
 | FR-K1 | Paleta komend ⌘K obejmująca wszystkie akcje (sesje, projekty, ustawienia) | M |
 | FR-K2 | Skróty jako przyspieszenie: j/k, ⏎ attach, r odpowiedz, x stop, space podgląd, g p przełącz projekt ([ADR 0015](adr/0015-skroty-jako-dodatek.md)) | S |
 | FR-K3 | Każda akcja na sesji i projekcie ma widoczną kontrolkę: przycisk w panelu szczegółów albo pozycję menu kontekstowego wiersza (prawy klik, przycisk ⋯); podgląd i attach także kliknięciem | M |

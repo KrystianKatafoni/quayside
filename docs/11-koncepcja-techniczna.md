@@ -23,7 +23,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`. Czysty Kotlin | brak (tylko coroutines-core) |
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
-| `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `TypographySpec`), bez Compose | `core:domain` |
+| `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`), bez Compose | `core:domain` |
 | `core:design-system` | Komponenty Compose (przyciski, wiersze listy, pasek trybu, popup), `AmTheme` z `CompositionLocal` | `core:design-tokens` |
 | `core:testing` | Wspólne narzędzia testowe: `TestClock`, `TestDispatchers`, buildery danych, asercje | `core:domain` |
 
@@ -321,8 +321,8 @@ object TerminalSettingsRules { fun validate(s: TerminalSettings): Outcome<Termin
 ```kotlin
 // appearance:api (typy z core:design-tokens, bez Compose)
 interface AppearanceApi {
-    val theme: StateFlow<ResolvedTheme>           // aktualny schemat + typografia + skala
-    val catalog: ThemeCatalog                     // 9 schematów, 8 typografii, własne
+    val theme: StateFlow<ResolvedTheme>           // aktualny motyw (kolory + kształt) + typografia + skala
+    val catalog: ThemeCatalog                     // 29 motywów, 22 typografie, własne (08-wyglad)
     suspend fun select(scheme: SchemeId? = null, typography: TypographyId? = null)
     suspend fun update(change: (AppearanceSettings) -> AppearanceSettings)
 }
@@ -438,7 +438,7 @@ Każda fabryka `xxxModule(…)` zwraca obiekt z interfejsami `api`, np. `Session
 | Podmiana `say` na `AVSpeechSynthesizer` (JNA) | adapter w `notifications:impl` | reguły, UI, ustawienia |
 | Nowy kanał powiadomień (np. webhook do Slacka) | `notifications` (`api`: typ kanału, `impl`: adapter), `notifications:ui` (przełącznik) | `sessions`, `agent-runtime` |
 | Zmiana biblioteki terminala | `terminal:impl` | `terminal:ui` (tylko jeśli zmieni się `component()`), reszta |
-| Nowy schemat kolorów lub typografia | katalog w `appearance:impl` (+ font w zasobach) | wszystkie ekrany (czytają tokeny) |
+| Nowy motyw, schemat kolorów lub typografia | katalog w `appearance:impl` (+ font w zasobach) | wszystkie ekrany (czytają tokeny) |
 | Nowy ekran lub przeprojektowanie Mission Control | `mission-control:ui`, ewentualnie `core:design-system` | logika i adaptery |
 | Zmiana formatu `projects.json` | `projects:impl` (migracja schematu) | wszystko inne |
 

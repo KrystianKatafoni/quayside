@@ -1,6 +1,6 @@
 # ADR 0021: Fonty typografii w zasobach `core:design-system`
 
-- **Status:** proponowana
+- **Status:** przyjęta (zaakceptował człowiek 2026-11-03, PR scalony)
 - **Data:** 2026-11-03
 - **Dotyczy:** `core:design-system` (zasoby `fonts/`), AM-802, AM-805, AM-901 (licencje w `.dmg`)
 

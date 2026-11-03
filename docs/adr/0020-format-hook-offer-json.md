@@ -1,6 +1,6 @@
 # ADR 0020: Plik `hook-offer.json`: zapamiętanie odmowy instalacji hooków
 
-- **Status:** proponowana
+- **Status:** przyjęta (zaakceptował człowiek 2026-11-03, PR scalony)
 - **Data:** 2026-11-02
 - **Dotyczy:** `app` (AM-607), plik `hook-offer.json` w katalogu danych aplikacji, docs/11 §8
 
@@ -10,7 +10,7 @@ AM-607 (NFR-5) proponuje przy starcie instalację hooków w `~/.claude/settings.
 
 ## Decyzja
 
-Wariant wybrał człowiek 2026-11-02 (plan AM-607); status zmieni się na „przyjęta” przy scaleniu PR.
+Wariant wybrał człowiek 2026-11-02 (plan AM-607).
 
 1. Nowy plik `hook-offer.json` w `~/Library/Application Support/Quayside/`, właściciel `app` (composition root, który pokazuje propozycję). Koperta `JsonStore` z `core:storage`:
 

@@ -103,3 +103,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Dialog zgody na zmianę konfiguracji użytkownika nie może dawać fokusu startowego przyciskowi zapisującemu (Space i Enter działają jak klik na sfokusowanym `clickable`): fokus startowy na „Zamknij/Pomiń”, po akcji zostaje na „Zamknij”, wskaźnik fokusu jest widoczny.
 - Strażnik „wynik po zamknięciu odrzucony” wymaga testu z ponownym otwarciem okna, bo samo `state == null` zasłania brak strażnika.
 - Stała z kodu (np. port) wpisana literalnie w tekście i w teście ukrywa rozjazd — przekazuj ją parametrem tekstu (`{0}`), a parametr liczbowy jako String, by MessageFormat nie dał „47,321”.
+- `ChoiceField`/lista wyboru z zawijaniem strzałkami stawia ostatnią wartość obok domyślnej — wartość groźna (np. „Pomiń zgody”/bypassPermissions) nie może być osiągalna jedną strzałką od wartości domyślnej: strzałki nie zawijają, klik może.
+- Kolory kopiowane z innego modułu `ui` (`Colors` MC) nie dawały 4.5:1 dla `secondary`, tonu błędu i ramki fokusu — okno z formularzem dostaje własne kolory z testem kontrastu (jak `HookColors`/`NewAgentColors`).
+- Strażnik w kontrolerze, którego UI i tak nie dopuszcza (np. `Edit` przy `busy` — kontrolki wyłączone), wymaga testu jednostkowego kontrolera, inaczej mutacja przeżywa.

@@ -25,7 +25,8 @@ class BuiltInCatalogTest {
     private fun scheme(key: String): ThemeSpec = catalog.theme(SchemeId(key)).shouldNotBeNull()
 
     @Test
-    fun `has nine base schemes in docs 08 order`() {
+    @Suppress("LongMethod")
+    fun `has nine base schemes then twenty shaped themes in docs 08 order`() {
         catalog.themes.map { it.id.value to it.name } shouldBe
             listOf(
                 "plex" to "Plex Violet",
@@ -37,11 +38,31 @@ class BuiltInCatalogTest {
                 "sand" to "Sand",
                 "rose" to "Rose Night",
                 "contrast" to "Wysoki kontrast",
+                "nordic-light" to "Nordic Slate",
+                "cyber-light" to "Cyber Ink Light",
+                "sand-light" to "Minimal Sand",
+                "hc-light" to "High-Contrast Accessibility",
+                "steel-light" to "Steel & Cobalt",
+                "teal-light" to "Teal & Obsidian",
+                "term-light" to "Terminal Classic",
+                "glass-light" to "Amethyst Glass",
+                "oatmeal-light" to "Oatmeal & Terracotta",
+                "emerald-light" to "Corporate Emerald",
+                "midnight-pro" to "Midnight Pro",
+                "dracula" to "Dracula",
+                "monokai" to "Monokai",
+                "gruvbox" to "Gruvbox Dark",
+                "cyberpunk" to "Cyberpunk",
+                "nord-dark" to "Nord Dark",
+                "minimal-black" to "Minimal Black",
+                "solarized-dark" to "Solarized Dark",
+                "developer-gray" to "Developer Gray",
+                "deep-abyss" to "Deep Abyss",
             )
     }
 
     @Test
-    fun `has eight base typographies in docs 08 order`() {
+    fun `has twenty two typographies in docs 08 order`() {
         catalog.typographies shouldBe
             listOf(
                 typography("plex", "IBM Plex", "IBM Plex Sans", "IBM Plex Mono"),
@@ -52,18 +73,49 @@ class BuiltInCatalogTest {
                 typography("space", "Space", "Space Grotesk", "Space Mono"),
                 typography("hyper", "Hyperlegible", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible Mono"),
                 typography("martian", "Martian Mono", "Martian Mono", "Martian Mono"),
+                pair("jakarta-jb", "Plus Jakarta Sans", "JetBrains Mono"),
+                pair("grotesk-fira", "Space Grotesk", "Fira Code"),
+                pair("outfit-courier", "Outfit", "Courier Prime"),
+                pair("outfit-dm", "Outfit", "DM Mono"),
+                pair("inter-fira", "Inter", "Fira Code"),
+                pair("inter-jb", "Inter", "JetBrains Mono"),
+                pair("inter-roboto", "Inter", "Roboto Mono"),
+                pair("dmsans-jb", "DM Sans", "JetBrains Mono"),
+                pair("dmsans-courier", "DM Sans", "Courier Prime"),
+                pair("grotesk-source", "Space Grotesk", "Source Code Pro"),
+                typography("ptmono", "PT Mono", "PT Mono", "PT Mono"),
+                typography("plexmono", "IBM Plex Mono", "IBM Plex Mono", "IBM Plex Mono"),
+                typography("firacode", "Fira Code", "Fira Code", "Fira Code"),
+                typography("system", "Systemowa", "SF Pro", "Menlo"),
             )
     }
 
     @Test
-    fun `light schemes are paper and sand`() {
-        catalog.themes.filter { !it.mode.isDark }.map { it.id.value } shouldBe listOf("paper", "sand")
+    fun `twelve themes are light and seventeen dark`() {
+        catalog.themes.filter { !it.mode.isDark }.map { it.id.value } shouldBe
+            listOf("paper", "sand") +
+            listOf(
+                "nordic-light",
+                "cyber-light",
+                "sand-light",
+                "hc-light",
+                "steel-light",
+                "teal-light",
+                "term-light",
+                "glass-light",
+                "oatmeal-light",
+                "emerald-light",
+            )
+        catalog.themes.count { it.mode.isDark } shouldBe 17
     }
 
     @Test
-    fun `contrast is the only high contrast scheme`() {
+    fun `contrast and hc-light are the high contrast themes`() {
         catalog.themes.filter { it.mode.isHighContrast }.map { it.id.value to it.mode } shouldBe
-            listOf("contrast" to ThemeMode.DARK_HIGH_CONTRAST)
+            listOf(
+                "contrast" to ThemeMode.DARK_HIGH_CONTRAST,
+                "hc-light" to ThemeMode.LIGHT_HIGH_CONTRAST,
+            )
     }
 
     @ParameterizedTest(name = "{0} has radius {1}")
@@ -93,7 +145,11 @@ class BuiltInCatalogTest {
 
     @Test
     fun `base schemes have no default typography`() {
-        catalog.themes.map { it.defaultTypography }.toSet() shouldBe setOf(null)
+        catalog.themes
+            .take(BASE_SCHEMES)
+            .map { it.defaultTypography }
+            .toSet() shouldBe setOf(null)
+        catalog.themes.drop(BASE_SCHEMES).all { it.defaultTypography != null } shouldBe true
     }
 
     @Test
@@ -133,6 +189,12 @@ class BuiltInCatalogTest {
         withClue("$key: ${problems.joinToString("; ")}") { problems.shouldBeEmpty() }
     }
 
+    private fun pair(
+        key: String,
+        ui: String,
+        terminal: String,
+    ): TypographySpec = typography(key, "$ui + $terminal", ui, terminal)
+
     private fun typography(
         key: String,
         name: String,
@@ -141,8 +203,11 @@ class BuiltInCatalogTest {
     ): TypographySpec = TypographySpec(TypographyId(key), name, ui, terminal)
 
     companion object {
+        private const val BASE_SCHEMES = 9
+
         @JvmStatic
         fun schemeKeys(): List<String> =
-            listOf("plex", "graphite", "paper", "phosphor", "synth", "amber", "sand", "rose", "contrast")
+            listOf("plex", "graphite", "paper", "phosphor", "synth", "amber", "sand", "rose", "contrast") +
+                ShapedThemesTest.KEYS
     }
 }

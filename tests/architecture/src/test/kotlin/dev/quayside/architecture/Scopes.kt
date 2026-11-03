@@ -17,6 +17,9 @@ internal object Scopes {
 
     fun coreDomain(): List<KoFileDeclaration> = mainFiles.filter { it.path.contains("/core/domain/src/main/") }
 
+    fun coreDesignSystem(): List<KoFileDeclaration> =
+        mainFiles.filter { it.path.contains("/core/design-system/src/main/") }
+
     fun coreDesignTokens(): List<KoFileDeclaration> =
         mainFiles.filter { it.path.contains("/core/design-tokens/src/main/") }
 

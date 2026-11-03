@@ -25,6 +25,25 @@ class ModuleBoundariesTest {
     }
 
     @Test
+    fun `core design system has no IO, process or terminal imports`() {
+        val forbidden = listOf("java.io.", "java.net.", "java.lang.ProcessBuilder") + terminalLibraries
+        Scopes.coreDesignSystem().requireModules("core:design-system sources").assertFalse { file ->
+            file.imports.any { import -> forbidden.any { import.name.startsWith(it) } }
+        }
+    }
+
+    @Test
+    fun `core design system imports no feature packages`() {
+        val allowed =
+            listOf("dev.quayside.core.designtokens", "dev.quayside.core.domain", "dev.quayside.core.designsystem")
+        Scopes.coreDesignSystem().requireModules("core:design-system sources").assertFalse { file ->
+            file.imports.any { import ->
+                import.name.startsWith("dev.quayside.") && allowed.none { import.name.startsWith(it) }
+            }
+        }
+    }
+
+    @Test
     fun `feature api modules have no IO, process or Compose imports`() {
         Scopes.featureApi().requireModules("feature api modules").assertFalse { file ->
             file.imports.any { import -> forbiddenInContracts.any { import.name.startsWith(it) } }

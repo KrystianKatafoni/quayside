@@ -108,3 +108,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Strażnik w kontrolerze, którego UI i tak nie dopuszcza (np. `Edit` przy `busy` — kontrolki wyłączone), wymaga testu jednostkowego kontrolera, inaczej mutacja przeżywa.
 - Warunkowy zapis domyślnej sekcji w JSON (`if (value.x != X())`) wymaga testu, że domyślne ustawienia nie zapisują sekcji; round trip przechodzi także po mutacji `if (true)`.
 - Czas lokalny czytaj przy każdym zdarzeniu (`zone: () -> ZoneId`), nie raz przy starcie; test potrzebuje dwóch stref albo zmiany strefy w trakcie.
+- Test „kolejności filtrów” musi być obserwowalny: niezależne predykaty tego samego kanału nie mają kolejności, więc nazywaj test „łączy się z” i testuj przecięcia.
+- Zmiana koordynowana z równoległymi subagentami na tych samych plikach (np. `NotificationSettingsSerializer.kt`) grozi przywróceniem starej wersji z kopii zapasowej — mutacje rób w osobnej kopii roboczej lub przez `git stash`, nie `cp` kopii; skrypty mutacji nie mogą kopiować plików z katalogów pomocniczych poprzednich zadań do `src/main` (incydent: 31 obcych `.kt`).

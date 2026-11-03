@@ -26,12 +26,15 @@ rootProject.name = "quayside"
 
 // Modules are added by their roadmap tasks and by /new-module.
 include(":app")
+include(":core:design-tokens")
 include(":core:domain")
 include(":core:process")
 include(":core:storage")
 include(":core:testing")
 include(":feature:agent-runtime:api")
 include(":feature:agent-runtime:impl")
+include(":feature:appearance:api")
+include(":feature:appearance:impl")
 include(":feature:command-palette:api")
 include(":feature:command-palette:impl")
 include(":feature:command-palette:ui")

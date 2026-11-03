@@ -23,7 +23,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`. Czysty Kotlin | brak (tylko coroutines-core) |
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
-| `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`), bez Compose | `core:domain` |
+| `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`), bez Compose | brak (dozwolone `core:domain`) |
 | `core:design-system` | Komponenty Compose (przyciski, wiersze listy, pasek trybu, popup), `AmTheme` z `CompositionLocal` | `core:design-tokens` |
 | `core:testing` | Wspólne narzędzia testowe: `TestClock`, `TestDispatchers`, buildery danych, asercje | `core:domain` |
 
@@ -319,7 +319,16 @@ object TerminalSettingsRules { fun validate(s: TerminalSettings): Outcome<Termin
 ```
 
 ```kotlin
-// appearance:api (typy z core:design-tokens, bez Compose)
+// core:design-tokens (AM-801; niemutowalne, bez IO i Compose)
+value class Rgba(val argb: Long)                 // #AARRGGBB; parse("#RRGGBB"): Rgba? (null zamiast wyjątku)
+fun Rgba.mix(other: Rgba, percent: Int): Rgba; fun Rgba.over(background: Rgba): Rgba
+fun Rgba.hue(): Double?; fun hueDistance(a: Rgba, b: Rgba): Double?
+object Wcag { fun luminance(c: Rgba): Double; fun contrast(fg: Rgba, bg: Rgba): Double; fun inkFor(bg: Rgba): Rgba }
+data class ColorTokens(val surfaces: SurfaceColors, val content: ContentColors, val status: StatusColors, val terminal: TerminalColors)
+data class ShapeTokens(val radius: Int, val borderWidth: Int, val shadow: ShadowSpec?, val backdrop: Backdrop)
+data class TypographySpec(val id: TypographyId, val name: String, val uiFont: String, val terminalFont: String)
+
+// appearance:api (typy z core:design-tokens, bez Compose); AM-801 daje tylko `catalog`, reszta w AM-804
 interface AppearanceApi {
     val theme: StateFlow<ResolvedTheme>           // aktualny motyw (kolory + kształt) + typografia + skala
     val catalog: ThemeCatalog                     // 29 motywów, 22 typografie, własne (08-wyglad)

@@ -17,6 +17,9 @@ internal object Scopes {
 
     fun coreDomain(): List<KoFileDeclaration> = mainFiles.filter { it.path.contains("/core/domain/src/main/") }
 
+    fun coreDesignTokens(): List<KoFileDeclaration> =
+        mainFiles.filter { it.path.contains("/core/design-tokens/src/main/") }
+
     fun featureApi(): List<KoFileDeclaration> = mainFiles.filter { FEATURE_API.containsMatchIn(it.path) }
 
     fun featureImpl(): List<KoFileDeclaration> = mainFiles.filter { FEATURE_IMPL.containsMatchIn(it.path) }

@@ -16,19 +16,25 @@ Katalog ma **29 motywów**: 9 podstawowych (sekcja „Schematy kolorów”) i 20
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `plex` | Plex Violet (domyślny) | ciemny | `#0B0A10` | `#100E17` | `#E8E5F2` | `#A78BFA` | `#FBBF24` | `#86EFAC` | `#FCA5A5` | `#C4B5FD` | 8 px |
 | `graphite` | Graphite | ciemny | `#111111` | `#161616` | `#EDEDED` | `#60A5FA` | `#F59E0B` | `#4ADE80` | `#F87171` | `#22D3EE` | 6 px |
-| `paper` | Paper Indigo | jasny | `#F4F6F8` | `#FFFFFF` | `#111827` | `#4338CA` | `#B45309` | `#15803D` | `#B91C1C` | `#4338CA` | 10 px |
-| `phosphor` | Phosphor | ciemny | `#050805` | `#070B07` | `#C8F7DB` | `#39FF88` | `#FFB000` | `#39FF88` | `#FF6B66` | `#5CE1FF` | 0 px |
-| `synth` | Synth | ciemny | `#0A0F1F` | `#0D1326` | `#E6EAF7` | `#22D3EE` | `#FBBF24` | `#34D399` | `#FB7185` | `#C084FC` | 4 px |
+| `paper` | Paper Indigo | jasny | `#F4F6F8` | `#FFFFFF` | `#111827` | `#4338CA` | `#A16207` | `#15803D` | `#B91C1C` | `#4338CA` | 10 px |
+| `phosphor` | Phosphor | ciemny | `#050805` | `#070B07` | `#C8F7DB` | `#39FF88` | `#FFB000` | `#A3E635` | `#FF6B66` | `#5CE1FF` | 0 px |
+| `synth` | Synth | ciemny | `#0A0F1F` | `#0D1326` | `#E6EAF7` | `#22D3EE` | `#FBBF24` | `#4ADE80` | `#FB7185` | `#C084FC` | 4 px |
 | `amber` | Amber CRT | ciemny | `#0E0B07` | `#13100A` | `#F5E6C8` | `#FFB000` | `#5EEAD4` | `#A3E635` | `#FF6B57` | `#FDBA74` | 4 px |
 | `sand` | Sand | jasny | `#FBF7EE` | `#FFFDF8` | `#1F2328` | `#0F766E` | `#A16207` | `#15803D` | `#B91C1C` | `#0F766E` | 8 px |
-| `rose` | Rose Night | ciemny | `#191724` | `#1F1D2E` | `#E0DEF4` | `#EBBCBA` | `#F6C177` | `#9CCFD8` | `#EB6F92` | `#C4A7E7` | 10 px |
+| `rose` | Rose Night | ciemny | `#191724` | `#1F1D2E` | `#E0DEF4` | `#C4A7E7` | `#F6C177` | `#9CCFD8` | `#EB6F92` | `#C4A7E7` | 10 px |
 | `contrast` | Wysoki kontrast | ciemny | `#000000` | `#000000` | `#FFFFFF` | `#FFD400` | `#00E5FF` | `#00FF6A` | `#FF5C5C` | `#FFD400` | 2 px |
 
 Pełny zestaw tokenów kolorów w każdym motywie (także w 20 motywach z kształtem, po wyprowadzeniu brakujących): `bg`, `panel`, `raised`, `sel`, `border`, `border2`, `text`, `muted`, `dim`, `accent`, `accentInk`, `warn`, `warnInk`, `warnBg`, `ok`, `err`, `work`, `termBg`, `termText`. Tokeny kształtu: `radius`, `borderWidth`, `shadow`, `backdrop`. W jasnych motywach terminal zostaje ciemny (`termBg` grafitowy).
 
 **Semantyka kolorów:** `warn` = agent czeka na Ciebie (najważniejszy sygnał w UI), `work` = pracuje, `ok` = gotowe, `err` = błąd, `accent` = akcje główne i zaznaczenie. W schemacie *Amber CRT* akcent jest bursztynowy, więc `warn` jest turkusowy, żeby oba się nie myliły.
 
-Kształt 9 podstawowych motywów: `radius` z tabeli, `borderWidth` 1 px, brak cienia, panel nieprzezroczysty, bez domyślnej typografii (propozycja; ustala AM-801).
+Kształt 9 podstawowych motywów: `radius` z tabeli, `borderWidth` 1 px, brak cienia, panel nieprzezroczysty, bez domyślnej typografii (ustalone w AM-801).
+
+Korekty względem pierwotnej tabeli (test kontrastu AM-801, odcienie `warn`/`ok`/`err`/`accent` ≥ 30°): `paper` `warn` z `#B45309` na `#A16207`, `phosphor` `ok` z `#39FF88` na `#A3E635`, `synth` `ok` z `#34D399` na `#4ADE80`, `rose` `accent` z `#EBBCBA` na `#C4A7E7`.
+
+### Wyprowadzenie tokenów 9 podstawowych schematów (AM-801)
+
+Tabela wyżej podaje 8 kolorów; pozostałe 11 liczy czysta funkcja `deriveTokens` (mieszanie w kanałach sRGB, zaokrąglone). Reguły oznaczone ★ są nowe: `muted` = `text` zmieszany z `panel` 30 %; `border` = `panel` zmieszany z `text` 12 %. Pozostałe jak w „Lukach 1”: `border2` = `border` + `text` 15 %, `dim` = `muted` + `bg` 30 %, `raised` i `sel` z `panel` (`text` 4 %/6 %, `accent` 12 %/18 % w jasnym/ciemnym), `accentInk` i `warnInk` czarne albo białe (większy kontrast), `warnBg` = `panel` + `warn` 15 %, `termBg`/`termText` ciemne (jasne schematy: `#1E242C`, `#E2E8F0`). Reguły dla motywów z kształtem zostają w „Lukach 1” (AM-805).
 
 ## Typografie
 
@@ -73,7 +79,7 @@ Zamiany względem pliku źródłowego (propozycja):
 - **Ubuntu Mono** ma licencję Ubuntu Font Licence, nie OFL. W `glass-light` zastępuje go DM Mono (już w katalogu, miękki krój pasujący do Outfit), w `deep-abyss` JetBrains Mono.
 - **Fonty systemowe** w `developer-gray`: `-apple-system`/Segoe UI → SF Pro, Consolas → Menlo. Oba są fontami macOS, więc aplikacja ich nie dołącza (nie ma czego licencjonować) i czyta je z systemu po nazwie rodziny.
 
-Nowe rodziny fontów w `resources/fonts`: Plus Jakarta Sans, Outfit, Courier Prime, Inter, DM Sans, Roboto Mono, Source Code Pro, PT Mono — wszystkie na OFL (Google Fonts, katalog `ofl/`). Pozostałe fonty z pliku źródłowego są już w zasobach.
+Fonty nie są jeszcze w zasobach: 8 podstawowych typografii dokłada AM-802, nowe rodziny dokłada AM-805. Nowe rodziny w `resources/fonts`: Plus Jakarta Sans, Outfit, Courier Prime, Inter, DM Sans, Roboto Mono, Source Code Pro, PT Mono — wszystkie na OFL (Google Fonts, katalog `ofl/`). Pozostałe fonty z pliku źródłowego należą do 8 podstawowych typografii (AM-802).
 
 Wszystkie dołączane fonty są na licencji SIL Open Font License i można je dołączyć do aplikacji (folder `resources/fonts`, ładowane przez `Font(resource = …)` w Compose). Każda typografia jest sprawdzana na polskich znakach (`ąęłśżź`) i znakach łatwych do pomylenia w kodzie (`0O1lI`, `=>`, `!=`).
 
@@ -150,7 +156,7 @@ Motywy z kształtem nie definiują: `raised`, `sel`, `border2`, `dim`, `accentIn
 
 | Token | Reguła (propozycja) |
 | --- | --- |
-| `warn`, `ok`, `err` | jasny motyw: wartości z `paper` (`#B45309`, `#15803D`, `#B91C1C`); ciemny: z `graphite` (`#F59E0B`, `#4ADE80`, `#F87171`) |
+| `warn`, `ok`, `err` | jasny motyw: wartości z `paper` (`#A16207`, `#15803D`, `#B91C1C`); ciemny: z `graphite` (`#F59E0B`, `#4ADE80`, `#F87171`) |
 | `warn` przy konflikcie z `accent` | odcień akcentu bliżej niż 30° od `warn` → `warn` turkusowy jak w *Amber CRT* (ciemny `#5EEAD4`, jasny: do ustalenia w AM-805) |
 | `work` | `accent` |
 | `accentInk` | czarny albo biały — ten, który daje większy kontrast z `accent` |

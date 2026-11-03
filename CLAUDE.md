@@ -110,3 +110,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Czas lokalny czytaj przy każdym zdarzeniu (`zone: () -> ZoneId`), nie raz przy starcie; test potrzebuje dwóch stref albo zmiany strefy w trakcie.
 - Test „kolejności filtrów” musi być obserwowalny: niezależne predykaty tego samego kanału nie mają kolejności, więc nazywaj test „łączy się z” i testuj przecięcia.
 - Zmiana koordynowana z równoległymi subagentami na tych samych plikach (np. `NotificationSettingsSerializer.kt`) grozi przywróceniem starej wersji z kopii zapasowej — mutacje rób w osobnej kopii roboczej lub przez `git stash`, nie `cp` kopii; skrypty mutacji nie mogą kopiować plików z katalogów pomocniczych poprzednich zadań do `src/main` (incydent: 31 obcych `.kt`).
+- Test reguł wyprowadzenia (mieszanie kolorów) musi mieć dane o różnych kolorach źródłowych (bg ≠ panel, text ≠ accent ≠ warn), inaczej mutacje „zły argument miksu” przeżywają, a audyt kontrastu tego nie złapie.
+- `require` w publicznym API koloru/tokenów to błąd programisty — KDoc musi mieć `@throws IllegalArgumentException`, a dane od użytkownika idą przez `parse(): T?`/Outcome (ENG-I1/I4).

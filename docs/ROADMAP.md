@@ -96,8 +96,8 @@
 
 ## M8 · Wygląd
 
-- [ ] AM-801 · core:design-tokens (tokeny kolorów i kształtu) + katalog 9 podstawowych schematów i 8 typografii (test kontrastu) · moduły: core:design-tokens, appearance:impl · zależy: AM-102 · wymagania: FR-A1, FR-A2, FR-A7, NFR-6 · issue: #14
-- [ ] AM-802 · core:design-system: komponenty i AmTheme · moduły: core:design-system · zależy: AM-801 · wymagania: FR-A1 · issue: #15
+- [x] AM-801 · core:design-tokens (tokeny kolorów i kształtu) + katalog 9 podstawowych schematów i 8 typografii (test kontrastu) · moduły: core:design-tokens, appearance:api, appearance:impl · zależy: AM-102 · wymagania: FR-A1, FR-A2, FR-A7, NFR-6 · issue: #14
+- [ ] AM-802 · core:design-system: komponenty i AmTheme + fonty 8 podstawowych typografii w zasobach · moduły: core:design-system · zależy: AM-801 · wymagania: FR-A1 · issue: #15
 - [ ] AM-803 · Ekran Wygląd z podglądem na żywo · moduły: appearance:ui · zależy: AM-802, AM-405 · wymagania: FR-A3, FR-A4 · issue: #17
 - [ ] AM-804 · Dzień/noc z macOS, import/eksport theme.json · moduły: appearance:impl · zależy: AM-803 · wymagania: FR-A5, FR-A6 · issue: #18
 - [ ] AM-805 · Katalog 20 motywów z kształtem i 14 dodatkowych typografii: fonty w zasobach, korekta kolorów pod NFR-6, wyprowadzenie tokenów statusu (08 „Luki”) · moduły: appearance:impl, core:design-tokens · zależy: AM-801 · wymagania: FR-A1, FR-A2, FR-A7, NFR-6 · issue: #70

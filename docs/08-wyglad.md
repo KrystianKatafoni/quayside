@@ -34,7 +34,7 @@ Korekty względem pierwotnej tabeli (test kontrastu AM-801, odcienie `warn`/`ok`
 
 ### Wyprowadzenie tokenów 9 podstawowych schematów (AM-801)
 
-Tabela wyżej podaje 8 kolorów; pozostałe 11 liczy czysta funkcja `deriveTokens` (mieszanie w kanałach sRGB, zaokrąglone). Reguły oznaczone ★ są nowe: `muted` = `text` zmieszany z `panel` 30 %; `border` = `panel` zmieszany z `text` 12 %. Pozostałe jak w „Lukach 1”: `border2` = `border` + `text` 15 %, `dim` = `muted` + `bg` 30 %, `raised` i `sel` z `panel` (`text` 4 %/6 %, `accent` 12 %/18 % w jasnym/ciemnym), `accentInk` i `warnInk` czarne albo białe (większy kontrast), `warnBg` = `panel` + `warn` 15 %, `termBg`/`termText` ciemne (jasne schematy: `#1E242C`, `#E2E8F0`). Reguły dla motywów z kształtem zostają w „Lukach 1” (AM-805).
+Tabela wyżej podaje 8 kolorów; pozostałe 11 liczy czysta funkcja `deriveTokens` (mieszanie w kanałach sRGB, zaokrąglone). Reguły oznaczone ★ są nowe: `muted` = `text` zmieszany z `panel` 30 %; `border` = `panel` zmieszany z `text` 12 %. Pozostałe jak w wyprowadzeniu AM-805: `border2` = `border` + `text` 15 %, `dim` = `muted` + `bg` 30 %, `raised` i `sel` z `panel` (`text` 4 %/6 %, `accent` 12 %/18 % w jasnym/ciemnym), `accentInk` i `warnInk` czarne albo białe (większy kontrast), `warnBg` = `panel` + `warn` 15 %, `termBg`/`termText` ciemne (jasne schematy: `#1E242C`, `#E2E8F0`). Reguły dla motywów z kształtem są w „Wyprowadzenie i korekty (AM-805)”.
 
 ## Typografie
 
@@ -72,14 +72,14 @@ Typografie dodatkowe (14) — pary domyślne 20 motywów z kształtem, których 
 
 Motywy `hc-light` i `emerald-light` mają parę IBM Plex Sans + IBM Plex Mono, czyli podstawową typografię `plex`.
 
-**Dlaczego dodatkowe typografie, a nie „tylko para domyślna motywu”** (propozycja): domyślna typografia motywu jest wtedy zwykłym odwołaniem `TypographyId` do katalogu. Nie ma specjalnej wartości „typografia motywu” w `theme.json`, rozwiązywanie motywu się nie zmienia, a istniejący test polskich znaków obejmuje nowe fonty automatycznie. Koszt: dłuższa lista na ekranie Wygląd (grupy „Podstawowe” i „Z motywów”).
+**Dlaczego dodatkowe typografie, a nie „tylko para domyślna motywu”**: domyślna typografia motywu jest wtedy zwykłym odwołaniem `TypographyId` do katalogu. Nie ma specjalnej wartości „typografia motywu” w `theme.json`, rozwiązywanie motywu się nie zmienia, a istniejący test polskich znaków obejmuje nowe fonty automatycznie. Koszt: dłuższa lista na ekranie Wygląd (grupy „Podstawowe” i „Z motywów”).
 
-Zamiany względem pliku źródłowego (propozycja):
+Zamiany względem pliku źródłowego:
 
 - **Ubuntu Mono** ma licencję Ubuntu Font Licence, nie OFL. W `glass-light` zastępuje go DM Mono (już w katalogu, miękki krój pasujący do Outfit), w `deep-abyss` JetBrains Mono.
 - **Fonty systemowe** w `developer-gray`: `-apple-system`/Segoe UI → SF Pro, Consolas → Menlo. Oba są fontami macOS, więc aplikacja ich nie dołącza (nie ma czego licencjonować) i czyta je z systemu po nazwie rodziny.
 
-Fonty 8 podstawowych typografii (14 rodzin) są w zasobach `core/design-system/src/main/resources/fonts` (AM-802, źródła i sumy SHA-256 w `fonts/SOURCES.md`); nowe rodziny dokłada AM-805. Nowe rodziny w `resources/fonts`: Plus Jakarta Sans, Outfit, Courier Prime, Inter, DM Sans, Roboto Mono, Source Code Pro, PT Mono — wszystkie na OFL (Google Fonts, katalog `ofl/`). Pozostałe fonty z pliku źródłowego należą do 8 podstawowych typografii (AM-802).
+Fonty wszystkich 22 typografii (22 rodziny; SF Pro i Menlo to fonty systemowe i nie są dołączane) są w zasobach `core/design-system/src/main/resources/fonts` (źródła i sumy SHA-256 w `fonts/SOURCES.md`): 14 rodzin podstawowych z AM-802 i nowe z AM-805. Nowe rodziny w `resources/fonts`: Plus Jakarta Sans, Outfit, Courier Prime, Inter, DM Sans, Roboto Mono, Source Code Pro, PT Mono — wszystkie na OFL (Google Fonts, katalog `ofl/`). Pozostałe fonty z pliku źródłowego należą do 8 podstawowych typografii (AM-802).
 
 Wszystkie dołączane fonty są na licencji SIL Open Font License i można je dołączyć do aplikacji (folder `resources/fonts`, ładowane przez `Font(resource = …)` w Compose). Każda typografia jest sprawdzana na polskich znakach (`ąęłśżź`) i znakach łatwych do pomylenia w kodzie (`0O1lI`, `=>`, `!=`).
 
@@ -93,7 +93,7 @@ Wszystkie dołączane fonty są na licencji SIL Open Font License i można je do
 | --- | --- | --- |
 | `--bg-main` | `bg` | |
 | `--bg-panel` | `panel` | `rgba(…)` → kolor z kanałem alfa, rysowany na `bg` |
-| `--bg-terminal` | `termBg` | podany tylko w `nordic-light`; w pozostałych wyprowadzony (luka 1) |
+| `--bg-terminal` | `termBg` | podany tylko w `nordic-light`; w pozostałych wyprowadzony (AM-805) |
 | `--text-main` | `text` | |
 | `--text-muted` | `muted` | |
 | `--accent` | `accent` | |
@@ -125,78 +125,61 @@ Cień: `y/rozmycie/rozrzut` w px, potem kolor i krycie. Kolumna „typografia”
 
 | Klucz | Nazwa | Tryb | bg | panel | text | muted | accent | border | ramka | promień | cień | typografia |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `nordic-light` | Nordic Slate | jasny | `#F4F6F8` | `#FFFFFF` | `#2D3748` | `#718096` | `#3182CE` | `#E2E8F0` | 1 px | 8 px | 4/6/-1 `#000` 5 % | `jakarta-jb` |
-| `cyber-light` | Cyber Ink Light | jasny | `#F3F4F6` | `#FFFFFF` | `#111827` | `#6B7280` | `#8B5CF6` | `#111827` | 2 px | 0 px | brak | `grotesk-fira` |
-| `sand-light` | Minimal Sand | jasny | `#FDFBF7` | `#F5F2EB` | `#3A3832` | `#8A867A` | `#6B705C` | `#000` 5 % | 1 px | 12 px | 10/15/-3 `#000` 2 % | `outfit-courier` |
+| `nordic-light` | Nordic Slate | jasny | `#F4F6F8` | `#FFFFFF` | `#2D3748` | `#657286` | `#3182CE` | `#E2E8F0` | 1 px | 8 px | 4/6/-1 `#000` 5 % | `jakarta-jb` |
+| `cyber-light` | Cyber Ink Light | jasny | `#F3F4F6` | `#FFFFFF` | `#111827` | `#69707D` | `#8B5CF6` | `#111827` | 2 px | 0 px | brak | `grotesk-fira` |
+| `sand-light` | Minimal Sand | jasny | `#FDFBF7` | `#F5F2EB` | `#3A3832` | `#716E64` | `#6B705C` | `#000` 5 % | 1 px | 12 px | 10/15/-3 `#000` 2 % | `outfit-courier` |
 | `hc-light` | High-Contrast Accessibility | jasny, wysoki kontrast | `#FFFFFF` | `#FFFFFF` | `#000000` | `#4A4A4A` | `#0052CC` | `#000000` | 2 px | 4 px | brak | `plex` |
-| `steel-light` | Steel & Cobalt | jasny | `#EBEDF0` | `#FFFFFF` | `#172B4D` | `#6B778C` | `#0052CC` | `#C1C7D0` | 1 px | 4 px | 1/3/0 `#091E42` 13 % | `inter-fira` |
+| `steel-light` | Steel & Cobalt | jasny | `#EBEDF0` | `#FFFFFF` | `#172B4D` | `#616C7F` | `#0052CC` | `#C1C7D0` | 1 px | 4 px | 1/3/0 `#091E42` 13 % | `inter-fira` |
 | `teal-light` | Teal & Obsidian | jasny | `#F0FDFA` | `#FFFFFF` | `#0F172A` | `#64748B` | `#0D9488` | `#99F6E4` | 1 px | 12 px | 4/6/-1 `#0D9488` 10 % | `dmsans-jb` |
-| `term-light` | Terminal Classic | jasny | `#F0F0F0` | `#FFFFFF` | `#333333` | `#808080` | `#008000` | `#333333` | 1 px | 0 px | brak | `ptmono` |
+| `term-light` | Terminal Classic | jasny | `#F0F0F0` | `#FFFFFF` | `#333333` | `#6D6D6D` | `#008000` | `#333333` | 1 px | 0 px | brak | `ptmono` |
 | `glass-light` | Amethyst Glass | jasny | `#F3F0FF` | `#FFFFFF` 60 % | `#3B2A5C` | `#796696` | `#8B5CF6` | `#8B5CF6` 20 % | 1 px | 16 px | 8/32/0 `#8B5CF6` 10 % | `outfit-dm` |
-| `oatmeal-light` | Oatmeal & Terracotta | jasny | `#F9F5F0` | `#FFFFFF` | `#4A3F35` | `#8C7E70` | `#D97757` | `#E6DACE` | 2 px | 16 px | 4/0/0 `#D97757` 10 % | `dmsans-courier` |
-| `emerald-light` | Corporate Emerald | jasny | `#F0FDF4` | `#FFFFFF` | `#064E3B` | `#059669` | `#059669` | `#A7F3D0` | 1 px | 2 px | 1/2/0 `#064E3B` 10 % | `plex` |
+| `oatmeal-light` | Oatmeal & Terracotta | jasny | `#F9F5F0` | `#FFFFFF` | `#4A3F35` | `#7B6F63` | `#D97757` | `#E6DACE` | 2 px | 16 px | 4/0/0 `#D97757` 10 % | `dmsans-courier` |
+| `emerald-light` | Corporate Emerald | jasny | `#F0FDF4` | `#FFFFFF` | `#064E3B` | `#04835B` | `#059669` | `#A7F3D0` | 1 px | 2 px | 1/2/0 `#064E3B` 10 % | `plex` |
 | `midnight-pro` | Midnight Pro | ciemny | `#0B0F19` | `#111827` | `#F3F4F6` | `#9CA3AF` | `#3B82F6` | `#1F2937` | 1 px | 6 px | 4/6/-1 `#000` 50 % | `inter-jb` |
-| `dracula` | Dracula | ciemny | `#282A36` | `#44475A` | `#F8F8F2` | `#6272A4` | `#FF79C6` | `#6272A4` | 1 px | 8 px | 4/6/0 `#000` 30 % | `inter-fira` |
-| `monokai` | Monokai | ciemny | `#272822` | `#1E1F1C` | `#F8F8F2` | `#75715E` | `#F92672` | `#3E3D32` | 1 px | 4 px | brak | `grotesk-source` |
-| `gruvbox` | Gruvbox Dark | ciemny | `#282828` | `#3C3836` | `#EBDBB2` | `#928374` | `#FE8019` | `#504945` | 1 px | 0 px | brak | `plexmono` |
+| `dracula` | Dracula | ciemny | `#282A36` | `#44475A` | `#F8F8F2` | `#ADB6D0` | `#FF79C6` | `#6272A4` | 1 px | 8 px | 4/6/0 `#000` 30 % | `inter-fira` |
+| `monokai` | Monokai | ciemny | `#272822` | `#1E1F1C` | `#F8F8F2` | `#928F80` | `#F92672` | `#3E3D32` | 1 px | 4 px | brak | `grotesk-source` |
+| `gruvbox` | Gruvbox Dark | ciemny | `#282828` | `#3C3836` | `#EBDBB2` | `#ABA094` | `#FE8019` | `#504945` | 1 px | 0 px | brak | `plexmono` |
 | `cyberpunk` | Cyberpunk | ciemny | `#000000` | `#090909` | `#E0E0E0` | `#FF00FF` | `#00FFCC` | `#333333` | 1 px | 0 px | 0/10/0 `#00FFCC` 10 % | `grotesk-fira` |
 | `nord-dark` | Nord Dark | ciemny | `#2E3440` | `#3B4252` | `#ECEFF4` | `#D8DEE9` | `#88C0D0` | `#434C5E` | 1 px | 6 px | 4/6/0 `#000` 20 % | `inter-roboto` |
 | `minimal-black` | Minimal Black | ciemny | `#000000` | `#0A0A0A` | `#FFFFFF` | `#888888` | `#FFFFFF` | `#333333` | 1 px | 4 px | brak | `inter-jb` |
-| `solarized-dark` | Solarized Dark | ciemny | `#002B36` | `#073642` | `#839496` | `#586E75` | `#2AA198` | `#1A4B57` | 1 px | 0 px | brak | `firacode` |
-| `developer-gray` | Developer Gray | ciemny | `#22272E` | `#2D333B` | `#ADBAC7` | `#768390` | `#539BF5` | `#444C56` | 1 px | 6 px | brak | `system` |
-| `deep-abyss` | Deep Abyss | ciemny | `#050B14` | `#0A1423` | `#CBD5E1` | `#64748B` | `#F59E0B` | `#1E293B` | 1 px | 12 px | 4/12/0 `#000` 50 % | `jakarta-jb` |
+| `solarized-dark` | Solarized Dark | ciemny | `#002B36` | `#073642` | `#EEE8D5` | `#93A1A1` | `#2AA198` | `#1A4B57` | 1 px | 0 px | brak | `firacode` |
+| `developer-gray` | Developer Gray | ciemny | `#22272E` | `#2D333B` | `#ADBAC7` | `#909BA5` | `#539BF5` | `#444C56` | 1 px | 6 px | brak | `system` |
+| `deep-abyss` | Deep Abyss | ciemny | `#050B14` | `#0A1423` | `#CBD5E1` | `#707F94` | `#F59E0B` | `#1E293B` | 1 px | 12 px | 4/12/0 `#000` 50 % | `jakarta-jb` |
 
-Klucze nie kolidują z 9 podstawowymi (`sand` ≠ `sand-light`, `contrast` ≠ `hc-light`). Wartości w tabeli są przepisane z pliku źródłowego; kolory `muted` (i `text` w `solarized-dark`) zmieni AM-805 (luka 2).
+Klucze nie kolidują z 9 podstawowymi (`sand` ≠ `sand-light`, `contrast` ≠ `hc-light`). Kolumna `muted` ma wartości końcowe po korekcie funkcją `withContrast` (AM-805); wartości źródłowe i reguła są w „Wyprowadzenie i korekty (AM-805)”. Pozostałe kolumny są przepisane z pliku źródłowego, z wyjątkiem `text` w `solarized-dark` (decyzja człowieka: base2 `#EEE8D5` zamiast `#839496`).
 
-## Luki do rozwiązania w AM-801 i AM-805
+## Wyprowadzenie i korekty (AM-805)
 
-### 1. Brakujące tokeny kolorów (AM-805)
+### Wyprowadzenie brakujących tokenów
 
-Motywy z kształtem nie definiują: `raised`, `sel`, `border2`, `dim`, `accentInk`, `warn`, `warnInk`, `warnBg`, `ok`, `err`, `work`, `termBg` (poza `nordic-light`), `termText`. Najważniejszy jest `warn` = „agent czeka na Ciebie”. **Propozycja reguły wyprowadzenia** (czysta funkcja w `appearance:impl`, z jawnym nadpisaniem w katalogu, gdy test nie przejdzie):
+Motywy z kształtem podają 6 kolorów (`bg`, `panel`, `text`, `muted`, `accent`, `border`); pozostałe tokeny liczą czyste funkcje w `appearance:impl` (`deriveShapedTokens`, `deriveStatus`, `withContrast`). `panel` z alfą (tylko `glass-light`) daje `Backdrop.TRANSLUCENT`; jasność powierzchni liczymy na `panel` złożonym na `bg`.
 
-| Token | Reguła (propozycja) |
+| Token | Reguła |
 | --- | --- |
-| `warn`, `ok`, `err` | jasny motyw: wartości z `paper` (`#A16207`, `#15803D`, `#B91C1C`); ciemny: z `graphite` (`#F59E0B`, `#4ADE80`, `#F87171`) |
-| `warn` przy konflikcie z `accent` | odcień akcentu bliżej niż 30° od `warn` → `warn` turkusowy jak w *Amber CRT* (ciemny `#5EEAD4`, jasny: do ustalenia w AM-805) |
-| `work` | `accent` |
-| `accentInk` | czarny albo biały — ten, który daje większy kontrast z `accent` |
-| `warnInk`, `warnBg` | jak `accentInk` dla `warn`; `warnBg` = `warn` z kryciem 15 % na `panel` |
-| `raised`, `sel` | `panel` zmieszany z `text` (4 % jasny, 6 % ciemny) i z `accent` (12 % jasny, 18 % ciemny) |
-| `border2`, `dim` | `border` zmieszany z `text` (15 %); `muted` zmieszany z `bg` (30 %) |
-| `termBg`, `termText` | ciemny: `bg` i `text`; jasny: `#1E242C` (z `nordic-light`) i `#E2E8F0` — terminal zostaje ciemny jak w podstawowych |
+| `muted` | `withContrast`: ten sam odcień, najmniejsze rozjaśnienie (ciemny motyw) albo przyciemnienie (jasny) do ≥ 4,5:1 względem `bg` i złożonego `panel`; kolor, który już przechodzi, zostaje |
+| `work` | `accent`, a gdy ma mniej niż 3:1, korekta `withContrast` do 3:1 (zmienia się tylko w `oatmeal-light`) |
+| `warn`, `ok`, `err` | pierwsza trójka z list kandydatów (niżej), w której odcienie `warn`, `ok`, `err` różnią się od `accent` o ≥ 30°, a `warn` od `ok` i `err` też |
+| `accentInk`, `warnInk` | czarny albo biały — ten, który daje większy kontrast |
+| `warnBg` | `warn` z kryciem 15 % na złożonym `panel` |
+| `raised`, `sel` | złożony `panel` zmieszany z `text` (4 % jasny, 6 % ciemny) i z `accent` (12 % jasny, 18 % ciemny) |
+| `border2`, `dim` | `border` zmieszany z `text` (15 %, zachowuje alfę `border`); `muted` zmieszany z `bg` (30 %) |
+| `termBg`, `termText` | ciemny: `bg` i `text`; jasny: `#1E242C` i `#E2E8F0` — terminal zostaje ciemny jak w podstawowych |
 
-Przewidywane konflikty odcieni (orientacyjnie, rozstrzygnie test): `warn`~`accent` w `gruvbox`, `deep-abyss`, `oatmeal-light`; `err`~`accent` w `monokai`, `oatmeal-light` (i granicznie `dracula`); `ok`~`accent` w `emerald-light`, `term-light`, `cyberpunk` (i granicznie `teal-light`).
+Kandydaci statusów (kolejność = preferencja; pierwsza trójka bez konfliktu odcieni wygrywa). Jasny motyw: `warn` `#A16207`, `#0F766E`; `ok` `#15803D`, `#4D7C0F`; `err` `#B91C1C`, `#BE185D`. Ciemny motyw: `warn` `#F59E0B`, `#FACC15`, `#5EEAD4`; `ok` `#4ADE80`, `#A3E635`; `err` `#F87171`, `#FF6E40`, `#FB7185`. Brak trójki przerywa budowę katalogu błędem. Odstępstwa od pierwszych kandydatów: `term-light` i `emerald-light` (`ok` `#4D7C0F`), `oatmeal-light` (`warn` `#0F766E`, `err` `#BE185D`), `monokai` (`warn` `#FACC15`, `err` `#FF6E40`), `gruvbox` (`warn` `#5EEAD4`, `ok` `#A3E635`, `err` `#FB7185`), `cyberpunk` (`ok` `#A3E635`), `deep-abyss` (`warn` `#5EEAD4`, `ok` `#A3E635`). Granicznie przechodzą: `dracula` (`err`~`accent` 34,5°), `teal-light` (`ok`~`accent` 32,3°), `oatmeal-light` (`warn`~`ok` 32,9°).
 
-**Testy (propozycja):** dla każdego z 29 motywów: (a) `warn`, `ok`, `err`, `work` mają kontrast ≥ 3:1 z `bg` i `panel` (WCAG 1.4.11, elementy niebędące tekstem); (b) odcień `warn` różni się od `accent`, `ok` i `err` o ≥ 30°, a `err` i `ok` od `accent` o ≥ 30°; (c) `accentInk/accent` i `warnInk/warn` ≥ 4.5:1; (d) wyprowadzenie jest tablicowym testem jednostkowym czystej funkcji (motyw → pełny `ColorTokens`).
+### Korekta kontrastu NFR-6
 
-### 2. Kontrast NFR-6 (AM-805)
+Test kontrastu (doc 12) obejmuje pary `muted/bg` i `muted/panel` (panel półprzezroczysty złożony na `bg`) oraz kontrast ≥ 3:1 dla `warn`, `ok`, `err`, `work`. Korekty `muted` (wartość źródłowa → końcowa):
 
-Współczynniki WCAG policzone orientacyjnie (ręcznie, ±0,05) dla `muted` na `bg` i na `panel`. Test kontrastu (doc 12) liczy dokładnie i ma wymusić korektę. Poniżej 4.5:1:
+- jasne: `nordic-light` `#718096` → `#657286`; `cyber-light` `#6B7280` → `#69707D`; `sand-light` `#8A867A` → `#716E64`; `steel-light` `#6B778C` → `#616C7F`; `term-light` `#808080` → `#6D6D6D`; `oatmeal-light` `#8C7E70` → `#7B6F63`; `emerald-light` `#059669` → `#04835B`;
+- ciemne: `dracula` `#6272A4` → `#ADB6D0` (decyzja człowieka: `panel` `#44475A` bez zmian, rozjaśniamy `muted`); `monokai` `#75715E` → `#928F80`; `gruvbox` `#928374` → `#ABA094`; `developer-gray` `#768390` → `#909BA5`; `deep-abyss` `#64748B` → `#707F94`;
+- `solarized-dark` ma w wierszu wprost `text` `#EEE8D5` (base2) i `muted` `#93A1A1` (base1), bez korekty funkcją.
 
-| Motyw | Kolor tekstu | na `bg` | na `panel` |
-| --- | --- | --- | --- |
-| `nordic-light` | `#718096` | 3.71 | 4.02 |
-| `cyber-light` | `#6B7280` | 4.39 | 4.83 |
-| `sand-light` | `#8A867A` | 3.52 | 3.25 |
-| `steel-light` | `#6B778C` | 3.86 | 4.52 (granicznie) |
-| `term-light` | `#808080` | 3.47 | 3.95 |
-| `oatmeal-light` | `#8C7E70` | 3.63 | 3.94 |
-| `emerald-light` | `#059669` (`muted` = `accent`) | 3.60 | 3.77 |
-| `dracula` | `#6272A4` | 3.03 | 1.95 |
-| `monokai` | `#75715E` | 3.03 | 3.38 |
-| `gruvbox` | `#928374` | 4.02 | 3.16 |
-| `solarized-dark` | `#586E75` | 2.79 | 2.42 |
-| `solarized-dark` | `text` `#839496` | 4.75 | 4.11 |
-| `developer-gray` | `#768390` | 3.88 | 3.29 |
-| `deep-abyss` | `#64748B` | 4.15 | 3.88 |
+Bez zmian (już przechodzą): `hc-light`, `teal-light`, `glass-light` (4,51:1 na złożonym `panel`, granicznie), `midnight-pro`, `cyberpunk`, `nord-dark`, `minimal-black`.
 
-Przechodzą: `hc-light` (8.86), `teal-light` (4.56 / 4.76, granicznie), `glass-light` (4.51 / 4.83 na kolorze złożonym, granicznie), `midnight-pro` (7.54 / 6.99), `cyberpunk` (6.70 / 6.35), `nord-dark` (≥ 7.4), `minimal-black` (5.92 / 5.59). Para `text/bg` przechodzi wszędzie poza `solarized-dark` na `panel`.
+Uwagi do oceny wzrokowej w AM-803: w `cyberpunk` `muted` (magenta) przechodzi kontrast, ale jest bardziej jaskrawy niż `text` — przeczy roli „przygaszony”; w `minimal-black` `accent` = `text` (`#FFFFFF`), więc zaznaczenie i akcje główne nie różnią się od tekstu; w `emerald-light` `muted` po korekcie jest ciemniejszy od `accent`.
 
-**Reguła korekty (propozycja):** zachować odcień, zmieniać tylko jasność (`muted` ciemniej w jasnych motywach, jaśniej w ciemnych) do ≥ 4.5:1 względem gorszego z `bg` i `panel`. Test kontrastu ([12](12-strategia-testow.md)) obejmuje pary `muted/bg` i `muted/panel` oraz kolor złożony dla półprzezroczystego panelu.
-
-Inne uwagi do AM-805: w `cyberpunk` `muted` (magenta) przechodzi kontrast, ale jest bardziej jaskrawy niż `text` — przeczy roli „przygaszony”; w `minimal-black` `accent` = `text` (`#FFFFFF`), więc zaznaczenie i akcje główne nie różnią się od tekstu; w `emerald-light` `muted` = `accent`.
-
-### 3. Brak zrzutów ekranu
+### Brak zrzutów ekranu
 
 Plik źródłowy odwołuje się do `docs/screenshots/light_01_nordic_slate.png` … `dark_10_deep_abyss.png` (20 plików). Tych plików nie ma w repo. Nie tworzymy ich teraz; zrzuty z działającej aplikacji można dodać po AM-805.
 

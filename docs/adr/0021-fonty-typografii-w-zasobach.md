@@ -28,3 +28,4 @@ Fonty pobieramy z repozytorium [google/fonts](https://github.com/google/fonts) (
 - AM-901 dołącza teksty `OFL.txt` do listy licencji pakietu (jak w ADR 0012).
 - Font terminala (JediTerm, AWT) nie korzysta jeszcze z tych plików; rejestracja w AWT to osobne zadanie.
 - Test w `core:design-system` sprawdza, że każdy plik ma polskie znaki i rozróżnialne glify `0O1lI`, więc nowa rodzina z AM-805 przechodzi ten sam test.
+- Uzupełnienie (AM-805, 2026-11-03): reguła doboru plików statycznych nie obejmuje Courier Prime (tylko Regular 400 i Bold 700) ani PT Mono (tylko Regular; wagę 600 syntezuje Compose).

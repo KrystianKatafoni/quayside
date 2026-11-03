@@ -1,5 +1,8 @@
 package dev.quayside.missioncontrol.ui
 
+import dev.quayside.core.domain.ProjectId
+import dev.quayside.core.domain.SessionId
+
 /** Intents of Mission Control from the palette and window keys (MVI, docs/11 §1; ADR 0011). */
 public sealed interface MissionControlIntent {
     /** `j`: selects the next visible session; without a selection the first; stays on the last (no wrap). */
@@ -25,6 +28,12 @@ public sealed interface MissionControlIntent {
     /** Sidebar entry and palette: shows [view] and clears the selected session; ignored while a dialog is open. */
     public data class ShowView(
         val view: GlobalView,
+    ) : MissionControlIntent
+
+    /** `app`: selects [id] of [project] on the project page with filter ALL, e.g. a session just started (AM-608). */
+    public data class SelectSession(
+        val project: ProjectId,
+        val id: SessionId,
     ) : MissionControlIntent
 
     /** `space` and the palette: opens the output preview of the selected visible session, or closes it. */

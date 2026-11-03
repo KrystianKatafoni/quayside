@@ -1,5 +1,6 @@
 package dev.quayside.notifications.api
 
+import dev.quayside.core.domain.ProjectId
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -81,5 +82,29 @@ class NotificationSettingsTest {
     @ValueSource(ints = [1, 30, 1440])
     fun `threshold inside the range is accepted`(minutes: Int) {
         NotificationSettings(runningLongMinutes = minutes).runningLongMinutes shouldBe minutes
+    }
+
+    @Test
+    fun `projectFor gives the default for null and unknown`() {
+        val settings =
+            NotificationSettings(projects = mapOf(ProjectId("known") to ProjectNotifications(ProjectProfile.MUTED)))
+
+        settings.projectFor(null) shouldBe ProjectNotifications()
+        settings.projectFor(ProjectId("unknown")) shouldBe ProjectNotifications()
+        NotificationSettings().projectFor(ProjectId("known")) shouldBe ProjectNotifications()
+    }
+
+    @Test
+    fun `projectFor gives the entry of the project`() {
+        val entry = ProjectNotifications(ProjectProfile.ERRORS_ONLY, VoiceId("Anna"))
+        val settings = NotificationSettings(projects = mapOf(ProjectId("known") to entry))
+
+        settings.projectFor(ProjectId("known")) shouldBe entry
+    }
+
+    @Test
+    fun `an exception is no exception by default`() {
+        ProjectNotifications() shouldBe ProjectNotifications(ProjectProfile.DEFAULT, null)
+        NotificationSettings().projects shouldBe emptyMap()
     }
 }

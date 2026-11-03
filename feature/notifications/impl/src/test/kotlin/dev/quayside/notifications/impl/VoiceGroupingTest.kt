@@ -1,5 +1,6 @@
 package dev.quayside.notifications.impl
 
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.notifications.api.NotificationKind
 import io.kotest.matchers.shouldBe
@@ -13,7 +14,8 @@ class VoiceGroupingTest {
         session: String?,
         text: String,
         kind: NotificationKind = NotificationKind.NEEDS_INPUT,
-    ) = VoiceMessage(session?.let(::SessionId), kind, text)
+        project: String? = null,
+    ) = VoiceMessage(session?.let(::SessionId), kind, text, project?.let(::ProjectId))
 
     private fun VoiceGrouping.offerAll(vararg messages: VoiceMessage): VoiceGrouping =
         messages.fold(this) { state, message -> state.offer(message).state }
@@ -121,6 +123,65 @@ class VoiceGroupingTest {
         val waiting = VoiceGrouping(cooling = true).offerAll(message(null, "Dzwonek"), message("b", "B czeka"))
 
         waiting.cooldownEnded().action shouldBe VoiceAction.Speak("2 agenty czekają")
+    }
+
+    @Test
+    fun `a message spoken at once keeps its project`() {
+        val step = VoiceGrouping().offer(message("a", "A czeka", project = "p1"))
+
+        step.action shouldBe VoiceAction.Speak("A czeka", ProjectId("p1"))
+    }
+
+    @Test
+    fun `a message without a project is spoken without one`() {
+        VoiceGrouping().offer(message(null, "Dzwonek")).action shouldBe VoiceAction.Speak("Dzwonek", null)
+    }
+
+    @Test
+    fun `group of one project keeps the project`() {
+        val oneSession = VoiceGrouping(cooling = true).offerAll(message("b", "B czeka", project = "p1"))
+        val twoSessions =
+            VoiceGrouping(cooling = true).offerAll(
+                message("b", "B czeka", project = "p1"),
+                message("c", "C czeka", project = "p1"),
+            )
+
+        oneSession.cooldownEnded().action shouldBe VoiceAction.Speak("B czeka", ProjectId("p1"))
+        twoSessions.cooldownEnded().action shouldBe VoiceAction.Speak("2 agenty czekają", ProjectId("p1"))
+    }
+
+    @Test
+    fun `group of two projects has no project`() {
+        val waiting =
+            VoiceGrouping(cooling = true).offerAll(
+                message("b", "B czeka", project = "p1"),
+                message("c", "C czeka", project = "p2"),
+            )
+
+        waiting.cooldownEnded().action shouldBe VoiceAction.Speak("2 agenty czekają", null)
+    }
+
+    @Test
+    fun `group of a project and a session without a project has no project`() {
+        val waiting =
+            VoiceGrouping(cooling = true).offerAll(
+                message("b", "B czeka", project = "p1"),
+                message("c", "C czeka"),
+            )
+
+        waiting.cooldownEnded().action shouldBe VoiceAction.Speak("2 agenty czekają", null)
+    }
+
+    @Test
+    fun `a replaced message does not keep the old project in the group`() {
+        val waiting =
+            VoiceGrouping(cooling = true).offerAll(
+                message("b", "B1", project = "p2"),
+                message("c", "C1", project = "p1"),
+                message("b", "B2", project = "p1"),
+            )
+
+        waiting.cooldownEnded().action shouldBe VoiceAction.Speak("2 agenty czekają", ProjectId("p1"))
     }
 
     @ParameterizedTest(name = "{0} sessions")

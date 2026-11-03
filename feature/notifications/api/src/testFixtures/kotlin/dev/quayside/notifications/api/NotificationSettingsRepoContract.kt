@@ -1,6 +1,7 @@
 package dev.quayside.notifications.api
 
 import dev.quayside.core.domain.Outcome
+import dev.quayside.core.domain.ProjectId
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -73,6 +74,23 @@ public abstract class NotificationSettingsRepoContract {
             repo.update { it.copy(voice = false) }
 
             repo.settings.value.quietHours shouldBe quiet
+        }
+
+    @Test
+    public fun `update keeps project exceptions`(): Unit =
+        runTest {
+            val repo = create()
+            val projects =
+                mapOf(
+                    ProjectId("2f6c1b9e-6d3a-4f43-9d7b-0a1c5e8b7a11") to
+                        ProjectNotifications(ProjectProfile.ERRORS_ONLY, VoiceId("Anna")),
+                    ProjectId("9b1d7e42-0c55-4c0e-8f3a-5d2e6a4b9c22") to ProjectNotifications(ProjectProfile.MUTED),
+                )
+
+            repo.update { it.copy(projects = projects) }
+            repo.update { it.copy(voice = false) }
+
+            repo.settings.value.projects shouldBe projects
         }
 
     @Test

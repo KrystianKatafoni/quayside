@@ -1,5 +1,7 @@
 package dev.quayside.notifications.api
 
+import dev.quayside.core.domain.ProjectId
+
 /** What a notification is about (FR-N2). */
 public enum class NotificationKind {
     /** The agent waits for a reply. */
@@ -46,6 +48,7 @@ public enum class NotificationChannel {
  * @property popup how popups look and behave (FR-N3).
  * @property speech how spoken messages sound (FR-N4, FR-N5).
  * @property quietHours do-not-disturb hours and macOS Focus (FR-N6).
+ * @property projects the exceptions per project (FR-N7); only deviations are stored, see [projectFor].
  */
 public data class NotificationSettings(
     val popups: Boolean = true,
@@ -55,6 +58,7 @@ public data class NotificationSettings(
     val popup: PopupSettings = PopupSettings(),
     val speech: SpeechSettings = SpeechSettings(),
     val quietHours: QuietHours = QuietHours(),
+    val projects: Map<ProjectId, ProjectNotifications> = emptyMap(),
 ) {
     init {
         require(runningLongMinutes in MIN_RUNNING_LONG_MINUTES..MAX_RUNNING_LONG_MINUTES) {
@@ -64,6 +68,10 @@ public data class NotificationSettings(
 
     /** The channels chosen for [kind]: the entry in [matrix] or, without one, the default of docs/07. */
     public fun channelsFor(kind: NotificationKind): Set<NotificationChannel> = matrix[kind] ?: defaultChannels(kind)
+
+    /** The exception of [project]; the default for null or a project without an entry. */
+    public fun projectFor(project: ProjectId?): ProjectNotifications =
+        project?.let { projects[it] } ?: ProjectNotifications()
 
     /** A copy where [channel] is on or off for [kind]. */
     public fun withChannel(

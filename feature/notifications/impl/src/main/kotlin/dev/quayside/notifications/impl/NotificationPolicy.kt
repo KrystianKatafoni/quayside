@@ -3,6 +3,7 @@ package dev.quayside.notifications.impl
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.ProjectProfile
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionState
@@ -10,11 +11,13 @@ import kotlin.time.Duration.Companion.minutes
 
 /**
  * The pure core of the notification policy (docs/11 §4): which deliveries [event] causes under
- * [settings]. No clock, no IO. Per-project exceptions come with AM-705 part B.
+ * [settings]. No clock, no IO.
  *
  * - A session that waits maps to [NotificationKind.NEEDS_INPUT] or [NotificationKind.PERMISSION] by its state.
  * - [SessionEvent.RunningLong] counts only from [NotificationSettings.runningLongMinutes] on.
  * - [NotificationSettings.popups] and [NotificationSettings.voice] silence their channel for every kind.
+ * - The profile of the project of the session (FR-N7) narrows the channels further; a session without a project and
+ *   a terminal bell use [ProjectProfile.DEFAULT].
  * - While [quietNow] (quiet hours or Focus), [NotificationChannel.VOICE] and [NotificationChannel.SOUND] drop.
  * - [NotificationChannel.VOICE] also needs [voiceAllowed] in [context] (window active, microphone in use).
  * - The order of the result is the order of [NotificationChannel].
@@ -44,6 +47,7 @@ private fun deliveriesOf(
 ): List<Delivery> =
     NotificationChannel.entries
         .filter { it in settings.channelsFor(kind) && globallyOn(it, settings) }
+        .filter { profileAllows(settings.projectFor(session?.project).profile, kind, it) }
         .filter { it !in SILENCED_IN_QUIET || !quietNow(settings.quietHours, context) }
         .filter { it != NotificationChannel.VOICE || voiceAllowed(settings.speech, context) }
         .map { Delivery(it, kind, session) }

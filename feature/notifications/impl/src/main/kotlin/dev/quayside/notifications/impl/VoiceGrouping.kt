@@ -1,20 +1,26 @@
 package dev.quayside.notifications.impl
 
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.notifications.api.NotificationKind
 
-/** One message the voice is asked to speak; [session] is null for a terminal bell. */
+/** One message the voice is asked to speak; [session] and [project] are null for a terminal bell. */
 internal data class VoiceMessage(
     val session: SessionId?,
     val kind: NotificationKind,
     val text: String,
+    val project: ProjectId? = null,
 )
 
 /** What the caller of [VoiceGrouping] does next. */
 internal sealed class VoiceAction {
-    /** Say [text] now and start the next 20 seconds of cooldown. */
+    /**
+     * Say [text] now and start the next 20 seconds of cooldown. [project] is the one project all the messages
+     * came from, null for several projects or a session without one; it picks the voice (FR-N7).
+     */
     internal data class Speak(
         val text: String,
+        val project: ProjectId? = null,
     ) : VoiceAction()
 
     /** Say nothing. */
@@ -44,7 +50,7 @@ internal data class VoiceGrouping(
             val kept = pending.filterNot { it.session == message.session && it.kind == message.kind }
             VoiceStep(copy(pending = kept + message), VoiceAction.Stay)
         } else {
-            VoiceStep(VoiceGrouping(cooling = true), VoiceAction.Speak(message.text))
+            VoiceStep(VoiceGrouping(cooling = true), VoiceAction.Speak(message.text, message.project))
         }
 
     /** The cooldown passed: speaks the pending messages as one, or ends the cooling when none wait. */
@@ -52,7 +58,8 @@ internal data class VoiceGrouping(
         if (pending.isEmpty()) return VoiceStep(VoiceGrouping(), VoiceAction.Stay)
         val sources = pending.map { it.session }.distinct().size
         val text = if (sources == 1) pending.last().text else groupedText(sources)
-        return VoiceStep(VoiceGrouping(cooling = true), VoiceAction.Speak(text))
+        val project = pending.map { it.project }.distinct().singleOrNull()
+        return VoiceStep(VoiceGrouping(cooling = true), VoiceAction.Speak(text, project))
     }
 }
 

@@ -29,11 +29,11 @@ internal class VoiceNotifier(
 ) {
     private val lock = Any()
     private var grouping = VoiceGrouping()
-    private val queue = Channel<String>(Channel.UNLIMITED)
+    private val queue = Channel<VoiceAction.Speak>(Channel.UNLIMITED)
 
     init {
         scope.launch {
-            for (text in queue) speak(text)
+            for (message in queue) speak(message)
         }
     }
 
@@ -52,7 +52,10 @@ internal class VoiceNotifier(
                 config.readQuestion,
             ) ?: return
         synchronized(lock) {
-            val step = grouping.offer(VoiceMessage(delivery.session?.id, delivery.kind, text))
+            val step =
+                grouping.offer(
+                    VoiceMessage(delivery.session?.id, delivery.kind, text, delivery.session?.project),
+                )
             apply(step)
         }
     }
@@ -62,7 +65,7 @@ internal class VoiceNotifier(
         grouping = step.state
         val action = step.action
         if (action is VoiceAction.Speak) {
-            queue.trySend(action.text)
+            queue.trySend(action)
             scope.launch {
                 delay(COOLDOWN)
                 cooldownEnded()
@@ -83,9 +86,11 @@ internal class VoiceNotifier(
             !quietNow(settings.value.quietHours, now)
     }
 
-    private suspend fun speak(text: String) {
-        val config = settings.value.speech
-        val result = speech.speak(Utterance(text, config.voice, config.rate, config.volume))
+    private suspend fun speak(message: VoiceAction.Speak) {
+        val current = settings.value
+        val config = current.speech
+        val voice = current.projectFor(message.project).voice ?: config.voice
+        val result = speech.speak(Utterance(message.text, voice, config.rate, config.volume))
         if (result is Outcome.Err) logger.warn("voice failed", "reason" to result.error.category())
     }
 

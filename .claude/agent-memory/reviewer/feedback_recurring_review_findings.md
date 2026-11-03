@@ -44,4 +44,9 @@ Sprawdzaj od razu przy każdym review:
   **How to apply:** w dialogach z akcją zapisującą sprawdź `requestFocus` i jaki przycisk dostaje fokus po zmianie stanu.
 - Stała z `Main.kt`/`impl` (port 47321) wpisana literalnie w `strings.properties` i literalnie w teście okna — test nie wykryje rozjazdu; oczekuj `{0}` albo testu z `$STAŁA` (ten sam wzorzec co „8 s”).
 
+- `ChoiceField` z zawijaniem (`floorMod`) stawia najgroźniejszą opcję obok domyślnej: w AM-608 jedna strzałka w lewo z „Domyślny” wybiera „Pomiń zgody” (bypassPermissions), a ostrzeżenie nie jest `liveRegion`. Test UI wręcz przypinał zawijanie.
+  **How to apply:** przy listach trybów/uprawnień sprawdź sąsiadów wartości domyślnej po zawinięciu i czy ostrzeżenie trafia do czytnika.
+- AM-608 znów bez CHANGELOG `[Unreleased]` i ROADMAP `[x]` mimo planu — sprawdzaj `git status CHANGELOG.md` na starcie każdego review.
+- Strażnik `busy` w kontrolerze (np. `Edit` przy `busy`) bywa testowany tylko przez UI z wyłączonymi kontrolkami — mutacja strażnika przeżywa; oczekuj testu jednostkowego kontrolera.
+
 Powiązane: [[reviewer-workflow]]

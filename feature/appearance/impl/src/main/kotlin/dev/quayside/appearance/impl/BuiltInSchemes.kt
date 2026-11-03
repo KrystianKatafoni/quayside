@@ -6,9 +6,9 @@ import dev.quayside.appearance.api.ThemeSpec
 import dev.quayside.core.designtokens.Backdrop
 import dev.quayside.core.designtokens.ShapeTokens
 
-/** The nine base schemes in docs/08 order. */
+/** The nine base schemes followed by the 20 shaped themes of docs/08, in docs/08 order. */
 internal object BuiltInSchemes {
-    val all: List<ThemeSpec> = rows().map(::toSpec)
+    val all: List<ThemeSpec> = rows().map(::toSpec) + ShapedThemes.all
 
     private fun toSpec(row: SchemeRow): ThemeSpec =
         ThemeSpec(

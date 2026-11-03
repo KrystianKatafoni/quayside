@@ -13,4 +13,6 @@ dependencies {
     testImplementation(testFixtures(project(":feature:appearance:api")))
     // ContrastAudit and SampleTokens.
     testImplementation(testFixtures(project(":core:design-tokens")))
+    // AmFonts.families for TypographyFontsTest (docs/11 section 3, rule 2: impl may use core).
+    testImplementation(project(":core:design-system"))
 }

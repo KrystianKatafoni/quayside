@@ -71,6 +71,10 @@ Sprawdzaj od razu przy każdym review:
 - Ramka fokusu rysowana w granicach komponentu (przed `clip`/`background`) graniczy z tłem komponentu, nie kontenera: na przycisku głównym `text` na `accent` = 2.2:1 (plex i paper) — audyt AM-801 tej pary nie ma. Sprawdzaj, z jakim kolorem ramka faktycznie sąsiaduje.
 - Tabela ścieżek zasobów w kodzie (`AmFonts.FILES`) a test iterujący pliki z dysku: literówka w ścieżce przeżywa (mutacja `Geist[wght].ttf` → `GeistTypo.ttf` zielona). Wymagaj testu „każda ścieżka z tabeli istnieje na classpath i tabela = pliki”.
 - `!!` w testach przechodzi przez detektTest (UnsafeCallOnNullableType domyślnie wyłącza testy), a ENG-C3 go zakazuje — `grep -rn '!!' --include='*.kt' <moduł>/src`.
-- AM-802: znów ROADMAP `[ ]` mimo planu (commit 4: `[x]`) — to samo co AM-801.
+- AM-802: znów ROADMAP `[ ]` mimo planu (commit 4: `[x]`) — to samo co AM-801. AM-805 (2026-11-03): to samo, plan „commit 5: AM-805 `[x]`”, w diffie `[ ]`.
+- AM-805: mapowanie tokenu na parametry Compose w composable (`ShadowSpec.toShadow()` w `AmPanel`) testowane tylko „cień jest / nie ma” pikselem — mutacje znaku/zera offsetu, `blur`, `spread` i koloru cienia przeżyły. Oczekuj testu czystej funkcji mapującej (internal) albo asymetrii pikseli (nad vs pod, kolor ≠ szary).
+  **How to apply:** dla każdego pola tokenu przekazywanego do Compose zrób mutację „pole = 0 / stała” i sprawdź, czy coś pada.
+- Compose `Modifier.dropShadow` rysuje cień POD treścią bez wycięcia wnętrza (inaczej niż CSS `box-shadow`) — przy półprzezroczystym panelu (`glass-light`) cień prześwituje; KDoc „outside the shape” jest wtedy nieprawdziwy. Sprawdzaj źródła (`ui-desktop`/`ui-graphics-desktop` sources z repo1.maven.org).
+- `error()`/`@throws` w czystej funkcji wyprowadzającej z list kandydatów (`deriveStatus`): sprawdź brute-force, czy wyjątek jest osiągalny (czerwony akcent 350–10° nie ma trójki) — OK dla stałych katalogu, ale ścieżka błędu bez testu (mutacja `?: error` → domyślna trójka przeżyła) i funkcji nie wolno użyć dla danych użytkownika (AM-804) bez `Outcome`.
 
 Powiązane: [[reviewer-workflow]]

@@ -36,15 +36,15 @@ internal data class SchemeRow(
 
 private const val MUTED_PERCENT = 30
 private const val BORDER_PERCENT = 12
-private const val BORDER2_PERCENT = 15
-private const val DIM_PERCENT = 30
-private const val RAISED_LIGHT = 4
-private const val RAISED_DARK = 6
-private const val SEL_LIGHT = 12
-private const val SEL_DARK = 18
-private const val WARN_BG_PERCENT = 15
-private val LIGHT_TERM_BG = Rgba(0xFF1E242CL)
-private val LIGHT_TERM_TEXT = Rgba(0xFFE2E8F0L)
+internal const val BORDER2_PERCENT = 15
+internal const val DIM_PERCENT = 30
+internal const val RAISED_LIGHT = 4
+internal const val RAISED_DARK = 6
+internal const val SEL_LIGHT = 12
+internal const val SEL_DARK = 18
+internal const val WARN_BG_PERCENT = 15
+internal val LIGHT_TERM_BG = Rgba(0xFF1E242CL)
+internal val LIGHT_TERM_TEXT = Rgba(0xFFE2E8F0L)
 
 private fun SchemeRow.color(column: SchemeRow.Column): Rgba = palette.getValue(column)
 

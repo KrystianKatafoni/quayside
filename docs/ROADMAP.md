@@ -82,8 +82,8 @@
 - [x] AM-605 · Wstrzyknięcie `AM_HOOK_TOKEN` (token z Keychain) do środowiska `claude --bg` i `respawn` · moduły: agent-runtime:impl, app · zależy: AM-601, AM-602 · wymagania: NFR-4 · issue: #48
 - [x] AM-603 · Scalanie hooków z pollingiem w reducerze · moduły: sessions:impl · zależy: AM-601, AM-403 · wymagania: NFR-2 · issue: #6
 - [x] AM-604 · Summarizer (last_assistant_message, opcjonalnie Haiku) · moduły: summaries:* · zależy: AM-603 · wymagania: FR-S7 · issue: #7
-- [ ] AM-606 · Ekran ustawień podsumowań (przełącznik streszczeń modelem Haiku w summaries.json) · moduły: summaries:ui · zależy: AM-604 · wymagania: FR-S7 · issue: —
-- [ ] AM-609 · Hooki per projekt: instalacja w `.claude/settings.local.json` dodanych projektów (`HookScope.Project`), status w oknie „Hooki Claude Code” · moduły: app, projects:ui (opcjonalnie) · zależy: AM-607 · wymagania: NFR-5 · issue: —
+- [ ] AM-606 · Ekran ustawień podsumowań (przełącznik streszczeń modelem Haiku w summaries.json) · moduły: summaries:ui · zależy: AM-604 · wymagania: FR-S7 · issue: #67
+- [ ] AM-609 · Hooki per projekt: instalacja w `.claude/settings.local.json` dodanych projektów (`HookScope.Project`), status w oknie „Hooki Claude Code” · moduły: app, projects:ui (opcjonalnie) · zależy: AM-607 · wymagania: NFR-5 · issue: #68
 
 ## M7 · Powiadomienia
 
@@ -92,14 +92,17 @@
 - [x] AM-703 · MacSayAdapter, szablony, grupowanie · moduły: notifications:api, notifications:impl, app · zależy: AM-701 · wymagania: FR-N4, FR-N5 · issue: #11
 - [x] AM-704 · Ekran ustawień powiadomień · moduły: notifications:ui, notifications:api, notifications:impl, app · zależy: AM-702, AM-703 · wymagania: FR-N1–N4 · issue: #12
 - [x] AM-705 · Cisza nocna, tryb Skupienia, wyjątki per projekt · moduły: notifications:api, notifications:impl, app · zależy: AM-704 · wymagania: FR-N6, FR-N7 · issue: #13
-- [ ] AM-706 · notifications:ui: cisza nocna i wyjątki projektów (sekcje „Nie przeszkadzać” i „Wyjątki projektów” w oknie ustawień powiadomień, adnotacja „Jeszcze nie działa” przy Skupieniu) · moduły: notifications:ui, app · zależy: AM-705 · wymagania: FR-N6, FR-N7 · issue: —
+- [ ] AM-706 · notifications:ui: cisza nocna i wyjątki projektów (sekcje „Nie przeszkadzać” i „Wyjątki projektów” w oknie ustawień powiadomień, adnotacja „Jeszcze nie działa” przy Skupieniu) · moduły: notifications:ui, app · zależy: AM-705 · wymagania: FR-N6, FR-N7 · issue: #69
 
 ## M8 · Wygląd
 
-- [ ] AM-801 · core:design-tokens + katalog 9 schematów i 8 typografii (test kontrastu) · moduły: core:design-tokens, appearance:impl · zależy: AM-102 · wymagania: FR-A1, FR-A2, NFR-6 · issue: #14
+- [ ] AM-801 · core:design-tokens (tokeny kolorów i kształtu) + katalog 9 podstawowych schematów i 8 typografii (test kontrastu) · moduły: core:design-tokens, appearance:impl · zależy: AM-102 · wymagania: FR-A1, FR-A2, FR-A7, NFR-6 · issue: #14
 - [ ] AM-802 · core:design-system: komponenty i AmTheme · moduły: core:design-system · zależy: AM-801 · wymagania: FR-A1 · issue: #15
 - [ ] AM-803 · Ekran Wygląd z podglądem na żywo · moduły: appearance:ui · zależy: AM-802, AM-405 · wymagania: FR-A3, FR-A4 · issue: #17
 - [ ] AM-804 · Dzień/noc z macOS, import/eksport theme.json · moduły: appearance:impl · zależy: AM-803 · wymagania: FR-A5, FR-A6 · issue: #18
+- [ ] AM-805 · Katalog 20 motywów z kształtem i 14 dodatkowych typografii: fonty w zasobach, korekta kolorów pod NFR-6, wyprowadzenie tokenów statusu (08 „Luki”) · moduły: appearance:impl, core:design-tokens · zależy: AM-801 · wymagania: FR-A1, FR-A2, FR-A7, NFR-6 · issue: #70
+
+Uwagi do M8: AM-803 nie zależy od AM-805 — ekran Wygląd czyta katalog z `AppearanceApi.catalog` i pokaże nowe motywy bez zmian w `appearance:ui`; tokeny kształtu i pole domyślnej typografii dochodzą już w AM-801. AM-905 zależy od AM-805 — 20 motywów z kształtem wchodzi przed 1.0 (FR-A1, priorytet M; decyzja człowieka 2026-11-03). Jeśli plan AM-805 przekroczy ok. 300 linii, architekt dzieli go na motywy jasne i ciemne.
 
 ## M9 · Wydanie 1.0
 
@@ -107,4 +110,4 @@
 - [ ] AM-902 · Podpis Developer ID i notaryzacja w CI · moduły: .github · zależy: AM-901 · wymagania: NFR-1 · issue: #20
 - [ ] AM-903 · Badge w Docku i ikona w pasku menu · moduły: notifications:impl, app · zależy: AM-705 · wymagania: FR-N1 · issue: #21
 - [ ] AM-904 · Komplet testów funkcjonalnych MVP (9 scenariuszy z 12 §4) · moduły: tests:functional · zależy: AM-705, AM-504 · wymagania: ENG-T4 · issue: #22
-- [ ] AM-905 · Wydanie v1.0.0 · moduły: — · zależy: AM-902, AM-903, AM-904, AM-804 · wymagania: 09 kryteria MVP · issue: #23
+- [ ] AM-905 · Wydanie v1.0.0 · moduły: — · zależy: AM-902, AM-903, AM-904, AM-804, AM-805 · wymagania: 09 kryteria MVP · issue: #23

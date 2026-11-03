@@ -10,8 +10,10 @@ import dev.quayside.core.designtokens.ShadowSpec
 import dev.quayside.core.designtokens.ShapeTokens
 
 /**
- * Shape tokens as Compose values. [corner] is a rounded corner of the token radius; [shadow] and [backdrop] are
- * passed on as in [ShapeTokens] (drawn from AM-805).
+ * Shape tokens as Compose values. [corner] is a rounded corner of the token radius; [shadow] is drawn by [AmPanel]
+ * behind its content and does not cut out the interior (it can show through a translucent panel);
+ * [backdrop] is passed on as in [ShapeTokens], and TRANSLUCENT is the panel colour alpha over
+ * the parent (no blur).
  */
 @Immutable
 public data class AmShape(

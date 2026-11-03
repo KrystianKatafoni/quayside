@@ -18,6 +18,13 @@ class ModuleBoundariesTest {
     }
 
     @Test
+    fun `core design tokens have no IO, process or Compose imports`() {
+        Scopes.coreDesignTokens().requireModules("core:design-tokens sources").assertFalse { file ->
+            file.imports.any { import -> forbiddenInContracts.any { import.name.startsWith(it) } }
+        }
+    }
+
+    @Test
     fun `feature api modules have no IO, process or Compose imports`() {
         Scopes.featureApi().requireModules("feature api modules").assertFalse { file ->
             file.imports.any { import -> forbiddenInContracts.any { import.name.startsWith(it) } }

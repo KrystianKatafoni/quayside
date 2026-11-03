@@ -5,3 +5,4 @@
 *.jar binary
 gradlew text eol=lf
 *.bat text eol=crlf
+core/design-system/src/main/resources/fonts/** -text

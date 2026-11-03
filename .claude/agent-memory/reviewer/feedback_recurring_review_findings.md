@@ -66,4 +66,11 @@ Sprawdzaj od razu przy każdym review:
 - Test fake'a „serwuje podany katalog” z argumentem równym domyślnemu (`FakeX(defaultCatalog())` vs `FakeX()`) jest zawsze zielony — oczekuj innej wartości i `shouldBeSameInstanceAs`.
 - `require` w typach `api`/`core` bez `@throws` w KDoc (precedens w repo: `Shortcut`, `OneShotPrompt` mają `@throws IllegalArgumentException`). Wyjątek z warunku wstępnego na stałych to błąd programisty (OK wobec ENG-I4), ale musi być opisany; dane użytkownika (theme.json) wymagają `parse(): T?`.
 
+- AM-802 (design system): test kontrastu czystych funkcji kolorów (`ComponentColors`) nie dowodzi, że composable ich używa — mutacje `LocalTextColor provides null` w `AmModeBar` i `FRAME_WIDTH = 0.dp` w `amFocusFrame` przeżyły. Oczekuj testu UI (np. `captureToImage` piksela ramki/tekstu) dla wskaźnika fokusu i koloru kontenera.
+  **How to apply:** dla każdego „komponenty biorą kolory tylko stąd” wybierz jedną mutację w composable i sprawdź, czy któryś test pada.
+- Ramka fokusu rysowana w granicach komponentu (przed `clip`/`background`) graniczy z tłem komponentu, nie kontenera: na przycisku głównym `text` na `accent` = 2.2:1 (plex i paper) — audyt AM-801 tej pary nie ma. Sprawdzaj, z jakim kolorem ramka faktycznie sąsiaduje.
+- Tabela ścieżek zasobów w kodzie (`AmFonts.FILES`) a test iterujący pliki z dysku: literówka w ścieżce przeżywa (mutacja `Geist[wght].ttf` → `GeistTypo.ttf` zielona). Wymagaj testu „każda ścieżka z tabeli istnieje na classpath i tabela = pliki”.
+- `!!` w testach przechodzi przez detektTest (UnsafeCallOnNullableType domyślnie wyłącza testy), a ENG-C3 go zakazuje — `grep -rn '!!' --include='*.kt' <moduł>/src`.
+- AM-802: znów ROADMAP `[ ]` mimo planu (commit 4: `[x]`) — to samo co AM-801.
+
 Powiązane: [[reviewer-workflow]]

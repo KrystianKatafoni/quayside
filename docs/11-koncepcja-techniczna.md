@@ -24,7 +24,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
 | `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`), bez Compose | brak (dozwolone `core:domain`) |
-| `core:design-system` | Komponenty Compose (przyciski, wiersze listy, pasek trybu, popup), `AmTheme` z `CompositionLocal` | `core:design-tokens` |
+| `core:design-system` | Komponenty Compose (przyciski, wiersze listy, pasek trybu, popup od pierwszego użytkownika), `AmTheme` z `CompositionLocal` | `core:design-tokens` |
 | `core:testing` | Wspólne narzędzia testowe: `TestClock`, `TestDispatchers`, buildery danych, asercje | `core:domain` |
 
 ### Feature (każdy jako `api` / `impl` / `ui`)
@@ -327,6 +327,13 @@ object Wcag { fun luminance(c: Rgba): Double; fun contrast(fg: Rgba, bg: Rgba): 
 data class ColorTokens(val surfaces: SurfaceColors, val content: ContentColors, val status: StatusColors, val terminal: TerminalColors)
 data class ShapeTokens(val radius: Int, val borderWidth: Int, val shadow: ShadowSpec?, val backdrop: Backdrop)
 data class TypographySpec(val id: TypographyId, val name: String, val uiFont: String, val terminalFont: String)
+
+// core:design-system (AM-802; Compose, wątek UI, niemutowalne)
+object AmTheme { val colors: ColorTokens; val shape: AmShape; val typography: AmTypography }   // @Composable, CompositionLocal
+@Composable fun AmTheme(colors: ColorTokens, shape: ShapeTokens, typography: TypographySpec, content: @Composable () -> Unit)
+fun Rgba.toColor(): Color; fun ShapeTokens.toAmShape(): AmShape; fun TypographySpec.toAmTypography(): AmTypography
+enum class TextRole { TITLE, HEADING, BODY, CAPTION, CODE }; object AmFonts { val families: Set<String>; fun family(name: String): FontFamily? }
+@Composable fun AmText(...); AmButton(...); AmListRow(...); AmPanel(...); AmModeBar(...); AmModeBadge(...); fun Modifier.amFocusFrame()
 
 // appearance:api (typy z core:design-tokens, bez Compose); AM-801 daje tylko `catalog`, reszta w AM-804
 interface AppearanceApi {

@@ -121,7 +121,7 @@ private fun Button(
 }
 
 /** Places the dialog layer over the whole window, whatever the anchor. */
-private object WholeWindow : PopupPositionProvider {
+internal object WholeWindow : PopupPositionProvider {
     override fun calculatePosition(
         anchorBounds: IntRect,
         windowSize: IntSize,

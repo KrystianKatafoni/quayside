@@ -59,6 +59,8 @@ class CompositionRootTest {
                 "menu.notificationSettings",
                 "command.hookSetup",
                 "menu.hookSetup",
+                "command.newAgent",
+                "menu.newAgent",
                 "hooks.title",
                 "hooks.info",
                 "hooks.status.reading",
@@ -78,6 +80,12 @@ class CompositionRootTest {
                 "picker.title",
             )
         Strings.keys.forEach { Strings[it].shouldNotBeBlank() }
+    }
+
+    @Test
+    fun `new agent texts say Nowy agent`() {
+        Strings["command.newAgent"] shouldBe "Nowy agent…"
+        Strings["menu.newAgent"] shouldBe "Nowy agent…"
     }
 
     /** Paths reach logs only at DEBUG (AM-304 plan, decision 5), so the shipped config pins INFO. */

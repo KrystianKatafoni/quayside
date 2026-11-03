@@ -29,6 +29,18 @@ internal object MissionControlTags {
     const val ROW_MENU = "missionControl.rowMenu"
     const val SHORTCUTS_TOGGLE = "missionControl.shortcuts.toggle"
     const val SHORTCUTS = "missionControl.shortcuts"
+    const val NEW_AGENT = "missionControl.newAgent"
+    const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"
+    const val NEW_AGENT_PROJECT = "missionControl.newAgent.project"
+    const val NEW_AGENT_PROMPT = "missionControl.newAgent.prompt"
+    const val NEW_AGENT_NAME = "missionControl.newAgent.name"
+    const val NEW_AGENT_AGENT = "missionControl.newAgent.agent"
+    const val NEW_AGENT_MODEL = "missionControl.newAgent.model"
+    const val NEW_AGENT_PERMISSION = "missionControl.newAgent.permission"
+    const val NEW_AGENT_WARNING = "missionControl.newAgent.warning"
+    const val NEW_AGENT_PROBLEM = "missionControl.newAgent.problem"
+    const val NEW_AGENT_CANCEL = "missionControl.newAgent.cancel"
+    const val NEW_AGENT_START = "missionControl.newAgent.start"
 
     /** The button of the control [id] (`attach`, `reply`, `stop`, `respawn`, `remove`, `preview`) in the panel. */
     fun details(id: String): String = "missionControl.details.$id"

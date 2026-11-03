@@ -149,6 +149,7 @@ public class MissionControlController(
             MissionControlIntent.RespawnSelected -> run(SessionAction.RESPAWN)
             MissionControlIntent.RemoveSelected -> askToRemove()
             is MissionControlIntent.SelectFilter -> Unit
+            is MissionControlIntent.SelectSession -> selection.value = Selection(intent.project, session = intent.id)
             MissionControlIntent.TogglePreview -> togglePreview()
             is MissionControlIntent.ShowView -> selection.update { it.copy(view = intent.view, session = null) }
         }
@@ -223,7 +224,7 @@ public class MissionControlController(
             MissionControlEvent.Dismiss -> ui.update { it.copy(dialog = null) }
 
             // Opening a terminal tab is `app`'s job: MissionControl routes these to its callbacks (AM-511).
-            MissionControlEvent.Attach, MissionControlEvent.Reply -> Unit
+            MissionControlEvent.Attach, MissionControlEvent.Reply, MissionControlEvent.NewAgent -> Unit
         }
     }
 }

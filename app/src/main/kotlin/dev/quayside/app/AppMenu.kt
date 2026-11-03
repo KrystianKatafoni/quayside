@@ -9,6 +9,7 @@ import androidx.compose.ui.window.MenuScope
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.commandpalette.ui.toKeyShortcut
 import dev.quayside.missioncontrol.ui.MissionControlController
+import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.ui.ProjectsController
@@ -27,22 +28,18 @@ internal fun FrameWindowScope.AppMenu(
 ) {
     val projects = controllers.projects
     val palette = controllers.palette
-    val missionControl = controllers.missionControl
     val terminal = controllers.terminal
     val terminalSettings = controllers.terminalSettings
     val menu by projects.menu.collectAsState()
     val list by projectsApi.projects.collectAsState()
     val selection by projects.selection.collectAsState()
     val paletteOpen by palette.isOpen.collectAsState()
-    val sessionActions by missionControl.actions.collectAsState()
-    val settingsDialog by terminalSettings.state.collectAsState()
-    val notificationDialog by controllers.notificationSettings.state.collectAsState()
-    val hookDialog by controllers.hookSetup.state.collectAsState()
-    val dialogOpen =
-        sessionActions.dialogOpen || settingsDialog != null || notificationDialog != null || hookDialog != null
-    val enabled = AppMenuState.of(menu, paletteOpen, dialogOpen)
+    val dialogOpen = anyDialogOpen(controllers)
+    val enabled = AppMenuState.of(menu, paletteOpen, dialogOpen, list.isNotEmpty())
     MenuBar {
-        Menu(Strings["menu.projects"]) { ProjectItems(projects, enabled) }
+        Menu(Strings["menu.projects"]) {
+            ProjectItems(projects, controllers.newAgent, enabled)
+        }
         Menu(Strings["menu.terminal"]) {
             TerminalItems(terminal, terminalSettings, selectedTerminalProject(list, selection), !enabled.palette)
         }
@@ -81,6 +78,7 @@ private fun MenuScope.ViewItems(
 @Composable
 private fun MenuScope.ProjectItems(
     projects: ProjectsController,
+    newAgent: NewAgentController,
     enabled: AppMenuState,
 ) {
     Item(
@@ -100,4 +98,25 @@ private fun MenuScope.ProjectItems(
         shortcut = AppShortcuts.REMOVE_PROJECT.toKeyShortcut(),
         onClick = { projects.onIntent(ProjectsIntent.RemoveSelectedRequested) },
     )
+    Item(
+        text = Strings["menu.newAgent"],
+        enabled = enabled.newAgent,
+        shortcut = AppShortcuts.NEW_AGENT.toKeyShortcut(),
+        onClick = { newAgent.open(projects.selection.value) },
+    )
+}
+
+/** A dialog of Mission Control, the settings, the hooks or "Nowy agent" is open: it takes the keys of the window. */
+@Composable
+private fun anyDialogOpen(controllers: WindowControllers): Boolean {
+    val sessionActions by controllers.missionControl.actions.collectAsState()
+    val settingsDialog by controllers.terminalSettings.state.collectAsState()
+    val notificationDialog by controllers.notificationSettings.state.collectAsState()
+    val hookDialog by controllers.hookSetup.state.collectAsState()
+    val newAgentOpen by controllers.newAgent.isOpen.collectAsState()
+    return sessionActions.dialogOpen ||
+        settingsDialog != null ||
+        notificationDialog != null ||
+        hookDialog != null ||
+        newAgentOpen
 }

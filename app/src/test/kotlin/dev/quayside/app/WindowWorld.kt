@@ -27,6 +27,8 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.TestClock
 import dev.quayside.missioncontrol.ui.MissionControlController
+import dev.quayside.missioncontrol.ui.NewAgentController
+import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
 import dev.quayside.notifications.api.VoiceCatalog
@@ -37,6 +39,7 @@ import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.sessions.api.FakeSessions
+import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.terminal.api.FakeTerminalSettingsRepo
 import dev.quayside.terminal.ui.ShellStart
@@ -78,34 +81,125 @@ internal fun ComposeUiTest.showWindow(
     terminal: RecordingTerminals? = null,
     attachCommand: (SessionId) -> ShellCommand = ::defaultAttachCommand,
     settings: SettingsRepos = SettingsRepos(),
-): CommandPaletteController {
+): CommandPaletteController = showWindowOf(WindowSetup(projects, sessions, terminal, attachCommand, settings))
+
+/**
+ * What [showWindowOf] builds the window from. [starts] stands for the `SessionCommands` of the "Nowy agent" dialog
+ * (default: [sessions] itself); a [RecordingStarts] shows which spec reached `start`. The window fills [keys] with
+ * the bridge of ⌘ keys (the way `MainWindow` does for a focused terminal, AM-503): `MenuBar`, which carries ⌘N in
+ * the real window, does not work in `runComposeUiTest`.
+ */
+internal class WindowSetup(
+    val projects: FakeProjectsApi,
+    val sessions: FakeSessions = FakeSessions(),
+    val terminal: RecordingTerminals? = null,
+    val attachCommand: (SessionId) -> ShellCommand = ::defaultAttachCommand,
+    val settings: SettingsRepos = SettingsRepos(),
+    val starts: SessionCommands? = null,
+) {
+    var keys: TerminalKeys? = null
+}
+
+/** [showWindow] for a [WindowSetup] with the "Nowy agent" dialog, its command and its button (AM-608). */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.showWindowOf(setup: WindowSetup): CommandPaletteController {
     val built = mutableListOf<CommandPaletteController>()
     val keys = WindowKeys()
     setContent {
         val scope = rememberCoroutineScope()
-        val controller = remember { projectsController(projects, sessions, scope) }
-        val missionControl = remember { missionControlController(projects, sessions, controller, scope) }
-        val registry = remember { FakeCommandRegistry(scope) }
-        val palette = remember { CommandPaletteController(registry, scope, NoOpLogger).also { built += it } }
-        remember { registry.register(AppCommands(projects, controller, missionControl, palette, scope)) }
-        val shellStart = remember { shellStartOf(settings.terminal, missionControl, sessions) }
-        val wiring = remember { TerminalWiring(projects, sessions, controller, missionControl, scope) }
-        val terminalController =
-            rememberTerminal(terminal, scope, shellStart) { wiring.register(registry, it, attachCommand) }
-        PaletteKeys(keys, palette)
-        KeysBox(keys) {
-            QuaysideApp(
-                projects = controller,
-                missionControl = missionControl,
-                palette = palette,
-                terminalPanel = terminalPanel(terminalController, terminal),
-                attacher = wiring.attacher,
-            )
-            SettingsHosts(settings, registry, WindowParts(controller, missionControl, scope))
+        with(remember { windowCore(setup, scope) { built += it } }) {
+            val terminal = rememberTerminalPart(setup, scope)
+            val agent =
+                remember { AgentWiring(setup, projects, missionControl, scope).also { it.register(registry, palette) } }
+            PaletteKeys(keys, palette)
+            KeysBox(keys) {
+                QuaysideApp(
+                    projects = projects,
+                    missionControl = missionControl,
+                    palette = palette,
+                    terminalPanel = terminalPanel(terminal.controller, setup.terminal),
+                    attacher = terminal.wiring.attacher,
+                    onNewAgent = agent::openForSelection,
+                )
+                SettingsHosts(setup.settings, registry, WindowParts(projects, missionControl, scope))
+                NewAgentDialog(agent.newAgent)
+            }
         }
     }
     waitUntil { built.isNotEmpty() }
     return built.single()
+}
+
+/** The controllers every window has, and the registry the palette reads: the sidebar, Mission Control, the palette. */
+private data class WindowCore(
+    val projects: ProjectsController,
+    val missionControl: MissionControlController,
+    val registry: FakeCommandRegistry,
+    val palette: CommandPaletteController,
+)
+
+/** The terminal controller of the window (null without one) and the wiring of its commands. */
+private class TerminalPart(
+    val wiring: TerminalWiring,
+    val controller: TerminalController?,
+)
+
+@Composable
+private fun WindowCore.rememberTerminalPart(
+    setup: WindowSetup,
+    scope: CoroutineScope,
+): TerminalPart {
+    val shellStart = remember { shellStartOf(setup.settings.terminal, missionControl, setup.sessions) }
+    val wiring = remember { TerminalWiring(setup.projects, setup.sessions, projects, missionControl, scope) }
+    val controller =
+        rememberTerminal(setup.terminal, scope, shellStart) { wiring.register(registry, it, setup.attachCommand) }
+    return TerminalPart(wiring, controller)
+}
+
+/** Builds the [WindowCore] of [setup] and registers [AppCommands]; [onPalette] gets the palette for the test. */
+private fun windowCore(
+    setup: WindowSetup,
+    scope: CoroutineScope,
+    onPalette: (CommandPaletteController) -> Unit,
+): WindowCore {
+    val controller = projectsController(setup.projects, setup.sessions, scope)
+    val missionControl = missionControlController(setup.projects, setup.sessions, controller, scope)
+    val registry = FakeCommandRegistry(scope)
+    val palette = CommandPaletteController(registry, scope, NoOpLogger).also(onPalette)
+    registry.register(AppCommands(setup.projects, controller, missionControl, palette, scope))
+    return WindowCore(controller, missionControl, registry, palette)
+}
+
+/**
+ * The "Nowy agent" controller of the window, its palette command and the ⌘ key bridge (AM-608); its `onStarted` is
+ * the one `MainWindow` uses.
+ */
+private class AgentWiring(
+    private val setup: WindowSetup,
+    private val projects: ProjectsController,
+    private val missionControl: MissionControlController,
+    private val scope: CoroutineScope,
+) {
+    val newAgent =
+        NewAgentController(
+            setup.starts ?: setup.sessions,
+            setup.projects,
+            scope,
+            NoOpLogger,
+            selectStartedSession(projects, missionControl),
+        )
+
+    fun register(
+        registry: FakeCommandRegistry,
+        palette: CommandPaletteController,
+    ) {
+        val others = MutableStateFlow(value = false)
+        registry.register(NewAgentCommands(projects, missionControl, setup.projects, newAgent, scope, others))
+        setup.keys = TerminalKeys(registry, palette, scope)
+    }
+
+    /** The button of the project page: opens the dialog on the project selected in the sidebar. */
+    fun openForSelection() = newAgent.open(projects.selection.value)
 }
 
 /**

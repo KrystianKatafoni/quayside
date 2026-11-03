@@ -58,7 +58,7 @@
 - [x] AM-409 · Skróty j/k i g p · moduły: command-palette:ui, mission-control:ui, app · zależy: AM-408 · wymagania: FR-K2 (część), FR-S9 (komendy filtra) · issue: —
 - [x] AM-410 · Akcje sesji: x stop, Zatrzymaj/Respawn/Usuń w panelu i palecie · moduły: mission-control:ui, app · zależy: AM-409 · wymagania: FR-K2 (część) · issue: —
 - [x] AM-411 · sessions:api: recentOutput i podgląd space · moduły: sessions:api, sessions:impl, mission-control:ui, app · zależy: AM-410 · wymagania: FR-K2 (część) · issue: —
-- [ ] AM-608 · Ekran/okno startu agenta: projekt, prompt, opcjonalnie nazwa, subagent, model, tryb uprawnień (FR-S3), skrót i komenda palety · moduły: mission-control:ui, command-palette:ui, app · zależy: AM-404, AM-408 · wymagania: FR-S3 · issue: —
+- [x] AM-608 · Ekran/okno startu agenta: projekt, prompt, opcjonalnie nazwa, subagent, model, tryb uprawnień (FR-S3), skrót i komenda palety · moduły: mission-control:ui, app · zależy: AM-404, AM-408 · wymagania: FR-S3 · issue: #63
 
 ## M5 · Terminal
 

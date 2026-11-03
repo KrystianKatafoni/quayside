@@ -22,6 +22,29 @@ internal class AppMenuStateTest {
         AppMenuState.of(menu, paletteOpen, sessionDialogOpen) shouldBe expected
     }
 
+    /** One row of the table; [toString] is the name of the case in the report. */
+    data class NewAgentCase(
+        val name: String,
+        val menu: ProjectsMenuState,
+        val paletteOpen: Boolean,
+        val dialogOpen: Boolean,
+        val hasProjects: Boolean,
+        val expected: Boolean,
+    ) {
+        override fun toString(): String = name
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("newAgentCases")
+    fun `new agent needs a project and no dialog`(case: NewAgentCase) {
+        AppMenuState.of(case.menu, case.paletteOpen, case.dialogOpen, case.hasProjects).newAgent shouldBe case.expected
+    }
+
+    @Test
+    fun `new agent defaults to off so a caller without projects cannot start one`() {
+        AppMenuState.of(selected, paletteOpen = false).newAgent shouldBe false
+    }
+
     @Test
     fun `the session dialog flag defaults to closed`() {
         AppMenuState.of(selected, paletteOpen = false) shouldBe everything
@@ -33,6 +56,24 @@ internal class AppMenuStateTest {
         private val dialog = ProjectsMenuState(canAdd = false, canRemove = false, canRename = false, dialogOpen = true)
         private val everything = AppMenuState(add = true, remove = true, rename = true, palette = true)
         private val nothing = AppMenuState(add = false, remove = false, rename = false, palette = false)
+
+        @JvmStatic
+        fun newAgentCases(): List<NewAgentCase> =
+            listOf(
+                NewAgentCase("projects, nothing open", none, false, false, true, true),
+                NewAgentCase("projects, project selected", selected, false, false, true, true),
+                NewAgentCase("no projects", none, false, false, false, false),
+                NewAgentCase("palette open", none, true, false, true, false),
+                NewAgentCase(
+                    "a dialog of the session, settings, hooks or new agent open",
+                    none,
+                    false,
+                    true,
+                    true,
+                    false,
+                ),
+                NewAgentCase("a dialog of the projects open", dialog, false, false, true, false),
+            )
 
         @JvmStatic
         fun cases(): List<Arguments> =

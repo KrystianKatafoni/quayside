@@ -41,7 +41,8 @@ import java.time.format.DateTimeFormatter
 /**
  * The centre of the window: header, filter, session list, details panel and mode bar; stateless apart from
  * [controller]. [onAttach] and [onReply] open the selected session in the terminal (`⏎`, `r`); the buttons, the row
- * menu and a double click on a row call them (AM-511). They do nothing by default.
+ * menu and a double click on a row call them (AM-511). [onNewAgent] opens the "Nowy agent" dialog (AM-608). They do
+ * nothing by default.
  */
 @Composable
 public fun MissionControl(
@@ -49,12 +50,14 @@ public fun MissionControl(
     modifier: Modifier = Modifier,
     onAttach: () -> Unit = {},
     onReply: () -> Unit = {},
+    onNewAgent: () -> Unit = {},
 ) {
     val state by controller.state.collectAsState()
     val onEvent: (MissionControlEvent) -> Unit = { event ->
         when (event) {
             MissionControlEvent.Attach -> onAttach()
             MissionControlEvent.Reply -> onReply()
+            MissionControlEvent.NewAgent -> onNewAgent()
             else -> controller.onEvent(event)
         }
     }
@@ -94,7 +97,9 @@ private fun ProjectPage(
     onEvent: (MissionControlEvent) -> Unit,
 ) {
     val filters = @Composable { Filters(page.filter, onEvent) }
-    SessionPage(page.banner, page.loading, page.rows, page.details, preview, onEvent, filters) { Header(page.header) }
+    SessionPage(page.banner, page.loading, page.rows, page.details, preview, onEvent, filters) {
+        Header(page.header, onEvent)
+    }
 }
 
 /** The list and the details panel shared by the project page and the global views. */
@@ -133,11 +138,33 @@ internal fun SessionPage(
 }
 
 @Composable
-private fun Header(header: ProjectHeader) {
-    Column(modifier = Modifier.testTag(MissionControlTags.HEADER)) {
-        Label(header.name, size = 18)
-        Label(header.path.toString(), Colors.secondary, mono = true)
-        Label(MissionControlStrings.formatted("header.sessions", header.sessions))
+private fun Header(
+    header: ProjectHeader,
+    onEvent: (MissionControlEvent) -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Column(modifier = Modifier.testTag(MissionControlTags.HEADER)) {
+            Label(header.name, size = 18)
+            Label(header.path.toString(), Colors.secondary, mono = true)
+            Label(MissionControlStrings.formatted("header.sessions", header.sessions))
+        }
+        NewAgentButton { onEvent(MissionControlEvent.NewAgent) }
+    }
+}
+
+/** Never takes focus, like the filters: it would eat Space and Enter of the window (plan, rule 8). */
+@Composable
+private fun NewAgentButton(onClick: () -> Unit) {
+    Box(
+        modifier =
+            Modifier
+                .testTag(MissionControlTags.NEW_AGENT)
+                .focusProperties { canFocus = false }
+                .clickable(role = Role.Button, onClick = onClick)
+                .background(color = Colors.button)
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Label(MissionControlStrings["newAgent.button"])
     }
 }
 

@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Nowy agent: okno startu agenta z programu (⌘N, komenda palety „Nowy agent…”, menu Projekty → Nowy agent… oraz przycisk „Nowy agent ⌘N” w nagłówku strony projektu); pola: projekt, prompt, nazwa, subagent, model i tryb uprawnień; start dopiero po „Uruchom” lub ⌘⏎ (AM-608).
 - Okno „Hooki Claude Code” (Widok → Hooki Claude Code… i paleta komend) oraz propozycja instalacji hooków przy pierwszym uruchomieniu: status, instalacja i odinstalowanie tylko globalnie w `~/.claude/settings.json`, po zgodzie użytkownika, z kopią zapasową przed zmianą; „Pomiń” zapamiętuje wybór w `hook-offer.json` (AM-607).
 - Streszczenie sesji modelem Haiku, włączane przez `useModel` w `summaries.json` (domyślnie wyłączone, działa po restarcie): po turze krótkie podsumowanie z ostatniej wiadomości zastępuje model uruchomiony przez `claude -p` bez narzędzi i MCP (AM-604, część B).
 - Podsumowanie sesji po zakończeniu tury: najwyżej 2 zdania z ostatniej wiadomości agenta, bez Markdown (AM-604, część A).

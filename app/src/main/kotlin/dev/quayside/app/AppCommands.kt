@@ -28,6 +28,7 @@ internal object AppShortcuts {
     val ADD_PROJECT: Shortcut = Shortcut.of(chord('o', KeyModifier.META, KeyModifier.SHIFT))
     val REMOVE_PROJECT: Shortcut = Shortcut.of(KeyChord(ChordKey.Named.BACKSPACE, setOf(KeyModifier.META)))
     val PALETTE: Shortcut = Shortcut.of(chord('k', KeyModifier.META))
+    val NEW_AGENT: Shortcut = Shortcut.of(chord('n', KeyModifier.META))
 
     val NEXT_SESSION: Shortcut = Shortcut.of(chord('j'))
     val PREVIOUS_SESSION: Shortcut = Shortcut.of(chord('k'))
@@ -56,23 +57,28 @@ internal data class AppMenuState(
     val remove: Boolean,
     val rename: Boolean,
     val palette: Boolean,
+    val newAgent: Boolean = false,
 ) {
     companion object {
         /**
-         * An open palette, a dialog of Mission Control or a settings dialog (terminal, notifications) takes the
-         * keys (⌘⌫ reaches the palette field), so all items are off; ⌘K also waits for project dialogs.
+         * An open palette, a dialog of Mission Control or a settings dialog (terminal, notifications, hooks, "Nowy
+         * agent") takes the keys (⌘⌫ reaches the palette field), so all items are off; ⌘K also waits for project
+         * dialogs. "Nowy agent…" also needs at least one project.
          */
         fun of(
             menu: ProjectsMenuState,
             paletteOpen: Boolean,
             settingsDialogOpen: Boolean = false,
+            hasProjects: Boolean = false,
         ): AppMenuState {
             val blocked = paletteOpen || settingsDialogOpen
+            val palette = !blocked && !menu.dialogOpen
             return AppMenuState(
                 add = menu.canAdd && !blocked,
                 remove = menu.canRemove && !blocked,
                 rename = menu.canRename && !blocked,
-                palette = !blocked && !menu.dialogOpen,
+                palette = palette,
+                newAgent = palette && hasProjects,
             )
         }
     }

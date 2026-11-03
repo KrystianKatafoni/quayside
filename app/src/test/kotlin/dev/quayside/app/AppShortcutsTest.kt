@@ -29,6 +29,12 @@ class AppShortcutsTest {
     }
 
     @Test
+    fun `new agent is cmd N`() {
+        AppShortcuts.NEW_AGENT shouldBe Shortcut.of(letterChord('n', KeyModifier.META))
+        AppShortcuts.NEW_AGENT.toKeyShortcut() shouldBe KeyShortcut(Key.N, meta = true)
+    }
+
+    @Test
     fun `window key shortcuts are j k and g p`() {
         AppShortcuts.NEXT_SESSION shouldBe Shortcut.of(letterChord('j'))
         AppShortcuts.PREVIOUS_SESSION shouldBe Shortcut.of(letterChord('k'))
@@ -82,6 +88,7 @@ class AppShortcutsTest {
                 AppShortcuts.ADD_PROJECT,
                 AppShortcuts.REMOVE_PROJECT,
                 AppShortcuts.PALETTE,
+                AppShortcuts.NEW_AGENT,
                 AppShortcuts.NEXT_SESSION,
                 AppShortcuts.PREVIOUS_SESSION,
                 AppShortcuts.STOP_SESSION,

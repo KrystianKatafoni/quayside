@@ -29,6 +29,19 @@ internal class MissionControlStringsTest {
     }
 
     @Test
+    fun `the new agent button and start show their shortcuts`() {
+        MissionControlStrings["newAgent.button"] shouldContain "Nowy agent"
+        MissionControlStrings["newAgent.button"] shouldContain "⌘N"
+        MissionControlStrings["newAgent.start"] shouldContain "Uruchom"
+        MissionControlStrings["newAgent.start"] shouldContain "⌘⏎"
+    }
+
+    @Test
+    fun `the bypass warning says the agent acts without asking`() {
+        MissionControlStrings["newAgent.bypassWarning"] shouldContain "bez pytania"
+    }
+
+    @Test
     fun `arguments are filled into the text`() {
         argumentTexts().forEach { text ->
             withClue(text) { text.args.forEach { MissionControlStrings.format(text) shouldContain it } }
@@ -44,7 +57,7 @@ internal class MissionControlStringsTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("fixedTexts", "previewTexts")
+    @MethodSource("fixedTexts", "previewTexts", "newAgentTexts")
     fun `fixed texts say what the plan says`(
         key: String,
         expected: String,
@@ -108,6 +121,28 @@ internal class MissionControlStringsTest {
                 "shortcuts.project",
                 "shortcuts.palette",
                 "action.preview",
+                "newAgent.title",
+                "newAgent.button",
+                "newAgent.project",
+                "newAgent.project.none",
+                "newAgent.prompt",
+                "newAgent.name",
+                "newAgent.agent",
+                "newAgent.agent.hint",
+                "newAgent.model",
+                "newAgent.model.default",
+                "newAgent.permission",
+                "newAgent.permission.default",
+                "newAgent.permission.acceptEdits",
+                "newAgent.permission.plan",
+                "newAgent.permission.bypass",
+                "newAgent.bypassWarning",
+                "newAgent.start",
+                "newAgent.problem.noProject",
+                "newAgent.problem.emptyPrompt",
+                "newAgent.problem.promptTooLong",
+                "newAgent.problem.nameInvalid",
+                "newAgent.problem.agentInvalid",
             )
 
         private val errors: List<SessionError> =
@@ -141,7 +176,8 @@ internal class MissionControlStringsTest {
                 ages.map { AgeText.of(T0, T0.plusSeconds(it)) } +
                 statuses.map { Freshness.of(it, ZoneOffset.UTC) } +
                 statuses.map { Freshness.of(it, ZoneOffset.UTC, short = true) } +
-                errors.map(SessionActionMessages::reason)
+                errors.map(SessionActionMessages::reason) +
+                errors.map(NewAgentRules::failureOf)
 
         private fun argumentTexts(): List<UiText> =
             generated().filter { it.args.isNotEmpty() } +
@@ -186,6 +222,17 @@ internal class MissionControlStringsTest {
                 arguments("fresh.live", "na żywo"),
                 arguments("fresh.loading", "wczytywanie"),
                 arguments("fresh.short.stale", "nieaktualne od {0}"),
+            )
+
+        @JvmStatic
+        fun newAgentTexts(): List<Arguments> =
+            listOf(
+                arguments("newAgent.title", "Nowy agent"),
+                arguments("newAgent.permission.default", "Domyślny"),
+                arguments("newAgent.permission.acceptEdits", "Akceptuj edycje"),
+                arguments("newAgent.permission.plan", "Tylko plan"),
+                arguments("newAgent.permission.bypass", "Pomiń zgody"),
+                arguments("newAgent.model.default", "Domyślny"),
             )
 
         @JvmStatic

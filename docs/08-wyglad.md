@@ -79,7 +79,7 @@ Zamiany względem pliku źródłowego (propozycja):
 - **Ubuntu Mono** ma licencję Ubuntu Font Licence, nie OFL. W `glass-light` zastępuje go DM Mono (już w katalogu, miękki krój pasujący do Outfit), w `deep-abyss` JetBrains Mono.
 - **Fonty systemowe** w `developer-gray`: `-apple-system`/Segoe UI → SF Pro, Consolas → Menlo. Oba są fontami macOS, więc aplikacja ich nie dołącza (nie ma czego licencjonować) i czyta je z systemu po nazwie rodziny.
 
-Fonty nie są jeszcze w zasobach: 8 podstawowych typografii dokłada AM-802, nowe rodziny dokłada AM-805. Nowe rodziny w `resources/fonts`: Plus Jakarta Sans, Outfit, Courier Prime, Inter, DM Sans, Roboto Mono, Source Code Pro, PT Mono — wszystkie na OFL (Google Fonts, katalog `ofl/`). Pozostałe fonty z pliku źródłowego należą do 8 podstawowych typografii (AM-802).
+Fonty 8 podstawowych typografii (14 rodzin) są w zasobach `core/design-system/src/main/resources/fonts` (AM-802, źródła i sumy SHA-256 w `fonts/SOURCES.md`); nowe rodziny dokłada AM-805. Nowe rodziny w `resources/fonts`: Plus Jakarta Sans, Outfit, Courier Prime, Inter, DM Sans, Roboto Mono, Source Code Pro, PT Mono — wszystkie na OFL (Google Fonts, katalog `ofl/`). Pozostałe fonty z pliku źródłowego należą do 8 podstawowych typografii (AM-802).
 
 Wszystkie dołączane fonty są na licencji SIL Open Font License i można je dołączyć do aplikacji (folder `resources/fonts`, ładowane przez `Font(resource = …)` w Compose). Każda typografia jest sprawdzana na polskich znakach (`ąęłśżź`) i znakach łatwych do pomylenia w kodzie (`0O1lI`, `=>`, `!=`).
 

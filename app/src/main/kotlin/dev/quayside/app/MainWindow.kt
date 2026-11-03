@@ -9,6 +9,7 @@ import androidx.compose.ui.window.FrameWindowScope
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
+import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.terminal.ui.TerminalArea
 import dev.quayside.terminal.ui.TerminalSettingsDialog
@@ -36,7 +37,9 @@ internal fun FrameWindowScope.MainWindow(
             TerminalArea(controllers.terminal, controllers.terminalKeys::onKey, modifier)
         },
         attacher = controllers.attacher,
+        onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
     )
+    NewAgentDialog(controllers.newAgent)
     TerminalSettingsDialog(controllers.terminalSettings)
     NotificationSettingsDialog(controllers.notificationSettings)
     HookSetupDialog(controllers.hookSetup, hooks.backupDir)

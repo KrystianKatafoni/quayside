@@ -35,6 +35,19 @@ internal object WindowTags {
 
     const val TERMINAL_AREA = "terminal.area"
 
+    /** The "Nowy agent" button and dialog (AM-608); tags of `mission-control:ui`, `internal` there. */
+    const val NEW_AGENT_BUTTON = "missionControl.newAgent"
+    const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"
+    const val NEW_AGENT_PROJECT = "missionControl.newAgent.project"
+    const val NEW_AGENT_PROMPT = "missionControl.newAgent.prompt"
+    const val NEW_AGENT_NAME = "missionControl.newAgent.name"
+    const val NEW_AGENT_AGENT = "missionControl.newAgent.agent"
+    const val NEW_AGENT_MODEL = "missionControl.newAgent.model"
+    const val NEW_AGENT_PERMISSION = "missionControl.newAgent.permission"
+    const val NEW_AGENT_PROBLEM = "missionControl.newAgent.problem"
+    const val NEW_AGENT_CANCEL = "missionControl.newAgent.cancel"
+    const val NEW_AGENT_START = "missionControl.newAgent.start"
+
     /** The terminal settings dialog (AM-508) and its parts; tags of `terminal:ui`, `internal` there. */
     const val SETTINGS_DIALOG = "terminal.settings"
     const val SETTINGS_FONT_SIZE = "terminal.settings.fontSize"

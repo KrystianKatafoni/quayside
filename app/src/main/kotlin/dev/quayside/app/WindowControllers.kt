@@ -3,6 +3,7 @@ package dev.quayside.app
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.missioncontrol.ui.MissionControlController
+import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
@@ -46,10 +47,29 @@ internal class WindowControllers(
 
     val hookSetup = HookSetupController(hooks.installer, hooks.offer, scope, core.logger)
 
+    val newAgent =
+        NewAgentController(
+            modules.sessions.commands,
+            modules.projects,
+            scope,
+            core.logger,
+            selectStartedSession(projects, missionControl),
+        )
+
     private val settingsDialogOpen =
         combine(terminalSettings.state, notificationDialogOpen) { terminal, notification ->
             terminal != null || notification
         }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
+
+    /** What hides the hooks command: the settings dialogs and "Nowy agent" (the hooks dialog hides it itself). */
+    private val hooksBlocked =
+        combine(settingsDialogOpen, newAgent.isOpen) { settings, agent -> settings || agent }
+            .stateIn(scope, SharingStarted.Eagerly, initialValue = false)
+
+    /** What hides "Nowy agent" besides its own dialog: the settings dialogs and the hooks dialog. */
+    private val newAgentBlocked =
+        combine(settingsDialogOpen, hookSetup.state) { settings, hooks -> settings || hooks != null }
+            .stateIn(scope, SharingStarted.Eagerly, initialValue = false)
 
     /** ⌘ keys of a focused terminal, bridged to the palette and the shortcuts. */
     val terminalKeys = TerminalKeys(modules.registry, palette, scope)
@@ -67,6 +87,7 @@ internal class WindowControllers(
             AttachCommands(projects, missionControl, attacher, scope),
             TerminalSettingsCommands(projects, missionControl, terminalSettings, scope, notificationDialogOpen),
             NotificationSettingsCommands(projects, missionControl, notificationSettings, scope),
-            HookSetupCommands(projects, missionControl, hookSetup, scope, settingsDialogOpen),
+            HookSetupCommands(projects, missionControl, hookSetup, scope, hooksBlocked),
+            NewAgentCommands(projects, missionControl, modules.projects, newAgent, scope, newAgentBlocked),
         )
 }

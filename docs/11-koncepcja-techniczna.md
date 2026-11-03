@@ -267,6 +267,10 @@ enum class TemplateProblem { EMBEDDED_COMMAND, TOO_LONG }   // SpeechSettings.te
 data class QuietHours(val enabled: Boolean = false, val from: LocalTime = 22:00, val to: LocalTime = 07:00,
                      val respectFocus: Boolean = true)   // AM-705 (FR-N6): pełne minuty; to < from = przez północ; from == to = nigdy
 // NotificationSettings.quietHours; w ciszy odpadają VOICE i SOUND, POPUP i DOCK_BADGE zostają
+enum class ProjectProfile { DEFAULT, ERRORS_ONLY, MUTED }   // AM-705 (FR-N7): ERRORS_ONLY = tylko FAILED (jego kanały z macierzy); MUTED = tylko DOCK_BADGE
+data class ProjectNotifications(val profile: ProjectProfile = DEFAULT, val voice: VoiceId? = null)   // voice null = głos globalny
+// NotificationSettings.projects: Map<ProjectId, ProjectNotifications> (tylko odstępstwa); projectFor(project: ProjectId?) — null lub brak wpisu = ProjectNotifications()
+// decide: macierz, przełączniki globalne, profil projektu sesji, cisza (VOICE, SOUND), voiceAllowed; dzwonek terminala i sesja bez projektu = DEFAULT
 
 // notifications:impl (internal) — czysty rdzeń decyzji
 internal fun decide(event: SessionEvent, settings: NotificationSettings, ctx: DeliveryContext): List<Delivery>

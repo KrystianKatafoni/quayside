@@ -53,4 +53,9 @@ Sprawdzaj od razu przy każdym review:
 - Warunkowy zapis sekcji JSON („nie zapisuj domyślnej”, `if (x != X()) put(...)`) bywa bez testu — round trip przechodzi także bez warunku, mutacja przeżywa. Oczekuj testu `shouldNotContain "<klucz>"` dla domyślnych ustawień.
 - Nazwy testów parametryzowanych zawężone do pierwszego przypadku (`wrong type of enabled throws` dla 6 pól) i asercja `shouldNotContain "yes"` sensowna tylko dla jednego wiersza — sugestia nazwy i asercji per wiersz.
 
+- AM-705 B: znów brak CHANGELOG `[Unreleased]`, choć „Moduły B” planu go wymienia (plan zrzuca ROADMAP na shippera, CHANGELOG nie jest jasno przypisany) — pytaj, kto dopisuje, zanim zatwierdzisz.
+- Test „kolejność filtrów” przy łańcuchu `.filter {}` z niezależnych predykatów jednego kanału: kolejność jest nieobserwowalna (filtry są przemienne), więc nazwa testu obiecuje więcej, niż sprawdza. Sugeruj zmianę nazwy na „profil łączy się z X”.
+- Podwójny strażnik zapisu sekcji (warunek `any { != default }` przed `put` + `filterValues` w `encode`): test „tylko domyślne wpisy” sprawdza brak id, nie brak klucza sekcji — mutacja `any {…}` → `isNotEmpty()` przeżywa. Oczekuj `shouldNotContain "<sekcja>"`.
+- Parametr opisowy testu parametryzowanego „użyty” asercją `label.isNotEmpty() shouldBe true` tylko dla detektu — asercja zawsze zielona; sugeruj `@Suppress("UnusedParameter")` albo `name = "{0}"` bez parametru.
+
 Powiązane: [[reviewer-workflow]]

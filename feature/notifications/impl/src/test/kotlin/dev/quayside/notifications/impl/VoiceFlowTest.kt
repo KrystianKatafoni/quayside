@@ -7,6 +7,8 @@ import dev.quayside.core.process.ProcessError
 import dev.quayside.core.testing.TestClock
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.ProjectNotifications
+import dev.quayside.notifications.api.ProjectProfile
 import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
@@ -247,5 +249,122 @@ class VoiceFlowTest {
             send(waiting("b"))
 
             runner.commands.size shouldBe 1
+        }
+
+    private val plantpulse = ProjectId("plantpulse-core")
+
+    private fun inProject(
+        entry: ProjectNotifications,
+        base: NotificationSettings = NotificationSettings(),
+    ) = FakeNotificationSettingsRepo(base.copy(projects = mapOf(plantpulse to entry)))
+
+    private fun failed(name: String) =
+        SessionEvent.Failed(
+            aSession(id = "s-$name", name = name, project = plantpulse, state = SessionState.Failed),
+        )
+
+    @Test
+    fun `muted project gets no popup and no voice`() =
+        runTest {
+            // Given a muted project
+            val center = start(settings = inProject(ProjectNotifications(ProjectProfile.MUTED)))
+
+            // When one of its sessions waits and another fails
+            send(waiting("a"))
+            send(failed("b"))
+            pass(30.seconds)
+
+            // Then there is no popup and say is not started
+            center.popups.value shouldBe emptyList()
+            runner.commands shouldBe emptyList()
+        }
+
+    @Test
+    fun `another project is not muted by the entry of a muted project`() =
+        runTest {
+            val center = start(settings = inProject(ProjectNotifications(ProjectProfile.MUTED)))
+
+            send(
+                SessionEvent.BecameBlocked(
+                    aSession(
+                        id = "x",
+                        name = "x",
+                        project = ProjectId("other"),
+                        state = SessionState.AwaitingInput(null),
+                    ),
+                ),
+            )
+
+            center.popups.value.size shouldBe 1
+            runner.commands.size shouldBe 1
+        }
+
+    @Test
+    fun `errors only project is silent for a question and speaks a failure`() =
+        runTest {
+            // Given an errors only project
+            val center = start(settings = inProject(ProjectNotifications(ProjectProfile.ERRORS_ONLY)))
+
+            // When a session waits
+            send(waiting("a"))
+
+            // Then nothing happens
+            center.popups.value shouldBe emptyList()
+            runner.commands shouldBe emptyList()
+
+            // And when a session fails, the popup shows and say speaks
+            send(failed("b"))
+            center.popups.value.size shouldBe 1
+            runner.commands.size shouldBe 1
+        }
+
+    @Test
+    fun `project voice reaches say argv`() =
+        runTest {
+            // Given a project with its own voice and a global voice Zosia
+            start(settings = inProject(ProjectNotifications(voice = VoiceId("Anna"))))
+
+            // When one of its sessions waits
+            send(waiting("a"))
+
+            // Then say is started with -v Anna and the global rate
+            runner.commands
+                .single()
+                .argv
+                .drop(1)
+                .take(4) shouldBe listOf("-v", "Anna", "-r", "190")
+        }
+
+    @Test
+    fun `a group of two projects is spoken with the global voice`() =
+        runTest {
+            start(
+                settings =
+                    FakeNotificationSettingsRepo(
+                        NotificationSettings(
+                            projects =
+                                mapOf(
+                                    plantpulse to ProjectNotifications(voice = VoiceId("Anna")),
+                                    ProjectId("other") to ProjectNotifications(voice = VoiceId("Ewa")),
+                                ),
+                        ),
+                    ),
+            )
+            send(waiting("a"))
+            send(waiting("b"))
+            send(
+                SessionEvent.BecameBlocked(
+                    aSession(
+                        id = "x",
+                        name = "x",
+                        project = ProjectId("other"),
+                        state = SessionState.AwaitingInput(null),
+                    ),
+                ),
+            )
+            pass(20.seconds)
+
+            runner.commands.map { it.argv[2] } shouldBe listOf("Anna", "Zosia")
+            spoken.last() shouldBe "[[volm 0.70]] 2 agenty czekają"
         }
 }

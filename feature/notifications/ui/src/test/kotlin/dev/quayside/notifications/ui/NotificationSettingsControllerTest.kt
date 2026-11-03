@@ -1,5 +1,6 @@
 package dev.quayside.notifications.ui
 
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
 import dev.quayside.notifications.api.NotificationChannel
@@ -8,8 +9,11 @@ import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.NotificationSettingsError
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.notifications.api.ProjectNotifications
+import dev.quayside.notifications.api.ProjectProfile
 import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
+import dev.quayside.notifications.api.VoiceId
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -111,6 +115,26 @@ class NotificationSettingsControllerTest {
 
             repo.settings.value.quietHours shouldBe quiet
             repo.settings.value shouldBe saved.copy(voice = false, quietHours = quiet)
+        }
+
+    @Test
+    fun `save keeps project exceptions the dialog does not show`() =
+        runTest {
+            val projects =
+                mapOf(
+                    ProjectId("2f6c1b9e-6d3a-4f43-9d7b-0a1c5e8b7a11") to
+                        ProjectNotifications(ProjectProfile.ERRORS_ONLY, VoiceId("Anna")),
+                    ProjectId("9b1d7e42-0c55-4c0e-8f3a-5d2e6a4b9c22") to ProjectNotifications(ProjectProfile.MUTED),
+                )
+            val repo = scripted(saved.copy(projects = projects))
+            val controller = controllerOver(repo)
+            act { controller.open() }
+            act { controller.edit { it.copy(voice = false) } }
+
+            act { controller.save() }
+
+            repo.settings.value.projects shouldBe projects
+            repo.settings.value shouldBe saved.copy(voice = false, projects = projects)
         }
 
     @Test

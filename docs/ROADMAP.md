@@ -91,7 +91,8 @@
 - [x] AM-702 · Popupy (okno Compose, stos, akcje) · moduły: notifications:ui · zależy: AM-701 · wymagania: FR-N3 (FR-S5, FR-S6: osobne zadanie SessionReplies, do dopisania po decyzji) · issue: #10
 - [x] AM-703 · MacSayAdapter, szablony, grupowanie · moduły: notifications:api, notifications:impl, app · zależy: AM-701 · wymagania: FR-N4, FR-N5 · issue: #11
 - [x] AM-704 · Ekran ustawień powiadomień · moduły: notifications:ui, notifications:api, notifications:impl, app · zależy: AM-702, AM-703 · wymagania: FR-N1–N4 · issue: #12
-- [~] AM-705 · Cisza nocna, tryb Skupienia, wyjątki per projekt · moduły: notifications:api, notifications:impl, app · zależy: AM-704 · wymagania: FR-N6, FR-N7 · issue: #13
+- [x] AM-705 · Cisza nocna, tryb Skupienia, wyjątki per projekt · moduły: notifications:api, notifications:impl, app · zależy: AM-704 · wymagania: FR-N6, FR-N7 · issue: #13
+- [ ] AM-706 · notifications:ui: cisza nocna i wyjątki projektów (sekcje „Nie przeszkadzać” i „Wyjątki projektów” w oknie ustawień powiadomień, adnotacja „Jeszcze nie działa” przy Skupieniu) · moduły: notifications:ui, app · zależy: AM-705 · wymagania: FR-N6, FR-N7 · issue: —
 
 ## M8 · Wygląd
 

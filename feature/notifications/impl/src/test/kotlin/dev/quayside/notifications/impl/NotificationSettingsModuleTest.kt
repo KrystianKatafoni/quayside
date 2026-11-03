@@ -1,12 +1,17 @@
 package dev.quayside.notifications.impl
 
 import dev.quayside.core.domain.NoOpLogger
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.storage.JsonStorage
 import dev.quayside.notifications.api.NotificationKind
+import dev.quayside.notifications.api.ProjectNotifications
+import dev.quayside.notifications.api.ProjectProfile
 import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
@@ -67,5 +72,42 @@ class NotificationSettingsModuleTest {
             val reopened = notificationSettingsModule(storage, NoOpLogger).settings.value
 
             reopened.quietHours shouldBe quiet
+        }
+
+    @Test
+    @Suppress("ForbiddenMethodCall", "InjectDispatcher")
+    fun `project exceptions survive reopening`(): Unit =
+        runBlocking {
+            val storage = JsonStorage(tempDir, Dispatchers.IO)
+            val first = ProjectId("2f6c1b9e-6d3a-4f43-9d7b-0a1c5e8b7a11")
+            val second = ProjectId("9b1d7e42-0c55-4c0e-8f3a-5d2e6a4b9c22")
+            val projects =
+                mapOf(
+                    first to ProjectNotifications(ProjectProfile.ERRORS_ONLY, VoiceId("Anna")),
+                    second to ProjectNotifications(ProjectProfile.MUTED),
+                )
+            notificationSettingsModule(storage, NoOpLogger).update { it.copy(projects = projects) }
+
+            val reopened = notificationSettingsModule(storage, NoOpLogger).settings.value
+
+            reopened.projects shouldBe projects
+            reopened.projectFor(first).voice shouldBe VoiceId("Anna")
+            Files.readString(tempDir.resolve("notifications.json")) shouldContain first.value
+        }
+
+    @Test
+    @Suppress("ForbiddenMethodCall", "InjectDispatcher")
+    fun `a default exception is not kept in the file`(): Unit =
+        runBlocking {
+            val storage = JsonStorage(tempDir, Dispatchers.IO)
+            val id = ProjectId("2f6c1b9e-6d3a-4f43-9d7b-0a1c5e8b7a11")
+            notificationSettingsModule(storage, NoOpLogger).update {
+                it.copy(projects = mapOf(id to ProjectNotifications()))
+            }
+
+            val reopened = notificationSettingsModule(storage, NoOpLogger).settings.value
+
+            reopened.projectFor(id) shouldBe ProjectNotifications()
+            Files.readString(tempDir.resolve("notifications.json")) shouldNotContain id.value
         }
 }

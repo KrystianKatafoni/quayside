@@ -7,6 +7,7 @@ import dev.quayside.notifications.api.PopupDuration
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.PopupStyle
+import dev.quayside.notifications.api.ProjectNotifications
 import dev.quayside.notifications.api.QuietHours
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -58,6 +59,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
     private const val POPUP = "popup"
     private const val SPEECH = "speech"
     private const val QUIET_HOURS = "quietHours"
+    private const val PROJECTS = "projects"
     private const val POPUPS = "popups"
     private const val VOICE = "voice"
     private const val MINUTES = "runningLongMinutes"
@@ -83,6 +85,9 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
                 }
                 put(SPEECH, SpeechSettingsJson.encode(value.speech))
                 if (value.quietHours != QuietHours()) put(QUIET_HOURS, QuietHoursJson.encode(value.quietHours))
+                if (value.projects.any { it.value != ProjectNotifications() }) {
+                    put(PROJECTS, ProjectsJson.encode(value.projects))
+                }
                 putJsonObject(CHANNELS_KEY) {
                     KINDS.forEach { (kind, name) ->
                         putJsonArray(
@@ -105,6 +110,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
             popup = popup(root[POPUP]),
             speech = SpeechSettingsJson.decode(root[SPEECH]),
             quietHours = QuietHoursJson.decode(root[QUIET_HOURS]),
+            projects = ProjectsJson.decode(root[PROJECTS]),
             runningLongMinutes =
                 root.number(MINUTES)?.coerceIn(
                     NotificationSettings.MIN_RUNNING_LONG_MINUTES,

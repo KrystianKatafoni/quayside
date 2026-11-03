@@ -100,3 +100,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - `claude -p` z niezaufaną treścią (wiadomość agenta) dziedziczy narzędzia, MCP i uprawnienia użytkownika — zawsze `--tools ""`, `--strict-mcp-config`, `--disable-slash-commands` i wyłączone hooki.
 - `booleanOrNull` z kotlinx.serialization przyjmuje też string `"true"` — sprawdzaj `isString` przy ścisłym parsowaniu JSON.
 - Czyszczenie wpisów mapy per rozmowa przy globalnym liczniku tur to higiena pamięci, nieobserwowalna testem — nie dopisuj testów „zawsze zielonych”.
+- Dialog zgody na zmianę konfiguracji użytkownika nie może dawać fokusu startowego przyciskowi zapisującemu (Space i Enter działają jak klik na sfokusowanym `clickable`): fokus startowy na „Zamknij/Pomiń”, po akcji zostaje na „Zamknij”, wskaźnik fokusu jest widoczny.
+- Strażnik „wynik po zamknięciu odrzucony” wymaga testu z ponownym otwarciem okna, bo samo `state == null` zasłania brak strażnika.
+- Stała z kodu (np. port) wpisana literalnie w tekście i w teście ukrywa rozjazd — przekazuj ją parametrem tekstu (`{0}`), a parametr liczbowy jako String, by MessageFormat nie dał „47,321”.

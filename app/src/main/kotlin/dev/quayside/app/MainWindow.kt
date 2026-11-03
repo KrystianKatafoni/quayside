@@ -2,6 +2,7 @@ package dev.quayside.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.window.FrameWindowScope
@@ -20,10 +21,11 @@ internal fun FrameWindowScope.MainWindow(
     core: CoreDeps,
     modules: AppModules,
     keys: WindowKeys,
+    hooks: HookDeps,
 ) {
     val scope = rememberCoroutineScope()
     val controllers =
-        remember { WindowControllers(core, modules, AwtDirectoryPicker(window, core.dispatchers.main), scope) }
+        remember { WindowControllers(core, modules, AwtDirectoryPicker(window, core.dispatchers.main), scope, hooks) }
     WindowBindings(modules.registry, controllers.providers, controllers.palette, keys)
     AppMenu(controllers, modules.projects)
     QuaysideApp(
@@ -37,7 +39,9 @@ internal fun FrameWindowScope.MainWindow(
     )
     TerminalSettingsDialog(controllers.terminalSettings)
     NotificationSettingsDialog(controllers.notificationSettings)
+    HookSetupDialog(controllers.hookSetup, hooks.backupDir)
     PopupAttachHandler(modules, controllers.attacher)
+    LaunchedEffect(Unit) { controllers.hookSetup.offerAtStart() }
 }
 
 /**

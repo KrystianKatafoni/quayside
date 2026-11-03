@@ -19,6 +19,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.agentruntime.api.FakeHookInstaller
 import dev.quayside.commandpalette.api.FakeCommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.domain.NoOpLogger
@@ -107,12 +108,22 @@ internal fun ComposeUiTest.showWindow(
     return built.single()
 }
 
-/** The settings repos whose dialogs the window shows; a dialog without its repo is not shown. */
+/**
+ * The settings repos whose dialogs the window shows; a dialog without its repo is not shown. With [hooks] the window
+ * also gets the "Hooki Claude Code" dialog and its palette command (AM-607); [hookOffer] is then required (a store on
+ * a temp directory of the test). The start offer runs only with [hookOfferAtStart], the way `MainWindow` does.
+ */
 internal class SettingsRepos(
     val terminal: FakeTerminalSettingsRepo? = null,
     val notifications: FakeNotificationSettingsRepo? = null,
     val voices: VoiceCatalog = FakeVoiceCatalog(emptyList()),
+    val hooks: FakeHookInstaller? = null,
+    val hookOffer: HookOfferStore? = null,
+    val hookOfferAtStart: Boolean = false,
 )
+
+/** The backup folder the hooks dialog of the window shows. */
+internal val WINDOW_HOOK_BACKUP_DIR: Path = Path.of(System.getProperty("java.io.tmpdir")).resolve("hooks-backup")
 
 /** What the settings dialog and its command need from the window. */
 private class WindowParts(
@@ -132,6 +143,27 @@ private fun SettingsHosts(
         remember { repos.notifications?.let { NotificationSettingsController(it, repos.voices, window.scope) } }
     SettingsDialogHost(repos.terminal, registry, window, notifications?.dialogOpen(window.scope))
     NotificationDialogHost(notifications, registry, window)
+    HookDialogHost(repos, registry, window)
+}
+
+/** The hooks dialog over [SettingsRepos.hooks] with its palette command registered; nothing without one. */
+@Composable
+private fun HookDialogHost(
+    repos: SettingsRepos,
+    registry: FakeCommandRegistry,
+    window: WindowParts,
+) {
+    val installer = repos.hooks ?: return
+    val offer = checkNotNull(repos.hookOffer) { "SettingsRepos.hooks needs hookOffer on a temp directory" }
+    val controller =
+        remember {
+            HookSetupController(installer, offer, window.scope, NoOpLogger).also {
+                val others = MutableStateFlow(value = false)
+                registry.register(HookSetupCommands(window.projects, window.missionControl, it, window.scope, others))
+            }
+        }
+    HookSetupDialog(controller, WINDOW_HOOK_BACKUP_DIR)
+    if (repos.hookOfferAtStart) LaunchedEffect(Unit) { controller.offerAtStart() }
 }
 
 /** The settings dialog over [repo] with its palette command registered; nothing without a repo. */

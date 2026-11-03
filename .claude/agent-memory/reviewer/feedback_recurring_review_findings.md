@@ -40,4 +40,8 @@ Sprawdzaj od razu przy każdym review:
 - Mapy per rozmowa (`turns`, `jobs`) bez czyszczenia: pytaj o wyciek; licznik pokolenia globalny pozwala czyścić bez ponownego użycia numerów.
 - Zwolnienie flagi w `finally` wokół wywołania zwracającego `Outcome` (bez wyjątków) jest równoważne zwolnieniu po `try` — mutacja przeżywa; to obrona, nie błąd, ale opisz to w KDoc zamiast deklarować „sprawdzone testem”.
 
+- Dialog zgody (AM-607 hooki): automatyczny fokus na pierwszym aktywnym przycisku = „Zainstaluj”, a `LaunchedEffect(first)` po akcji przenosi fokus na przeciwną akcję („Odinstaluj”); bez widocznego wskaźnika fokusu Space/Enter zmienia plik użytkownika bez świadomego kliknięcia. Przy zmianach plików użytkownika fokus startowy na „Pomiń/Zamknij”.
+  **How to apply:** w dialogach z akcją zapisującą sprawdź `requestFocus` i jaki przycisk dostaje fokus po zmianie stanu.
+- Stała z `Main.kt`/`impl` (port 47321) wpisana literalnie w `strings.properties` i literalnie w teście okna — test nie wykryje rozjazdu; oczekuj `{0}` albo testu z `$STAŁA` (ten sam wzorzec co „8 s”).
+
 Powiązane: [[reviewer-workflow]]

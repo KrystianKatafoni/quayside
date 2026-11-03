@@ -7,6 +7,7 @@ import dev.quayside.notifications.api.PopupDuration
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.PopupStyle
+import dev.quayside.notifications.api.QuietHours
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -56,6 +57,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
     private val STYLES = PopupStyle.entries.associateWith { it.name }
     private const val POPUP = "popup"
     private const val SPEECH = "speech"
+    private const val QUIET_HOURS = "quietHours"
     private const val POPUPS = "popups"
     private const val VOICE = "voice"
     private const val MINUTES = "runningLongMinutes"
@@ -80,6 +82,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
                     put("style", value.popup.style.name)
                 }
                 put(SPEECH, SpeechSettingsJson.encode(value.speech))
+                if (value.quietHours != QuietHours()) put(QUIET_HOURS, QuietHoursJson.encode(value.quietHours))
                 putJsonObject(CHANNELS_KEY) {
                     KINDS.forEach { (kind, name) ->
                         putJsonArray(
@@ -101,6 +104,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
             matrix = matrix(root[CHANNELS_KEY]),
             popup = popup(root[POPUP]),
             speech = SpeechSettingsJson.decode(root[SPEECH]),
+            quietHours = QuietHoursJson.decode(root[QUIET_HOURS]),
             runningLongMinutes =
                 root.number(MINUTES)?.coerceIn(
                     NotificationSettings.MIN_RUNNING_LONG_MINUTES,

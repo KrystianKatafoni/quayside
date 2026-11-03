@@ -6,6 +6,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import java.time.LocalTime
 
 /** Behaviour every [NotificationSettingsRepo] must have (ENG-T2). Runs on the fake and on the file store. */
 public abstract class NotificationSettingsRepoContract {
@@ -60,6 +61,18 @@ public abstract class NotificationSettingsRepoContract {
             repo.update { it.copy(voice = false) }
 
             repo.settings.value.speech shouldBe speech
+        }
+
+    @Test
+    public fun `update keeps quiet hours`(): Unit =
+        runTest {
+            val repo = create()
+            val quiet = QuietHours(true, LocalTime.of(21, 30), LocalTime.of(6, 15), respectFocus = false)
+
+            repo.update { it.copy(quietHours = quiet) }
+            repo.update { it.copy(voice = false) }
+
+            repo.settings.value.quietHours shouldBe quiet
         }
 
     @Test

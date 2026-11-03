@@ -16,7 +16,9 @@ import kotlin.time.Duration.Companion.seconds
  * Checks again before a grouped message that the voice is still on and allowed. One consumer in [scope] speaks the
  * messages one after another; the 20 s timer lives there too, so cancelling [scope] ends everything. Assumes
  * [SpeechPort.speak] reports failures as [Outcome.Err] and does not throw (the adapter maps them); a throw would end
- * the consumer.
+ * the consumer. The quiet hours (FR-N6) are checked when a message is queued and again after the cooldown, not in
+ * [speak]: a message already queued may still be spoken after the quiet time starts, at most for the length of one
+ * `say`.
  */
 internal class VoiceNotifier(
     private val speech: SpeechPort,
@@ -75,7 +77,11 @@ internal class VoiceNotifier(
         }
     }
 
-    private fun allowedNow(): Boolean = settings.value.voice && voiceAllowed(settings.value.speech, context())
+    private fun allowedNow(): Boolean {
+        val now = context()
+        return settings.value.voice && voiceAllowed(settings.value.speech, now) &&
+            !quietNow(settings.value.quietHours, now)
+    }
 
     private suspend fun speak(text: String) {
         val config = settings.value.speech

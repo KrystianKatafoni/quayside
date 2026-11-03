@@ -7,6 +7,7 @@ import dev.quayside.notifications.api.NotificationChannel.SOUND
 import dev.quayside.notifications.api.NotificationChannel.VOICE
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
+import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionState
@@ -19,12 +20,13 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.Arguments.arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.time.LocalTime
 import kotlin.time.Duration.Companion.minutes
 
 /** `decide()`: event × settings → deliveries (FR-N1, FR-N2). */
 class NotificationPolicyTest {
     private val settings = NotificationSettings()
-    private val background = DeliveryContext(appActive = false, microphoneActive = false)
+    private val background = ctx()
 
     private fun channels(
         event: SessionEvent,
@@ -159,25 +161,25 @@ class NotificationPolicyTest {
         allowed: Boolean,
     ) {
         label.isNotEmpty() shouldBe true
-        voiceAllowed(speech, DeliveryContext(appActive, microphoneActive)) shouldBe allowed
+        voiceAllowed(speech, ctx(appActive, microphoneActive)) shouldBe allowed
     }
 
     @Test
     fun `the app in the foreground drops only voice`() {
-        channels(needsInput, context = DeliveryContext(appActive = true, microphoneActive = false)) shouldContainExactly
+        channels(needsInput, context = ctx(appActive = true)) shouldContainExactly
             listOf(POPUP, SOUND, DOCK_BADGE)
     }
 
     @Test
     fun `an active microphone drops only voice`() {
-        channels(needsInput, context = DeliveryContext(appActive = false, microphoneActive = true)) shouldContainExactly
+        channels(needsInput, context = ctx(microphoneActive = true)) shouldContainExactly
             listOf(POPUP, SOUND, DOCK_BADGE)
     }
 
     @Test
     fun `switches off keep voice in the foreground`() {
         val speech = SpeechSettings(onlyInBackground = false, muteWhenMicrophoneActive = false)
-        val busy = DeliveryContext(appActive = true, microphoneActive = true)
+        val busy = ctx(appActive = true, microphoneActive = true)
 
         channels(needsInput, settings.copy(speech = speech), busy) shouldContainExactly
             listOf(POPUP, VOICE, SOUND, DOCK_BADGE)
@@ -196,10 +198,55 @@ class NotificationPolicyTest {
         val loud = settings.withChannel(NotificationKind.TERMINAL_BELL, VOICE, true)
 
         decideTerminalBell(loud, background).map { it.channel } shouldContainExactly listOf(POPUP, VOICE)
-        decideTerminalBell(loud, DeliveryContext(appActive = true, microphoneActive = false))
+        decideTerminalBell(loud, ctx(appActive = true))
             .map { it.channel } shouldContainExactly listOf(POPUP)
-        decideTerminalBell(loud, DeliveryContext(appActive = false, microphoneActive = true))
+        decideTerminalBell(loud, ctx(microphoneActive = true))
             .map { it.channel } shouldContainExactly listOf(POPUP)
+    }
+
+    private val night = LocalTime.of(23, 0)
+    private val quietOn = settings.copy(quietHours = QuietHours(enabled = true))
+
+    @Test
+    fun `quiet hours drop voice and sound but keep popup and badge`() {
+        val atNight = ctx(localTime = night)
+
+        channels(needsInput, quietOn, atNight) shouldContainExactly listOf(POPUP, DOCK_BADGE)
+        channels(waiting(SessionState.AwaitingPermission("Bash")), quietOn, atNight) shouldContainExactly
+            listOf(POPUP, DOCK_BADGE)
+        channels(SessionEvent.Failed(aSession(state = SessionState.Failed)), quietOn, atNight) shouldContainExactly
+            listOf(POPUP, DOCK_BADGE)
+        channels(SessionEvent.RunningLong(aSession(), 31.minutes), quietOn, atNight).shouldBeEmpty()
+        channels(needsInput, quietOn, ctx(localTime = LocalTime.NOON)) shouldContainExactly
+            listOf(POPUP, VOICE, SOUND, DOCK_BADGE)
+    }
+
+    @Test
+    fun `a Focus alone is quiet without hours and respectFocus off ignores it`() {
+        val focus = ctx(focusActive = true)
+
+        channels(needsInput, context = focus) shouldContainExactly listOf(POPUP, DOCK_BADGE)
+        channels(needsInput, settings.copy(quietHours = QuietHours(respectFocus = false)), focus) shouldContainExactly
+            listOf(POPUP, VOICE, SOUND, DOCK_BADGE)
+    }
+
+    @Test
+    fun `quiet hours apply to the terminal bell`() {
+        val loud =
+            quietOn
+                .withChannel(NotificationKind.TERMINAL_BELL, SOUND, true)
+                .withChannel(NotificationKind.TERMINAL_BELL, VOICE, true)
+
+        decideTerminalBell(loud, ctx(localTime = night)).map { it.channel } shouldContainExactly listOf(POPUP)
+        decideTerminalBell(loud, ctx()).map { it.channel } shouldContainExactly listOf(POPUP, VOICE, SOUND)
+    }
+
+    @Test
+    fun `default settings are never quiet at night`() {
+        channels(needsInput, context = ctx(localTime = LocalTime.of(3, 0))) shouldContainExactly
+            listOf(POPUP, VOICE, SOUND, DOCK_BADGE)
+        channels(needsInput, context = ctx(localTime = night)) shouldContainExactly
+            listOf(POPUP, VOICE, SOUND, DOCK_BADGE)
     }
 
     companion object {

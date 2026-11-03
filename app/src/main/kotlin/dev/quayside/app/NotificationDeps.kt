@@ -11,6 +11,7 @@ import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import java.time.ZoneId
 
 /**
  * Where the popup action Attach goes. The center lives longer than the window, so it calls [attach]; the window sets
@@ -56,6 +57,7 @@ internal fun notificationDeps(
             settings,
             scope,
             core.clock,
+            ZoneId::systemDefault,
             sessions.monitor.events,
             { id ->
                 projects.projects.value

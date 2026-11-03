@@ -3,6 +3,7 @@ package dev.quayside.notifications.impl
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.storage.JsonStorage
 import dev.quayside.notifications.api.NotificationKind
+import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
 import io.kotest.matchers.shouldBe
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.LocalTime
 
 /** The factory against a real directory: settings written by one instance are read by the next. */
 class NotificationSettingsModuleTest {
@@ -52,5 +54,18 @@ class NotificationSettingsModuleTest {
             val reopened = notificationSettingsModule(storage, NoOpLogger).settings.value
 
             reopened.speech shouldBe speech
+        }
+
+    @Test
+    @Suppress("ForbiddenMethodCall", "InjectDispatcher")
+    fun `quiet hours survive reopening`(): Unit =
+        runBlocking {
+            val storage = JsonStorage(tempDir, Dispatchers.IO)
+            val quiet = QuietHours(true, LocalTime.of(21, 30), LocalTime.of(6, 15), respectFocus = false)
+            notificationSettingsModule(storage, NoOpLogger).update { it.copy(quietHours = quiet) }
+
+            val reopened = notificationSettingsModule(storage, NoOpLogger).settings.value
+
+            reopened.quietHours shouldBe quiet
         }
 }

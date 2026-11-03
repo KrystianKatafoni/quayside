@@ -8,6 +8,7 @@ import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.NotificationSettingsError
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -15,6 +16,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import java.time.LocalTime
 
 /** The logic of the notification settings dialog over a fake repo (FR-N1, FR-N2, plan AM-704 part A). */
 class NotificationSettingsControllerTest {
@@ -94,6 +96,21 @@ class NotificationSettingsControllerTest {
             act { controller.save() }
 
             repo.settings.value shouldBe saved.copy(voice = false)
+        }
+
+    @Test
+    fun `save keeps quiet hours the dialog does not show`() =
+        runTest {
+            val quiet = QuietHours(true, LocalTime.of(21, 30), LocalTime.of(6, 15), respectFocus = false)
+            val repo = scripted(saved.copy(quietHours = quiet))
+            val controller = controllerOver(repo)
+            act { controller.open() }
+            act { controller.edit { it.copy(voice = false) } }
+
+            act { controller.save() }
+
+            repo.settings.value.quietHours shouldBe quiet
+            repo.settings.value shouldBe saved.copy(voice = false, quietHours = quiet)
         }
 
     @Test

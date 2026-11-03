@@ -26,7 +26,7 @@ internal class DefaultNotificationCenter(
     private val settings: NotificationSettingsRepo,
     private val manager: PopupManager,
     private val projectName: (ProjectId?) -> String?,
-    private val context: () -> DeliveryContext = { DeliveryContext(appActive = false, microphoneActive = false) },
+    private val context: () -> DeliveryContext,
     private val voice: (Delivery, String?) -> Unit = { _, _ -> },
 ) : NotificationCenter {
     private val flow =

@@ -7,6 +7,7 @@ import dev.quayside.notifications.api.PopupDuration
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.PopupStyle
+import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
 import io.kotest.assertions.throwables.shouldThrow
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
+import java.time.LocalTime
 
 /** `data` of `notifications.json`: round trip, defaults for missing keys and rejection of wrong types. */
 class NotificationSettingsSerializerTest {
@@ -217,5 +219,88 @@ class NotificationSettingsSerializerTest {
     )
     fun `wrong type of a speech value throws`(data: String) {
         shouldThrow<SerializationException> { decode(data) }
+    }
+
+    @Test
+    fun `round trips quiet hours`() {
+        val quiet = QuietHours(true, LocalTime.of(21, 30), LocalTime.of(6, 15), respectFocus = false)
+
+        val text = Json.encodeToString(NotificationSettingsSerializer, NotificationSettings(quietHours = quiet))
+
+        decode(text).quietHours shouldBe quiet
+        text shouldContain """"quietHours""""
+        text shouldContain """"from":"21:30""""
+        text shouldContain """"to":"06:15""""
+    }
+
+    @Test
+    fun `missing quiet hours gives defaults`() {
+        decode("""{"popups": false}""").quietHours shouldBe QuietHours()
+        decode("""{"quietHours": {}}""").quietHours shouldBe QuietHours()
+    }
+
+    @Test
+    fun `a partial quiet hours section keeps the other defaults`() {
+        decode("""{"quietHours": {"enabled": true}}""").quietHours shouldBe QuietHours(enabled = true)
+    }
+
+    @ParameterizedTest(name = "[{0}]")
+    @ValueSource(strings = ["24:00", "07:60", "7", "abc", "", "07:00:30", "-1:00", "07:0"])
+    fun `bad time text gives the default`(text: String) {
+        val quiet = decode("""{"quietHours": {"enabled": true, "from": "$text", "to": "$text"}}""").quietHours
+
+        quiet shouldBe QuietHours(enabled = true)
+    }
+
+    @Test
+    fun `one bad time keeps the other`() {
+        decode("""{"quietHours": {"from": "abc", "to": "06:00"}}""").quietHours shouldBe
+            QuietHours(to = LocalTime.of(6, 0))
+        decode("""{"quietHours": {"from": "21:00", "to": "25:00"}}""").quietHours shouldBe
+            QuietHours(from = LocalTime.of(21, 0))
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+        strings = [
+            """{"quietHours": []}""",
+            """{"quietHours": {"enabled": "yes"}}""",
+            """{"quietHours": {"enabled": 1}}""",
+            """{"quietHours": {"enabled": "true"}}""",
+            """{"quietHours": {"respectFocus": "no"}}""",
+            """{"quietHours": {"respectFocus": "false"}}""",
+            """{"quietHours": {"from": 7}}""",
+            """{"quietHours": {"from": null}}""",
+            """{"quietHours": {"to": true}}""",
+            """{"quietHours": {"to": null}}""",
+        ],
+    )
+    fun `wrong type in quiet hours throws`(data: String) {
+        shouldThrow<SerializationException> { decode(data) }
+    }
+
+    @Test
+    fun `the error of a wrong quiet hours value does not quote it`() {
+        val error = shouldThrow<SerializationException> { decode("""{"quietHours": {"enabled": "yes"}}""") }
+
+        error.message.orEmpty() shouldNotContain "yes"
+    }
+
+    @Test
+    fun `default quiet hours are not written`() {
+        val text = Json.encodeToString(NotificationSettingsSerializer, NotificationSettings())
+
+        text shouldNotContain "quietHours"
+    }
+
+    @Test
+    fun `non default quiet hours are written`() {
+        val text =
+            Json.encodeToString(
+                NotificationSettingsSerializer,
+                NotificationSettings(quietHours = QuietHours(enabled = true)),
+            )
+
+        text shouldContain """"quietHours""""
     }
 }

@@ -44,6 +44,8 @@ public enum class NotificationChannel {
  * @property runningLongMinutes how long a session works before [NotificationKind.RUNNING_LONG] (N in
  *   FR-N2), within [MIN_RUNNING_LONG_MINUTES]..[MAX_RUNNING_LONG_MINUTES].
  * @property popup how popups look and behave (FR-N3).
+ * @property speech how spoken messages sound (FR-N4, FR-N5).
+ * @property quietHours do-not-disturb hours and macOS Focus (FR-N6).
  */
 public data class NotificationSettings(
     val popups: Boolean = true,
@@ -52,6 +54,7 @@ public data class NotificationSettings(
     val runningLongMinutes: Int = DEFAULT_RUNNING_LONG_MINUTES,
     val popup: PopupSettings = PopupSettings(),
     val speech: SpeechSettings = SpeechSettings(),
+    val quietHours: QuietHours = QuietHours(),
 ) {
     init {
         require(runningLongMinutes in MIN_RUNNING_LONG_MINUTES..MAX_RUNNING_LONG_MINUTES) {

@@ -58,5 +58,5 @@ Wygląd popupu: kolorowy pasek stanu, nazwa projektu i czas, nazwa sesji (mono),
 | Projekt (przykład) | Profil | Uwagi |
 | --- | --- | --- |
 | plantpulse-core | Domyślny | wszystkie kanały jak wyżej |
-| plantpulse-docs | Tylko błędy, bez głosu | głos po niemiecku (Anna) |
+| plantpulse-docs | Tylko błędy | głos błędu z macierzy zostaje, czytany po niemiecku (Anna) |
 | dotfiles | Wyciszony | tylko badge w Docku |

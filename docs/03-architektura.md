@@ -92,7 +92,7 @@ Poniżej logiczne odpowiedzialności. Docelowy podział na moduły Gradle (`agen
 | Moduł | Odpowiedzialność |
 | --- | --- |
 | `ClaudeCli` | Jedyne miejsce wywołujące `claude`; wykrywanie wersji i ścieżki binarki przez login shell |
-| `ProjectStore` | Lista projektów, dodawanie z walidacją, usuwanie, wyjątki powiadomień per projekt |
+| `ProjectStore` | Lista projektów, dodawanie z walidacją, usuwanie (wyjątki powiadomień per projekt trzyma `notifications.json`) |
 | `SessionMonitor` | Polling `agents --json`, scalanie z hookami, `StateFlow<List<Session>>` dla UI |
 | `HookServer` | Ktor na `127.0.0.1:47321`, weryfikacja tokenu, publikacja zdarzeń na `SharedFlow` |
 | `Summarizer` | Podsumowania z `last_assistant_message`; opcjonalnie `claude -p --model haiku` po każdym `Stop` |
@@ -104,8 +104,8 @@ Poniżej logiczne odpowiedzialności. Docelowy podział na moduły Gradle (`agen
 ## Model danych (szkic)
 
 ```kotlin
-data class Project(val id: String, val path: Path, val displayName: String, val addedAt: Instant,
-                   val notifyProfile: NotifyProfile = NotifyProfile.DEFAULT)
+data class Project(val id: String, val path: Path, val displayName: String, val addedAt: Instant)
+// Wyjątki powiadomień per projekt (profil, głos): NotificationSettings.projects w notifications.json, klucz = ProjectId
 
 enum class SessionState { WORKING, BLOCKED_INPUT, BLOCKED_PERMISSION, DONE, FAILED, STOPPED }
 
@@ -126,8 +126,8 @@ data class Theme(val scheme: String = "plex", val typography: String = "plex",
 
 | Plik | Zawartość |
 | --- | --- |
-| `~/Library/Application Support/Quayside/projects.json` | Projekty i wyjątki per projekt |
-| `…/notifications.json` | Macierz reguł, ustawienia głosu i popupu, ciche godziny |
+| `~/Library/Application Support/Quayside/projects.json` | Lista projektów |
+| `…/notifications.json` | Macierz reguł, ustawienia głosu i popupu, ciche godziny, wyjątki per projekt |
 | `…/terminal.json` | Profile powłoki, font, skróty |
 | `…/theme.json` | Wybrany schemat, typografia, skala, dzień/noc, własne schematy |
 | `~/.claude/settings.json` | Hooki HTTP (dopisywane za zgodą, z backupem) |

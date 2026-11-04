@@ -20,6 +20,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.agentruntime.api.FakeHookInstaller
+import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.commandpalette.api.FakeCommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.domain.NoOpLogger
@@ -105,29 +106,40 @@ internal class WindowSetup(
 internal fun ComposeUiTest.showWindowOf(setup: WindowSetup): CommandPaletteController {
     val built = mutableListOf<CommandPaletteController>()
     val keys = WindowKeys()
+    val look = appearanceModule().catalog.defaultLook()
     setContent {
-        val scope = rememberCoroutineScope()
-        with(remember { windowCore(setup, scope) { built += it } }) {
-            val terminal = rememberTerminalPart(setup, scope)
-            val agent =
-                remember { AgentWiring(setup, projects, missionControl, scope).also { it.register(registry, palette) } }
-            PaletteKeys(keys, palette)
-            KeysBox(keys) {
-                QuaysideApp(
-                    projects = projects,
-                    missionControl = missionControl,
-                    palette = palette,
-                    terminalPanel = terminalPanel(terminal.controller, setup.terminal),
-                    attacher = terminal.wiring.attacher,
-                    onNewAgent = agent::openForSelection,
-                )
-                SettingsHosts(setup.settings, registry, WindowParts(projects, missionControl, scope))
-                NewAgentDialog(agent.newAgent)
-            }
-        }
+        AppTheme(look) { WindowContent(setup, keys) { built += it } }
     }
     waitUntil { built.isNotEmpty() }
     return built.single()
+}
+
+/** The window content of [setup] under [AppTheme]; [onPalette] gets the palette for the test. */
+@Composable
+private fun WindowContent(
+    setup: WindowSetup,
+    keys: WindowKeys,
+    onPalette: (CommandPaletteController) -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    with(remember { windowCore(setup, scope, onPalette) }) {
+        val terminal = rememberTerminalPart(setup, scope)
+        val agent =
+            remember { AgentWiring(setup, projects, missionControl, scope).also { it.register(registry, palette) } }
+        PaletteKeys(keys, palette)
+        KeysBox(keys) {
+            QuaysideApp(
+                projects = projects,
+                missionControl = missionControl,
+                palette = palette,
+                terminalPanel = terminalPanel(terminal.controller, setup.terminal),
+                attacher = terminal.wiring.attacher,
+                onNewAgent = agent::openForSelection,
+            )
+            SettingsHosts(setup.settings, registry, WindowParts(projects, missionControl, scope))
+            NewAgentDialog(agent.newAgent)
+        }
+    }
 }
 
 /** The controllers every window has, and the registry the palette reads: the sidebar, Mission Control, the palette. */

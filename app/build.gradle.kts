@@ -37,11 +37,17 @@ dependencies {
     // Session summaries from the last message of a turn (AM-604).
     implementation(project(":feature:summaries:api"))
     implementation(project(":feature:summaries:impl"))
+    // AmTheme over both windows, and the default look from the built-in catalog (AM-806).
+    implementation(project(":core:design-system"))
+    implementation(project(":feature:appearance:api"))
+    implementation(project(":feature:appearance:impl"))
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.slf4j.api)
     runtimeOnly(libs.slf4j.simple)
 
     testImplementation(project(":core:testing"))
+    // AmTestTheme for screens shown without a window (AM-806).
+    testImplementation(testFixtures(project(":core:design-system")))
     testImplementation(libs.compose.ui.test)
     // FakeProjectsApi and FakeProjectInspector for the window test.
     testImplementation(testFixtures(project(":feature:projects:api")))

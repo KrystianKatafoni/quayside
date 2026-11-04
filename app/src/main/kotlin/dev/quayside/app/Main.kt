@@ -10,6 +10,7 @@ import dev.quayside.agentruntime.impl.agentRuntimeModule
 import dev.quayside.agentruntime.impl.hookEventSourceModule
 import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.agentruntime.impl.oneShotPromptModule
+import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
@@ -53,19 +54,23 @@ fun main() {
     val keys = WindowKeys()
     // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
     System.setProperty("compose.interop.blending", "true")
+    val look = appearanceModule().catalog.defaultLook()
     application {
-        Window(
-            onCloseRequest = {
-                modules.terminal.api.close()
-                exitApplication()
-            },
-            onKeyEvent = keys::onKeyEvent,
-            title = Strings["app.title"],
-            state = rememberWindowState(size = DpSize(width = 1280.dp, height = 800.dp)),
-        ) {
-            MainWindow(core, modules, keys, hooks)
+        // Window passes the composition locals of its parent composition to its content, so one AppTheme is enough.
+        AppTheme(look) {
+            Window(
+                onCloseRequest = {
+                    modules.terminal.api.close()
+                    exitApplication()
+                },
+                onKeyEvent = keys::onKeyEvent,
+                title = Strings["app.title"],
+                state = rememberWindowState(size = DpSize(width = 1280.dp, height = 800.dp)),
+            ) {
+                MainWindow(core, modules, keys, hooks)
+            }
+            PopupWindow(modules.notifications.popups)
         }
-        PopupWindow(modules.notifications.popups)
     }
 }
 

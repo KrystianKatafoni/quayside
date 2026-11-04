@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.v2.runComposeUiTest
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.LogLevel
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.SessionId
@@ -128,7 +129,7 @@ class SessionAttacherTest {
                 missionControl = remember { missionControl(scope) }
                 val terminal = remember { TerminalController(terminals, scope, NoOpLogger, PlainShellStart()) }
                 attacher = remember { SessionAttacher(missionControl, terminal, ::attachCommand, log) }
-                TerminalArea(terminal, { false }, Modifier, terminals.paneContent)
+                AmTestTheme { TerminalArea(terminal, { false }, Modifier, terminals.paneContent) }
             }
             waitForIdle()
 
@@ -194,7 +195,7 @@ class SessionAttacherTest {
                 missionControl = remember { missionControl(scope, SessionState.AwaitingPermission("Bash")) }
                 val terminal = remember { TerminalController(terminals, scope, NoOpLogger, PlainShellStart()) }
                 attacher = remember { SessionAttacher(missionControl, terminal, ::attachCommand, log) }
-                TerminalArea(terminal, { false }, Modifier, terminals.paneContent)
+                AmTestTheme { TerminalArea(terminal, { false }, Modifier, terminals.paneContent) }
             }
             waitForIdle()
 

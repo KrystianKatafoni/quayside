@@ -1,5 +1,7 @@
 package dev.quayside.app
 
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -7,6 +9,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
@@ -23,8 +26,11 @@ import dev.quayside.agentruntime.api.HookError
 import dev.quayside.agentruntime.api.HookKind
 import dev.quayside.agentruntime.api.HookScope
 import dev.quayside.agentruntime.api.HookStatus
+import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.commandpalette.ui.CommandPaletteController
+import dev.quayside.core.designsystem.toColor
 import dev.quayside.projects.api.FakeProjectsApi
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
@@ -198,6 +204,32 @@ class HookSetupWindowTest {
             onAllNodes(hasText("secret-reason", substring = true)).assertCountEquals(0)
             onNodeWithTag(HookTags.DIALOG).assertExists()
             onNodeWithTag(HookTags.INSTALL).assertIsEnabled()
+        }
+
+    @Test
+    fun `NFR-6 failed install notice is drawn in the err token`() =
+        runComposeUiTest {
+            // Given an install that fails, in the real plex theme
+            val err =
+                appearanceModule()
+                    .catalog
+                    .defaultLook()
+                    .colors.status.err
+            hooks.failNext(HookError.WriteFailed(Path.of("/home/test/.claude/settings.json"), "reason"))
+            openHooks(window())
+            awaitStatus(Strings["hooks.status.notInstalled"])
+
+            // When the user clicks "Zainstaluj" and the failure notice shows
+            onNodeWithTag(HookTags.INSTALL).performClick()
+            waitUntilExactlyOneExists(hasTestTag(HookTags.NOTICE), WAIT_MS)
+
+            // Then the notice text has the colour err
+            val image = onNodeWithTag(HookTags.NOTICE).captureToImage().toPixelMap()
+            val drawn =
+                (0 until image.width).flatMapTo(
+                    HashSet(),
+                ) { x -> (0 until image.height).map { image[x, it].toArgb() } }
+            drawn shouldContain err.toColor().toArgb()
         }
 
     @Test

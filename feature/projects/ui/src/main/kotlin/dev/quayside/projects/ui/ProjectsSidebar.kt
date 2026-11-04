@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,15 +22,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import dev.quayside.core.designsystem.AmButton
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.toColor
 import dev.quayside.projects.api.Project
 
 /** The sidebar with its dialogs; stateless apart from [controller]. */
@@ -48,15 +51,18 @@ public fun ProjectsSidebar(
                 Modifier
                     .width(width = 260.dp)
                     .fillMaxHeight()
-                    .background(color = SidebarColors.background)
+                    .background(color = panelColor())
                     .padding(all = 12.dp)
                     .testTag(ProjectsTags.SIDEBAR),
             verticalArrangement = Arrangement.spacedBy(space = 8.dp),
         ) {
-            Label(ProjectsStrings["sidebar.title"], SidebarColors.secondaryText)
+            AmText(
+                ProjectsStrings["sidebar.title"],
+                color = mutedColor(),
+            )
             state.banner?.let { Banner(it) { controller.onEvent(SidebarEvent.DismissBanner) } }
             ProjectList(state, controller)
-            TextButton(ProjectsStrings["sidebar.add"], ProjectsTags.ADD_BUTTON, focusable = false) {
+            TextButton(ProjectsStrings["sidebar.add"], ProjectsTags.ADD_BUTTON) {
                 controller.onIntent(ProjectsIntent.AddRequested)
             }
         }
@@ -72,7 +78,10 @@ private fun ColumnScope.ProjectList(
     val list = Modifier.weight(weight = 1f).fillMaxWidth()
     if (state.projects.isEmpty()) {
         Box(modifier = list.testTag(ProjectsTags.EMPTY), contentAlignment = Alignment.Center) {
-            Label(ProjectsStrings["sidebar.empty"], SidebarColors.secondaryText)
+            AmText(
+                ProjectsStrings["sidebar.empty"],
+                color = mutedColor(),
+            )
         }
     } else {
         Column(modifier = list.verticalScroll(rememberScrollState())) {
@@ -112,16 +121,13 @@ private fun ProjectRow(
                 .testTag(ProjectsTags.row(project.id))
                 .focusProperties { canFocus = false }
                 .selectable(selected = selected, onClick = { onEvent(SidebarEvent.Select(project.id)) })
-                .background(color = if (selected) SidebarColors.selection else Color.Transparent)
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .background(
+                    color = if (selected) selColor() else Color.Transparent,
+                ).padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(weight = 1f)) {
-            BasicText(
-                text = project.displayName,
-                style = TextStyle(color = SidebarColors.text, fontSize = 14.sp),
-                maxLines = 1,
-            )
+            AmText(project.displayName)
             Counters(badges)
         }
         RowMenu(project, { onEvent(SidebarEvent.RenameRequested(project.id)) }, onRemove)
@@ -134,14 +140,16 @@ private fun Counters(badges: List<UiText>) {
     if (badges.isEmpty()) return
     Row(horizontalArrangement = Arrangement.spacedBy(space = 8.dp)) {
         badges.forEach { badge ->
-            val color = badgeColor(badge)
-            Label(ProjectsStrings.format(badge), color)
+            AmText(ProjectsStrings.format(badge), role = TextRole.CAPTION, color = badgeColor(badge))
         }
     }
 }
 
-private fun badgeColor(badge: UiText): Color =
-    if (badge.key == CountBadges.WAITING_KEY) SidebarColors.attention else SidebarColors.secondaryText
+@Composable
+private fun badgeColor(badge: UiText): Color {
+    val colors = AmTheme.colors
+    return (if (badge.key == CountBadges.WAITING_KEY) colors.status.warn else colors.content.muted).toColor()
+}
 
 /** The ⋯ button of a row with its menu: rename and remove. */
 @Composable
@@ -152,7 +160,7 @@ private fun RowMenu(
 ) {
     var open by remember { mutableStateOf(false) }
     Box {
-        TextButton("⋯", ProjectsTags.rowMenu(project.id), focusable = false) { open = true }
+        TextButton("⋯", ProjectsTags.rowMenu(project.id)) { open = true }
         if (open) {
             Popup(
                 alignment = Alignment.TopEnd,
@@ -160,11 +168,11 @@ private fun RowMenu(
                 properties = PopupProperties(focusable = true),
             ) {
                 Column {
-                    TextButton(ProjectsStrings["row.rename"], ProjectsTags.ROW_MENU_RENAME) {
+                    MenuButton("row.rename", ProjectsTags.ROW_MENU_RENAME) {
                         open = false
                         onRename()
                     }
-                    TextButton(ProjectsStrings["row.remove"], ProjectsTags.ROW_MENU_REMOVE) {
+                    MenuButton("row.remove", ProjectsTags.ROW_MENU_REMOVE) {
                         open = false
                         onRemove()
                     }
@@ -172,6 +180,15 @@ private fun RowMenu(
             }
         }
     }
+}
+
+@Composable
+private fun MenuButton(
+    key: String,
+    tag: String,
+    onClick: () -> Unit,
+) {
+    AmButton(label = ProjectsStrings[key], onClick = onClick, modifier = Modifier.testTag(tag))
 }
 
 @Composable
@@ -183,62 +200,37 @@ private fun Banner(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(color = SidebarColors.warning)
+                .background(color = warnBgColor())
                 .padding(all = 8.dp)
                 .testTag(ProjectsTags.BANNER),
         verticalArrangement = Arrangement.spacedBy(space = 4.dp),
     ) {
-        Label(ProjectsStrings.format(text), SidebarColors.text)
-        TextButton(
-            ProjectsStrings["banner.dismiss"],
-            ProjectsTags.BANNER_DISMISS,
-            focusable = false,
-            onClick = onDismiss,
-        )
+        AmText(ProjectsStrings.format(text), maxLines = Int.MAX_VALUE)
+        TextButton(ProjectsStrings["banner.dismiss"], ProjectsTags.BANNER_DISMISS, onClick = onDismiss)
     }
 }
 
-/** A clickable text: Material is not a dependency (AM-304 plan, decision 4). A click focuses it only if [focusable].
- * Pass `focusable = false` outside a focusable `Popup`; otherwise the button keeps the focus after a click and eats the
- * window shortcuts `⏎` and space.
+/**
+ * A clickable text on a raised background: Material is not a dependency (AM-304 plan, decision 4). Never focusable:
+ * outside a focusable `Popup` a focused button would keep the focus after a click and eat the window shortcuts `⏎`
+ * and space. Focusable buttons of the dialogs and of the row menu are `AmButton`.
  */
 @Composable
 internal fun TextButton(
     text: String,
     tag: String,
-    focusable: Boolean = true,
     onClick: () -> Unit,
 ) {
     Box(
         modifier =
             Modifier
                 .testTag(tag)
-                .focusProperties { canFocus = focusable }
+                .focusProperties { canFocus = false }
+                .clip(AmTheme.shape.corner)
                 .clickable(role = Role.Button, onClick = onClick)
-                .background(color = SidebarColors.button)
+                .background(color = raisedColor())
                 .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
-        BasicText(text = text, style = TextStyle(color = SidebarColors.text, fontSize = 13.sp))
+        AmText(text)
     }
-}
-
-@Composable
-internal fun Label(
-    text: String,
-    color: Color = SidebarColors.text,
-) {
-    BasicText(text = text, style = TextStyle(color = color, fontSize = 13.sp))
-}
-
-/** Placeholder colors until `core:design-system` and `AmTheme` exist (AM-802). */
-internal object SidebarColors {
-    val background = Color(color = 0xFF2C2C2E)
-    val selection = Color(color = 0xFF3A3A3C)
-    val button = Color(color = 0xFF48484A)
-    val warning = Color(color = 0xFF5C4400)
-    val scrim = Color(color = 0x99000000)
-    val dialog = Color(color = 0xFF2C2C2E)
-    val text = Color(color = 0xFFF2F2F7)
-    val secondaryText = Color(color = 0xFF8E8E93)
-    val attention = Color(color = 0xFFFFB340)
 }

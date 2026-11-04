@@ -10,6 +10,8 @@ dependencies {
     // Session counts per project and "stop all sessions in a project" for the remove dialog (FR-P6, FR-P4, AM-305).
     implementation(project(":feature:sessions:api"))
     implementation(project(":core:domain"))
+    // Colours, shape and typography of the screens come from AmTheme (AM-806, docs/11 section 3, rule 1).
+    implementation(project(":core:design-system"))
 
     // FakeProjectsApi, FakeProjectInspector and aProject for the controller and UI tests.
     testImplementation(testFixtures(project(":feature:projects:api")))
@@ -17,6 +19,8 @@ dependencies {
     testImplementation(testFixtures(project(":feature:sessions:api")))
     // RecordingLogger and aSessionId.
     testImplementation(project(":core:testing"))
+    // AmTestTheme and SampleTokens: screens are shown in the plex theme.
+    testImplementation(testFixtures(project(":core:design-system")))
     // Compose UI tests (runComposeUiTest) with the desktop runtime of the current OS.
     testImplementation(libs.compose.ui.test)
     testImplementation(compose.desktop.currentOs)

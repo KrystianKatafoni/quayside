@@ -13,6 +13,9 @@ import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import java.awt.Font
 import java.awt.font.FontRenderContext
+import java.net.URI
+import java.nio.file.FileSystemNotFoundException
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -239,7 +242,22 @@ class BundledFontsTest {
         private fun fontsRoot(): Path {
             val url =
                 checkNotNull(BundledFontsTest::class.java.classLoader.getResource("fonts")) { "no fonts/ resource" }
-            return Paths.get(url.toURI())
+            return pathOf(url.toURI())
+        }
+
+        /**
+         * With `java-test-fixtures` the test classpath carries the main output as a jar (AM-806), so the folder may
+         * live in a zip file system; open it once and reuse it.
+         */
+        private fun pathOf(uri: URI): Path {
+            if (uri.scheme != "jar") return Paths.get(uri)
+            val zip =
+                try {
+                    FileSystems.getFileSystem(uri)
+                } catch (_: FileSystemNotFoundException) {
+                    FileSystems.newFileSystem(uri, emptyMap<String, Any>())
+                }
+            return zip.getPath(uri.schemeSpecificPart.substringAfter("!"))
         }
 
         private fun sourcesPath(): Path = fontsRoot().resolve("SOURCES.md")
@@ -263,7 +281,7 @@ class BundledFontsTest {
             val root =
                 BundledFontsTest::class.java.classLoader
                     .getResource("fonts")
-                    ?.let { Paths.get(it.toURI()) }
+                    ?.let { pathOf(it.toURI()) }
             val files =
                 root
                     ?.let { r -> Files.walk(r).use { s -> s.filter { it.extension == "ttf" }.sorted().toList() } }

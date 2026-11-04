@@ -10,13 +10,19 @@ import androidx.compose.ui.text.style.TextOverflow
 /** Colour that [AmText] uses when it gets none; set by containers such as [AmModeBar]. Null = content.text. */
 internal val LocalTextColor = compositionLocalOf<Color?> { null }
 
-/** One line of text in [role]; [color] null = the colour of the container, by default content.text. */
+/**
+ * One block of text in [role]; [color] null = the colour of the container (content.text by default).
+ * [maxLines] 1 = one line with ellipsis (default); more lines wrap and end with an ellipsis.
+ *
+ * @throws IllegalArgumentException when [maxLines] is less than 1.
+ */
 @Composable
 public fun AmText(
     text: String,
     modifier: Modifier = Modifier,
     role: TextRole = TextRole.BODY,
     color: Color? = null,
+    maxLines: Int = 1,
 ) {
     val tint =
         color ?: LocalTextColor.current ?: AmTheme.colors.content.text
@@ -25,7 +31,7 @@ public fun AmText(
         text = text,
         modifier = modifier,
         style = AmTheme.typography.style(role).copy(color = tint),
-        maxLines = 1,
+        maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
     )
 }

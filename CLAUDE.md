@@ -117,3 +117,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Zasoby zewnętrzne z sumami kontrolnymi (fonty, licencje): oznacz `-text` w `.gitattributes`; `* text=auto eol=lf` zmienia CRLF w licencjach i sumy z SOURCES.md przestają pasować; sprawdzaj sumy z blobów git (`git show HEAD:<plik> | shasum -a 256`), nie z dysku.
 - Przekazanie tokenu kształtu/cienia do API Compose wydziel do `internal` funkcji i przypnij testem każde pole — test pikselowy „jest ciemniej” nie wykryje zamiany offsetu, blur ani spread.
 - Funkcja wyprowadzająca, która rzuca dla części wejść (brak trójki statusów dla akcentu o odcieniu ok. 350–10°), potrzebuje testu ścieżki błędu i zdania w KDoc, że wyjątek dotyczy tylko stałych katalogu (dla theme.json — `Outcome`).
+- Audyt kontrastu musi obejmować pary faktycznie rysowane na ekranach (muted i statusy na sel/warnBg, nie tylko bg/panel) — inaczej wybór innego motywu w AM-803 psuje NFR-6 bez czerwonego testu.
+- Zmiana ekranu na nowe tokeny: kolory przekazywane do composable (kropka statusu, pasek popupu, glif tonu) mają testy pikselowe, a „przy okazji” formatowanie obcych plików (ktlint) cofnij — nie należy do zadania.

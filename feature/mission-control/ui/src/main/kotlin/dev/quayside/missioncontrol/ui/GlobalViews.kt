@@ -16,6 +16,10 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.toColor
 import dev.quayside.missioncontrol.ui.MissionControlIntent.ShowView
 
 /**
@@ -28,7 +32,11 @@ public fun GlobalViews(
     modifier: Modifier = Modifier,
 ) {
     val state by controller.state.collectAsState()
-    Column(modifier = modifier.width(width = SIDEBAR_WIDTH).background(color = Colors.panel)) {
+    Column(
+        modifier =
+            modifier.width(width = SIDEBAR_WIDTH).background(color = panelColor()),
+    ) {
+        val surfaces = AmTheme.colors.surfaces
         state.views.forEach { entry ->
             Row(
                 modifier =
@@ -38,12 +46,12 @@ public fun GlobalViews(
                         .focusProperties { canFocus = false } // else it would consume space and Enter
                         .selectable(selected = entry.selected, role = Role.Tab) {
                             controller.onIntent(ShowView(entry.view))
-                        }.background(color = if (entry.selected) Colors.selection else Colors.panel)
+                        }.background(color = (if (entry.selected) surfaces.sel else surfaces.panel).toColor())
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
             ) {
-                Label(MissionControlStrings["view.${entry.view.name.lowercase()}"])
-                Label("${entry.count}", Colors.of(toneOf(entry.view)), mono = true)
+                AmText(MissionControlStrings["view.${entry.view.name.lowercase()}"])
+                AmText("${entry.count}", role = TextRole.CODE, color = toneOf(entry.view).tint())
             }
         }
     }
@@ -79,7 +87,7 @@ internal fun GlobalPage(
 @Composable
 private fun GlobalHeader(page: Screen.Global) {
     Column(modifier = Modifier.testTag(MissionControlTags.HEADER)) {
-        Label(MissionControlStrings["view.${page.view.name.lowercase()}"], size = 18)
-        Label(MissionControlStrings.formatted("header.global", page.sessions), Colors.secondary)
+        AmText(MissionControlStrings["view.${page.view.name.lowercase()}"], role = TextRole.TITLE)
+        AmText(MissionControlStrings.formatted("header.global", page.sessions), color = mutedColor())
     }
 }

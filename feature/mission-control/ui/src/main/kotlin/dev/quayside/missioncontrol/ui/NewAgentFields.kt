@@ -10,6 +10,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.TextRole
 import dev.quayside.sessions.api.SessionPermissionMode
 
 /** The fields of the dialog in the order of Tab: project, prompt, name, subagent, model, permission mode. */
@@ -88,8 +90,8 @@ private fun Field(
     content: @Composable () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(space = 2.dp)) {
-        Label(MissionControlStrings[labelKey], NewAgentColors.secondary, size = 12)
-        hint?.let { Label(MissionControlStrings[it], NewAgentColors.secondary, size = 12) }
+        AmText(MissionControlStrings[labelKey], role = TextRole.CAPTION, color = mutedColor())
+        hint?.let { AmText(MissionControlStrings[it], role = TextRole.CAPTION, color = mutedColor()) }
         content()
     }
 }

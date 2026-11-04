@@ -18,6 +18,7 @@ import androidx.compose.ui.test.rightClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
@@ -58,20 +59,22 @@ internal class SessionOpenScreenTest {
             )
         val monitor = ScriptedSessionMonitor(SessionsSnapshot(sessions, SnapshotStatus.Fresh(T0)))
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    MissionControlController(
-                        SessionsApi(monitor, FakeSessions()),
-                        FakeProjectsApi(initial = listOf(project)),
-                        MutableStateFlow(project.id),
-                        TestClock(T0.plusSeconds(600)),
-                        scope,
-                        NoOpLogger,
-                        tick = 1.hours,
-                    )
-                }
-            MissionControl(controller, onAttach = { opened += "attach" }, onReply = { opened += "reply" })
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        MissionControlController(
+                            SessionsApi(monitor, FakeSessions()),
+                            FakeProjectsApi(initial = listOf(project)),
+                            MutableStateFlow(project.id),
+                            TestClock(T0.plusSeconds(600)),
+                            scope,
+                            NoOpLogger,
+                            tick = 1.hours,
+                        )
+                    }
+                MissionControl(controller, onAttach = { opened += "attach" }, onReply = { opened += "reply" })
+            }
         }
         return monitor
     }

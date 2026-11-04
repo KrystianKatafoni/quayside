@@ -21,6 +21,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
@@ -74,20 +75,22 @@ internal class SessionActionsScreenTest {
         commands: SessionCommands = sessions,
     ) {
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    MissionControlController(
-                        SessionsApi(monitor = sessions, commands = commands),
-                        FakeProjectsApi(initial = listOf(project)),
-                        MutableStateFlow(project.id),
-                        TestClock(T0.plusSeconds(60)),
-                        scope,
-                        NoOpLogger,
-                        tick = 1.hours,
-                    )
-                }
-            MissionControl(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        MissionControlController(
+                            SessionsApi(monitor = sessions, commands = commands),
+                            FakeProjectsApi(initial = listOf(project)),
+                            MutableStateFlow(project.id),
+                            TestClock(T0.plusSeconds(60)),
+                            scope,
+                            NoOpLogger,
+                            tick = 1.hours,
+                        )
+                    }
+                MissionControl(controller)
+            }
         }
     }
 

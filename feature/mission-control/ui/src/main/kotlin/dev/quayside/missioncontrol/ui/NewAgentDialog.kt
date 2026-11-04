@@ -1,6 +1,5 @@
 package dev.quayside.missioncontrol.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -19,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
@@ -31,11 +27,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import dev.quayside.core.designsystem.AmPanel
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.amScrim
 import dev.quayside.sessions.api.SessionPermissionMode
 
 /** The "Nowy agent ⌘N" dialog of [controller]; draws nothing while it is closed. */
@@ -57,7 +55,7 @@ private fun NewAgentPopup(
         properties = PopupProperties(focusable = true),
     ) {
         Box(
-            modifier = Modifier.fillMaxSize().background(color = Color(color = 0x99000000)),
+            modifier = Modifier.fillMaxSize().amScrim(),
             contentAlignment = Alignment.Center,
         ) {
             Panel(state, onEvent)
@@ -76,20 +74,19 @@ private fun Panel(
 ) {
     val prompt = remember { FocusRequester() }
     LaunchedEffect(state.busy, state.problem) { if (!state.busy) prompt.requestFocus() }
-    Column(
+    AmPanel(
         modifier =
             Modifier
                 .width(width = 520.dp)
-                .background(color = NewAgentColors.panel, shape = RoundedCornerShape(size = 10.dp))
-                .padding(all = 16.dp)
                 .onPreviewKeyEvent { windowKey(it, onEvent) }
                 .testTag(MissionControlTags.NEW_AGENT_DIALOG),
-        verticalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
-        Label(MissionControlStrings["newAgent.title"], NewAgentColors.primary, size = 18)
-        NewAgentFields(state, prompt, onEvent)
-        Messages(state)
-        Buttons(state.busy, onEvent)
+        Column(modifier = Modifier.padding(all = 16.dp), verticalArrangement = Arrangement.spacedBy(space = 8.dp)) {
+            AmText(MissionControlStrings["newAgent.title"], role = TextRole.HEADING)
+            NewAgentFields(state, prompt, onEvent)
+            Messages(state)
+            Buttons(state.busy, onEvent)
+        }
     }
 }
 
@@ -113,33 +110,29 @@ private fun windowKey(
 @Composable
 private fun Messages(state: NewAgentState) {
     if (state.form.permission == SessionPermissionMode.BYPASS_PERMISSIONS) {
-        Wrapped(
-            MissionControlStrings["newAgent.bypassWarning"],
-            NewAgentColors.warning,
-            MissionControlTags.NEW_AGENT_WARNING,
-        )
+        Wrapped(MissionControlStrings["newAgent.bypassWarning"], Tone.WARN, MissionControlTags.NEW_AGENT_WARNING)
     }
-    if (state.busy) Label(MissionControlStrings["newAgent.starting"], NewAgentColors.secondary)
+    if (state.busy) AmText(MissionControlStrings["newAgent.starting"], color = mutedColor())
     state.problem?.let {
-        val tag = MissionControlTags.NEW_AGENT_PROBLEM
-        Wrapped(MissionControlStrings.format(it.text()), NewAgentColors.error, tag)
+        Wrapped(MissionControlStrings.format(it.text()), Tone.ERR, MissionControlTags.NEW_AGENT_PROBLEM)
     }
 }
 
 @Composable
 private fun Wrapped(
     text: String,
-    color: Color,
+    tone: Tone,
     tag: String,
 ) {
-    Box(
+    AmText(
+        text,
         Modifier
             .fillMaxWidth()
             .testTag(tag)
             .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
-    ) {
-        BasicText(text, style = TextStyle(color = color, fontSize = 13.sp))
-    }
+        color = tone.tint(),
+        maxLines = Int.MAX_VALUE,
+    )
 }
 
 private fun NewAgentProblem.text(): UiText =

@@ -14,6 +14,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.testing.T0
 import dev.quayside.core.testing.TestClock
@@ -40,20 +41,22 @@ internal class SessionIntentScreenTest {
         val monitor = ScriptedSessionMonitor(SessionsSnapshot(listOf(older, newer), SnapshotStatus.Fresh(T0)))
         val built = mutableListOf<MissionControlController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    MissionControlController(
-                        SessionsApi(monitor, FakeSessions()),
-                        FakeProjectsApi(initial = listOf(project)),
-                        MutableStateFlow(project.id),
-                        TestClock(T0.plusSeconds(600)),
-                        scope,
-                        NoOpLogger,
-                        tick = 1.hours,
-                    ).also { built += it }
-                }
-            MissionControl(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        MissionControlController(
+                            SessionsApi(monitor, FakeSessions()),
+                            FakeProjectsApi(initial = listOf(project)),
+                            MutableStateFlow(project.id),
+                            TestClock(T0.plusSeconds(600)),
+                            scope,
+                            NoOpLogger,
+                            tick = 1.hours,
+                        ).also { built += it }
+                    }
+                MissionControl(controller)
+            }
         }
         waitUntil { built.isNotEmpty() }
         return built.single()

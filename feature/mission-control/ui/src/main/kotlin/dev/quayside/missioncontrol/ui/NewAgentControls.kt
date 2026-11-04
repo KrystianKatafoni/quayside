@@ -1,23 +1,15 @@
 package dev.quayside.missioncontrol.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -31,24 +23,14 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-
-private val controlShape = RoundedCornerShape(size = 4.dp)
+import dev.quayside.core.designsystem.AmButton
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.amFocusFrame
 
 private const val MAX_PROMPT_LINES = 10
-
-/**
- * Draws a frame of [NewAgentColors.focusBorder] around the control while it has the focus (NFR-6). Put it before the
- * modifier that makes the control focusable.
- */
-@Composable
-internal fun Modifier.focusFrame(): Modifier {
-    var focused by remember { mutableStateOf(value = false) }
-    val color = if (focused) NewAgentColors.focusBorder else Color.Transparent
-    return onFocusChanged { focused = it.isFocused }.border(width = 2.dp, color = color, shape = controlShape)
-}
 
 /**
  * A text field. With [minLines] above 1 it is multiline: Enter adds a line, and Tab and Shift+Tab move the focus
@@ -70,16 +52,18 @@ internal fun TextBox(
         modifier =
             modifier
                 .fillMaxWidth()
-                .focusFrame()
+                .amFocusFrame()
                 .onPreviewKeyEvent { multiline && focus.moveOnTab(it) }
-                .background(color = NewAgentColors.field, shape = controlShape)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .background(
+                    color = raisedColor(),
+                    shape = AmTheme.shape.corner,
+                ).padding(horizontal = 8.dp, vertical = 4.dp),
         enabled = enabled,
         singleLine = !multiline,
         minLines = minLines,
         maxLines = if (multiline) MAX_PROMPT_LINES else 1,
-        textStyle = TextStyle(color = NewAgentColors.primary, fontSize = 13.sp),
-        cursorBrush = SolidColor(NewAgentColors.primary),
+        textStyle = AmTheme.typography.style(TextRole.BODY).copy(color = textColor()),
+        cursorBrush = SolidColor(textColor()),
     )
 }
 
@@ -106,17 +90,19 @@ internal fun ChoiceField(
     Box(
         modifier
             .fillMaxWidth()
-            .focusFrame()
+            .amFocusFrame()
             .semantics { stateDescription = shown }
             .onPreviewKeyEvent { event ->
                 val by = arrowStep(event.key).takeIf { enabled && event.type == KeyEventType.KeyDown }
                 by?.let { onStep(it, true) }
                 by != null
-            }.background(color = NewAgentColors.field, shape = controlShape)
-            .clickable(enabled = enabled, role = Role.DropdownList) { onStep(1, false) }
+            }.background(
+                color = raisedColor(),
+                shape = AmTheme.shape.corner,
+            ).clickable(enabled = enabled, role = Role.DropdownList) { onStep(1, false) }
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
-        Label("‹  $shown  ›", NewAgentColors.primary)
+        AmText("‹  $shown  ›")
     }
 }
 
@@ -127,7 +113,10 @@ private fun arrowStep(key: Key): Int? =
         else -> null
     }
 
-/** A button of the dialog; disabled while a start runs. */
+/**
+ * A button of the dialog; disabled while a start runs. The merging semantics node sits before the focus frame of the
+ * button, so that the bounds of the tagged node include the frame (a pixel check at the edge sees it).
+ */
 @Composable
 internal fun DialogButton(
     label: String,
@@ -135,15 +124,7 @@ internal fun DialogButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Box(
-        modifier
-            .focusFrame()
-            .background(color = NewAgentColors.button, shape = controlShape)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-    ) {
-        Label(label, NewAgentColors.primary)
-    }
+    AmButton(label, onClick, modifier.semantics(mergeDescendants = true) {}, enabled = enabled)
 }
 
 /** The name of a field for a screen reader (its label), put on the control. */

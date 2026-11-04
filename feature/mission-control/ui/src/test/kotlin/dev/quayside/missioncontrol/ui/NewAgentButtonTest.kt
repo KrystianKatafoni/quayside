@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.testing.TestClock
@@ -34,20 +35,22 @@ internal class NewAgentButtonTest {
         var built: MissionControlController? = null
         val sessions = NewAgentWorld.sessions()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    MissionControlController(
-                        SessionsApi(monitor = sessions, commands = sessions),
-                        FakeProjectsApi(initial = projects),
-                        MutableStateFlow(selected),
-                        TestClock(),
-                        scope,
-                        NoOpLogger,
-                        tick = 1.hours,
-                    ).also { built = it }
-                }
-            MissionControl(controller, onNewAgent = { clicks++ })
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        MissionControlController(
+                            SessionsApi(monitor = sessions, commands = sessions),
+                            FakeProjectsApi(initial = projects),
+                            MutableStateFlow(selected),
+                            TestClock(),
+                            scope,
+                            NoOpLogger,
+                            tick = 1.hours,
+                        ).also { built = it }
+                    }
+                MissionControl(controller, onNewAgent = { clicks++ })
+            }
         }
         waitUntil { built != null }
         return checkNotNull(built)

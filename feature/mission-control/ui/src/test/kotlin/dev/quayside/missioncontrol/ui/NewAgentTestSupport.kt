@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
@@ -92,14 +93,16 @@ internal fun ComposeUiTest.showNewAgent(
     logger: Logger = rig.log,
 ) {
     setContent {
-        val scope = rememberCoroutineScope()
-        val controller =
-            remember {
-                NewAgentController(rig.commands, NewAgentWorld.projects(), scope, logger) { project, id ->
-                    rig.started += project to id
-                }.also { rig.controller = it }
-            }
-        NewAgentDialog(controller)
+        AmTestTheme {
+            val scope = rememberCoroutineScope()
+            val controller =
+                remember {
+                    NewAgentController(rig.commands, NewAgentWorld.projects(), scope, logger) { project, id ->
+                        rig.started += project to id
+                    }.also { rig.controller = it }
+                }
+            NewAgentDialog(controller)
+        }
     }
     waitUntil { rig.controller != null }
 }

@@ -2,10 +2,14 @@ package dev.quayside.missioncontrol.ui
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.PixelMap
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -15,6 +19,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
+import dev.quayside.core.designsystem.toColor
+import dev.quayside.core.designtokens.SampleTokens
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
@@ -32,6 +39,8 @@ import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.sessions.api.aSession
+import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldNotContain
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
@@ -60,20 +69,22 @@ internal class MissionControlTest {
         val api = FakeProjectsApi(initial = projects)
         val selection = MutableStateFlow(selected)
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    MissionControlController(
-                        SessionsApi(monitor, FakeSessions()),
-                        api,
-                        selection,
-                        clock,
-                        scope,
-                        NoOpLogger,
-                        tick = 1.hours,
-                    )
-                }
-            MissionControl(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        MissionControlController(
+                            SessionsApi(monitor, FakeSessions()),
+                            api,
+                            selection,
+                            clock,
+                            scope,
+                            NoOpLogger,
+                            tick = 1.hours,
+                        )
+                    }
+                MissionControl(controller)
+            }
         }
         return monitor
     }
@@ -97,7 +108,36 @@ internal class MissionControlTest {
         vararg args: String,
     ): String = MissionControlStrings.format(UiText(key, args.toList()))
 
+    /** Every distinct ARGB value of the pixels. */
+    private fun PixelMap.colors(): Set<Int> =
+        (0 until width).flatMapTo(HashSet()) { x -> (0 until height).map { y -> this[x, y].toArgb() } }
+
     private fun row(id: String): String = MissionControlTags.row(SessionId(id))
+
+    @Test
+    fun `mode bar shows NORMAL badge`() =
+        runComposeUiTest {
+            // Given Mission Control in the plex theme
+            val tokens = SampleTokens.colors()
+            showMissionControl(fresh())
+            await(MissionControlTags.MODE_BAR)
+
+            // When the mode bar is drawn, then NORMAL is a badge: accentInk text on an accent background
+            val badge = textIn(MissionControlTags.MODE_BAR, "NORMAL")
+            badge.assertIsDisplayed()
+            val badgeColors = badge.captureToImage().toPixelMap().colors()
+            badgeColors shouldContain
+                tokens.content.accent
+                    .toColor()
+                    .toArgb()
+
+            // and the bar itself stands on the panel
+            val barColors = onNodeWithTag(MissionControlTags.MODE_BAR).captureToImage().toPixelMap().colors()
+            barColors shouldContain
+                tokens.surfaces.panel
+                    .toColor()
+                    .toArgb()
+        }
 
     @Test
     fun `no projects shows the empty state`() =
@@ -180,6 +220,35 @@ internal class MissionControlTest {
             glyphs.forEach { (id, value) ->
                 await(row(id))
                 textIn(row(id), value.second).assertIsDisplayed()
+            }
+        }
+
+    @Test
+    fun `row glyph is drawn in the token colour of its tone`() =
+        runComposeUiTest {
+            // Given a session in each state with a tone of its own, in the plex theme
+            val tokens = SampleTokens.colors()
+            val states =
+                listOf(
+                    Triple("input", SessionState.AwaitingInput("q"), "?" to tokens.status.warn),
+                    Triple("working", SessionState.Working, "~" to tokens.status.work),
+                    Triple("done", SessionState.Done, "✓" to tokens.status.ok),
+                    Triple("failed", SessionState.Failed, "✕" to tokens.status.err),
+                )
+            val sessions =
+                states.mapIndexed { i, (id, state, _) ->
+                    aSession(id = id, project = project.id, state = state, startedAt = T0.plusSeconds(i.toLong()))
+                }
+            showMissionControl(fresh(*sessions.toTypedArray()))
+            states.forEach { (id, _, _) -> await(row(id)) }
+
+            // When each glyph is captured, then it has the colour of its own tone and of no other status tone
+            val statusColors = listOf(tokens.status.warn, tokens.status.work, tokens.status.ok, tokens.status.err)
+            states.forEach { (id, _, glyph) ->
+                val (symbol, tone) = glyph
+                val drawn = textIn(row(id), symbol).captureToImage().toPixelMap().colors()
+                drawn shouldContain tone.toColor().toArgb()
+                (statusColors - tone).forEach { drawn shouldNotContain it.toColor().toArgb() }
             }
         }
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
 
 /** The "Popup" section (FR-N3): position, duration, max visible, style; always editable, even with popups off. */
 @Composable
@@ -13,7 +14,7 @@ internal fun PopupSection(
 ) {
     val popup = state.draft.popup
     Column(verticalArrangement = Arrangement.spacedBy(space = 10.dp)) {
-        Label(SettingsStrings["settings.popup"])
+        AmText(SettingsStrings["settings.popup"])
         EnumRow("position", SettingsTags.POPUP_POSITION, popup.position) { value ->
             controller.edit { it.copy(popup = it.popup.copy(position = value)) }
         }

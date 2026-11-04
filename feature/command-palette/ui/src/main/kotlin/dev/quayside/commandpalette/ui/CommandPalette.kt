@@ -16,8 +16,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,16 +38,22 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import dev.quayside.commandpalette.api.Command
+import dev.quayside.core.designsystem.AmPanel
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.amScrim
+import dev.quayside.core.designsystem.toColor
 
 /** The palette over the whole window; shows nothing while closed. */
 @Composable
@@ -65,7 +69,7 @@ public fun CommandPalette(controller: CommandPaletteController) {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(color = PaletteColors.scrim)
+                    .amScrim()
                     .pointerInput(Unit) { detectTapGestures { controller.onEvent(PaletteEvent.Dismiss) } }
                     .testTag(PaletteTags.ROOT),
             contentAlignment = Alignment.TopCenter,
@@ -81,25 +85,27 @@ private fun Panel(
     view: PaletteView,
     onEvent: (PaletteEvent) -> Unit,
 ) {
-    Column(
+    AmPanel(
         modifier =
             Modifier
                 .padding(top = 80.dp)
                 .width(width = 560.dp)
-                .background(color = PaletteColors.panel, shape = RoundedCornerShape(size = 10.dp))
-                .pointerInput(Unit) { detectTapGestures { } }
-                .padding(all = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(space = 8.dp),
+                .pointerInput(Unit) { detectTapGestures { } },
     ) {
-        QueryField(onEvent)
-        if (view.results.isEmpty()) {
-            BasicText(
-                text = PaletteStrings["palette.empty"],
-                modifier = Modifier.testTag(PaletteTags.EMPTY),
-                style = TextStyle(color = PaletteColors.secondaryText, fontSize = 13.sp),
-            )
-        } else {
-            Results(view, onEvent)
+        Column(
+            modifier = Modifier.padding(all = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(space = 8.dp),
+        ) {
+            QueryField(onEvent)
+            if (view.results.isEmpty()) {
+                AmText(
+                    text = PaletteStrings["palette.empty"],
+                    modifier = Modifier.testTag(PaletteTags.EMPTY),
+                    color = mutedColor(),
+                )
+            } else {
+                Results(view, onEvent)
+            }
         }
     }
 }
@@ -119,14 +125,14 @@ private fun QueryField(onEvent: (PaletteEvent) -> Unit) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(color = PaletteColors.field)
+                .background(color = raisedColor())
                 .padding(all = 8.dp)
                 .focusRequester(focus)
                 .paletteKeys(onEvent)
                 .testTag(PaletteTags.FIELD),
         singleLine = true,
-        textStyle = TextStyle(color = PaletteColors.text, fontSize = 15.sp),
-        cursorBrush = SolidColor(PaletteColors.text),
+        textStyle = queryStyle(),
+        cursorBrush = SolidColor(textColor()),
         decorationBox = { inner ->
             Box {
                 if (text.isEmpty()) Hint(PaletteStrings["palette.placeholder"])
@@ -137,8 +143,16 @@ private fun QueryField(onEvent: (PaletteEvent) -> Unit) {
 }
 
 @Composable
+private fun queryStyle(): TextStyle =
+    AmTheme.typography.style(TextRole.HEADING).copy(color = textColor(), fontWeight = FontWeight.Normal)
+
+@Composable
 private fun Hint(text: String) =
-    BasicText(text, style = TextStyle(color = PaletteColors.secondaryText, fontSize = 15.sp))
+    AmText(
+        text,
+        role = TextRole.HEADING,
+        color = mutedColor(),
+    )
 
 @Composable
 private fun Results(
@@ -168,14 +182,16 @@ private fun ResultRow(
                 .fillMaxWidth()
                 .testTag(PaletteTags.row(command.id))
                 .selectable(selected = highlighted, onClick = onClick)
-                .background(color = if (highlighted) PaletteColors.highlight else Color.Transparent)
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .background(
+                    color = if (highlighted) selColor() else Color.Transparent,
+                ).padding(horizontal = 8.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        BasicText(command.title, style = TextStyle(color = PaletteColors.text, fontSize = 14.sp), maxLines = 1)
-        command.shortcut?.let {
-            BasicText(ShortcutLabel.of(it), style = TextStyle(color = PaletteColors.secondaryText, fontSize = 13.sp))
-        }
+        val content = AmTheme.colors.content
+        AmText(command.title, modifier = Modifier.weight(1f, fill = false))
+        // muted stands only on bg and panel; on the highlighted row (sel) the shortcut uses text.
+        val shortcutColor = if (highlighted) content.text else content.muted
+        command.shortcut?.let { AmText(ShortcutLabel.of(it), color = shortcutColor.toColor()) }
     }
 }
 
@@ -200,16 +216,6 @@ private val KEY_ACTIONS: Map<Key, PaletteEvent> =
         Key.DirectionDown to PaletteEvent.MoveDown,
         Key.Escape to PaletteEvent.Dismiss,
     )
-
-/** Placeholder colors until `core:design-system` exists (AM-802). */
-private object PaletteColors {
-    val scrim = Color(color = 0x99000000)
-    val panel = Color(color = 0xFF2C2C2E)
-    val field = Color(color = 0xFF48484A)
-    val highlight = Color(color = 0xFF3A3A3C)
-    val text = Color(color = 0xFFF2F2F7)
-    val secondaryText = Color(color = 0xFF8E8E93)
-}
 
 /** Places the palette layer over the whole window, whatever the anchor. */
 private object WholeWindow : PopupPositionProvider {

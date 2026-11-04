@@ -21,6 +21,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.testing.RecordingLogger
 import dev.quayside.terminal.api.FakeTerminalSession
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -45,15 +46,17 @@ class TerminalSearchScreenTest {
     private fun ComposeUiTest.showArea(): TerminalController {
         val built = mutableListOf<TerminalController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
-                        built +=
-                            it
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
+                            built +=
+                                it
+                        }
                     }
-                }
-            TerminalArea(controller, onAppKey = { false }, paneContent = { Box(Modifier.testTag("content")) })
+                TerminalArea(controller, onAppKey = { false }, paneContent = { Box(Modifier.testTag("content")) })
+            }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }
         return built.single()

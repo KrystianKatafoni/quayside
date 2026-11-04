@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.v2.runComposeUiTest
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.RecordingLogger
@@ -65,15 +66,17 @@ class FocusRequestScreenTest {
     private fun ComposeUiTest.showArea(): TerminalController {
         val built = mutableListOf<TerminalController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
-                        built +=
-                            it
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
+                            built +=
+                                it
+                        }
                     }
-                }
-            TerminalArea(controller, onAppKey = { false }, paneContent = { Box(Modifier.testTag("content")) })
+                TerminalArea(controller, onAppKey = { false }, paneContent = { Box(Modifier.testTag("content")) })
+            }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }
         return built.single()

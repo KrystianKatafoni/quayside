@@ -20,6 +20,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.toColor
 
 /** The bar of tabs, one group per project in the order of the first tab. [activeTab]: the tab of the active pane. */
 @Composable
@@ -33,7 +37,7 @@ internal fun TerminalTabBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(color = TerminalColors.panel)
+                .background(color = panelColor())
                 .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
     ) {
@@ -54,10 +58,10 @@ internal fun TabGroupChip(
         horizontalArrangement = Arrangement.spacedBy(space = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Label(
+        AmText(
             text = group.project.name,
             modifier = Modifier.testTag(TerminalTags.group(group.project.id)),
-            color = TerminalColors.secondary,
+            color = mutedColor(),
         )
         group.tabs.forEach { TabChip(it, selected = it.id == activeTab, status = statuses[it.key], controller) }
         GlyphButton(TerminalTags.groupAdd(group.project.id), glyph = "+") { controller.openShell(group.project) }
@@ -75,10 +79,11 @@ internal fun TabChip(
     status: TabStatus?,
     controller: TerminalController,
 ) {
-    val shade = if (selected) TerminalColors.selection else TerminalColors.panel
+    val surfaces = AmTheme.colors.surfaces
+    val shade = (if (selected) surfaces.sel else surfaces.panel).toColor()
     Row(modifier = Modifier.background(color = shade), verticalAlignment = Alignment.CenterVertically) {
         status?.let { TabStatusDot(tab.id, it) }
-        Label(
+        AmText(
             text = tab.label,
             modifier =
                 Modifier
@@ -98,11 +103,11 @@ private fun TabExitMarker(
     tab: TabId,
     code: Int,
 ) {
-    Label(
+    AmText(
         text = TerminalStrings.format("tab.exit", code.toString()),
         modifier = Modifier.testTag(TerminalTags.tabExit(tab)),
-        color = TerminalColors.secondary,
-        mono = true,
+        role = TextRole.CODE,
+        color = mutedColor(),
     )
 }
 
@@ -118,7 +123,7 @@ private fun TabStatusDot(
             Modifier
                 .padding(start = 8.dp)
                 .size(8.dp)
-                .background(color = TerminalColors.of(status), shape = CircleShape)
+                .background(color = status.color(AmTheme.colors).toColor(), shape = CircleShape)
                 .testTag(TerminalTags.tabStatus(tab))
                 .semantics { stateDescription = text },
     )

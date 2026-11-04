@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.RecordingLogger
 import io.kotest.matchers.shouldBe
@@ -48,21 +49,23 @@ class TerminalAreaScreenTest {
     private fun ComposeUiTest.showArea(): TerminalController {
         val built = mutableListOf<TerminalController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
-                        built +=
-                            it
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
+                            built +=
+                                it
+                        }
                     }
-                }
-            TerminalArea(controller, onAppKey = { false }, paneContent = { component ->
-                val id =
-                    api.fake.sessions
-                        .first { it.component() === component }
-                        .id.value
-                Box(Modifier.testTag(contentTag(id)))
-            })
+                TerminalArea(controller, onAppKey = { false }, paneContent = { component ->
+                    val id =
+                        api.fake.sessions
+                            .first { it.component() === component }
+                            .id.value
+                    Box(Modifier.testTag(contentTag(id)))
+                })
+            }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }
         return built.single()

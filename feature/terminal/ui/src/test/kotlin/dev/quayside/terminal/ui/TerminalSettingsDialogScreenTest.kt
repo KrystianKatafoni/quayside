@@ -2,10 +2,13 @@ package dev.quayside.terminal.ui
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
@@ -17,10 +20,14 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
+import dev.quayside.core.designsystem.toColor
+import dev.quayside.core.designtokens.SampleTokens
 import dev.quayside.terminal.api.FakeTerminalSettingsRepo
 import dev.quayside.terminal.api.ShellProfile
 import dev.quayside.terminal.api.TerminalSettingsField
 import dev.quayside.terminal.api.TerminalSettingsIssue
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
@@ -52,9 +59,11 @@ class TerminalSettingsDialogScreenTest {
     private fun ComposeUiTest.showDialog(repo: FakeTerminalSettingsRepo = FakeTerminalSettingsRepo()) {
         val built = mutableListOf<TerminalSettingsController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller = remember { TerminalSettingsController(repo, scope).also { built += it } }
-            TerminalSettingsDialog(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller = remember { TerminalSettingsController(repo, scope).also { built += it } }
+                TerminalSettingsDialog(controller)
+            }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }
         runOnIdle { built.single().open() }
@@ -143,6 +152,35 @@ class TerminalSettingsDialogScreenTest {
                 hasTestTag(TerminalTags.SETTINGS_NOTICE) and hasText(TerminalStrings.of(issue)),
                 WAIT_MS,
             )
+        }
+
+    @Test
+    fun `NFR-6 notice is drawn in the warn token and storage error in the err token`() =
+        runComposeUiTest {
+            // Given a broken file at start and a repo that cannot write, in the plex theme
+            val tokens = SampleTokens.colors()
+            val issue = TerminalSettingsIssue.RECOVERED_FROM_BROKEN_FILE
+            showDialog(FakeTerminalSettingsRepo(startIssue = issue).apply { failure = true })
+            await(TerminalTags.SETTINGS_SAVE).performClick()
+            await(TerminalTags.SETTINGS_STORAGE_ERROR)
+
+            // When the notice and the storage error are captured
+            fun colorsOf(tag: String): Set<Int> {
+                val image = onNodeWithTag(tag).captureToImage().toPixelMap()
+                return (0 until image.width).flatMapTo(
+                    HashSet(),
+                ) { x -> (0 until image.height).map { image[x, it].toArgb() } }
+            }
+
+            // Then the notice has the colour warn and the error the colour err
+            colorsOf(TerminalTags.SETTINGS_NOTICE) shouldContain
+                tokens.status.warn
+                    .toColor()
+                    .toArgb()
+            colorsOf(TerminalTags.SETTINGS_STORAGE_ERROR) shouldContain
+                tokens.status.err
+                    .toColor()
+                    .toArgb()
         }
 
     @Test

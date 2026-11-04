@@ -4,19 +4,26 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
+import dev.quayside.core.designsystem.toColor
+import dev.quayside.core.designtokens.SampleTokens
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.RecordingLogger
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeBlank
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -42,15 +49,17 @@ class TabStatusScreenTest {
     private fun ComposeUiTest.showArea(): TerminalController {
         val built = mutableListOf<TerminalController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
-                        built +=
-                            it
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        TerminalController(api, scope, RecordingLogger(), FixedShellStart()).also {
+                            built +=
+                                it
+                        }
                     }
-                }
-            TerminalArea(controller, onAppKey = { false }, paneContent = { Box(Modifier.testTag("content")) })
+                TerminalArea(controller, onAppKey = { false }, paneContent = { Box(Modifier.testTag("content")) })
+            }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }
         return built.single()
@@ -158,6 +167,31 @@ class TabStatusScreenTest {
             waitUntilExactlyOneExists(hasTestTag(TerminalTags.tabExit(tabId(1))), WAIT_MS)
             onNodeWithTag(TerminalTags.tabExit(tabId(1))).assertTextContains("exit 3", substring = true)
             hasStatusText(1, TabStatus.STOPPED)
+        }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(TabStatus::class)
+    fun `dot is drawn in the token colour of its status`(status: TabStatus) =
+        runComposeUiTest {
+            // Given a keyed tab with that status, in the plex theme
+            val tokens = SampleTokens.colors()
+            val controller = showArea()
+            openKeyed(controller, projectIn("Alpha"))
+            runOnIdle { controller.showStatuses(mapOf(key to status)) }
+            hasStatusText(1, status)
+            waitForIdle()
+
+            // When the dot is captured, then its centre has the colour of that status
+            val dot = onNodeWithTag(TerminalTags.tabStatus(tabId(1))).captureToImage().toPixelMap()
+            val expected =
+                when (status) {
+                    TabStatus.WAITING -> tokens.status.warn
+                    TabStatus.WORKING -> tokens.status.work
+                    TabStatus.DONE -> tokens.status.ok
+                    TabStatus.FAILED -> tokens.status.err
+                    TabStatus.STOPPED -> tokens.content.muted
+                }
+            dot[dot.width / 2, dot.height / 2].toArgb() shouldBe expected.toColor().toArgb()
         }
 
     @ParameterizedTest(name = "{0}")

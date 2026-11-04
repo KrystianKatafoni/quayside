@@ -14,6 +14,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.toColor
 import javax.swing.JComponent
 
 /** What the panes of one frame need: the tabs by id, the active pane and how a widget is embedded. */
@@ -88,7 +90,8 @@ private fun PaneFrame(
     modifier: Modifier,
 ) {
     val active = leaf.pane == env.active
-    val color = if (active) TerminalColors.accent else TerminalColors.panel
+    val colors = AmTheme.colors
+    val color = (if (active) colors.content.accent else colors.surfaces.border).toColor()
     Box(
         modifier
             .testTag(TerminalTags.pane(leaf.pane))

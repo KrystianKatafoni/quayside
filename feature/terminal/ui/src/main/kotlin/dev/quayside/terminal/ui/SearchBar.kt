@@ -1,7 +1,6 @@
 package dev.quayside.terminal.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,17 +36,16 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import dev.quayside.core.designsystem.AmPanel
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.toColor
 import dev.quayside.terminal.api.SearchDirection
 import dev.quayside.terminal.api.SearchResult
 import javax.swing.SwingUtilities
-
-private val statusColor = TerminalColors.secondary
-private val toggleShape = RoundedCornerShape(size = 4.dp)
-private val barShape = RoundedCornerShape(size = 6.dp)
 
 /**
  * The search bar of [tab]'s pane in its top right corner; draws nothing unless the open bar belongs to [tab].
@@ -76,23 +73,20 @@ private fun SearchBar(
     onClose: () -> Unit,
     modifier: Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .testTag(TerminalTags.SEARCH_BAR)
-                .background(color = TerminalColors.panel, shape = barShape)
-                .border(width = 1.dp, color = TerminalColors.selection, shape = barShape)
-                .padding(all = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(space = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SearchField(state, search, onClose, Modifier.width(width = 180.dp))
-        SearchStatus(state)
-        SearchToggle(TerminalTags.SEARCH_CASE, glyph = "Aa", state.query.matchCase, search::toggleCase)
-        SearchToggle(TerminalTags.SEARCH_REGEX, glyph = ".*", state.query.regex, search::toggleRegex)
-        GlyphButton(TerminalTags.SEARCH_UP, glyph = "↑") { search.step(SearchDirection.UP) }
-        GlyphButton(TerminalTags.SEARCH_DOWN, glyph = "↓") { search.step(SearchDirection.DOWN) }
-        GlyphButton(TerminalTags.SEARCH_CLOSE, glyph = "×", onClose)
+    AmPanel(modifier = modifier.testTag(TerminalTags.SEARCH_BAR)) {
+        Row(
+            modifier = Modifier.padding(all = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(space = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SearchField(state, search, onClose, Modifier.width(width = 180.dp))
+            SearchStatus(state)
+            SearchToggle(TerminalTags.SEARCH_CASE, glyph = "Aa", state.query.matchCase, search::toggleCase)
+            SearchToggle(TerminalTags.SEARCH_REGEX, glyph = ".*", state.query.regex, search::toggleRegex)
+            GlyphButton(TerminalTags.SEARCH_UP, glyph = "↑") { search.step(SearchDirection.UP) }
+            GlyphButton(TerminalTags.SEARCH_DOWN, glyph = "↓") { search.step(SearchDirection.DOWN) }
+            GlyphButton(TerminalTags.SEARCH_CLOSE, glyph = "×", onClose)
+        }
     }
 }
 
@@ -118,8 +112,8 @@ private fun SearchField(
         },
         modifier = modifier.focusRequester(focus).searchKeys(search, onClose).testTag(TerminalTags.SEARCH_FIELD),
         singleLine = true,
-        textStyle = TextStyle(color = TerminalColors.text, fontSize = 13.sp),
-        cursorBrush = SolidColor(TerminalColors.text),
+        textStyle = AmTheme.typography.style(TextRole.BODY).copy(color = textColor()),
+        cursorBrush = SolidColor(textColor()),
     )
 }
 
@@ -171,19 +165,23 @@ private fun searchKeyAction(event: KeyEvent): SearchKeyAction? =
 private fun SearchStatus(state: SearchBarState) {
     when {
         state.invalid -> {
-            Label(
+            AmText(
                 TerminalStrings["search.invalid"],
                 Modifier.testTag(TerminalTags.SEARCH_INVALID),
-                TerminalColors.error,
+                color = errColor(),
             )
         }
 
         state.result.count > 0 -> {
-            Label(counterText(state.result), Modifier.testTag(TerminalTags.SEARCH_COUNTER), statusColor)
+            AmText(counterText(state.result), Modifier.testTag(TerminalTags.SEARCH_COUNTER), color = mutedColor())
         }
 
         state.query.text.isNotEmpty() -> {
-            Label(TerminalStrings["search.noHits"], Modifier.testTag(TerminalTags.SEARCH_NO_HITS), statusColor)
+            AmText(
+                TerminalStrings["search.noHits"],
+                Modifier.testTag(TerminalTags.SEARCH_NO_HITS),
+                color = mutedColor(),
+            )
         }
     }
 }
@@ -199,15 +197,16 @@ private fun SearchToggle(
     on: Boolean,
     onClick: () -> Unit,
 ) {
+    val colors = AmTheme.colors.content
     Box(
         Modifier
             .testTag(tag)
             .semantics { selected = on }
             .focusProperties { canFocus = false }
-            .background(color = if (on) TerminalColors.accent else Color.Transparent, shape = toggleShape)
+            .background(color = if (on) colors.accent.toColor() else Color.Transparent, shape = AmTheme.shape.corner)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
-        Label(text = glyph, mono = true)
+        AmText(text = glyph, role = TextRole.CODE, color = (if (on) colors.accentInk else colors.text).toColor())
     }
 }

@@ -1,0 +1,48 @@
+package dev.quayside.terminal.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.toColor
+
+// Colours of the current theme under short names; the screens read tokens only through AmTheme (AM-806).
+
+@Composable
+internal fun mutedColor(): Color =
+    AmTheme.colors.content.muted
+        .toColor()
+
+@Composable
+internal fun textColor(): Color =
+    AmTheme.colors.content.text
+        .toColor()
+
+@Composable
+internal fun errColor(): Color =
+    AmTheme.colors.status.err
+        .toColor()
+
+@Composable
+internal fun warnColor(): Color =
+    AmTheme.colors.status.warn
+        .toColor()
+
+@Composable
+internal fun warnBgColor(): Color =
+    AmTheme.colors.status.warnBg
+        .toColor()
+
+@Composable
+internal fun panelColor(): Color =
+    AmTheme.colors.surfaces.panel
+        .toColor()
+
+@Composable
+internal fun raisedColor(): Color =
+    AmTheme.colors.surfaces.raised
+        .toColor()
+
+@Composable
+internal fun termBgColor(): Color =
+    AmTheme.colors.terminal.termBg
+        .toColor()

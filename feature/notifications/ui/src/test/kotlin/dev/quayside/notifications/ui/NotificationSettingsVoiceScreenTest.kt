@@ -20,6 +20,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import androidx.compose.ui.test.withKeyDown
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
 import dev.quayside.notifications.api.NotificationKind
@@ -70,9 +71,11 @@ class NotificationSettingsVoiceScreenTest {
         repo = FakeNotificationSettingsRepo(saved)
         val built = mutableListOf<NotificationSettingsController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller = remember { NotificationSettingsController(repo, voices, scope).also { built += it } }
-            NotificationSettingsDialog(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller = remember { NotificationSettingsController(repo, voices, scope).also { built += it } }
+                NotificationSettingsDialog(controller)
+            }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }
         runOnIdle { built.single().open() }

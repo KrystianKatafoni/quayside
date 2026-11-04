@@ -101,7 +101,7 @@
 - [ ] AM-803 · Ekran Wygląd z podglądem na żywo · moduły: appearance:ui · zależy: AM-802, AM-405, AM-806 · wymagania: FR-A3, FR-A4 · issue: #17
 - [ ] AM-804 · Dzień/noc z macOS, import/eksport theme.json · moduły: appearance:impl · zależy: AM-803 · wymagania: FR-A5, FR-A6 · issue: #18
 - [x] AM-805 · Katalog 20 motywów z kształtem i 14 dodatkowych typografii: fonty w zasobach, korekta kolorów pod NFR-6, wyprowadzenie tokenów statusu (08 „Wyprowadzenie i korekty”) · moduły: appearance:impl, core:design-system · zależy: AM-801 · wymagania: FR-A1, FR-A2, FR-A7, NFR-6 · issue: #70
-- [ ] AM-806 · Ekrany na AmTheme: usunięcie 8 lokalnych palet i kopii kontrolek · moduły: mission-control:ui, projects:ui, terminal:ui, notifications:ui, command-palette:ui, app · zależy: AM-802 · wymagania: FR-A1, NFR-6 · issue: #74
+- [x] AM-806 · Ekrany na AmTheme: usunięcie 8 lokalnych palet i kopii kontrolek · moduły: mission-control:ui, projects:ui, terminal:ui, notifications:ui, command-palette:ui, app, core:design-system, appearance (w app) · zależy: AM-802 · wymagania: FR-A1, NFR-6 · issue: #74
 
 Uwagi do M8: AM-803 nie zależy od AM-805 — ekran Wygląd czyta katalog z `AppearanceApi.catalog` i pokaże nowe motywy bez zmian w `appearance:ui`; tokeny kształtu i pole domyślnej typografii dochodzą już w AM-801. AM-905 zależy od AM-805 — 20 motywów z kształtem wchodzi przed 1.0 (FR-A1, priorytet M; decyzja człowieka 2026-11-03). AM-803 zależy od AM-806, bo podgląd na żywo pokazuje prawdziwy ekran Mission Control, który musi czytać kolory z `AmTheme`. Lista wierszy `AmListRow` w AM-803 musi być opakowana w `Modifier.selectableGroup()` (AM-802 tego nie wymusza). Jeśli plan AM-805 przekroczy ok. 300 linii, architekt dzieli go na motywy jasne i ciemne.
 

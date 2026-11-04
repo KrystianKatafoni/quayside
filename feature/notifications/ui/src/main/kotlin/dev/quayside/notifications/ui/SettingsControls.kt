@@ -1,7 +1,6 @@
 package dev.quayside.notifications.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,18 +9,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -33,33 +24,16 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-
-private val controlShape = RoundedCornerShape(size = 4.dp)
-
-/** Draws a frame round the control while it has the focus, so the Tab order is visible (NFR-6). */
-@Composable
-internal fun Modifier.focusFrame(): Modifier {
-    var focused by remember { mutableStateOf(value = false) }
-    val color = if (focused) SettingsColors.accent else Color.Transparent
-    return onFocusChanged { focused = it.isFocused }.border(width = 2.dp, color = color, shape = controlShape)
-}
+import dev.quayside.core.designsystem.AmButton
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.amFocusFrame
+import dev.quayside.core.designsystem.toColor
 
 // The controls of the settings dialog, copied from `terminal:ui` (a `ui` module must not depend on another `ui`);
 // all of them are focusable and sit in the tab order of the screen.
-
-/** One line of text in the colours of the dialog. */
-@Composable
-internal fun Label(
-    text: String,
-    modifier: Modifier = Modifier,
-    color: Color = SettingsColors.text,
-    size: Int = 13,
-) {
-    BasicText(text, modifier, TextStyle(color = color, fontSize = size.sp), maxLines = 1)
-}
 
 /**
  * A [label] and its [control]; [invalid] shows its message under the row. The control gets a modifier that names it
@@ -76,15 +50,15 @@ internal fun SettingRow(
             horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Label(label, Modifier.width(width = 200.dp))
+            AmText(label, Modifier.width(width = 200.dp))
             control(Modifier.semantics { contentDescription = label })
         }
         invalid?.let {
-            Label(
+            AmText(
                 SettingsStrings.of(it),
                 Modifier.testTag(SettingsTags.invalid(it.field)),
-                SettingsColors.error,
-                size = 12,
+                TextRole.CAPTION,
+                errColor(),
             )
         }
     }
@@ -105,11 +79,13 @@ internal fun TextSetting(
             modifier
                 .width(width = 260.dp)
                 .testTag(tag)
-                .background(color = SettingsColors.field, shape = controlShape)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .background(
+                    color = raisedColor(),
+                    shape = AmTheme.shape.corner,
+                ).padding(horizontal = 8.dp, vertical = 4.dp),
         singleLine = true,
-        textStyle = TextStyle(color = SettingsColors.text, fontSize = 13.sp),
-        cursorBrush = SolidColor(SettingsColors.text),
+        textStyle = AmTheme.typography.style(TextRole.BODY).copy(color = textColor()),
+        cursorBrush = SolidColor(textColor()),
     )
 }
 
@@ -131,15 +107,17 @@ internal fun ChoiceField(
                 val by = arrowStep(event.key).takeIf { event.type == KeyEventType.KeyDown }
                 by?.let(step)
                 by != null
-            }.focusFrame()
-            .background(color = SettingsColors.field, shape = controlShape)
-            .clickable(role = Role.DropdownList) { step(1) }
+            }.amFocusFrame()
+            .background(
+                color = raisedColor(),
+                shape = AmTheme.shape.corner,
+            ).clickable(role = Role.DropdownList) { step(1) }
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
-        Label("‹", Modifier.clearAndSetSemantics {}, SettingsColors.secondary)
-        Label(labels[selected], Modifier.weight(weight = 1f))
-        Label("›", Modifier.clearAndSetSemantics {}, SettingsColors.secondary)
+        AmText("‹", Modifier.clearAndSetSemantics {})
+        AmText(labels[selected], Modifier.weight(weight = 1f))
+        AmText("›", Modifier.clearAndSetSemantics {})
     }
 }
 
@@ -153,14 +131,22 @@ private fun arrowStep(key: Key): Int? =
 /** The box of a checkbox: a tick when [on]. */
 @Composable
 internal fun CheckMark(on: Boolean) {
+    val colors = AmTheme.colors
+    val (fill, tick) =
+        if (on) {
+            colors.content.accent to colors.content.accentInk
+        } else {
+            colors.surfaces.raised to
+                colors.content.text
+        }
     Box(
         Modifier
             .width(width = 18.dp)
-            .background(color = if (on) SettingsColors.accent else SettingsColors.field, shape = controlShape)
+            .background(color = fill.toColor(), shape = AmTheme.shape.corner)
             .clearAndSetSemantics {},
         contentAlignment = Alignment.Center,
     ) {
-        Label(text = if (on) "✓" else " ")
+        AmText(text = if (on) "✓" else " ", color = tick.toColor())
     }
 }
 
@@ -176,15 +162,14 @@ internal fun ToggleSetting(
     Row(
         modifier =
             modifier
-                .testTag(
-                    tag,
-                ).focusFrame()
+                .testTag(tag)
+                .amFocusFrame()
                 .toggleable(value = on, role = Role.Checkbox, onValueChange = onChange),
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CheckMark(on)
-        Label(SettingsStrings[labelKey])
+        AmText(SettingsStrings[labelKey])
     }
 }
 
@@ -195,25 +180,9 @@ internal fun DialogButton(
     description: String? = null,
     onClick: () -> Unit,
 ) {
-    Box(
-        Modifier
-            .testTag(tag)
-            .semantics { description?.let { contentDescription = it } }
-            .focusFrame()
-            .background(color = SettingsColors.field, shape = controlShape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-    ) {
-        Label(SettingsStrings[textKey])
-    }
-}
-
-/** Colours of the dialog; the values match the settings dialog of the terminal. */
-internal object SettingsColors {
-    val panel = Color(color = 0xFF2C2C2E)
-    val field = Color(color = 0xFF3A3A3C)
-    val accent = Color(color = 0xFF0A84FF)
-    val text = Color(color = 0xFFF2F2F7)
-    val secondary = Color(color = 0xFFAEAEB2)
-    val error = Color(color = 0xFFFF7B72)
+    AmButton(
+        label = SettingsStrings[textKey],
+        onClick = onClick,
+        modifier = Modifier.testTag(tag).semantics { description?.let { contentDescription = it } },
+    )
 }

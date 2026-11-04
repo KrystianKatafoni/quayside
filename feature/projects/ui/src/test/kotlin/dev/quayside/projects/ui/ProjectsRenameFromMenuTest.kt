@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.aProject
@@ -37,10 +38,12 @@ class ProjectsRenameFromMenuTest {
             val world = ControllerWorld(projects = FakeProjectsApi(initial = listOf(project)))
             var controller: ProjectsController? = null
             setContent {
-                val scope = rememberCoroutineScope()
-                val created = remember { world.controller(scope) }
-                controller = created
-                ProjectsSidebar(created)
+                AmTestTheme {
+                    val scope = rememberCoroutineScope()
+                    val created = remember { world.controller(scope) }
+                    controller = created
+                    ProjectsSidebar(created)
+                }
             }
             await(ProjectsTags.row(project.id)).performClick()
 

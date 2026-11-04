@@ -23,6 +23,8 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.TextRole
 import dev.quayside.core.domain.SessionId
 
 /**
@@ -81,7 +83,7 @@ private fun SessionRowView(
                 .focusProperties { canFocus = false }
                 .onRowMouse(row.id, onSecondary = { rowMenu.setOpen(true) }, onDouble = attach)
                 .clickable(onClick = select)
-                .background(color = if (row.selected) Colors.selection else Color.Transparent),
+                .background(color = if (row.selected) selColor() else Color.Transparent),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
@@ -97,12 +99,12 @@ private fun RowScope.RowCells(row: SessionRow) {
             .size(
                 width = 3.dp,
                 height = 28.dp,
-            ).background(if (row.selected) Colors.accent else Color.Transparent),
+            ).background(if (row.selected) accentColor() else Color.Transparent),
     )
-    Label(row.glyph.symbol, Colors.of(row.glyph.tone))
-    Label(row.name, mono = true)
-    row.project?.let { Label(MissionControlStrings.format(it), Colors.secondary) }
-    Box(modifier = Modifier.weight(weight = 1f)) { Label(row.summary.orEmpty(), Colors.secondary) }
-    Label(MissionControlStrings.format(row.lastEvent), Colors.secondary)
-    Label(MissionControlStrings.format(row.age), Colors.secondary)
+    AmText(row.glyph.symbol, color = row.glyph.tone.tint())
+    AmText(row.name, role = TextRole.CODE)
+    row.project?.let { AmText(MissionControlStrings.format(it), color = mutedColor()) }
+    Box(modifier = Modifier.weight(weight = 1f)) { AmText(row.summary.orEmpty(), color = mutedColor()) }
+    AmText(MissionControlStrings.format(row.lastEvent), color = mutedColor())
+    AmText(MissionControlStrings.format(row.age), color = mutedColor())
 }

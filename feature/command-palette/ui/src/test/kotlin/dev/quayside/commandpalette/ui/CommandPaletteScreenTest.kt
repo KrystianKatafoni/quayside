@@ -26,6 +26,7 @@ import dev.quayside.commandpalette.api.KeyModifier
 import dev.quayside.commandpalette.api.Shortcut
 import dev.quayside.commandpalette.api.aCommand
 import dev.quayside.commandpalette.api.letterChord
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.testing.RecordingLogger
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -61,14 +62,16 @@ class CommandPaletteScreenTest {
     private fun ComposeUiTest.openPalette(vararg commands: Command): CommandPaletteController {
         val built = mutableListOf<CommandPaletteController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    val registry = FakeCommandRegistry(scope)
-                    registry.register(FakeCommandProvider(commands.toList()))
-                    CommandPaletteController(registry, scope, RecordingLogger()).also { built += it }
-                }
-            CommandPalette(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        val registry = FakeCommandRegistry(scope)
+                        registry.register(FakeCommandProvider(commands.toList()))
+                        CommandPaletteController(registry, scope, RecordingLogger()).also { built += it }
+                    }
+                CommandPalette(controller)
+            }
         }
         waitUntil { built.isNotEmpty() }
         runOnIdle { built.single().open() }
@@ -203,15 +206,17 @@ class CommandPaletteScreenTest {
             // Given a palette that was never opened
             val built = mutableListOf<CommandPaletteController>()
             setContent {
-                val scope = rememberCoroutineScope()
-                val controller =
-                    remember {
-                        CommandPaletteController(FakeCommandRegistry(scope), scope, RecordingLogger()).also {
-                            built +=
-                                it
+                AmTestTheme {
+                    val scope = rememberCoroutineScope()
+                    val controller =
+                        remember {
+                            CommandPaletteController(FakeCommandRegistry(scope), scope, RecordingLogger()).also {
+                                built +=
+                                    it
+                            }
                         }
-                    }
-                CommandPalette(controller)
+                    CommandPalette(controller)
+                }
             }
 
             // Then there is no palette on the screen

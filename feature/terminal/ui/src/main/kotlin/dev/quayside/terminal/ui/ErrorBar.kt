@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
 
 /** Why a terminal did not open, with an x that dismisses the message. */
 @Composable
@@ -22,12 +23,12 @@ internal fun ErrorBar(
             Modifier
                 .fillMaxWidth()
                 .testTag(TerminalTags.ERROR)
-                .background(color = TerminalColors.warning)
+                .background(color = warnBgColor())
                 .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Label(text = TerminalStrings.of(failure), modifier = Modifier.weight(weight = 1f))
+        AmText(text = TerminalStrings.of(failure), modifier = Modifier.weight(weight = 1f))
         GlyphButton(TerminalTags.ERROR_DISMISS, glyph = "×", onDismiss)
     }
 }

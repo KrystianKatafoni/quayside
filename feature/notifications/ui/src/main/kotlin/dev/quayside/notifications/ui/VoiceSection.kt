@@ -16,6 +16,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.TextRole
 import dev.quayside.notifications.api.NotificationKind
 
 /** The "Głos" section (FR-N4): voice, rate, volume, the message of every kind and three switches. */
@@ -26,7 +28,7 @@ internal fun VoiceSection(
 ) {
     val speech = state.draft.speech
     Column(verticalArrangement = Arrangement.spacedBy(space = 10.dp)) {
-        Label(SettingsStrings["settings.speech"])
+        AmText(SettingsStrings["settings.speech"])
         VoiceRow(state, controller)
         NumberRow("settings.rate", SettingsTags.RATE, speech.rate, state.invalidAt(NotificationField.RATE)) { text ->
             controller.editSpeech { it.copy(rate = text) }
@@ -39,7 +41,7 @@ internal fun VoiceSection(
         ) { text ->
             controller.editSpeech { it.copy(volume = text) }
         }
-        Label(SettingsStrings["settings.templates"])
+        AmText(SettingsStrings["settings.templates"])
         NotificationKind.entries.forEach { TemplateRow(it, state, controller) }
         SpeechSwitches(speech, controller)
     }
@@ -74,7 +76,12 @@ private fun VoiceRow(
     }
     if (state.voicesFailed) {
         val tag = Modifier.testTag(SettingsTags.VOICES_FAILED)
-        Label(SettingsStrings["voices.failed"], tag, SettingsColors.error, size = 12)
+        AmText(
+            SettingsStrings["voices.failed"],
+            tag,
+            TextRole.CAPTION,
+            errColor(),
+        )
     }
 }
 
@@ -149,5 +156,10 @@ private fun SpeechSwitches(
         controller.editSpeech { it.copy(muteWhenMicrophoneActive = on) }
     }
     val tag = Modifier.testTag(SettingsTags.MIC_NOTE)
-    Label(SettingsStrings["settings.micNote"], tag, SettingsColors.secondary, size = 12)
+    AmText(
+        SettingsStrings["settings.micNote"],
+        tag,
+        TextRole.CAPTION,
+        mutedColor(),
+    )
 }

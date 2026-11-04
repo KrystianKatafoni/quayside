@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
 
 /** Attach and reply buttons, then stop, respawn, remove and "Podgląd", then the "in progress" text or the failure. */
 @Composable
@@ -29,13 +32,13 @@ internal fun SessionActionsView(
     }
     details.busy?.let {
         Box(Modifier.testTag(MissionControlTags.DETAILS_BUSY)) {
-            Label(MissionControlStrings["action.${it.name.lowercase()}.busy"], Colors.secondary)
+            AmText(MissionControlStrings["action.${it.name.lowercase()}.busy"], color = mutedColor())
         }
     }
     details.failure?.let {
         Column(Modifier.testTag(MissionControlTags.DETAILS_FAILURE)) {
-            Label(MissionControlStrings["action.${it.action.name.lowercase()}.failed"], Colors.of(Tone.ERR))
-            Label(MissionControlStrings.format(it.reason), Colors.of(Tone.ERR))
+            AmText(MissionControlStrings["action.${it.action.name.lowercase()}.failed"], color = Tone.ERR.tint())
+            AmText(MissionControlStrings.format(it.reason), color = Tone.ERR.tint())
         }
     }
 }
@@ -51,10 +54,11 @@ private fun ActionButton(
             Modifier
                 .testTag(tag)
                 .focusProperties { canFocus = false }
+                .clip(AmTheme.shape.corner)
                 .clickable(role = Role.Button, onClick = onClick)
-                .background(color = Colors.button)
+                .background(color = raisedColor())
                 .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
-        Label(MissionControlStrings[labelKey])
+        AmText(MissionControlStrings[labelKey])
     }
 }

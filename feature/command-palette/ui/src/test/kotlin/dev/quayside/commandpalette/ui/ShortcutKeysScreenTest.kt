@@ -30,6 +30,7 @@ import dev.quayside.commandpalette.api.KeyChord
 import dev.quayside.commandpalette.api.Shortcut
 import dev.quayside.commandpalette.api.aCommand
 import dev.quayside.commandpalette.api.letterChord
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.testing.RecordingLogger
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
@@ -63,24 +64,26 @@ class ShortcutKeysScreenTest {
     private fun ComposeUiTest.showKeys(vararg commands: Command): CommandPaletteController {
         val built = mutableListOf<CommandPaletteController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    val registry = FakeCommandRegistry(scope)
-                    registry.register(FakeCommandProvider(commands.toList()))
-                    CommandPaletteController(registry, scope, RecordingLogger()).also { built += it }
-                }
-            val focus = remember { FocusRequester() }
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .testTag(KEYS)
-                    .focusRequester(focus)
-                    .onKeyEvent(controller::onKeyEvent)
-                    .focusable(),
-            )
-            CommandPalette(controller)
-            LaunchedEffect(Unit) { focus.requestFocus() }
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        val registry = FakeCommandRegistry(scope)
+                        registry.register(FakeCommandProvider(commands.toList()))
+                        CommandPaletteController(registry, scope, RecordingLogger()).also { built += it }
+                    }
+                val focus = remember { FocusRequester() }
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .testTag(KEYS)
+                        .focusRequester(focus)
+                        .onKeyEvent(controller::onKeyEvent)
+                        .focusable(),
+                )
+                CommandPalette(controller)
+                LaunchedEffect(Unit) { focus.requestFocus() }
+            }
         }
         waitUntil { built.isNotEmpty() }
         waitForIdle()

@@ -1,13 +1,11 @@
 package dev.quayside.missioncontrol.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import dev.quayside.core.designsystem.AmPanel
+import dev.quayside.core.designsystem.AmText
 
 /** The "⋯" button of a row; the popup of [menu] hangs under it. Never takes focus (see [SessionRowView]). */
 @Composable
@@ -54,7 +54,7 @@ internal fun RowMenuButton(
                 .clickable(role = Role.Button) { menu.setOpen(true) }
                 .padding(horizontal = 8.dp),
     ) {
-        Label(MissionControlStrings["row.menu"], Colors.secondary)
+        AmText(MissionControlStrings["row.menu"], color = mutedColor())
         if (menu.open && menu.controls.isNotEmpty()) RowMenuPopup(menu, onPick)
     }
 }
@@ -73,21 +73,21 @@ private fun RowMenuPopup(
     ) {
         // Inside the popup: the modifier is attached only once its content is composed (like the dialogs).
         LaunchedEffect(Unit) { focus.requestFocus() }
-        Column(
+        AmPanel(
             modifier =
                 Modifier
                     .width(width = 200.dp)
-                    .background(color = Colors.panel, shape = RoundedCornerShape(size = 8.dp))
-                    .padding(vertical = 4.dp)
                     .focusRequester(focus)
                     .focusable()
                     .onPreviewKeyEvent { event -> closesOn(event).also { if (it) menu.setOpen(false) } }
                     .testTag(MissionControlTags.ROW_MENU),
         ) {
-            menu.controls.forEach { control ->
-                MenuItem(control) {
-                    menu.setOpen(false)
-                    onPick(control.event)
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                menu.controls.forEach { control ->
+                    MenuItem(control) {
+                        menu.setOpen(false)
+                        onPick(control.event)
+                    }
                 }
             }
         }
@@ -110,7 +110,7 @@ private fun MenuItem(
                 .width(width = 200.dp)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
-        Label(MissionControlStrings[control.labelKey])
+        AmText(MissionControlStrings[control.labelKey])
     }
 }
 

@@ -14,6 +14,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.amFocusFrame
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 
@@ -27,18 +29,21 @@ internal fun ChannelMatrix(
     controller: NotificationSettingsController,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-        Label(SettingsStrings["settings.matrix"])
+        AmText(SettingsStrings["settings.matrix"])
         Row {
             Box(Modifier.width(kindWidth))
             NotificationChannel.entries.forEach { channel ->
-                Box(
-                    Modifier.width(channelWidth),
-                ) { Label(SettingsStrings.of(channel), color = SettingsColors.secondary) }
+                Box(Modifier.width(channelWidth)) {
+                    AmText(
+                        SettingsStrings.of(channel),
+                        color = mutedColor(),
+                    )
+                }
             }
         }
         NotificationKind.entries.forEach { kind ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Label(SettingsStrings.of(kind), Modifier.width(kindWidth))
+                AmText(SettingsStrings.of(kind), Modifier.width(kindWidth))
                 NotificationChannel.entries.forEach { channel ->
                     val on = channel in draft.matrix[kind].orEmpty()
                     MatrixCell(kind, channel, on) { controller.edit { it.toggled(kind, channel) } }
@@ -59,7 +64,7 @@ private fun MatrixCell(
         Box(
             Modifier
                 .testTag(SettingsTags.cell(kind, channel))
-                .focusFrame()
+                .amFocusFrame()
                 .semantics { contentDescription = SettingsStrings.cellLabel(kind, channel) }
                 .toggleable(value = on, role = Role.Checkbox, onValueChange = { onToggle() }),
         ) {

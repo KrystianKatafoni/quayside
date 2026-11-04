@@ -27,6 +27,11 @@ internal object Scopes {
 
     fun featureImpl(): List<KoFileDeclaration> = mainFiles.filter { FEATURE_IMPL.containsMatchIn(it.path) }
 
+    /** Screens: the `ui` modules of features and the composition root `app` (AM-806: colours from `AmTheme` only). */
+    fun featureUiAndApp(): List<KoFileDeclaration> =
+        mainFiles.filter { FEATURE_UI.containsMatchIn(it.path) || it.path.contains("/app/src/main/") }
+
+    private val FEATURE_UI = Regex("/feature/[^/]+/ui/src/main/")
     private val FEATURE_API = Regex("/feature/[^/]+/api/src/main/")
     private val FEATURE_IMPL = Regex("/feature/[^/]+/impl/src/main/")
 }

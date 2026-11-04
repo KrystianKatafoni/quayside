@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
 import dev.quayside.notifications.api.NotificationChannel
@@ -49,12 +50,14 @@ class NotificationSettingsDialogScreenTest {
     private fun ComposeUiTest.showDialog() {
         val built = mutableListOf<NotificationSettingsController>()
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), scope).also(built::add)
-                }
-            NotificationSettingsDialog(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), scope).also(built::add)
+                    }
+                NotificationSettingsDialog(controller)
+            }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }
         runOnIdle { built.single().open() }

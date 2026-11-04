@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.StorageIssue
@@ -31,9 +32,11 @@ import org.junit.jupiter.api.Test
 class ProjectsSidebarFocusTest {
     private fun ComposeUiTest.showSidebar(world: ControllerWorld) {
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller = remember { world.controller(scope) }
-            ProjectsSidebar(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller = remember { world.controller(scope) }
+                ProjectsSidebar(controller)
+            }
         }
     }
 

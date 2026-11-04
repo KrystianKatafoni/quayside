@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Nowy domyślny wygląd Plex Violet z fontami IBM Plex: wszystkie ekrany (Mission Control, sidebar, terminal, powiadomienia, paleta, okna dialogowe) czytają kolory, kształt i typografię z `AmTheme`; terminal (JediTerm) zostaje w starych kolorach (AM-806).
 - Cisza nocna i wyjątki projektów w `notifications.json` (ustawiane w pliku do czasu ekranu w AM-706; cisza domyślnie wyłączona; profile projektu: domyślny / tylko błędy / wyciszony, osobny głos projektu) (AM-705).
 - Nowy agent: okno startu agenta z programu (⌘N, komenda palety „Nowy agent…”, menu Projekty → Nowy agent… oraz przycisk „Nowy agent ⌘N” w nagłówku strony projektu); pola: projekt, prompt, nazwa, subagent, model i tryb uprawnień; start dopiero po „Uruchom” lub ⌘⏎ (AM-608).
 - Okno „Hooki Claude Code” (Widok → Hooki Claude Code… i paleta komend) oraz propozycja instalacji hooków przy pierwszym uruchomieniu: status, instalacja i odinstalowanie tylko globalnie w `~/.claude/settings.json`, po zgodzie użytkownika, z kopią zapasową przed zmianą; „Pomiń” zapamiętuje wybór w `hook-offer.json` (AM-607).

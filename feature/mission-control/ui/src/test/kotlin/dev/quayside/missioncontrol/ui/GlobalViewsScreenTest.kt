@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
@@ -86,22 +87,24 @@ internal class GlobalViewsScreenTest {
 
     private fun ComposeUiTest.showViews(sessions: SessionsApi) {
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller =
-                remember {
-                    MissionControlController(
-                        sessions,
-                        FakeProjectsApi(initial = listOf(project, other)),
-                        MutableStateFlow(project.id),
-                        TestClock(T0.plusSeconds(600)),
-                        scope,
-                        NoOpLogger,
-                        tick = 1.hours,
-                    )
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller =
+                    remember {
+                        MissionControlController(
+                            sessions,
+                            FakeProjectsApi(initial = listOf(project, other)),
+                            MutableStateFlow(project.id),
+                            TestClock(T0.plusSeconds(600)),
+                            scope,
+                            NoOpLogger,
+                            tick = 1.hours,
+                        )
+                    }
+                Row {
+                    GlobalViews(controller)
+                    MissionControl(controller, Modifier.weight(weight = 1f))
                 }
-            Row {
-                GlobalViews(controller)
-                MissionControl(controller, Modifier.weight(weight = 1f))
             }
         }
     }

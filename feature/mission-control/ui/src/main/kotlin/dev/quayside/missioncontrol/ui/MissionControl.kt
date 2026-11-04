@@ -6,37 +6,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import dev.quayside.core.domain.SessionId
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.toColor
 
 /**
  * The centre of the window: header, filter, session list, details panel and mode bar; stateless apart from
@@ -61,7 +48,13 @@ public fun MissionControl(
             else -> controller.onEvent(event)
         }
     }
-    Column(modifier = modifier.fillMaxSize().background(color = Colors.background).testTag(MissionControlTags.ROOT)) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(color = bgColor())
+                .testTag(MissionControlTags.ROOT),
+    ) {
         Box(modifier = Modifier.weight(weight = 1f).fillMaxWidth()) {
             when (val screen = state.screen) {
                 Screen.NoProjects -> Empty("empty.noProjects", "empty.noProjects.hint")
@@ -85,8 +78,8 @@ private fun Empty(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Label(MissionControlStrings[title], size = 20)
-        hint?.let { Label(MissionControlStrings[it], Colors.secondary) }
+        AmText(MissionControlStrings[title], role = TextRole.TITLE)
+        hint?.let { AmText(MissionControlStrings[it], color = mutedColor()) }
     }
 }
 
@@ -122,7 +115,11 @@ internal fun SessionPage(
         ) {
             header()
             banner?.let {
-                Text(it, Modifier.fillMaxWidth().background(color = Colors.warning), MissionControlTags.BANNER)
+                Text(
+                    it,
+                    Modifier.fillMaxWidth().background(color = warnBgColor()),
+                    MissionControlTags.BANNER,
+                )
             }
             filters()
             if (loading) {
@@ -144,9 +141,9 @@ private fun Header(
 ) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Column(modifier = Modifier.testTag(MissionControlTags.HEADER)) {
-            Label(header.name, size = 18)
-            Label(header.path.toString(), Colors.secondary, mono = true)
-            Label(MissionControlStrings.formatted("header.sessions", header.sessions))
+            AmText(header.name, role = TextRole.TITLE)
+            AmText(header.path.toString(), role = TextRole.CODE, color = mutedColor())
+            AmText(MissionControlStrings.formatted("header.sessions", header.sessions))
         }
         NewAgentButton { onEvent(MissionControlEvent.NewAgent) }
     }
@@ -160,11 +157,12 @@ private fun NewAgentButton(onClick: () -> Unit) {
             Modifier
                 .testTag(MissionControlTags.NEW_AGENT)
                 .focusProperties { canFocus = false }
+                .clip(AmTheme.shape.corner)
                 .clickable(role = Role.Button, onClick = onClick)
-                .background(color = Colors.button)
+                .background(color = raisedColor())
                 .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
-        Label(MissionControlStrings["newAgent.button"])
+        AmText(MissionControlStrings["newAgent.button"])
     }
 }
 
@@ -176,94 +174,20 @@ private fun Filters(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(space = 4.dp)) {
         SessionFilter.entries.forEach { filter ->
+            val surfaces = AmTheme.colors.surfaces
             Box(
                 modifier =
                     Modifier
                         .testTag(MissionControlTags.filter(filter))
                         .focusProperties { canFocus = false }
+                        .clip(AmTheme.shape.corner)
                         .clickable(role = Role.Tab) { onEvent(MissionControlEvent.SelectFilter(filter)) }
-                        .background(color = if (filter == current) Colors.selection else Colors.button)
+                        .background(color = (if (filter == current) surfaces.sel else surfaces.raised).toColor())
                         .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
-                Label(MissionControlStrings["filter.${filter.name.lowercase()}"])
+                AmText(MissionControlStrings["filter.${filter.name.lowercase()}"])
             }
         }
-    }
-}
-
-@Composable
-private fun Details(
-    details: SessionDetails?,
-    onEvent: (MissionControlEvent) -> Unit,
-) {
-    val panel =
-        Modifier
-            .width(width = 300.dp)
-            .fillMaxHeight()
-            .background(color = Colors.panel)
-            .padding(all = 12.dp)
-    if (details == null) {
-        Box(modifier = panel.testTag(MissionControlTags.DETAILS_EMPTY), contentAlignment = Alignment.Center) {
-            Label(MissionControlStrings["details.none"], Colors.secondary)
-        }
-        return
-    }
-    Column(
-        modifier = panel.testTag(MissionControlTags.DETAILS),
-        verticalArrangement = Arrangement.spacedBy(space = 6.dp),
-    ) {
-        Label(details.name, size = 18, mono = true)
-        Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-            Label(details.glyph.symbol, Colors.of(details.glyph.tone))
-            Label(MissionControlStrings[details.glyph.key])
-        }
-        details.summary?.let { Label(it) }
-        SessionActionsView(details, onEvent)
-        Field("details.worktree", details.worktree.toString())
-        Field("details.id", details.id.value)
-        Field("details.startedAt", timeFormat.format(details.startedAt))
-        Field("details.lastActivity", timeFormat.format(details.lastActivityAt))
-    }
-}
-
-@Composable
-private fun Field(
-    key: String,
-    value: String,
-) {
-    Column {
-        Label(MissionControlStrings[key], Colors.secondary)
-        Label(value, mono = true)
-    }
-}
-
-/**
- * `NORMAL`, the selected project (none in a global view), the counters of every project and the freshness of the
- * snapshot; at the end the "Skróty" toggle of the cheat sheet, which opens above the bar (closed at start).
- */
-@Composable
-private fun ModeBarView(bar: ModeBar) {
-    var shortcuts by remember { mutableStateOf(value = false) }
-    if (shortcuts) ShortcutsPanel()
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(height = 28.dp)
-                .background(color = Colors.panel)
-                .padding(horizontal = 12.dp)
-                .testTag(MissionControlTags.MODE_BAR),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
-    ) {
-        Label(bar.mode, Colors.accent, mono = true)
-        bar.project?.let { Label(it) }
-        Label(MissionControlStrings.formatted("modeBar.waiting", bar.waiting), Colors.of(Tone.WARN))
-        Label(MissionControlStrings.formatted("modeBar.working", bar.working), Colors.of(Tone.WORK))
-        Box(modifier = Modifier.weight(weight = 1f)) {
-            Label(MissionControlStrings.format(bar.freshness), Colors.secondary)
-        }
-        ShortcutsToggle(shortcuts) { shortcuts = !shortcuts }
     }
 }
 
@@ -273,12 +197,8 @@ private fun Text(
     modifier: Modifier = Modifier,
     tag: String,
 ) {
-    Box(modifier = modifier.testTag(tag).padding(all = 8.dp)) { Label(MissionControlStrings.format(text)) }
+    Box(modifier = modifier.testTag(tag).padding(all = 8.dp)) { AmText(MissionControlStrings.format(text)) }
 }
 
 /** The list takes this share of the middle column while the preview is open; the preview takes the rest. */
 private const val LIST_SHARE = 0.6f
-
-/** Start and last activity in the details panel, in the zone of the Mac. */
-private val timeFormat: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())

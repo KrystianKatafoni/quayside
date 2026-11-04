@@ -94,6 +94,22 @@ class ModuleBoundariesTest {
         }
     }
 
+    @Test
+    fun `feature ui and app declare no colour palettes`() {
+        Scopes
+            .featureUiAndApp()
+            .requireModules("feature ui modules and app")
+            .flatMap { it.classes() + it.objects() }
+            .assertFalse { it.name.endsWith("Colors") }
+    }
+
+    @Test
+    fun `feature ui and app have no hex colour literals`() {
+        Scopes.featureUiAndApp().requireModules("feature ui modules and app").assertFalse { file ->
+            HEX_COLOR.containsMatchIn(file.text)
+        }
+    }
+
     private fun expectedPackagePrefix(path: String): String {
         val module = MODULE_PATH.find(path)?.groupValues?.get(1) ?: return "dev.quayside"
         val segments = module.split('/').map { it.replace("-", "") }
@@ -102,6 +118,8 @@ class ModuleBoundariesTest {
     }
 
     private companion object {
+        /** `Color(0xFF…)` and `Color(color = 0x…)`: a colour written by hand instead of read from `AmTheme`. */
+        val HEX_COLOR = Regex("""Color\(\s*(color\s*=\s*)?0x""")
         val MODULE_PATH = Regex("/((?:core|feature|tests)/[^/]+(?:/(?:api|impl|ui))?)/src/main/")
     }
 }

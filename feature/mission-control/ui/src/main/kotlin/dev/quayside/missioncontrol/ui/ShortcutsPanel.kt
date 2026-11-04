@@ -13,6 +13,9 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmModeBadge
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.TextRole
 
 /**
  * The "Skróty" toggle of the mode bar (AM-511, ADR 0015). Never takes focus, so a click does not turn `space` and
@@ -23,7 +26,7 @@ internal fun ShortcutsToggle(
     open: Boolean,
     onToggle: () -> Unit,
 ) {
-    val color = if (open) Colors.accent else Colors.secondary
+    val label = MissionControlStrings["shortcuts.toggle"]
     Box(
         modifier =
             Modifier
@@ -32,7 +35,8 @@ internal fun ShortcutsToggle(
                 .clickable(role = Role.Button, onClick = onToggle)
                 .padding(horizontal = 6.dp),
     ) {
-        Label(MissionControlStrings["shortcuts.toggle"], color)
+        // Open = a badge (accentInk on accent): accent as text colour is not covered by the contrast audit.
+        if (open) AmModeBadge(label) else AmText(label, role = TextRole.CAPTION)
     }
 }
 
@@ -43,13 +47,19 @@ internal fun ShortcutsPanel() {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(color = Colors.panel)
+                .background(color = panelColor())
                 .padding(horizontal = 12.dp, vertical = 8.dp)
                 .testTag(MissionControlTags.SHORTCUTS),
         verticalArrangement = Arrangement.spacedBy(space = 2.dp),
     ) {
-        Label(MissionControlStrings["shortcuts.title"], size = 14)
-        SHORTCUT_KEYS.forEach { Label(MissionControlStrings["shortcuts.$it"], Colors.secondary, mono = true) }
+        AmText(MissionControlStrings["shortcuts.title"], role = TextRole.HEADING)
+        SHORTCUT_KEYS.forEach {
+            AmText(
+                MissionControlStrings["shortcuts.$it"],
+                role = TextRole.CODE,
+                color = mutedColor(),
+            )
+        }
     }
 }
 

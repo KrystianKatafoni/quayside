@@ -1,6 +1,5 @@
 package dev.quayside.terminal.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -18,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -33,11 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import dev.quayside.core.designsystem.AmPanel
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.amScrim
 import dev.quayside.terminal.api.ShellProfile
 import dev.quayside.terminal.api.StartDirectory
 import dev.quayside.terminal.api.TerminalSettingsField
-
-private val panelShape = RoundedCornerShape(size = 10.dp)
 
 /**
  * The "Ustawienia terminala" dialog over the whole window (AM-508, FR-T7); draws nothing while [controller] has
@@ -54,7 +53,7 @@ public fun TerminalSettingsDialog(controller: TerminalSettingsController) {
         properties = PopupProperties(focusable = true),
     ) {
         Box(
-            modifier = Modifier.fillMaxSize().background(color = Color(color = 0x99000000)),
+            modifier = Modifier.fillMaxSize().amScrim(),
             contentAlignment = Alignment.Center,
         ) {
             SettingsPanel(shown, controller)
@@ -67,27 +66,29 @@ private fun SettingsPanel(
     state: SettingsDialogState,
     controller: TerminalSettingsController,
 ) {
-    Column(
+    AmPanel(
         modifier =
             Modifier
                 .width(width = 640.dp)
-                .background(color = TerminalColors.panel, shape = panelShape)
-                .padding(all = 16.dp)
                 .testTag(TerminalTags.SETTINGS_DIALOG)
                 .onPreviewKeyEvent { event ->
                     val escape = event.type == KeyEventType.KeyDown && event.key == Key.Escape
                     if (escape) controller.cancel()
                     escape
                 },
-        verticalArrangement = Arrangement.spacedBy(space = 10.dp),
     ) {
-        Label(TerminalStrings["settings.title"])
-        state.notice?.let { Notice(TerminalStrings.of(it)) }
-        Label(TerminalStrings["settings.hint"], color = TerminalColors.secondary)
-        ChoiceRows(state, controller)
-        FieldRows(state, controller)
-        ToggleRows(state.draft, controller)
-        SettingsFooter(state.storageFailed, controller)
+        Column(modifier = Modifier.padding(all = 16.dp), verticalArrangement = Arrangement.spacedBy(space = 10.dp)) {
+            AmText(TerminalStrings["settings.title"], role = TextRole.HEADING)
+            state.notice?.let { Notice(TerminalStrings.of(it)) }
+            AmText(
+                TerminalStrings["settings.hint"],
+                color = mutedColor(),
+            )
+            ChoiceRows(state, controller)
+            FieldRows(state, controller)
+            ToggleRows(state.draft, controller)
+            SettingsFooter(state.storageFailed, controller)
+        }
     }
 }
 
@@ -99,10 +100,10 @@ private fun SettingsFooter(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(space = 10.dp)) {
         if (storageFailed) {
-            Label(
+            AmText(
                 TerminalStrings["settings.storageError"],
                 Modifier.testTag(TerminalTags.SETTINGS_STORAGE_ERROR),
-                TerminalColors.error,
+                color = errColor(),
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(space = 8.dp)) {
@@ -114,7 +115,11 @@ private fun SettingsFooter(
 
 @Composable
 private fun Notice(text: String) {
-    Label(text, Modifier.testTag(TerminalTags.SETTINGS_NOTICE), TerminalColors.warning)
+    AmText(
+        text,
+        Modifier.testTag(TerminalTags.SETTINGS_NOTICE),
+        color = warnColor(),
+    )
 }
 
 /** Shell and start directory; the first control takes the focus when the dialog opens. */

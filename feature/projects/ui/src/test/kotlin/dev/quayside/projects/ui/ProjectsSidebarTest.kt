@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.testing.aSessionId
 import dev.quayside.projects.api.A_PROJECT_DIR
@@ -55,9 +56,11 @@ class ProjectsSidebarTest {
 
     private fun ComposeUiTest.showSidebar(world: ControllerWorld) {
         setContent {
-            val scope = rememberCoroutineScope()
-            val controller = remember { world.controller(scope) }
-            ProjectsSidebar(controller)
+            AmTestTheme {
+                val scope = rememberCoroutineScope()
+                val controller = remember { world.controller(scope) }
+                ProjectsSidebar(controller)
+            }
         }
     }
 

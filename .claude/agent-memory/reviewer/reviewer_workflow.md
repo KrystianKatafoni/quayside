@@ -15,5 +15,8 @@ Mutacje rób wyłącznie w kopii: `rsync -a --exclude .git --exclude build --exc
 - Mutacje równoważne (np. `>=` → `>` przy porównaniu double z progiem) nie są uwagą blokującą.
 - Weryfikacja `SOURCES.md` fontów: `grep -F` (nazwy plików mają `[wght]`, zwykły grep traktuje to jak klasę znaków i daje fałszywe rozjazdy); porównaj z `curl` z URL przypiętego commita.
 - Porównanie katalogu z „Quayside Themes Documentation.md”: skrypt parsujący bloki CSS (`--bg-main`… `--shadow`, `rgba` → `#RRGGBB/NN`) przeciw wierszom Kotlina.
+- Rozmiar diffu z nowymi plikami: NIE używaj `git add -N .` + `git reset` — `reset` zdejmuje z indeksu wcześniejsze `git rm` autora (AM-806: musiałem przywracać `git rm --cached`). Licz `git diff HEAD --numstat` dla śledzonych i `wc -l` dla `git ls-files -o --exclude-standard`.
+- Sondy (np. wypisanie par kontrastu prawdziwego motywu z katalogu) pisz jako tymczasowy test w kopii, wynik do pliku w scratchpadzie; usuń przed mutacjami.
+- Źródła Compose do weryfikacji twierdzeń (np. `SwingWindow` przekazuje `currentCompositionLocalContext`, granice `SemanticsNode`): `curl -sfLO https://repo1.maven.org/maven2/org/jetbrains/compose/ui/ui-desktop/<wersja>/ui-desktop-<wersja>-sources.jar`.
 
 Powiązane: [[recurring-review-findings]]

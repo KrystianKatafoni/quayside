@@ -1,8 +1,5 @@
 package dev.quayside.app
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,20 +7,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -31,47 +23,23 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import dev.quayside.agentruntime.api.HookError
 import dev.quayside.agentruntime.api.HookKind
 import dev.quayside.agentruntime.api.HookStatus
+import dev.quayside.core.designsystem.AmButton
+import dev.quayside.core.designsystem.AmPanel
+import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.amScrim
 import java.nio.file.Path
-
-/** Semantics tags of the hooks dialog (AM-607). */
-internal object HookTags {
-    const val DIALOG = "hooks.dialog"
-    const val INFO = "hooks.info"
-    const val STATUS = "hooks.status"
-    const val NOTICE = "hooks.notice"
-    const val INSTALL = "hooks.install"
-    const val UNINSTALL = "hooks.uninstall"
-    const val CLOSE = "hooks.close"
-}
-
-/** Colors of the dialog; every text color has contrast of at least 4.5:1 on [panel] (NFR-6). */
-internal object HookColors {
-    val panel = Color(color = 0xFF2B2B2B)
-    val primary = Color(color = 0xFFF0F0F0)
-    val secondary = Color(color = 0xFFB8B8B8)
-    val error = Color(color = 0xFFFF8A80)
-
-    /** Border of the focused button; contrast of at least 3:1 on [panel] (WCAG 1.4.11). */
-    val focusBorder = Color(color = 0xFF8AB4F8)
-    val button = Color(color = 0xFF3C3C3C)
-}
-
-private val panelShape = RoundedCornerShape(size = 10.dp)
-private val buttonShape = RoundedCornerShape(size = 4.dp)
 
 /**
  * The "Hooki Claude Code" dialog over the whole window (AM-607, NFR-5); draws nothing while [controller] has it
@@ -91,7 +59,7 @@ internal fun HookSetupDialog(
         properties = PopupProperties(focusable = true),
     ) {
         Box(
-            modifier = Modifier.fillMaxSize().background(color = Color(color = 0x99000000)),
+            modifier = Modifier.fillMaxSize().amScrim(),
             contentAlignment = Alignment.Center,
         ) {
             HookPanel(shown, controller, backupDir)
@@ -105,25 +73,31 @@ private fun HookPanel(
     controller: HookSetupController,
     backupDir: Path,
 ) {
-    Column(
+    AmPanel(
         modifier =
             Modifier
                 .width(width = 560.dp)
-                .background(color = HookColors.panel, shape = panelShape)
-                .padding(all = 16.dp)
                 .testTag(HookTags.DIALOG)
                 .onPreviewKeyEvent { event ->
                     val escape = event.type == KeyEventType.KeyDown && event.key == Key.Escape
                     if (escape) controller.close()
                     escape
                 },
-        verticalArrangement = Arrangement.spacedBy(space = 10.dp),
     ) {
-        HookText(Strings["hooks.title"], size = 15)
-        HookText(infoText(backupDir), HookColors.secondary, HookTags.INFO)
-        HookText(statusText(state.status), tag = HookTags.STATUS)
-        state.notice?.let { HookText(noticeText(it, backupDir), noticeColor(it), HookTags.NOTICE) }
-        HookButtons(state, controller)
+        Column(
+            modifier = Modifier.padding(all = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(space = 10.dp),
+        ) {
+            AmText(Strings["hooks.title"], role = TextRole.HEADING)
+            HookText(
+                infoText(backupDir),
+                HookTags.INFO,
+                mutedColor(),
+            )
+            HookText(statusText(state.status), HookTags.STATUS)
+            state.notice?.let { HookText(noticeText(it, backupDir), HookTags.NOTICE, noticeColor(it)) }
+            HookButtons(state, controller)
+        }
     }
 }
 
@@ -147,7 +121,6 @@ private fun HookButtons(
     }
 }
 
-/** A button with a visible focus frame in [HookColors.focusBorder]. */
 @Composable
 private fun HookButton(
     tag: String,
@@ -156,34 +129,22 @@ private fun HookButton(
     requester: FocusRequester = remember { FocusRequester() },
     onClick: () -> Unit,
 ) {
-    var focused by remember { mutableStateOf(value = false) }
-    val frame = if (focused) HookColors.focusBorder else Color.Transparent
-    Box(
-        Modifier
-            .testTag(tag)
-            .background(color = HookColors.button, shape = buttonShape)
-            .border(width = 2.dp, color = frame, shape = buttonShape)
-            .focusRequester(requester)
-            .onFocusChanged { focused = it.isFocused }
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-    ) {
-        HookText(Strings[textKey], if (enabled) HookColors.primary else HookColors.secondary)
-    }
+    AmButton(
+        label = Strings[textKey],
+        onClick = onClick,
+        modifier = Modifier.testTag(tag).focusRequester(requester),
+        enabled = enabled,
+    )
 }
 
+/** Wrapping text of the dialog in the colour [color] (the container colour when null). */
 @Composable
 private fun HookText(
     text: String,
-    color: Color = HookColors.primary,
-    tag: String? = null,
-    size: Int = 13,
+    tag: String,
+    color: Color? = null,
 ) {
-    BasicText(
-        text = text,
-        modifier = if (tag == null) Modifier else Modifier.testTag(tag),
-        style = TextStyle(color = color, fontSize = size.sp),
-    )
+    AmText(text, modifier = Modifier.testTag(tag), color = color, maxLines = Int.MAX_VALUE)
 }
 
 /** What changes before the install: the port and the backup folder come from the app wiring, not from constants. */
@@ -230,8 +191,8 @@ private fun errorText(error: HookError): String =
         is HookError.BackupNotFound -> Strings["hooks.error.backupNotFound"]
     }
 
-private fun noticeColor(notice: HookNotice): Color =
-    if (notice is HookNotice.Failed) HookColors.error else HookColors.primary
+@Composable
+private fun noticeColor(notice: HookNotice): Color? = if (notice is HookNotice.Failed) errColor() else null
 
 /** The name of the event in the Claude Code settings file. */
 private fun HookKind.eventName(): String =

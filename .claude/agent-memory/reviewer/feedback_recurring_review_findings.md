@@ -76,5 +76,11 @@ Sprawdzaj od razu przy każdym review:
   **How to apply:** dla każdego pola tokenu przekazywanego do Compose zrób mutację „pole = 0 / stała” i sprawdź, czy coś pada.
 - Compose `Modifier.dropShadow` rysuje cień POD treścią bez wycięcia wnętrza (inaczej niż CSS `box-shadow`) — przy półprzezroczystym panelu (`glass-light`) cień prześwituje; KDoc „outside the shape” jest wtedy nieprawdziwy. Sprawdzaj źródła (`ui-desktop`/`ui-graphics-desktop` sources z repo1.maven.org).
 - `error()`/`@throws` w czystej funkcji wyprowadzającej z list kandydatów (`deriveStatus`): sprawdź brute-force, czy wyjątek jest osiągalny (czerwony akcent 350–10° nie ma trójki) — OK dla stałych katalogu, ale ścieżka błędu bez testu (mutacja `?: error` → domyślna trójka przeżyła) i funkcji nie wolno użyć dla danych użytkownika (AM-804) bez `Outcome`.
+- AM-806 (2026-11-04): znów ROADMAP `[ ]` mimo planu (commit 8: `[x]`) — piąty raz z rzędu w M8.
+- AM-806: zmiany „przy okazji” bez wymuszenia przez bramkę: przeformatowanie `Slf4jLogger.kt`, `TerminalCommands.kt` i `TerminalTabs.kt` (`if (tab ==\n null\n)`) — w kopii przywrócone do `HEAD` dały zielony `quickCheck`.
+  **How to apply:** dla każdego pliku w diffie spoza listy „Moduły” planu przywróć go w kopii do `HEAD` i uruchom `quickCheck`; zielono = zbędna zmiana (blokująca: złota zasada 1).
+- AM-806: test kontrastu par ekranów pokrywał pary z planu („muted i statusy tylko na bg/panel”), a ekrany kładą `muted` i statusy na `sel` (wybrany wiersz MC, licznik sidebara, kod wyjścia karty terminala, licznik widoku globalnego) i `muted` na `warnBg` (× w banerze). Na `plex` przechodzi (≥ 5,9:1), ale audyt i KDoc (`Tone.tint`: „tylko bg i panel”) kłamią; AM-803 otwiera inne motywy.
+  **How to apply:** grepuj `if (selected) sel`/`selColor()` i `warnBgColor()`, potem kolory tekstów w środku tych kontenerów; porównaj z mapami w `ScreenContrastTest`.
+- Granice węzła semantyki w Compose = zewnętrzny modyfikator *scalający* (`SemanticsNode.findCoordinatorToGetBounds`), więc `testTag` przed `amFocusFrame` + `clickable` w środku daje granice bez ramki; obejście `semantics(mergeDescendants = true) {}` zmienia tylko granice (nie właściwości). Lepsze miejsce: wewnątrz `AmButton`.
 
 Powiązane: [[reviewer-workflow]]

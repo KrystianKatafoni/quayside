@@ -180,6 +180,7 @@ class DefaultNotificationCenterTest {
     /** A center built directly, so the voice hand-off and the context can be observed. */
     private class Voiced {
         val received = mutableListOf<Pair<Delivery, String?>>()
+        val sounds = mutableListOf<Delivery>()
         var appActive = false
     }
 
@@ -193,6 +194,7 @@ class DefaultNotificationCenterTest {
             projectName = { id: ProjectId? -> id?.let { "Quayside" } },
             context = { ctx(appActive = voiced.appActive) },
             voice = { delivery, project -> voiced.received += delivery to project },
+            sound = { delivery -> voiced.sounds += delivery },
         )
 
     @Test
@@ -267,5 +269,127 @@ class DefaultNotificationCenterTest {
 
             voiced.received shouldBe
                 listOf(Delivery(NotificationChannel.VOICE, NotificationKind.TERMINAL_BELL, null) to null)
+        }
+
+    @Test
+    fun `sound delivery goes to the sound notifier`() =
+        runTest {
+            val voiced = Voiced()
+            val center = direct(voiced)
+            val seen = collected(center)
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            voiced.sounds shouldBe
+                listOf(Delivery(NotificationChannel.SOUND, NotificationKind.NEEDS_INPUT, waiting))
+            seen.map { it.channel } shouldContain NotificationChannel.SOUND
+        }
+
+    @Test
+    fun `dock badge delivery plays no sound`() =
+        runTest {
+            val voiced = Voiced()
+            val repo =
+                FakeNotificationSettingsRepo(
+                    NotificationSettings(
+                        matrix =
+                            mapOf(NotificationKind.NEEDS_INPUT to setOf(NotificationChannel.DOCK_BADGE)),
+                    ),
+                )
+            val center = direct(voiced, repo)
+            val seen = collected(center)
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            seen.map { it.channel } shouldBe listOf(NotificationChannel.DOCK_BADGE)
+            voiced.sounds shouldBe emptyList()
+            voiced.received shouldBe emptyList()
+        }
+
+    @Test
+    fun `a kind without the sound channel plays no sound`() =
+        runTest {
+            val voiced = Voiced()
+            val repo =
+                FakeNotificationSettingsRepo(
+                    NotificationSettings().withChannel(NotificationKind.NEEDS_INPUT, NotificationChannel.SOUND, false),
+                )
+            val center = direct(voiced, repo)
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            voiced.sounds shouldBe emptyList()
+        }
+
+    @Test
+    fun `muted session gets no sound`() =
+        runTest {
+            val voiced = Voiced()
+            val center = direct(voiced)
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+            center.onAction(
+                center.popups.value
+                    .single()
+                    .id,
+                PopupAction.MUTE,
+            )
+            voiced.sounds.clear()
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            voiced.sounds shouldBe emptyList()
+        }
+
+    @Test
+    fun `one event gives voice and sound`() =
+        runTest {
+            val voiced = Voiced()
+            val center = direct(voiced)
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            voiced.received.map { it.first.channel } shouldBe listOf(NotificationChannel.VOICE)
+            voiced.sounds.map { it.channel } shouldBe listOf(NotificationChannel.SOUND)
+        }
+
+    @Test
+    fun `active app still gives the sound delivery`() =
+        runTest {
+            val voiced = Voiced().apply { appActive = true }
+            val center = direct(voiced)
+
+            center.onSessionEvent(SessionEvent.BecameBlocked(waiting))
+
+            voiced.sounds.map { it.kind } shouldBe listOf(NotificationKind.NEEDS_INPUT)
+        }
+
+    @Test
+    fun `a bell with the sound channel reaches the sound notifier without a session`() =
+        runTest {
+            val voiced = Voiced()
+            val repo =
+                FakeNotificationSettingsRepo(
+                    NotificationSettings().withChannel(NotificationKind.TERMINAL_BELL, NotificationChannel.SOUND, true),
+                )
+            val center = direct(voiced, repo)
+
+            center.notifyTerminalBell()
+
+            voiced.sounds shouldBe
+                listOf(Delivery(NotificationChannel.SOUND, NotificationKind.TERMINAL_BELL, null))
+        }
+
+    @Test
+    fun `a finished turn gives popup and sound by default`() =
+        runTest {
+            val voiced = Voiced()
+            val center = direct(voiced)
+            val seen = collected(center)
+
+            center.onSessionEvent(SessionEvent.TurnFinished(aSession(state = SessionState.Done)))
+
+            seen.map { it.channel } shouldBe listOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
+            voiced.sounds.map { it.kind } shouldBe listOf(NotificationKind.TURN_ENDED)
+            voiced.received shouldBe emptyList()
         }
 }

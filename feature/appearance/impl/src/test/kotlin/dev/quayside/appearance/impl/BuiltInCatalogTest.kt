@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 
 class BuiltInCatalogTest {
-    private val catalog: ThemeCatalog get() = appearanceModule().catalog
+    private val catalog: ThemeCatalog get() = builtInCatalog()
 
     private fun scheme(key: String): ThemeSpec = catalog.theme(SchemeId(key)).shouldNotBeNull()
 

@@ -21,7 +21,7 @@ import java.util.stream.Stream
 
 /** The 20 shaped themes of the catalog against the docs/08 table (AM-805). */
 class ShapedThemesTest {
-    private fun theme(key: String): ThemeSpec = appearanceModule().catalog.theme(SchemeId(key)).shouldNotBeNull()
+    private fun theme(key: String): ThemeSpec = builtInCatalog().theme(SchemeId(key)).shouldNotBeNull()
 
     private fun source(key: String): ThemeSource = ShapedThemeTable.rows.first { it.key == key }
 

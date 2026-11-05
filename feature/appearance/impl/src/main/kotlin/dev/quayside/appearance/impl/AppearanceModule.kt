@@ -1,40 +1,54 @@
 package dev.quayside.appearance.impl
 
 import dev.quayside.appearance.api.AppearanceApi
-import dev.quayside.appearance.api.AppearanceError
 import dev.quayside.appearance.api.AppearanceSettings
 import dev.quayside.appearance.api.ThemeCatalog
-import dev.quayside.core.domain.Outcome
+import dev.quayside.appearance.api.ThemeFiles
+import dev.quayside.core.domain.Logger
+import dev.quayside.core.domain.warn
+import dev.quayside.core.process.ProcessRunner
+import dev.quayside.core.storage.JsonStorage
+import dev.quayside.core.storage.StoreSpec
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.nio.file.Path
 
-private class BuiltInAppearance : AppearanceApi {
-    override val catalog: ThemeCatalog = ThemeCatalog(BuiltInSchemes.all, BuiltInTypographies.all)
+/** The built-in catalog (nine base and 20 shaped themes, 22 typographies); the same content on every call. */
+public fun builtInCatalog(): ThemeCatalog = ThemeCatalog(BuiltInSchemes.all, BuiltInTypographies.all)
 
-    private val current = MutableStateFlow(AppearanceSettings())
-
-    override val settings: StateFlow<AppearanceSettings> = current.asStateFlow()
-
-    override suspend fun update(
-        change: (AppearanceSettings) -> AppearanceSettings,
-    ): Outcome<AppearanceSettings, AppearanceError> {
-        while (true) {
-            val before = current.value
-            val after = change(before)
-            val refusal = refusalOf(after)
-            if (refusal != null) return Outcome.Err(refusal)
-            if (current.compareAndSet(before, after)) return Outcome.Ok(after)
+/**
+ * Loads theme.json from [storage] and, with day/night on, reads the macOS mode once before returning. Polls
+ * `defaults` through [process] (work dir [home]) every 5 s in [scope] while day/night is on. Never throws.
+ */
+public suspend fun appearanceModule(
+    storage: JsonStorage,
+    process: ProcessRunner,
+    home: Path,
+    scope: CoroutineScope,
+    logger: Logger,
+): AppearanceApi {
+    val catalog = builtInCatalog()
+    val serializer =
+        ThemeSettingsSerializer(catalog) { keys ->
+            logger.warn("theme.json has invalid fields, using defaults", "keys" to keys.sorted())
         }
-    }
-
-    private fun refusalOf(candidate: AppearanceSettings): AppearanceError? =
-        when {
-            catalog.theme(candidate.scheme) == null -> AppearanceError.UnknownScheme(candidate.scheme)
-            catalog.typography(candidate.typography) == null -> AppearanceError.UnknownTypography(candidate.typography)
-            else -> null
-        }
+    val store = storage.store(StoreSpec(JsonThemeStore.FILE_NAME, serializer, AppearanceSettings()))
+    // The watcher follows a copy of the saved settings: it is created before the store is open (open needs its mode).
+    val followed = MutableStateFlow(AppearanceSettings())
+    val watcher = SystemModeWatcher(DefaultsSystemModeAdapter(process, home), followed, scope, logger)
+    val api = JsonThemeStore.open(store, catalog, watcher.mode, scope, logger)
+    followed.value = api.settings.value
+    watcher.start()
+    api.refresh()
+    scope.launch { api.settings.collect { followed.value = it } }
+    return api
 }
 
-/** The only public entry point of this module; called from the composition root in `app`. */
-public fun appearanceModule(): AppearanceApi = BuiltInAppearance()
+/** Reads and writes the theme.json files the user picks, checking ids against [catalog] (FR-A6). */
+public fun themeFilesModule(
+    catalog: ThemeCatalog,
+    io: CoroutineDispatcher,
+    logger: Logger,
+): ThemeFiles = FileThemeFiles(catalog, io, logger)

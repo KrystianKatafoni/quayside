@@ -183,6 +183,25 @@ Uwagi do oceny wzrokowej w AM-803: w `cyberpunk` `muted` (magenta) przechodzi ko
 
 Plik źródłowy odwołuje się do `docs/screenshots/light_01_nordic_slate.png` … `dark_10_deep_abyss.png` (20 plików). Tych plików nie ma w repo. Nie tworzymy ich teraz; zrzuty z działającej aplikacji można dodać po AM-805.
 
+## Ikony, tony i przyciski ikonowe (AM-808)
+
+Źródło: mockupy z 2026-11-04 (A · Mission Control, B · terminal po Attach, C · ikony, przyciski, statusy). Geometrię ikon przejmujemy z arkusza C; kolory i promienie zawsze z tokenów motywu, nie z hexów mockupu.
+
+**Ikony.** 22 ikony liniowe w kodzie (`IconKind`), siatka 24 × 24, kreska 1,8, zaokrąglone końce i złącza, bez wypełnień. Cztery ikony narysowano w repo w tym samym stylu, bo mockup ich nie ma: `STOPPED`, `REMOVE`, `MORE`, `BACK`. Status nigdy nie jest tylko kolorem (NFR-6): ikony statusów różnią się kształtem, pigułki i kafelki mają tekst albo opis.
+
+**Tony.** Tło pigułki lub kafelka to `tinted(c) = panel.over(bg).mix(c, 15 %)`; ta sama reguła daje `warnBg` w `plex`.
+
+| Ton | Znak | Tło | Tekst pigułki |
+| --- | --- | --- | --- |
+| `NEUTRAL` | `muted` | `raised` | `text` |
+| `ACCENT` | `accent` | `tinted(accent)` | znak, gdy ≥ 4,5:1 na tle, inaczej `text` |
+| `WARN` | `warn` | `warnBg` | jw. |
+| `WORK` / `OK` / `ERR` | `work` / `ok` / `err` | `tinted(ton)` | jw. |
+
+Znak (ikona) ma ten sam wybór z progiem 3:1 (WCAG 1.4.11). Plakietka licznika na ikonie to `warn` z tuszem `warnInk`.
+
+**Przyciski ikonowe.** Style: `GHOST` (przezroczysty, ikona `muted`), `OUTLINED` (`raised` i `border2`), `SELECTED` (`sel` i `border2`), `DANGER` (obrys `tinted(err)` 35 %, ikona `err`). Rozmiary celu: `COMPACT` 28 dp (ikona 16), `REGULAR` 34 dp (ikona 18), `LARGE` 44 dp (ikona 20). Wyłączony przycisk ma ikonę `dim`. Przycisk niefokusowalny nie bierze fokusu i nie rezerwuje miejsca na ramkę.
+
 ## Pozostałe ustawienia wyglądu
 
 | Ustawienie | Opcje |

@@ -24,7 +24,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
 | `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`), bez Compose | brak (dozwolone `core:domain`) |
-| `core:design-system` | Komponenty Compose (przyciski, wiersze listy, pasek trybu, popup od pierwszego użytkownika), `AmTheme` z `CompositionLocal` | `core:design-tokens` |
+| `core:design-system` | Komponenty Compose (przyciski, przyciski ikonowe, ikony, pigułki, kafelki liczników, wiersze listy, pasek trybu, popup od pierwszego użytkownika), `AmTheme` z `CompositionLocal` | `core:design-tokens` |
 | `core:testing` | Wspólne narzędzia testowe: `TestClock`, `TestDispatchers`, buildery danych, asercje | `core:domain` |
 
 ### Feature (każdy jako `api` / `impl` / `ui`)
@@ -334,6 +334,17 @@ object AmTheme { val colors: ColorTokens; val shape: AmShape; val typography: Am
 fun Rgba.toColor(): Color; fun ShapeTokens.toAmShape(): AmShape; fun TypographySpec.toAmTypography(): AmTypography
 enum class TextRole { TITLE, HEADING, BODY, CAPTION, CODE }; object AmFonts { val families: Set<String>; fun family(name: String): FontFamily? }
 @Composable fun AmText(...); AmButton(...); AmListRow(...); AmPanel(...); AmModeBar(...); AmModeBadge(...); fun Modifier.amFocusFrame()
+// AM-808: ikony liniowe (siatka 24, kreska 1,8) i komponenty tonów
+enum class IconKind { FOLDER, WAITING, WORKING, DONE, FAILED, PERMISSION, STOPPED, ATTACH, REPLY, RESPAWN, STOP, REMOVE, SEARCH, NOTIFICATIONS, VOICE, BRANCH, SPLIT, MAXIMIZE, PLUS, CLOSE, MORE, BACK }
+enum class StatusTone { NEUTRAL, ACCENT, WARN, WORK, OK, ERR }
+@Composable fun AmIcon(icon: IconKind, contentDescription: String?, modifier: Modifier = Modifier, tint: Color? = null)
+@Composable fun AmIconTile(icon: IconKind, tone: StatusTone, contentDescription: String?, modifier: Modifier = Modifier)
+@Composable fun AmChip(label: String, modifier: Modifier = Modifier, tone: StatusTone = NEUTRAL, icon: IconKind? = null, description: String? = null)
+@Composable fun AmKeyCap(keys: String, modifier: Modifier = Modifier)
+@Composable fun AmIconButton(icon: IconKind, label: String, onClick: () -> Unit, modifier: Modifier = Modifier, options: IconButtonOptions = IconButtonOptions())
+@Composable fun AmStatCard(value: String, label: String, icon: IconKind, modifier: Modifier = Modifier, tone: StatusTone = NEUTRAL)
+data class IconButtonOptions(val enabled: Boolean = true, val focusable: Boolean = true, val tone: StatusTone = NEUTRAL, val size: IconButtonSize = REGULAR, val style: IconButtonStyle = GHOST, val badge: String? = null)
+enum class IconButtonSize { COMPACT, REGULAR, LARGE }; enum class IconButtonStyle { GHOST, OUTLINED, SELECTED, DANGER }
 
 // appearance:api (typy z core:design-tokens, bez Compose); AM-801 daje tylko `catalog`, reszta w AM-804
 interface AppearanceApi {

@@ -179,6 +179,10 @@ Bez zmian (już przechodzą): `hc-light`, `teal-light`, `glass-light` (4,51:1 na
 
 Uwagi do oceny wzrokowej w AM-803: w `cyberpunk` `muted` (magenta) przechodzi kontrast, ale jest bardziej jaskrawy niż `text` — przeczy roli „przygaszony”; w `minimal-black` `accent` = `text` (`#FFFFFF`), więc zaznaczenie i akcje główne nie różnią się od tekstu; w `emerald-light` `muted` po korekcie jest ciemniejszy od `accent`.
 
+### Korekta kontrastu ekranów (AM-803)
+
+Audyt par rysowanych przez ekrany (`ScreenContrastTest`, wszystkie 29 motywów) wykazał tokeny poniżej progu. Od AM-803 wyprowadzenie poprawia je regułą `readableOn` (`withContrast` do 4,5:1 w stronę bieli w ciemnym motywie i czerni w jasnym; kolor, który przechodzi, zostaje): `warn`, `ok`, `err`, `work` jako tekst na `bg`, `panel` i `sel`; `muted` na `bg`, `panel`, `sel` i `warnBg`; `accent` motywów z kształtem jako znak 3:1 na `bg`, `panel`, `raised` i `sel`. `work` motywów z kształtem ma teraz próg 4,5:1 (nie 3:1). Listy wartości w tej sekcji i w „Korekta kontrastu NFR-6” są stanem z AM-805; wartości końcowe zmienionych motywów (23 z 29) są w tabeli planu `docs/plans/AM-803.md`, sekcja „Korekta kolorów”.
+
 ### Brak zrzutów ekranu
 
 Plik źródłowy odwołuje się do `docs/screenshots/light_01_nordic_slate.png` … `dark_10_deep_abyss.png` (20 plików). Tych plików nie ma w repo. Nie tworzymy ich teraz; zrzuty z działającej aplikacji można dodać po AM-805.
@@ -209,9 +213,9 @@ Znak (ikona) ma ten sam wybór z progiem 3:1 (WCAG 1.4.11). Plakietka licznika n
 | Ustawienie | Opcje |
 | --- | --- |
 | Rozmiar interfejsu | S / **M** / L (skala `Density` w Compose) |
-| Gęstość listy sesji | Kompaktowa / **Komfortowa** |
+| Gęstość listy sesji | Kompaktowa (kafelek 28 dp, odstęp pionowy 4 dp, jedna linia; podsumowanie tylko w panelu szczegółów) / **Komfortowa** (kafelek 38 dp, odstęp 8 dp, nazwa i podsumowanie); dotyczy listy sesji, nie paska projektów |
 | Font terminala | Z typografii albo własny |
-| Rozmiar terminala | 10–20 px, domyślnie 13 |
+| Rozmiar terminala | 8–32 px (zakres `TerminalSettingsRules`), domyślnie 13; krok ±1 bez zawijania |
 | Dzień / noc | Przełączanie razem z trybem macOS; osobny schemat na dzień (np. Paper Indigo) i na noc (np. Plex Violet) |
 | Własne motywy | Własny schemat, import i eksport `.json` |
 

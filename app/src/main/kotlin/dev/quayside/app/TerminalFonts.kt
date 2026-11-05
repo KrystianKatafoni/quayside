@@ -2,6 +2,7 @@ package dev.quayside.app
 
 import androidx.compose.ui.text.font.FontListFontFamily
 import androidx.compose.ui.text.platform.ResourceFont
+import dev.quayside.appearance.api.ThemeCatalog
 import dev.quayside.core.designsystem.AmFonts
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.info
@@ -42,3 +43,19 @@ private fun loadFont(
         logger.warn("terminal font unreadable", "reason" to "io")
         null
     }
+
+/**
+ * Registers the terminal font of every typography of [catalog] (the list of the Appearance dialog, so any font the
+ * user can pick), each family once ([registerTerminalFont]). Call it before the first window: JediTerm reads the
+ * installed fonts by name once, when the first tab opens.
+ */
+internal fun registerTerminalFonts(
+    catalog: ThemeCatalog,
+    logger: Logger,
+    register: (Font) -> Boolean = GraphicsEnvironment.getLocalGraphicsEnvironment()::registerFont,
+) {
+    catalog.typographies
+        .map { it.terminalFont }
+        .distinct()
+        .forEach { registerTerminalFont(it, logger, register) }
+}

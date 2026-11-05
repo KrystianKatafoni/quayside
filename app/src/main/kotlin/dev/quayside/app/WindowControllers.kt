@@ -1,5 +1,6 @@
 package dev.quayside.app
 
+import dev.quayside.appearance.ui.AppearanceController
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.missioncontrol.ui.MissionControlController
@@ -29,9 +30,24 @@ internal class WindowControllers(
     scope: CoroutineScope,
     hooks: HookDeps,
 ) {
-    val projects = ProjectsController(modules.projects, modules.inspector, modules.sessions, picker, scope, core.logger)
+    val projects =
+        ProjectsController(
+            modules.projects.api,
+            modules.projects.inspector,
+            modules.sessions,
+            picker,
+            scope,
+            core.logger,
+        )
     val missionControl =
-        MissionControlController(modules.sessions, modules.projects, projects.selection, core.clock, scope, core.logger)
+        MissionControlController(
+            modules.sessions,
+            modules.projects.api,
+            projects.selection,
+            core.clock,
+            scope,
+            core.logger,
+        )
     val palette = CommandPaletteController(modules.registry, scope, core.logger)
     private val shellStart =
         SettingsShellStart(
@@ -49,20 +65,22 @@ internal class WindowControllers(
 
     private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
 
+    val appearance = AppearanceController(modules.appearance.api, modules.terminal.repo, scope)
+
     val hookSetup = HookSetupController(hooks.installer, hooks.offer, scope, core.logger)
 
     val newAgent =
         NewAgentController(
             modules.sessions.commands,
-            modules.projects,
+            modules.projects.api,
             scope,
             core.logger,
             selectStartedSession(projects, missionControl),
         )
 
     private val settingsDialogOpen =
-        combine(terminalSettings.state, notificationDialogOpen) { terminal, notification ->
-            terminal != null || notification
+        combine(terminalSettings.state, notificationDialogOpen, appearance.state) { terminal, notification, look ->
+            terminal != null || notification || look != null
         }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
 
     /** What hides the hooks command: the settings dialogs and "Nowy agent" (the hooks dialog hides it itself). */
@@ -93,13 +111,14 @@ internal class WindowControllers(
 
     val providers: List<CommandProvider> =
         listOf(
-            AppCommands(modules.projects, projects, missionControl, palette, scope),
-            TerminalCommands(modules.projects, projects, missionControl, terminal, scope),
+            AppCommands(modules.projects.api, projects, missionControl, palette, scope),
+            TerminalCommands(modules.projects.api, projects, missionControl, terminal, scope),
             AttachCommands(projects, missionControl, attacher, scope),
             TerminalSettingsCommands(projects, missionControl, terminalSettings, scope, notificationDialogOpen),
             NotificationSettingsCommands(projects, missionControl, notificationSettings, scope),
+            AppearanceCommands(projects, missionControl, appearance, scope),
             HookSetupCommands(projects, missionControl, hookSetup, scope, hooksBlocked),
-            NewAgentCommands(projects, missionControl, modules.projects, newAgent, scope, newAgentBlocked),
+            NewAgentCommands(projects, missionControl, modules.projects.api, newAgent, scope, newAgentBlocked),
             WindowModeCommands(mode, scope),
         )
 }

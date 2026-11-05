@@ -10,7 +10,6 @@ import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.commandpalette.ui.toKeyShortcut
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
-import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
@@ -45,16 +44,18 @@ internal fun FrameWindowScope.AppMenu(
         }
         Menu(
             Strings["menu.view"],
-        ) { ViewItems(palette, controllers.notificationSettings, controllers.hookSetup, enabled) }
+        ) { ViewItems(palette, controllers, enabled) }
     }
 }
 
-/** The palette, the notification settings (AM-704) and the hooks (AM-607); all wait for dialogs like the palette. */
+/**
+ * The palette, the notification settings (AM-704), the appearance (AM-803) and the hooks (AM-607); all wait for
+ * dialogs like the palette.
+ */
 @Composable
 private fun MenuScope.ViewItems(
     palette: CommandPaletteController,
-    notificationSettings: NotificationSettingsController,
-    hookSetup: HookSetupController,
+    controllers: WindowControllers,
     enabled: AppMenuState,
 ) {
     Item(
@@ -66,12 +67,17 @@ private fun MenuScope.ViewItems(
     Item(
         text = Strings["menu.notificationSettings"],
         enabled = enabled.palette,
-        onClick = { notificationSettings.open() },
+        onClick = { controllers.notificationSettings.open() },
+    )
+    Item(
+        text = Strings["menu.appearance"],
+        enabled = enabled.palette,
+        onClick = { controllers.appearance.open() },
     )
     Item(
         text = Strings["menu.hookSetup"],
         enabled = enabled.palette,
-        onClick = { hookSetup.open() },
+        onClick = { controllers.hookSetup.open() },
     )
 }
 
@@ -114,7 +120,9 @@ private fun anyDialogOpen(controllers: WindowControllers): Boolean {
     val notificationDialog by controllers.notificationSettings.state.collectAsState()
     val hookDialog by controllers.hookSetup.state.collectAsState()
     val newAgentOpen by controllers.newAgent.isOpen.collectAsState()
+    val appearanceDialog by controllers.appearance.state.collectAsState()
     return sessionActions.dialogOpen ||
+        appearanceDialog != null ||
         settingsDialog != null ||
         notificationDialog != null ||
         hookDialog != null ||

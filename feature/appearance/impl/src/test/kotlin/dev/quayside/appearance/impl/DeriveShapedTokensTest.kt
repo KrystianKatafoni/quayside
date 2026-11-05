@@ -40,15 +40,16 @@ class DeriveShapedTokensTest {
         tokens.surfaces.panel shouldBe Rgba(0x99FFFFFFL)
         tokens.surfaces.raised shouldBe hex("#EFEFEF")
         tokens.surfaces.sel shouldBe hex("#E1EBF4")
-        tokens.status.warnBg shouldBe hex("#ECE2D5")
+        tokens.status.warnBg shouldBe hex("#EAE1D5")
     }
 
     @Test
     fun `light theme corrects muted and derives dim, border2 and the fixed terminal pair`() {
         val tokens = light()
 
-        tokens.content.muted shouldBe hex("#6D6D6D")
-        tokens.content.dim shouldBe hex("#949494")
+        // #808080 is corrected for bg, panel, sel and warnBg; #6D6D6D would pass on bg and panel only
+        tokens.content.muted shouldBe hex("#656565")
+        tokens.content.dim shouldBe hex("#8F8F8F")
         tokens.surfaces.border shouldBe Rgba.BLACK.withAlpha(5)
         tokens.surfaces.border2 shouldBe Rgba.BLACK.withAlpha(5)
         tokens.terminal.termBg shouldBe hex("#1E242C")
@@ -62,9 +63,11 @@ class DeriveShapedTokensTest {
         tokens.surfaces.bg shouldBe hex("#F0F0F0")
         tokens.content.text shouldBe hex("#000000")
         tokens.content.accent shouldBe hex("#3182CE")
-        tokens.status.work shouldBe hex("#3182CE")
+        // The candidates A16207, 15803D and B91C1C are darkened as far as 4.5:1 on bg, panel and sel needs; work is the
+        // accent darkened the same way
+        tokens.status.work shouldBe hex("#296CAB")
         listOf(tokens.status.warn, tokens.status.ok, tokens.status.err) shouldBe
-            listOf(hex("#A16207"), hex("#15803D"), hex("#B91C1C"))
+            listOf(hex("#975C07"), hex("#147839"), hex("#B91C1C"))
     }
 
     @Test
@@ -117,8 +120,9 @@ class DeriveShapedTokensTest {
     }
 
     @Test
-    fun `muted is corrected against the composited panel when that is the weaker background`() {
-        // panel #808080 at 50 % over white is #BFBFBF; against the uncomposited #808080 the result would be #171717
+    fun `muted is corrected against the composited panel, sel and warnBg`() {
+        // panel #808080 at 50 % over white is #BFBFBF; against the uncomposited #808080 the result would be #171717.
+        // sel (#ADB4BB) and warnBg (#B1ACA3) are darker than the composited panel, so they decide: #414141, not #4E4E4E
         val tokens =
             deriveShapedTokens(
                 ShapedRow(
@@ -131,7 +135,7 @@ class DeriveShapedTokensTest {
                 ),
             )
 
-        tokens.content.muted shouldBe hex("#4E4E4E")
+        tokens.content.muted shouldBe hex("#414141")
     }
 
     @Test

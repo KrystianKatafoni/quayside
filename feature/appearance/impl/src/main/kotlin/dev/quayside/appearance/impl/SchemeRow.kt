@@ -48,15 +48,31 @@ internal val LIGHT_TERM_TEXT = Rgba(0xFFE2E8F0L)
 
 private fun SchemeRow.color(column: SchemeRow.Column): Rgba = palette.getValue(column)
 
-/** Fills the 11 tokens docs/08 does not list from the eight it does (AM-801 plan). */
+/**
+ * Fills the 11 tokens docs/08 does not list from the eight it does (AM-801 plan). The status colours and muted text
+ * are corrected where the screens would draw them below 4.5:1 on bg, panel, sel or warnBg (AM-803 audit).
+ */
 internal fun deriveTokens(row: SchemeRow): ColorTokens {
-    val muted = row.color(SchemeRow.Column.TEXT).mix(row.color(SchemeRow.Column.PANEL), MUTED_PERCENT)
+    val surfaces = surfaces(row)
+    val status = status(row, surfaces)
     return ColorTokens(
-        surfaces = surfaces(row),
-        content = content(row, muted),
-        status = status(row),
+        surfaces = surfaces,
+        content = content(row, muted(row, surfaces, status.warnBg)),
+        status = status,
         terminal = terminal(row),
     )
+}
+
+/** Muted text: text mixed toward the panel, moved back toward text as far as the readable surfaces need. */
+private fun muted(
+    row: SchemeRow,
+    surfaces: SurfaceColors,
+    warnBg: Rgba,
+): Rgba {
+    val text = row.color(SchemeRow.Column.TEXT)
+    return text
+        .mix(row.color(SchemeRow.Column.PANEL), MUTED_PERCENT)
+        .withContrast(listOf(surfaces.bg, surfaces.panel, surfaces.sel, warnBg), Wcag.TEXT_MIN, text)
 }
 
 private fun surfaces(row: SchemeRow): SurfaceColors {
@@ -88,15 +104,20 @@ private fun content(
     )
 }
 
-private fun status(row: SchemeRow): StatusColors {
-    val warn = row.color(SchemeRow.Column.WARN)
+private fun status(
+    row: SchemeRow,
+    surfaces: SurfaceColors,
+): StatusColors {
+    val on = listOf(surfaces.bg, surfaces.panel, surfaces.sel)
+    val readable = { column: SchemeRow.Column -> row.color(column).readableOn(on, row.mode.isDark) }
+    val warn = readable(SchemeRow.Column.WARN)
     return StatusColors(
         warn = warn,
         warnInk = Wcag.inkFor(warn),
         warnBg = row.color(SchemeRow.Column.PANEL).mix(warn, WARN_BG_PERCENT),
-        ok = row.color(SchemeRow.Column.OK),
-        err = row.color(SchemeRow.Column.ERR),
-        work = row.color(SchemeRow.Column.WORK),
+        ok = readable(SchemeRow.Column.OK),
+        err = readable(SchemeRow.Column.ERR),
+        work = readable(SchemeRow.Column.WORK),
     )
 }
 

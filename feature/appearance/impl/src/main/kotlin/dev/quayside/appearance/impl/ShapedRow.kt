@@ -14,8 +14,7 @@ import dev.quayside.core.designtokens.Wcag
 import dev.quayside.core.designtokens.mix
 import dev.quayside.core.designtokens.over
 
-private const val MUTED_MIN = Wcag.TEXT_MIN
-private const val WORK_MIN = Wcag.NON_TEXT_MIN
+private const val MARK_MIN = Wcag.NON_TEXT_MIN
 private const val SHADOW_PARTS = 5
 private const val SHADOW_COLOUR_AT = 3
 private const val SHAPE_PARTS = 3
@@ -110,33 +109,58 @@ internal fun deriveShapedTokens(row: ShapedRow): ColorTokens {
     val p = row.palette
     val dark = row.mode.isDark
     val bg = p.getValue(ShapedRow.Column.BG)
-    val panel = p.getValue(ShapedRow.Column.PANEL)
-    val solid = panel.over(bg)
-    val toward = if (dark) Rgba.WHITE else Rgba.BLACK
-    val muted = p.getValue(ShapedRow.Column.MUTED).withContrast(listOf(bg, solid), MUTED_MIN, toward)
-    val accent = p.getValue(ShapedRow.Column.ACCENT)
-    val work = accent.withContrast(listOf(bg, solid), WORK_MIN, toward)
+    val solid = p.getValue(ShapedRow.Column.PANEL).over(bg)
     val text = p.getValue(ShapedRow.Column.TEXT)
+    val given = p.getValue(ShapedRow.Column.ACCENT)
+    val accent = markAccent(given, listOf(bg, solid, raisedOf(solid, text, dark)), solid, dark)
+    val surfaces = shapedSurfaces(dark, p, solid, accent)
+    val on = listOf(bg, solid, surfaces.sel)
+    val status = shapedStatus(deriveStatus(dark, given), solid, accent.readableOn(on, dark), on, dark)
+    val muted = p.getValue(ShapedRow.Column.MUTED).readableOn(on + status.warnBg, dark)
     return ColorTokens(
-        surfaces = shapedSurfaces(dark, p, solid),
+        surfaces = surfaces,
         content = ContentColors(text, muted, muted.mix(bg, DIM_PERCENT), accent, Wcag.inkFor(accent)),
-        status = shapedStatus(deriveStatus(dark, accent), solid, work),
+        status = status,
         terminal = if (dark) TerminalColors(bg, text) else TerminalColors(LIGHT_TERM_BG, LIGHT_TERM_TEXT),
     )
 }
+
+/**
+ * The accent is a mark on bg, panel, raised and sel (3:1), corrected in one pass; sel is taken from the accent as
+ * given. The final sel (mixed from the corrected accent) is checked for the whole catalog by `ScreenContrastTest`.
+ * Unchanged when the accent meets the contrast already.
+ */
+private fun markAccent(
+    given: Rgba,
+    surfaces: List<Rgba>,
+    solid: Rgba,
+    dark: Boolean,
+): Rgba {
+    val sel = solid.mix(given, if (dark) SEL_DARK else SEL_LIGHT)
+    return given.withContrast(surfaces + sel, MARK_MIN, toward(dark))
+}
+
+private fun toward(dark: Boolean): Rgba = if (dark) Rgba.WHITE else Rgba.BLACK
+
+private fun raisedOf(
+    solid: Rgba,
+    text: Rgba,
+    dark: Boolean,
+): Rgba = solid.mix(text, if (dark) RAISED_DARK else RAISED_LIGHT)
 
 private fun shapedSurfaces(
     dark: Boolean,
     palette: Map<ShapedRow.Column, Rgba>,
     solid: Rgba,
+    accent: Rgba,
 ): SurfaceColors {
     val text = palette.getValue(ShapedRow.Column.TEXT)
     val border = palette.getValue(ShapedRow.Column.BORDER)
     return SurfaceColors(
         bg = palette.getValue(ShapedRow.Column.BG),
         panel = palette.getValue(ShapedRow.Column.PANEL),
-        raised = solid.mix(text, if (dark) RAISED_DARK else RAISED_LIGHT),
-        sel = solid.mix(palette.getValue(ShapedRow.Column.ACCENT), if (dark) SEL_DARK else SEL_LIGHT),
+        raised = raisedOf(solid, text, dark),
+        sel = solid.mix(accent, if (dark) SEL_DARK else SEL_LIGHT),
         border = border,
         border2 = border.mix(text, BORDER2_PERCENT),
     )
@@ -146,12 +170,16 @@ private fun shapedStatus(
     triple: StatusTriple,
     solid: Rgba,
     work: Rgba,
-): StatusColors =
-    StatusColors(
-        warn = triple.warn,
-        warnInk = Wcag.inkFor(triple.warn),
-        warnBg = solid.mix(triple.warn, WARN_BG_PERCENT),
-        ok = triple.ok,
-        err = triple.err,
+    on: List<Rgba>,
+    dark: Boolean,
+): StatusColors {
+    val warn = triple.warn.readableOn(on, dark)
+    return StatusColors(
+        warn = warn,
+        warnInk = Wcag.inkFor(warn),
+        warnBg = solid.mix(warn, WARN_BG_PERCENT),
+        ok = triple.ok.readableOn(on, dark),
+        err = triple.err.readableOn(on, dark),
         work = work,
     )
+}

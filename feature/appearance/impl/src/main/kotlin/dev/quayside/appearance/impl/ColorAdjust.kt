@@ -23,3 +23,13 @@ internal fun Rgba.withContrast(
         .map { step -> mix(toward, step) }
         .firstOrNull { candidate -> backgrounds.all { Wcag.contrast(candidate, it) >= minimum } }
         ?: toward
+
+/**
+ * [this] corrected to meet 4.5:1 text contrast on every one of the opaque [surfaces], toward white on a dark theme and
+ * toward black on a light one ([withContrast]); unchanged when it meets it already. The screens draw status colours
+ * as text on bg, panel and sel (AM-803 audit), so a theme that lets one fail gets a minimally corrected token.
+ */
+internal fun Rgba.readableOn(
+    surfaces: List<Rgba>,
+    dark: Boolean,
+): Rgba = withContrast(surfaces, Wcag.TEXT_MIN, if (dark) Rgba.WHITE else Rgba.BLACK)

@@ -1,5 +1,6 @@
 package dev.quayside.app
 
+import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
@@ -14,12 +15,12 @@ import java.nio.file.Path
 
 /** The modules the window is built from; keeps [MainWindow] within the parameter limit of detekt. */
 internal class AppModules(
-    val projects: ProjectsApi,
+    val projects: ProjectDeps,
     val sessions: SessionsApi,
-    val inspector: ProjectInspector,
     val registry: CommandRegistry,
     val terminal: TerminalDeps,
     val notifications: NotificationDeps,
+    val appearance: AppearanceDeps,
 )
 
 /**
@@ -35,3 +36,15 @@ internal class TerminalDeps(
     /** The current settings, read from [repo]. */
     val settings: StateFlow<TerminalSettings> get() = repo.settings
 }
+
+/** The appearance module with the looks of its settings, shared by the windows and the terminal. */
+internal class AppearanceDeps(
+    val api: AppearanceApi,
+    val looks: StateFlow<AppLook>,
+)
+
+/** The projects module with the inspector that reads a project's directory. */
+internal class ProjectDeps(
+    val api: ProjectsApi,
+    val inspector: ProjectInspector,
+)

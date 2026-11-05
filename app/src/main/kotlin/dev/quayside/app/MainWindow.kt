@@ -3,9 +3,12 @@ package dev.quayside.app
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.window.FrameWindowScope
+import dev.quayside.appearance.ui.AppearanceDialog
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
@@ -28,17 +31,23 @@ internal fun FrameWindowScope.MainWindow(
     val controllers =
         remember { WindowControllers(core, modules, AwtDirectoryPicker(window, core.dispatchers.main), scope, hooks) }
     WindowBindings(modules.registry, controllers.providers, controllers.palette, keys)
-    AppMenu(controllers, modules.projects)
-    QuaysideApp(
-        controllers = AppControllers(controllers.projects, controllers.missionControl, controllers.palette),
-        terminal = remember(controllers) { terminalSlotOf(controllers) },
-        onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
-        keyCaps = remember { windowKeyCaps() },
-    )
-    NewAgentDialog(controllers.newAgent)
-    TerminalSettingsDialog(controllers.terminalSettings)
-    NotificationSettingsDialog(controllers.notificationSettings)
-    HookSetupDialog(controllers.hookSetup, hooks.backupDir)
+    AppMenu(controllers, modules.projects.api)
+    val look by modules.appearance.looks.collectAsState()
+    // The UI scale is applied inside the window: Window sets its own density, a scale above it would be lost.
+    AppScaled(look.scale) {
+        QuaysideApp(
+            controllers = AppControllers(controllers.projects, controllers.missionControl, controllers.palette),
+            terminal = remember(controllers) { terminalSlotOf(controllers) },
+            onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
+            keyCaps = remember { windowKeyCaps() },
+        )
+        NewAgentDialog(controllers.newAgent)
+        TerminalSettingsDialog(controllers.terminalSettings)
+        NotificationSettingsDialog(controllers.notificationSettings)
+        HookSetupDialog(controllers.hookSetup, hooks.backupDir)
+    }
+    // Outside the scale: the preview of the dialog scales the base density itself (previewDensity).
+    AppearanceDialog(controllers.appearance) { AppearancePreviewSlot() }
     PopupAttachHandler(modules, controllers.attacher)
     LaunchedEffect(Unit) { controllers.hookSetup.offerAtStart() }
 }
@@ -68,7 +77,7 @@ private fun FrameWindowScope.PopupAttachHandler(
         modules.notifications.attach.handler = { id ->
             scope.launch {
                 val sessions = modules.sessions.monitor.snapshot.value.sessions
-                attacher.attachSession(id, sessions, modules.projects.projects.value)
+                attacher.attachSession(id, sessions, modules.projects.api.projects.value)
                 window.extendedState = Frame.NORMAL
                 window.toFront()
             }

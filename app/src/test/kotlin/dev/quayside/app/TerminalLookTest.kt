@@ -4,13 +4,6 @@ import dev.quayside.terminal.api.ShellProfile
 import dev.quayside.terminal.api.StartDirectory
 import dev.quayside.terminal.api.TerminalSettings
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -47,25 +40,6 @@ class TerminalLookTest {
         custom.withTypographyFont("IBM Plex Mono") shouldBe custom.copy(fontFamily = "IBM Plex Mono")
         custom.copy(fontFamily = "Menlo").withTypographyFont("IBM Plex Mono") shouldBe custom.copy(fontFamily = "Menlo")
     }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `saved settings reach the terminal with typography font`() =
-        runTest {
-            val source = MutableStateFlow(TerminalSettings(fontSize = 13))
-            val scope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher(testScheduler))
-
-            val mapped = typographySettings(source, "IBM Plex Mono", scope)
-
-            mapped.value shouldBe TerminalSettings(fontSize = 13, fontFamily = "IBM Plex Mono")
-
-            source.value = TerminalSettings(fontSize = 20)
-            mapped.value shouldBe TerminalSettings(fontSize = 20, fontFamily = "IBM Plex Mono")
-
-            source.value = TerminalSettings(fontSize = 20, fontFamily = "Menlo")
-            mapped.value shouldBe TerminalSettings(fontSize = 20, fontFamily = "Menlo")
-            scope.cancel()
-        }
 
     companion object {
         @JvmStatic

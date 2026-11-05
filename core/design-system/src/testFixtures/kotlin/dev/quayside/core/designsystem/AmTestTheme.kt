@@ -10,8 +10,12 @@ private val PLEX_TYPOGRAPHY = TypographySpec(TypographyId("plex"), "IBM Plex", "
 /**
  * Wraps [content] in [AmTheme] with the `plex` tokens (`SampleTokens.colors()`, `SampleTokens.shape()`) and the plex
  * typography: the one theme wrapper for UI tests of screens, so that a test sees the colours of the default look.
+ * [density] is the density of the session list; the default is the one of the app.
  */
 @Composable
-public fun AmTestTheme(content: @Composable () -> Unit) {
-    AmTheme(SampleTokens.colors(), SampleTokens.shape(), PLEX_TYPOGRAPHY, content)
+public fun AmTestTheme(
+    density: AmDensity = AmDensity.COMFORTABLE,
+    content: @Composable () -> Unit,
+) {
+    AmTheme(SampleTokens.colors(), SampleTokens.shape(), PLEX_TYPOGRAPHY, density, content)
 }

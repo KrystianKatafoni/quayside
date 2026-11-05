@@ -159,7 +159,8 @@ class BuiltInCatalogTest {
 
     @ParameterizedTest(name = "{0} {1} is {2}")
     @CsvSource(
-        "paper, warn, 0xA16207",
+        // AM-803 audit: the docs/08 warn #A16207 is below 4.5:1 on paper's sel, so it is darkened to #965B07
+        "paper, warn, 0x965B07",
         "phosphor, ok, 0xA3E635",
         "synth, ok, 0x4ADE80",
         "rose, accent, 0xC4A7E7",

@@ -27,6 +27,18 @@ class ShapedThemesTest {
 
     private fun panelOnBg(source: ThemeSource): Rgba = hexAlpha(source.panel).over(hex(source.bg))
 
+    /** The surfaces the screens draw status colours on as text (AM-803 audit): bg, the composited panel and sel. */
+    private fun textSurfaces(spec: ThemeSpec): List<Rgba> {
+        val surfaces = spec.colors.surfaces
+        return listOf(surfaces.bg, surfaces.panel.over(surfaces.bg), surfaces.sel)
+    }
+
+    /** [colors] corrected the way the catalog does it for [spec]. */
+    private fun corrected(
+        spec: ThemeSpec,
+        vararg colors: String,
+    ): List<Rgba> = colors.map { hex(it).readableOn(textSurfaces(spec), spec.mode.isDark) }
+
     private fun shadowOf(text: String): ShadowSpec? {
         if (text == "none") return null
         val parts = text.split('/')
@@ -76,7 +88,7 @@ class ShapedThemesTest {
 
         colors.surfaces.bg shouldBe hex(source.bg)
         colors.surfaces.panel shouldBe hexAlpha(source.panel)
-        colors.content.accent shouldBe hex(source.accent)
+        colors.content.accent shouldBe hex(CORRECTED_ACCENTS[source.key] ?: source.accent)
         colors.surfaces.border shouldBe hexAlpha(source.border)
     }
 
@@ -89,11 +101,8 @@ class ShapedThemesTest {
     @ParameterizedTest(name = "{0} keeps {1}")
     @CsvSource(
         "hc-light, #4A4A4A",
-        "teal-light, #64748B",
         "midnight-pro, #9CA3AF",
-        "cyberpunk, #FF00FF",
         "nord-dark, #D8DEE9",
-        "minimal-black, #888888",
     )
     fun `muted that already passes is kept`(
         key: String,
@@ -104,18 +113,21 @@ class ShapedThemesTest {
 
     @ParameterizedTest(name = "{0}: {1} becomes {2}")
     @CsvSource(
-        "nordic-light, #718096, #657286",
-        "cyber-light, #6B7280, #69707D",
-        "sand-light, #8A867A, #716E64",
-        "steel-light, #6B778C, #616C7F",
-        "term-light, #808080, #6D6D6D",
-        "oatmeal-light, #8C7E70, #7B6F63",
-        "emerald-light, #059669, #04835B",
-        "dracula, #6272A4, #ADB6D0",
-        "monokai, #75715E, #928F80",
-        "gruvbox, #928374, #ABA094",
-        "developer-gray, #768390, #909BA5",
-        "deep-abyss, #64748B, #707F94",
+        "nordic-light, #718096, #5D697B",
+        "cyber-light, #6B7280, #626976",
+        "sand-light, #8A867A, #636058",
+        "steel-light, #6B778C, #5D687A",
+        "term-light, #808080, #686868",
+        "oatmeal-light, #8C7E70, #71665B",
+        "emerald-light, #059669, #047753",
+        "dracula, #6272A4, #CED3E3",
+        "monokai, #75715E, #A5A396",
+        "gruvbox, #928374, #C7C0B8",
+        "developer-gray, #768390, #ABB3BB",
+        "deep-abyss, #64748B, #8E9AAA",
+        "teal-light, #64748B, #5B6A7E",
+        "cyberpunk, #FF00FF, #FF29FF",
+        "minimal-black, #888888, #9F9F9F",
     )
     fun `corrected muted moves away from the background`(
         key: String,
@@ -135,63 +147,89 @@ class ShapedThemesTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("sources")
-    fun `muted is the source muted corrected against bg and the composited panel`(source: ThemeSource) {
-        val dark = theme(source.key).mode.isDark
+    fun `muted is the source muted corrected against bg, the composited panel, sel and warnBg`(source: ThemeSource) {
+        val spec = theme(source.key)
+        val surfaces = spec.colors.surfaces
         val expected =
             hex(source.muted).withContrast(
-                listOf(hex(source.bg), panelOnBg(source)),
+                listOf(hex(source.bg), panelOnBg(source), surfaces.sel, spec.colors.status.warnBg),
                 4.5,
-                if (dark) Rgba.WHITE else Rgba.BLACK,
+                if (spec.mode.isDark) Rgba.WHITE else Rgba.BLACK,
             )
 
-        theme(source.key).colors.content.muted shouldBe expected
+        spec.colors.content.muted shouldBe expected
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("statusRows")
     fun `status colours follow the conflict rule`(row: StatusRow) {
-        val status = theme(row.key).colors.status
+        val spec = theme(row.key)
+        val status = spec.colors.status
 
-        listOf(status.warn, status.ok, status.err) shouldBe row.expected.map(::hex)
+        // The candidates the hue rule picks, then darkened or lightened where a screen would draw them below 4.5:1
+        listOf(status.warn, status.ok, status.err) shouldBe corrected(spec, *row.expected.toTypedArray())
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("defaultStatusKeys")
     fun `other themes take the first status candidates`(key: String) {
         val spec = theme(key)
-        val expected =
+        val candidates =
             if (spec.mode.isDark) {
-                listOf("#F59E0B", "#4ADE80", "#F87171")
+                arrayOf("#F59E0B", "#4ADE80", "#F87171")
             } else {
-                listOf("#A16207", "#15803D", "#B91C1C")
+                arrayOf("#A16207", "#15803D", "#B91C1C")
             }
 
-        listOf(spec.colors.status.warn, spec.colors.status.ok, spec.colors.status.err) shouldBe expected.map(::hex)
+        listOf(spec.colors.status.warn, spec.colors.status.ok, spec.colors.status.err) shouldBe
+            corrected(spec, *candidates)
     }
 
     @Test
     fun `oatmeal-light work is darker than accent`() {
         val colors = theme("oatmeal-light").colors
 
-        colors.status.work shouldBe hex("#D27354")
+        colors.status.work shouldBe hex("#A35942")
         colors.status.work shouldNotBe colors.content.accent
         Wcag.luminance(colors.status.work) shouldBeLessThan Wcag.luminance(colors.content.accent)
     }
 
+    @Test
+    fun `oatmeal-light accent is darkened until it is a 3 to 1 mark on its sel`() {
+        val colors = theme("oatmeal-light").colors
+
+        // The docs/08 accent #D97757 is 2.77:1 on sel; sel is mixed from the accent itself, so it settles on #CE7153
+        colors.content.accent shouldBe hex("#CE7153")
+        Wcag.luminance(colors.content.accent) shouldBeLessThan Wcag.luminance(hex("#D97757"))
+        Wcag.contrast(colors.content.accent, colors.surfaces.sel) shouldBeGreaterThan 3.0
+    }
+
     @ParameterizedTest(name = "{0}")
-    @CsvSource("nordic-light", "term-light", "dracula", "gruvbox", "minimal-black", "developer-gray")
-    fun `work is the accent when it already has contrast 3 to 1`(key: String) {
+    @CsvSource("hc-light", "steel-light", "cyberpunk", "minimal-black", "deep-abyss")
+    fun `work is the accent when it already has contrast 4_5 to 1`(key: String) {
         val colors = theme(key).colors
 
         colors.status.work shouldBe colors.content.accent
     }
 
+    @ParameterizedTest(name = "{0}")
+    @CsvSource("nordic-light", "term-light", "dracula", "gruvbox", "developer-gray")
+    fun `work is the accent corrected to 4_5 to 1 on bg, panel and sel when it is weaker`(key: String) {
+        val spec = theme(key)
+        val accent = spec.colors.content.accent
+
+        spec.colors.status.work shouldBe accent.readableOn(textSurfaces(spec), spec.mode.isDark)
+        spec.colors.status.work shouldNotBe accent
+    }
+
     @Test
-    fun `solarized-dark uses base2 text and base1 muted`() {
+    fun `solarized-dark uses base2 text and base1 muted lightened for sel`() {
         val colors = theme("solarized-dark").colors
 
         colors.content.text shouldBe hex("#EEE8D5")
-        colors.content.muted shouldBe hex("#93A1A1")
+        // base1 #93A1A1 is below 4.5:1 on sel, so it is lightened to #A4B0B0
+        colors.content.muted shouldBe hex("#A4B0B0")
+        Wcag.luminance(colors.content.muted) shouldBeGreaterThan Wcag.luminance(hex("#93A1A1"))
     }
 
     @Test
@@ -202,7 +240,11 @@ class ShapedThemesTest {
         colors.surfaces.panel shouldBe hex("#44475A")
         Wcag.luminance(colors.content.muted) shouldBeGreaterThan Wcag.luminance(original)
         colors.content.muted shouldBe
-            original.withContrast(listOf(hex("#282A36"), hex("#44475A")), 4.5, Rgba.WHITE)
+            original.withContrast(
+                listOf(hex("#282A36"), hex("#44475A"), colors.surfaces.sel, colors.status.warnBg),
+                4.5,
+                Rgba.WHITE,
+            )
     }
 
     @Test
@@ -230,6 +272,9 @@ class ShapedThemesTest {
     }
 
     companion object {
+        /** Accents the AM-803 audit darkened: the docs/08 accent is below 3:1 on bg, raised or sel. */
+        private val CORRECTED_ACCENTS = mapOf("oatmeal-light" to "#CE7153")
+
         val KEYS: List<String> = ShapedThemeTable.rows.map { it.key }
 
         @JvmStatic

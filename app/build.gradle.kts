@@ -41,6 +41,8 @@ dependencies {
     implementation(project(":core:design-system"))
     implementation(project(":feature:appearance:api"))
     implementation(project(":feature:appearance:impl"))
+    // The Appearance dialog with the live preview composed here (AM-803, ADR 0022).
+    implementation(project(":feature:appearance:ui"))
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.slf4j.api)
     runtimeOnly(libs.slf4j.simple)
@@ -49,6 +51,8 @@ dependencies {
     // AmTestTheme for screens shown without a window (AM-806).
     testImplementation(testFixtures(project(":core:design-system")))
     testImplementation(libs.compose.ui.test)
+    // FakeAppearanceApi behind the Appearance dialog in the window test (AM-803).
+    testImplementation(testFixtures(project(":feature:appearance:api")))
     // FakeProjectsApi and FakeProjectInspector for the window test.
     testImplementation(testFixtures(project(":feature:projects:api")))
     // FakeSessions behind the sidebar counts and Mission Control in the window test (AM-405, AM-305).

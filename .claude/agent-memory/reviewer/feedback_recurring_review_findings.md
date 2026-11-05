@@ -85,5 +85,8 @@ Sprawdzaj od razu przy każdym review:
 - AM-807 (2026-11-05): znów brak ROADMAP `[x]` i CHANGELOG `[Unreleased]` mimo commitu 4 planu — szósty raz w M8. Do tego plan nie poprawiony po odstępstwie (plan: `SwingPanel(background = …)`, kod: tło w `factory`, bo przeciążenie z `background` jest `@Deprecated` w CMP 1.12 i i tak ustawiało `it.background` na komponencie — zmiana równoważna).
 - Przeniesienie własności zasobu (scope z `app` do fabryki modułu) zostawia w KDoc zdania o sytuacji już nieosiągalnej z zewnątrz („If that scope is cancelled…”) — sprawdzaj KDoc fabryki po każdej zmianie parametrów.
 - `stateIn(scope, Eagerly, initial)` testowany na `UnconfinedTestDispatcher`: wartość `initial` jest natychmiast nadpisana, więc mutacja „initial bez mapowania” przeżywa; przypięcie wymaga `StandardTestDispatcher` bez `runCurrent`.
+- AM-808 (2026-11-05): tekst rysowany przez `rememberTextMeasurer` + `remember(text, style) { measurer.measure(...) }` — klucz bez `measurer` (który zależy od `LocalDensity`), więc po przeniesieniu okna na ekran o innej skali (Retina ↔ zewnętrzny) układ jest w starych pikselach. Zwykle zamiast `drawText` wystarczy `AmText` w opakowaniu z `clearAndSetSemantics {}`.
+  **How to apply:** `grep -n "rememberTextMeasurer\|measurer.measure" -A2` i sprawdź klucze `remember`.
+- AM-808: zadanie od leada nazwało sekcję mockupu („PODSUMOWANIE”), która w HTML jest czym innym (podsumowanie sesji); kafelki liczników są pod komentarzem `<!-- Liczniki -->`. Sprawdzaj sekcję w pliku, nie po nazwie z zadania.
 
 Powiązane: [[reviewer-workflow]]

@@ -80,3 +80,9 @@ internal fun buttonBorder(tokens: ColorTokens): Rgba = tokens.surfaces.border2
 
 /** Line on top of the mode bar. */
 internal fun modeBarBorder(tokens: ColorTokens): Rgba = tokens.surfaces.border
+
+/** (background, label) of a dropdown field: the pair of a SECONDARY button; a disabled field has the dim label. */
+internal fun dropdownFieldColors(
+    enabled: Boolean,
+    tokens: ColorTokens,
+): Pair<Rgba, Rgba> = buttonColors(ButtonKind.SECONDARY, enabled, tokens).let { it.background to it.label }

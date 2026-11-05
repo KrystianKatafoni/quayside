@@ -3,6 +3,8 @@ package dev.quayside.core.designsystem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -50,5 +52,60 @@ class AmScrimTest {
             val pixels = onNodeWithTag("frame").pixels()
 
             pixels.argbAt(pixels.width * 9 / 10, pixels.height * 9 / 10) shouldBe Color.White.toArgb()
+        }
+
+    @Test
+    fun `modal layer counts in the gate while composed and stops when it leaves`() =
+        runComposeUiTest {
+            // Given a gate and a layer that can be removed
+            val gate = AmModalGate()
+            val shown = mutableStateOf(value = true)
+            setContent {
+                CompositionLocalProvider(LocalAmModalGate provides gate) {
+                    if (shown.value) Box(Modifier.size(10.dp).amModalLayer())
+                }
+            }
+
+            // Then the gate is active, and not any more when the layer is gone
+            gate.active shouldBe true
+            runOnIdle { shown.value = false }
+            waitForIdle()
+            gate.active shouldBe false
+        }
+
+    @Test
+    fun `modal layer draws nothing`() =
+        runComposeUiTest {
+            setContent {
+                Box(Modifier.testTag("frame").size(40.dp).background(Color.White)) {
+                    Box(Modifier.size(40.dp).amModalLayer())
+                }
+            }
+
+            val pixels = onNodeWithTag("frame").pixels()
+
+            pixels.argbAt(pixels.width / 2, pixels.height / 2) shouldBe Color.White.toArgb()
+        }
+
+    @Test
+    fun `scrim and modal layer each add one layer`() =
+        runComposeUiTest {
+            // Given a scrim and a modal layer shown together, then the scrim removed
+            val gate = AmModalGate()
+            val scrim = mutableStateOf(value = true)
+            setContent {
+                CompositionLocalProvider(LocalAmModalGate provides gate) {
+                    if (scrim.value) Box(Modifier.size(10.dp).amScrim())
+                    Box(Modifier.size(10.dp).amModalLayer())
+                }
+            }
+            gate.active shouldBe true
+
+            // When the scrim leaves, the layer still counts
+            runOnIdle { scrim.value = false }
+            waitForIdle()
+
+            // Then the gate stays active: the scrim and the layer were two counts
+            gate.active shouldBe true
         }
 }

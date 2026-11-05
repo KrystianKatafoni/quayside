@@ -165,6 +165,36 @@ internal class ComponentColorsTest {
     }
 
     @ParameterizedTest(name = "{0}")
+    @MethodSource("schemes")
+    fun `dropdown field meets 4_5 on raised`(scheme: Scheme) {
+        val t = scheme.tokens
+        val (background, label) = dropdownFieldColors(enabled = true, tokens = t)
+
+        background shouldBe t.surfaces.raised
+        label shouldBe t.content.text
+        contrast(label, background) shouldBeGreaterThanOrEqual Wcag.TEXT_MIN
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("schemes")
+    fun `dropdown field is the pair of a secondary button`(scheme: Scheme) {
+        val t = scheme.tokens
+        val button = buttonColors(ButtonKind.SECONDARY, enabled = true, tokens = t)
+
+        dropdownFieldColors(enabled = true, tokens = t) shouldBe (button.background to button.label)
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("schemes")
+    fun `disabled dropdown field uses dim`(scheme: Scheme) {
+        val t = scheme.tokens
+
+        dropdownFieldColors(enabled = false, tokens = t) shouldBe (t.surfaces.raised to t.content.dim)
+        // enabled again: not dim, so the test cannot pass by a constant
+        (dropdownFieldColors(enabled = true, tokens = t).second == t.content.dim) shouldBe false
+    }
+
+    @ParameterizedTest(name = "{0}")
     @MethodSource("buttonTable")
     fun `button colours per kind`(row: ButtonRow) {
         val t = SampleTokens.colors()

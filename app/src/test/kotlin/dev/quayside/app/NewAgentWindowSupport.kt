@@ -17,6 +17,7 @@ import androidx.compose.ui.test.waitUntilAtLeastOneExists
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.commandpalette.ui.CommandPaletteController
+import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
@@ -137,6 +138,18 @@ internal fun SemanticsNodeInteraction.pressWithMeta(key: Key) {
         pressKey(key)
         keyUp(Key.MetaLeft)
     }
+}
+
+/** Opens the dropdown field [tag] with a click, clicks its option [index] and waits until the list is gone. */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.pickOption(
+    tag: String,
+    index: Int,
+) {
+    onNodeWithTag(tag).performClick()
+    waitUntilExactlyOneExists(hasTestTag(AmDropdownTags.option(index)), AGENT_WAIT_MS)
+    onNodeWithTag(AmDropdownTags.option(index)).performClick()
+    waitUntilDoesNotExist(hasTestTag(AmDropdownTags.LIST), AGENT_WAIT_MS)
 }
 
 internal const val AGENT_WAIT_MS = 5_000L

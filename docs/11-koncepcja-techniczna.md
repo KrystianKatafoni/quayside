@@ -24,7 +24,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
 | `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`), bez Compose | brak (dozwolone `core:domain`) |
-| `core:design-system` | Komponenty Compose (przyciski, przyciski ikonowe, ikony, pigułki, kafelki liczników, wiersze listy, pasek trybu, popup od pierwszego użytkownika), `AmTheme` z `CompositionLocal`; `amScrim()` ma skutek uboczny: zgłasza warstwę modalną do `AmModalGate` (widgety Swing nie biorą wtedy kliknięć) | `core:design-tokens` |
+| `core:design-system` | Komponenty Compose (przyciski, przyciski ikonowe, ikony, pigułki, kafelki liczników, wiersze listy, lista rozwijana `AmDropdown`, pasek trybu, popup od pierwszego użytkownika), `AmTheme` z `CompositionLocal`; `amScrim()` i otwarta lista `AmDropdown` mają skutek uboczny: zgłaszają warstwę modalną do `AmModalGate` (widgety Swing nie biorą wtedy kliknięć) | `core:design-tokens` |
 | `core:testing` | Wspólne narzędzia testowe: `TestClock`, `TestDispatchers`, buildery danych, asercje | `core:domain` |
 
 ### Feature (każdy jako `api` / `impl` / `ui`)

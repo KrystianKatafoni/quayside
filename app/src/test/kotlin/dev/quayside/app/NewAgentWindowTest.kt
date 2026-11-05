@@ -97,12 +97,12 @@ class NewAgentWindowTest {
             showWindowOf(world.setup)
             openWithProject(world.setup, "project0001")
 
-            // When the user fills every field and picks a model and a mode
+            // When the user fills every field and picks a model and a mode from their lists
             typePrompt("Fix the login")
             onNodeWithTag(WindowTags.NEW_AGENT_NAME).performTextInput("login-fix")
             onNodeWithTag(WindowTags.NEW_AGENT_AGENT).performTextInput("code-reviewer")
-            repeat(2) { onNodeWithTag(WindowTags.NEW_AGENT_MODEL).performClick() }
-            repeat(2) { onNodeWithTag(WindowTags.NEW_AGENT_PERMISSION).performClick() }
+            pickOption(WindowTags.NEW_AGENT_MODEL, 2)
+            pickOption(WindowTags.NEW_AGENT_PERMISSION, 2)
             awaitText(WindowTags.NEW_AGENT_MODEL, "opus")
             awaitText(WindowTags.NEW_AGENT_PERMISSION, "Tylko plan")
             onNodeWithTag(WindowTags.NEW_AGENT_START).performClick()
@@ -154,7 +154,7 @@ class NewAgentWindowTest {
             onNodeWithTag(WindowTags.NEW_AGENT_START).performClick()
             await(WindowTags.NEW_AGENT_PROBLEM)
             world.fake.calls.shouldBeEmpty()
-            onNodeWithTag(WindowTags.NEW_AGENT_PROJECT).performClick()
+            pickOption(WindowTags.NEW_AGENT_PROJECT, 0)
             awaitText(WindowTags.NEW_AGENT_PROJECT, "Quayside")
             onNodeWithTag(WindowTags.NEW_AGENT_START).performClick()
 

@@ -8,7 +8,6 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import dev.quayside.missioncontrol.ui.NewAgentWorld.QUAYSIDE
 import io.kotest.matchers.shouldBe
@@ -33,6 +32,13 @@ internal class NewAgentDialogSemanticsTest {
         return "$description $state".trim()
     }
 
+    private fun ComposeUiTest.descriptions(tag: String): List<String> =
+        onNodeWithTag(tag)
+            .fetchSemanticsNode()
+            .config
+            .getOrNull(SemanticsProperties.ContentDescription)
+            .orEmpty()
+
     @Test
     fun `every field has the name of its label`() =
         runComposeUiTest {
@@ -47,7 +53,11 @@ internal class NewAgentDialogSemanticsTest {
                     MissionControlTags.NEW_AGENT_PERMISSION to "newAgent.permission",
                 )
 
-            labels.forEach { (tag, key) -> announced(tag) shouldContain text(key) }
+            labels.forEach { (tag, key) ->
+                announced(tag) shouldContain text(key)
+                // exactly one name: the label, not the label twice
+                descriptions(tag) shouldBe listOf(text(key))
+            }
         }
 
     @Test
@@ -64,12 +74,11 @@ internal class NewAgentDialogSemanticsTest {
         }
 
     @Test
-    fun `a choice announces its new value after a click`() =
+    fun `a choice announces its new value after a selection`() =
         runComposeUiTest {
             shown()
 
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PERMISSION).performClick()
-            waitForIdle()
+            pickOption(MissionControlTags.NEW_AGENT_PERMISSION, 1)
 
             announced(MissionControlTags.NEW_AGENT_PERMISSION) shouldContain text("newAgent.permission.acceptEdits")
             announced(MissionControlTags.NEW_AGENT_PERMISSION) shouldContain text("newAgent.permission")
@@ -79,10 +88,7 @@ internal class NewAgentDialogSemanticsTest {
     fun `the bypass warning is a polite live region`() =
         runComposeUiTest {
             shown()
-            repeat(3) {
-                onNodeWithTag(MissionControlTags.NEW_AGENT_PERMISSION).performClick()
-                waitForIdle()
-            }
+            pickOption(MissionControlTags.NEW_AGENT_PERMISSION, 3)
 
             await(MissionControlTags.NEW_AGENT_WARNING)
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))

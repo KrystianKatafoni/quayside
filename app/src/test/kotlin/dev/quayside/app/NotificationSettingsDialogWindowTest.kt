@@ -3,6 +3,7 @@ package dev.quayside.app
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.commandpalette.ui.CommandPaletteController
+import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
@@ -131,8 +133,10 @@ class NotificationSettingsDialogWindowTest {
             openSettings(palette)
             repo.settings.value.popup.position shouldBe PopupPosition.BOTTOM_RIGHT
 
-            // When the user clicks the position field (one step forward, wrapping to the top left) and saves
+            // When the user opens the position list, picks the top left (the first place) and saves
             await(WindowTags.NOTIFICATION_POPUP_POSITION).performScrollTo().performClick()
+            await(AmDropdownTags.option(PopupPosition.TOP_LEFT.ordinal)).performClick()
+            waitUntilDoesNotExist(hasTestTag(AmDropdownTags.LIST))
             await(WindowTags.NOTIFICATION_SETTINGS_SAVE).performScrollTo().performClick()
             waitUntilDoesNotExist(hasTestTag(WindowTags.NOTIFICATION_SETTINGS_DIALOG))
 
@@ -148,8 +152,11 @@ class NotificationSettingsDialogWindowTest {
             openSettings(palette)
             waitUntilExactlyOneExists(hasTestTag(WindowTags.NOTIFICATION_SPEECH_VOICE) and hasText("Zosia (pl_PL)"))
 
-            // When the user clicks the voice field (one step forward, to Alex), types a rate and saves
+            // When the user opens the voice list, picks Alex, types a rate and saves
             await(WindowTags.NOTIFICATION_SPEECH_VOICE).performScrollTo().performClick()
+            waitUntilExactlyOneExists(hasText("Alex (en_US)") and hasAnyAncestor(hasTestTag(AmDropdownTags.LIST)))
+            onNode(hasText("Alex (en_US)") and hasAnyAncestor(hasTestTag(AmDropdownTags.LIST))).performClick()
+            waitUntilDoesNotExist(hasTestTag(AmDropdownTags.LIST))
             await(WindowTags.NOTIFICATION_SPEECH_RATE).performScrollTo().performTextReplacement("250")
             await(WindowTags.NOTIFICATION_SETTINGS_SAVE).performScrollTo().performClick()
             waitUntilDoesNotExist(hasTestTag(WindowTags.NOTIFICATION_SETTINGS_DIALOG))

@@ -10,7 +10,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
-- Ekran „Wygląd” (Widok → Wygląd… i paleta komend): lista 29 motywów z próbką kolorów i plakietką trybu, lista 22 typografii z podpowiedzią motywu, rozmiar interfejsu S/M/L, gęstość listy sesji (Kompaktowa / Komfortowa), font i rozmiar terminala (8–32) oraz podgląd na żywo na prawdziwym ekranie Mission Control z przykładowymi sesjami; „Zastosuj” zmienia kolory, kształt, fonty i skalę okna, a nowe karty terminala dostają kolory i font wybranego motywu. Wybór działa do zamknięcia aplikacji (zapis w `theme.json` dochodzi w AM-804) (AM-803).
+- Wygląd zapisuje się w `theme.json` i przeżywa restart. Przełącznik „Dzień i noc z macOS” w oknie Wygląd: osobny motyw na dzień i na noc (segment „Dzień | Noc” nad listą), zmiana trybu macOS przełącza motyw w ciągu ok. 5 s; przyciski „Importuj…” i „Eksportuj…” wczytują szkic z pliku `theme.json` i zapisują go do pliku (import zapisuje się dopiero po „Zastosuj”) (AM-804).
+- Ekran „Wygląd” (Widok → Wygląd… i paleta komend): lista 29 motywów z próbką kolorów i plakietką trybu, lista 22 typografii z podpowiedzią motywu, rozmiar interfejsu S/M/L, gęstość listy sesji (Kompaktowa / Komfortowa), font i rozmiar terminala (8–32) oraz podgląd na żywo na prawdziwym ekranie Mission Control z przykładowymi sesjami; „Zastosuj” zmienia kolory, kształt, fonty i skalę okna, a nowe karty terminala dostają kolory i font wybranego motywu (AM-803).
 - Kompaktowa gęstość listy sesji: kafelek 28 dp, mniejszy odstęp i jedna linia (podsumowanie tylko w panelu szczegółów) (AM-803).
 
 - Przebudowa Mission Control i paska bocznego wg mockupów z 2026-11-04: „+” w nagłówku PROJEKTY, ikony i pigułki liczników, kafelki liczników strony projektu, wiersze z kafelkiem stanu, panel szczegółów z hierarchią przycisków (główny, zwykłe, groźne), skróty przy akcjach; `AmButton` z rodzajem `DANGER`, ikoną i skrótem (AM-809).

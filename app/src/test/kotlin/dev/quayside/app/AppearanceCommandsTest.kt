@@ -1,6 +1,7 @@
 package dev.quayside.app
 
 import dev.quayside.appearance.api.FakeAppearanceApi
+import dev.quayside.appearance.api.FakeThemeFiles
 import dev.quayside.appearance.ui.AppearanceController
 import dev.quayside.commandpalette.api.CommandGroup
 import dev.quayside.commandpalette.api.CommandId
@@ -18,7 +19,13 @@ import org.junit.jupiter.api.Test
 /** The palette command "Wygląd…" and its guard against open dialogs (FR-A3, AM-803). */
 class AppearanceCommandsTest {
     private fun TestScope.appearance() =
-        AppearanceController(FakeAppearanceApi(), FakeTerminalSettingsRepo(), backgroundScope)
+        AppearanceController(
+            FakeAppearanceApi(),
+            FakeTerminalSettingsRepo(),
+            FakeThemeFiles(),
+            NoThemeFilePicker,
+            backgroundScope,
+        )
 
     @Test
     fun `offers appearance when no dialog is open`() =

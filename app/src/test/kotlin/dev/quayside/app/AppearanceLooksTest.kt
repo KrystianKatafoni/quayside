@@ -3,11 +3,12 @@
 package dev.quayside.app
 
 import dev.quayside.appearance.api.AppearanceSettings
+import dev.quayside.appearance.api.DayNight
 import dev.quayside.appearance.api.FakeAppearanceApi
 import dev.quayside.appearance.api.ListDensity
 import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.UiScale
-import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.impl.builtInCatalog
 import dev.quayside.core.designsystem.AmDensity
 import dev.quayside.core.designtokens.TypographyId
 import dev.quayside.terminal.api.TerminalSettings
@@ -27,7 +28,7 @@ import org.junit.jupiter.api.Test
  * and the terminal gets the colours and the font of the applied theme and typography.
  */
 class AppearanceLooksTest {
-    private val catalog = appearanceModule().catalog
+    private val catalog = builtInCatalog()
 
     /** A scope that runs at once, like the one `TerminalLookTest` uses for `typographySettings`. */
     private fun TestScope.eager() = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher(testScheduler))
@@ -100,6 +101,77 @@ class AppearanceLooksTest {
 
             colors.value shouldBe catalog.theme(SchemeId("paper"))?.colors?.terminal
             (colors.value != catalog.theme(SchemeId("plex"))?.colors?.terminal) shouldBe true
+            scope.cancel()
+        }
+
+    private val dayNight = DayNight(enabled = true, day = SchemeId("paper"), night = SchemeId("graphite"))
+
+    private fun dayNightApi() =
+        FakeAppearanceApi(catalog, AppearanceSettings(scheme = SchemeId("plex"), dayNight = dayNight))
+
+    @Test
+    fun `window looks follow applied not settings`() =
+        runTest {
+            val scope = eager()
+            val api = dayNightApi()
+            val looks = appLooks(api, scope)
+            looks.value.colors shouldBe catalog.theme(SchemeId("plex"))?.colors
+
+            api.systemDark = true
+            looks.value.colors shouldBe catalog.theme(SchemeId("graphite"))?.colors
+            api.systemDark = false
+            looks.value.colors shouldBe catalog.theme(SchemeId("paper"))?.colors
+            api.systemDark = null
+            looks.value.colors shouldBe catalog.theme(SchemeId("plex"))?.colors
+
+            api.settings.value.scheme shouldBe SchemeId("plex")
+            scope.cancel()
+        }
+
+    @Test
+    fun `looks start with the look of the mode macOS has at start`() =
+        runTest {
+            val scope = eager()
+            val api = dayNightApi()
+            api.systemDark = true
+
+            val looks = appLooks(api, scope)
+
+            looks.value shouldBe catalog.lookOf(api.applied.value)
+            looks.value.colors shouldBe catalog.theme(SchemeId("graphite"))?.colors
+            scope.cancel()
+        }
+
+    @Test
+    fun `other applied settings reach the looks together with the night theme`() =
+        runTest {
+            val scope = eager()
+            val api = dayNightApi()
+            api.systemDark = true
+            val looks = appLooks(api, scope)
+
+            api.update { it.copy(uiScale = UiScale.L, density = ListDensity.COMPACT) }
+
+            looks.value.scale shouldBe UiScale.L
+            looks.value.density shouldBe AmDensity.COMPACT
+            looks.value.colors shouldBe catalog.theme(SchemeId("graphite"))?.colors
+            scope.cancel()
+        }
+
+    @Test
+    fun `terminal colors follow the night theme`() =
+        runTest {
+            val scope = eager()
+            val api = dayNightApi()
+            val colors = appliedTerminalColors(appLooks(api, scope), scope)
+            val day = catalog.theme(SchemeId("paper"))?.colors?.terminal
+            val night = catalog.theme(SchemeId("graphite"))?.colors?.terminal
+            (day != night) shouldBe true
+
+            api.systemDark = true
+            colors.value shouldBe night
+            api.systemDark = false
+            colors.value shouldBe day
             scope.cancel()
         }
 }

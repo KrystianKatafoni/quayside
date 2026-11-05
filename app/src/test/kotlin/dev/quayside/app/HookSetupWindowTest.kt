@@ -27,7 +27,7 @@ import dev.quayside.agentruntime.api.HookKind
 import dev.quayside.agentruntime.api.HookScope
 import dev.quayside.agentruntime.api.HookStatus
 import dev.quayside.appearance.api.AppearanceSettings
-import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.impl.builtInCatalog
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.designsystem.toColor
 import dev.quayside.projects.api.FakeProjectsApi
@@ -212,8 +212,7 @@ class HookSetupWindowTest {
         runComposeUiTest {
             // Given an install that fails, in the real plex theme
             val err =
-                appearanceModule()
-                    .catalog
+                builtInCatalog()
                     .lookOf(AppearanceSettings())
                     .colors.status.err
             hooks.failNext(HookError.WriteFailed(Path.of("/home/test/.claude/settings.json"), "reason"))

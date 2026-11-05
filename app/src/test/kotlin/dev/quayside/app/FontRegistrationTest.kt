@@ -1,6 +1,6 @@
 package dev.quayside.app
 
-import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.impl.builtInCatalog
 import dev.quayside.core.designsystem.AmFonts
 import dev.quayside.core.designtokens.TypographyId
 import dev.quayside.core.testing.RecordingLogger
@@ -14,7 +14,7 @@ import java.awt.Font
  * recording lambda stands in for `GraphicsEnvironment`.
  */
 class FontRegistrationTest {
-    private val catalog = appearanceModule().catalog
+    private val catalog = builtInCatalog()
     private val logger = RecordingLogger()
     private val registered = mutableListOf<Font>()
 

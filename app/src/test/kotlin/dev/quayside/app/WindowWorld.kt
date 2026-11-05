@@ -25,9 +25,11 @@ import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.agentruntime.api.FakeHookInstaller
 import dev.quayside.appearance.api.AppearanceSettings
 import dev.quayside.appearance.api.FakeAppearanceApi
-import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.api.FakeThemeFiles
+import dev.quayside.appearance.impl.builtInCatalog
 import dev.quayside.appearance.ui.AppearanceController
 import dev.quayside.appearance.ui.AppearanceDialog
+import dev.quayside.appearance.ui.ThemeFilePicker
 import dev.quayside.commandpalette.api.FakeCommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.domain.NoOpLogger
@@ -117,7 +119,7 @@ internal class WindowSetup(
 internal fun ComposeUiTest.showWindowOf(setup: WindowSetup): CommandPaletteController {
     val built = mutableListOf<CommandPaletteController>()
     val keys = WindowKeys()
-    val look = appearanceModule().catalog.lookOf(AppearanceSettings())
+    val look = builtInCatalog().lookOf(AppearanceSettings())
     setContent {
         val content = @Composable { WindowContent(setup, keys) { built += it } }
         val appearance = setup.settings.appearance
@@ -306,7 +308,13 @@ private fun AppearanceDialogHost(
     val appearance = repos.appearance ?: return
     val controller =
         remember {
-            AppearanceController(appearance, repos.terminal ?: FakeTerminalSettingsRepo(), window.scope).also {
+            AppearanceController(
+                appearance,
+                repos.terminal ?: FakeTerminalSettingsRepo(),
+                FakeThemeFiles(),
+                NoThemeFilePicker,
+                window.scope,
+            ).also {
                 registry.register(AppearanceCommands(window.projects, window.missionControl, it, window.scope))
             }
         }
@@ -522,4 +530,11 @@ private fun terminalPanel(
         ->
         TerminalArea(controller, { false }, modifier, terminals?.paneContent, onFullScreen)
     }
+}
+
+/** The file dialogs of window tests that do not use them: every dialog is cancelled. */
+internal object NoThemeFilePicker : ThemeFilePicker {
+    override suspend fun open(): Path? = null
+
+    override suspend fun save(suggestedName: String): Path? = null
 }

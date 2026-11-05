@@ -1,7 +1,7 @@
 package dev.quayside.app
 
 import dev.quayside.appearance.api.ThemeSpec
-import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.impl.builtInCatalog
 import dev.quayside.core.designtokens.ColorTokens
 import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.Wcag
@@ -203,8 +203,8 @@ class ScreenContrastTest {
     companion object {
         @JvmStatic
         fun themes(): Stream<Arguments> =
-            appearanceModule()
-                .catalog.themes
+            builtInCatalog()
+                .themes
                 .stream()
                 .map { Arguments.of(Named.of(it.id.value, it)) }
     }

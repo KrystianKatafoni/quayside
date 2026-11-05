@@ -48,7 +48,14 @@ private fun FrameWindowScope.WindowContent(
 ) {
     val scope = rememberCoroutineScope()
     val controllers =
-        remember { WindowControllers(core, modules, AwtDirectoryPicker(window, core.dispatchers.main), scope, hooks) }
+        remember {
+            val pickers =
+                WindowPickers(
+                    AwtDirectoryPicker(window, core.dispatchers.main),
+                    AwtThemeFilePicker(window, core.dispatchers.main),
+                )
+            WindowControllers(core, modules, pickers, scope, hooks)
+        }
     WindowBindings(modules.registry, controllers.providers, controllers.palette, keys)
     AppMenu(controllers, modules.projects.api)
     val look by modules.appearance.looks.collectAsState()

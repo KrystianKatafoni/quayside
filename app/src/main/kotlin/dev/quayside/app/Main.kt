@@ -12,6 +12,7 @@ import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.agentruntime.impl.oneShotPromptModule
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.impl.themeFilesModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.designtokens.TerminalColors
 import dev.quayside.core.domain.info
@@ -51,8 +52,8 @@ fun main() {
     val core = productionCoreDeps()
     core.logger.info("app start")
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
-    val appearance = appearanceModule()
     val appScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
+    val appearance = runBlocking { appearanceModule(core.storage, core.process, core.homeDir, appScope, core.logger) }
     val looks = appLooks(appearance, appScope)
     // Before the first window (JediTerm reads the installed fonts once, by name): every font the dialog offers.
     registerTerminalFonts(appearance.catalog, core.logger)
@@ -110,7 +111,7 @@ private fun appModules(
         registry,
         terminal,
         notifications,
-        AppearanceDeps(appearance, looks),
+        AppearanceDeps(appearance, looks, themeFilesModule(appearance.catalog, core.dispatchers.io, core.logger)),
     )
 }
 

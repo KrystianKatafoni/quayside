@@ -1,6 +1,7 @@
 package dev.quayside.app
 
 import dev.quayside.appearance.api.AppearanceApi
+import dev.quayside.appearance.api.ThemeFiles
 import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
@@ -37,10 +38,11 @@ internal class TerminalDeps(
     val settings: StateFlow<TerminalSettings> get() = repo.settings
 }
 
-/** The appearance module with the looks of its settings, shared by the windows and the terminal. */
+/** The appearance module with the looks of what is applied now and the theme files; shared by the windows. */
 internal class AppearanceDeps(
     val api: AppearanceApi,
     val looks: StateFlow<AppLook>,
+    val files: ThemeFiles,
 )
 
 /** The projects module with the inspector that reads a project's directory. */

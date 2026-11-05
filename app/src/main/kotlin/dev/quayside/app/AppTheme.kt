@@ -52,13 +52,16 @@ internal fun AppScaled(
 /** [this] with `density` multiplied by the factor of [scale]; the font scale stays. */
 internal fun Density.scaledBy(scale: UiScale): Density = Density(density * scale.factor, fontScale)
 
-/** The looks of [appearance]'s current settings, in [scope] (Eagerly); the value is current before the first read. */
+/**
+ * The looks of what [appearance] applies now (`applied`: the day or night theme when day/night is on), in [scope]
+ * (Eagerly); the value is current before the first read.
+ */
 internal fun appLooks(
     appearance: AppearanceApi,
     scope: CoroutineScope,
 ): StateFlow<AppLook> {
     val catalog = appearance.catalog
-    return appearance.settings
+    return appearance.applied
         .map(catalog::lookOf)
-        .stateIn(scope, SharingStarted.Eagerly, catalog.lookOf(appearance.settings.value))
+        .stateIn(scope, SharingStarted.Eagerly, catalog.lookOf(appearance.applied.value))
 }

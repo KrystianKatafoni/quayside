@@ -30,8 +30,7 @@ internal class MissionControlStringsTest {
 
     @Test
     fun `the new agent button and start show their shortcuts`() {
-        MissionControlStrings["newAgent.button"] shouldContain "Nowy agent"
-        MissionControlStrings["newAgent.button"] shouldContain "⌘N"
+        MissionControlStrings["newAgent.button"] shouldBe "Nowy agent" // the key cap comes from SessionKeyCaps
         MissionControlStrings["newAgent.start"] shouldContain "Uruchom"
         MissionControlStrings["newAgent.start"] shouldContain "⌘⏎"
     }
@@ -66,7 +65,7 @@ internal class MissionControlStringsTest {
     }
 
     companion object {
-        /** Fixed texts of the composables (not from [StateGlyph], [LastEvent], [AgeText] or [Freshness]). */
+        /** Fixed texts of the composables (not from [StatusLook], [LastEvent], [AgeText] or [Freshness]). */
         val UI_KEYS: Set<String> =
             setOf(
                 "empty.noProjects",
@@ -171,7 +170,7 @@ internal class MissionControlStringsTest {
         private val ages = listOf(0L, 5L, 120L, 7_200L, 172_800L)
 
         private fun generated(): List<UiText> =
-            states.map { UiText(StateGlyph.of(it).key) } +
+            states.map { UiText(StatusLook.of(it).key) } +
                 states.map(LastEvent::of) +
                 ages.map { AgeText.of(T0, T0.plusSeconds(it)) } +
                 statuses.map { Freshness.of(it, ZoneOffset.UTC) } +
@@ -205,8 +204,8 @@ internal class MissionControlStringsTest {
                 arguments("filter.active", "Aktywne"),
                 arguments("filter.finished", "Zakończone"),
                 arguments("action.respawn", "Respawn"),
-                arguments("action.attach", "Attach  ⏎"),
-                arguments("action.reply", "Odpowiedz  r"),
+                arguments("action.attach", "Attach"),
+                arguments("action.reply", "Odpowiedz"),
                 arguments("shortcuts.toggle", "Skróty"),
                 arguments("action.stop.busy", "Zatrzymywanie…"),
                 arguments("action.respawn.busy", "Respawn…"),

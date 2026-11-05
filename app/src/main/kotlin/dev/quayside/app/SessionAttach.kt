@@ -6,11 +6,13 @@ import dev.quayside.commandpalette.api.CommandId
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.api.Shortcut
 import dev.quayside.core.domain.Logger
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.domain.info
 import dev.quayside.missioncontrol.ui.AttachTarget
 import dev.quayside.missioncontrol.ui.MissionControlController
+import dev.quayside.missioncontrol.ui.MissionControlIntent
 import dev.quayside.missioncontrol.ui.SessionActionsState
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.ui.ProjectsController
@@ -68,6 +70,7 @@ internal class SessionAttacher(
     private val terminal: TerminalController,
     private val attachCommand: (SessionId) -> ShellCommand,
     private val logger: Logger,
+    private val selectProject: (ProjectId) -> Unit = {},
 ) {
     /** Shows the attach tab of [MissionControlController.attachTarget], opening it when missing; no-op without. */
     fun attachSelected() {
@@ -82,8 +85,9 @@ internal class SessionAttacher(
     }
 
     /**
-     * Shows the attach tab of [id] chosen on a popup (AM-702): looks the session up in [sessions] and its project in
-     * [projects]; no-op for a session that is gone or outside the registered projects.
+     * Shows the attach tab of [id] chosen on a popup (AM-702), selects its project in the sidebar and the session in
+     * Mission Control, so that the session bar of the terminal mode shows it (AM-809): looks the session up in
+     * [sessions] and its project in [projects]; no-op for a session that is gone or outside the projects.
      */
     fun attachSession(
         id: SessionId,
@@ -92,6 +96,8 @@ internal class SessionAttacher(
     ) {
         val session = sessions.firstOrNull { it.id == id } ?: return
         val project = projects.firstOrNull { it.id == session.project } ?: return
+        selectProject(project.id)
+        missionControl.onIntent(MissionControlIntent.SelectSession(project.id, id))
         open(AttachTarget(id, session.name, project, session.state.isWaiting), "popup attach")
     }
 

@@ -27,6 +27,12 @@ internal object ProjectsTags {
     const val MESSAGE = "projects.dialog.message"
     const val CANCEL = "projects.dialog.cancel"
 
+    const val RAIL = "projects.rail"
+    const val RAIL_ADD = "projects.rail.add"
+
+    /** The rail button of project [id]. */
+    fun railButton(id: ProjectId): String = "projects.rail.${id.value}"
+
     /** The row of project [id]; clicking it selects the project. */
     fun row(id: ProjectId): String = "projects.row.${id.value}"
 

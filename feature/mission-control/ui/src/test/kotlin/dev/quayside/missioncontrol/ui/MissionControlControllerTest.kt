@@ -2,6 +2,7 @@
 
 package dev.quayside.missioncontrol.ui
 
+import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.ProjectId
@@ -113,7 +114,7 @@ internal class MissionControlControllerTest {
                 .page()
                 .rows
                 .single { it.id.value == "first" }
-                .glyph.symbol shouldBe "?"
+                .glyph.icon shouldBe IconKind.WAITING
             controller.state.value.modeBar.waiting shouldBe 1
         }
 

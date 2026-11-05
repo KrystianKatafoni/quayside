@@ -28,6 +28,8 @@ import kotlin.time.Duration.Companion.hours
 internal class NewAgentButtonTest {
     private var clicks = 0
 
+    private val keyCaps = SessionKeyCaps(attach = "⏎", reply = "r", stop = "x", newAgent = "⌘N")
+
     private fun ComposeUiTest.show(
         selected: ProjectId? = QUAYSIDE.id,
         projects: List<Project> = NewAgentWorld.PROJECTS,
@@ -49,7 +51,10 @@ internal class NewAgentButtonTest {
                             tick = 1.hours,
                         ).also { built = it }
                     }
-                MissionControl(controller, onNewAgent = { clicks++ })
+                MissionControl(
+                    controller,
+                    handlers = MissionControlHandlers(onNewAgent = { clicks++ }, keyCaps = keyCaps),
+                )
             }
         }
         waitUntil { built != null }

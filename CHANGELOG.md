@@ -6,6 +6,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Przebudowa Mission Control i paska bocznego wg mockupów z 2026-11-04: „+” w nagłówku PROJEKTY, ikony i pigułki liczników, kafelki liczników strony projektu, wiersze z kafelkiem stanu, panel szczegółów z hierarchią przycisków (główny, zwykłe, groźne), skróty przy akcjach; `AmButton` z rodzajem `DANGER`, ikoną i skrótem (AM-809).
+- Tryb terminala (przycisk „Tryb terminala” na pasku kart albo komenda palety): wąski pasek ikon projektów, pasek sesji nad terminalem i „Wróć do listy sesji”; karty z ikoną stanu i przyciskami ikonowymi (AM-809).
+
 - Terminal w kolorach i foncie motywu: tło i tekst z `termBg`/`termText`, font z typografii motywu (IBM Plex Mono dla Plex Violet, rodziny dołączone do aplikacji rejestrowane dla JediTerm), bez białej ramki wokół terminala (AM-807).
 - Nowy domyślny wygląd Plex Violet z fontami IBM Plex: wszystkie ekrany (Mission Control, sidebar, terminal, powiadomienia, paleta, okna dialogowe) czytają kolory, kształt i typografię z `AmTheme`; terminal (JediTerm) zostaje w starych kolorach (AM-806).
 - Cisza nocna i wyjątki projektów w `notifications.json` (ustawiane w pliku do czasu ekranu w AM-706; cisza domyślnie wyłączona; profile projektu: domyślny / tylko błędy / wyciszony, osobny głos projektu) (AM-705).

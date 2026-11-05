@@ -42,6 +42,25 @@ internal object MissionControlTags {
     const val NEW_AGENT_CANCEL = "missionControl.newAgent.cancel"
     const val NEW_AGENT_START = "missionControl.newAgent.start"
 
+    const val SESSION_BAR = "missionControl.sessionBar"
+    const val SESSION_BAR_TILE = "missionControl.sessionBar.tile"
+    const val SESSION_BAR_REPLY = "missionControl.sessionBar.reply"
+    const val SESSION_BAR_RESPAWN = "missionControl.sessionBar.respawn"
+    const val SESSION_BAR_STOP = "missionControl.sessionBar.stop"
+    const val HEADER_PATH = "missionControl.header.path"
+    const val HEADER_COUNT = "missionControl.header.count"
+    const val DETAILS_STATE = "missionControl.details.state"
+    const val DETAILS_SUMMARY = "missionControl.details.summary"
+
+    /** The stat card of [kind]: `waiting`, `working`, `done` or `failed`. */
+    fun stat(kind: String): String = "missionControl.stat.$kind"
+
+    /** The "Odpowiedz" button in the selected row of session [id]. */
+    fun rowReply(id: SessionId): String = "missionControl.rowReply.${id.value}"
+
+    /** The Attach icon button in the selected row of session [id]. */
+    fun rowAttach(id: SessionId): String = "missionControl.rowAttach.${id.value}"
+
     /** The button of the control [id] (`attach`, `reply`, `stop`, `respawn`, `remove`, `preview`) in the panel. */
     fun details(id: String): String = "missionControl.details.$id"
 

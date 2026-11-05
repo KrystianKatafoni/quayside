@@ -1,7 +1,6 @@
 package dev.quayside.missioncontrol.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,61 +10,56 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmText
-import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.TextRole
-import dev.quayside.core.designsystem.toColor
 
 /**
  * The centre of the window: header, filter, session list, details panel and mode bar; stateless apart from
- * [controller]. [onAttach] and [onReply] open the selected session in the terminal (`⏎`, `r`); the buttons, the row
- * menu and a double click on a row call them (AM-511). [onNewAgent] opens the "Nowy agent" dialog (AM-608). They do
- * nothing by default.
+ * [controller]. [handlers] say what `app` does on Attach, Reply and "Nowy agent" (AM-511, AM-608); they do nothing
+ * by default.
  */
 @Composable
 public fun MissionControl(
     controller: MissionControlController,
     modifier: Modifier = Modifier,
-    onAttach: () -> Unit = {},
-    onReply: () -> Unit = {},
-    onNewAgent: () -> Unit = {},
+    handlers: MissionControlHandlers = MissionControlHandlers(),
 ) {
     val state by controller.state.collectAsState()
     val onEvent: (MissionControlEvent) -> Unit = { event ->
         when (event) {
-            MissionControlEvent.Attach -> onAttach()
-            MissionControlEvent.Reply -> onReply()
-            MissionControlEvent.NewAgent -> onNewAgent()
+            MissionControlEvent.Attach -> handlers.onAttach()
+            MissionControlEvent.Reply -> handlers.onReply()
+            MissionControlEvent.NewAgent -> handlers.onNewAgent()
             else -> controller.onEvent(event)
         }
     }
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(color = bgColor())
-                .testTag(MissionControlTags.ROOT),
-    ) {
-        Box(modifier = Modifier.weight(weight = 1f).fillMaxWidth()) {
-            when (val screen = state.screen) {
-                Screen.NoProjects -> Empty("empty.noProjects", "empty.noProjects.hint")
-                Screen.NoSelection -> Empty("empty.noSelection", hint = null)
-                is Screen.Project -> ProjectPage(screen, state.preview, onEvent)
-                is Screen.Global -> GlobalPage(screen, state.preview, onEvent)
-            }
+    CompositionLocalProvider(LocalKeyCaps provides handlers.keyCaps) {
+        Column(modifier = modifier.fillMaxSize().background(color = bgColor()).testTag(MissionControlTags.ROOT)) {
+            Box(modifier = Modifier.weight(weight = 1f).fillMaxWidth()) { ScreenContent(state, onEvent) }
+            ModeBarView(state.modeBar)
         }
-        ModeBarView(state.modeBar)
+        state.dialog?.let { SessionDialogView(it, onEvent) }
     }
-    state.dialog?.let { SessionDialogView(it, onEvent) }
+}
+
+@Composable
+private fun ScreenContent(
+    state: MissionControlUiState,
+    onEvent: (MissionControlEvent) -> Unit,
+) {
+    when (val screen = state.screen) {
+        Screen.NoProjects -> Empty("empty.noProjects", "empty.noProjects.hint")
+        Screen.NoSelection -> Empty("empty.noSelection", hint = null)
+        is Screen.Project -> ProjectPage(screen, state.preview, onEvent)
+        is Screen.Global -> GlobalPage(screen, state.preview, onEvent)
+    }
 }
 
 @Composable
@@ -91,7 +85,8 @@ private fun ProjectPage(
 ) {
     val filters = @Composable { Filters(page.filter, onEvent) }
     SessionPage(page.banner, page.loading, page.rows, page.details, preview, onEvent, filters) {
-        Header(page.header, onEvent)
+        ProjectHeaderView(page.header, onEvent)
+        StatCards(page.stats)
     }
 }
 
@@ -130,64 +125,7 @@ internal fun SessionPage(
             }
             preview?.let { SessionPreviewView(it, onEvent, Modifier.weight(weight = 1f - LIST_SHARE)) }
         }
-        Details(details, onEvent)
-    }
-}
-
-@Composable
-private fun Header(
-    header: ProjectHeader,
-    onEvent: (MissionControlEvent) -> Unit,
-) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Column(modifier = Modifier.testTag(MissionControlTags.HEADER)) {
-            AmText(header.name, role = TextRole.TITLE)
-            AmText(header.path.toString(), role = TextRole.CODE, color = mutedColor())
-            AmText(MissionControlStrings.formatted("header.sessions", header.sessions))
-        }
-        NewAgentButton { onEvent(MissionControlEvent.NewAgent) }
-    }
-}
-
-/** Never takes focus, like the filters: it would eat Space and Enter of the window (plan, rule 8). */
-@Composable
-private fun NewAgentButton(onClick: () -> Unit) {
-    Box(
-        modifier =
-            Modifier
-                .testTag(MissionControlTags.NEW_AGENT)
-                .focusProperties { canFocus = false }
-                .clip(AmTheme.shape.corner)
-                .clickable(role = Role.Button, onClick = onClick)
-                .background(color = raisedColor())
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-    ) {
-        AmText(MissionControlStrings["newAgent.button"])
-    }
-}
-
-/** The tabs never take focus either, for the same reason as the session rows. */
-@Composable
-private fun Filters(
-    current: SessionFilter,
-    onEvent: (MissionControlEvent) -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(space = 4.dp)) {
-        SessionFilter.entries.forEach { filter ->
-            val surfaces = AmTheme.colors.surfaces
-            Box(
-                modifier =
-                    Modifier
-                        .testTag(MissionControlTags.filter(filter))
-                        .focusProperties { canFocus = false }
-                        .clip(AmTheme.shape.corner)
-                        .clickable(role = Role.Tab) { onEvent(MissionControlEvent.SelectFilter(filter)) }
-                        .background(color = (if (filter == current) surfaces.sel else surfaces.raised).toColor())
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-            ) {
-                AmText(MissionControlStrings["filter.${filter.name.lowercase()}"])
-            }
-        }
+        Details(details, rows.firstOrNull { it.id == details?.id }?.age, onEvent)
     }
 }
 

@@ -200,7 +200,9 @@ Plik źródłowy odwołuje się do `docs/screenshots/light_01_nordic_slate.png` 
 
 Znak (ikona) ma ten sam wybór z progiem 3:1 (WCAG 1.4.11). Plakietka licznika na ikonie to `warn` z tuszem `warnInk`.
 
-**Przyciski ikonowe.** Style: `GHOST` (przezroczysty, ikona `muted`), `OUTLINED` (`raised` i `border2`), `SELECTED` (`sel` i `border2`), `DANGER` (obrys `tinted(err)` 35 %, ikona `err`). Rozmiary celu: `COMPACT` 28 dp (ikona 16), `REGULAR` 34 dp (ikona 18), `LARGE` 44 dp (ikona 20). Wyłączony przycisk ma ikonę `dim`. Przycisk niefokusowalny nie bierze fokusu i nie rezerwuje miejsca na ramkę.
+**Przyciski ikonowe.** Style: `GHOST` (przezroczysty, ikona `muted`), `OUTLINED` (`raised` i `border2`), `SELECTED` (`sel` i `border2`), `DANGER` (obrys `tinted(err)` 35 %, ikona `err`). Rozmiary celu: `COMPACT` 28 dp (ikona 16), `REGULAR` 34 dp (ikona 18), `LARGE` 44 dp (ikona 20). Wyłączony przycisk ma ikonę `dim`. Przycisk niefokusowalny nie bierze fokusu i nie rezerwuje miejsca na ramkę. Przycisk ikonowy nie rysuje nakładki najechania ani naciśnięcia: styl (`SELECTED`) mówi, czy jest zaznaczony, a nakładka przyciemniałaby kolory z tokenów.
+
+**Hierarchia przycisków z tekstem (AM-809, arkusz C).** `AmButton` ma trzy rodzaje: `PRIMARY` (`accentInk` na `accent`, jeden na widok), `SECONDARY` (`text` na `raised`, obrys `border2`) i `DANGER` (obrys `tinted(err)` 35 %, etykieta `err`, bez wypełnienia; gdy `err` ma na `panel` mniej niż 4,5:1, etykieta jest w kolorze `text`). Opcjonalnie ma ikonę 16 dp przed tekstem i skrót za tekstem (kolor etykiety, bez ramki; odczytywany razem z etykietą). W panelu szczegółów kolejność jest zawsze taka: główna, zwykłe, groźne osobno. Przyciski na ekranach (poza oknami dialogowymi) są niefokusowalne, żeby Spacja i Enter trafiały do skrótów okna. Kolor znaku stanu (ikona, kafelek) to `StatusTone.markColor()`.
 
 ## Pozostałe ustawienia wyglądu
 

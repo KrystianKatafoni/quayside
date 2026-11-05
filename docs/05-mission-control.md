@@ -7,15 +7,15 @@
 | Strefa | Zawartość |
 | --- | --- |
 | Nagłówek (44 px) | Ścieżka `agents / <projekt>`, pole palety ⌘K, przełącznik głosu (z nazwą głosu), dzwonek z licznikiem, przycisk **Nowy agent ⌘N** |
-| Sidebar projektów (232 px) | Lista projektów z kropką stanu i licznikami `czeka·pracuje`, menu ⋯, przycisk „+ Dodaj projekt z dysku…”, widoki globalne, zwijana ściągawka skrótów |
-| Środek | Nagłówek projektu (ścieżka, branch, liczba sesji), filtr Wszystkie/Aktywne/Zakończone, lista sesji (prawy klik lub ⋯ w wierszu otwiera menu akcji), panel terminala |
-| Panel szczegółów (300 px) | Nazwa i stan sesji, podsumowanie, worktree/model/tryb/ID, akcje Odpowiedz (r), Attach, Respawn, Zatrzymaj |
+| Sidebar projektów (260 dp) | Nagłówek „PROJEKTY” z przyciskiem „+” (dodaje projekt), lista projektów z ikoną folderu w tonie projektu i pigułkami liczników czekających i pracujących, menu ⋯, widoki globalne z ikoną i pigułką liczby, zwijana ściągawka skrótów |
+| Środek | Nagłówek projektu (tytuł, pigułka ścieżki, liczba sesji, przycisk **Nowy agent** z ⌘N), cztery kafelki liczników (czeka, pracuje, gotowe, błąd; zatrzymane nie są liczone), filtr Wszystkie/Aktywne/Zakończone jako segmenty, lista sesji (prawy klik lub ⋯ w wierszu otwiera menu akcji), panel terminala. Pod listą nie ma paska podpowiedzi klawiszy: skrót jest przy akcji |
+| Panel szczegółów (300 dp) | Nazwa, pigułka stanu („Czeka na odpowiedź · 4 min”), PODSUMOWANIE, pola w ramce (worktree, ID, start, ostatnia aktywność), na dole przyciski: główna Odpowiedz (r), zwykłe Attach (⏎), Respawn i Podgląd, groźne osobno Zatrzymaj (x) i Usuń z listy |
 | Pasek statusu (28 px) | Projekt, liczniki czekających i pracujących, status głosu i popupu, wersja supervisora |
 | Popupy | Stos w wybranym rogu ekranu (domyślnie prawy dół); szczegóły w [07](07-powiadomienia.md) |
 
 ## Wiersz sesji
 
-`glif · nazwa (mono) · podsumowanie · ostatnie zdarzenie/narzędzie · wiek`. Zaznaczony wiersz ma tło `sel` i pasek akcentu z lewej.
+`kafelek stanu 38 dp · nazwa (mono) nad podsumowaniem · pigułka ostatniego zdarzenia/narzędzia · wiek`. Zaznaczony wiersz ma tło `sel` oraz przyciski Odpowiedz (gdy sesja czeka) i Attach (przycisk ikonowy); „⋯” otwiera menu akcji.
 
 ## Stany sesji
 

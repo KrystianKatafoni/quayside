@@ -102,7 +102,8 @@ class AttachTabsWindowTest {
             .fetchSemanticsNodes()
             .singleOrNull()
             ?.config
-            ?.getOrNull(SemanticsProperties.StateDescription)
+            ?.getOrNull(SemanticsProperties.ContentDescription)
+            ?.singleOrNull()
 
     @Test
     fun `FR-K2 Enter twice keeps one attach tab`() =

@@ -3,26 +3,28 @@ package dev.quayside.terminal.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmIcon
+import dev.quayside.core.designsystem.AmIconButton
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.IconButtonOptions
+import dev.quayside.core.designsystem.IconButtonSize
+import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.markColor
 import dev.quayside.core.designsystem.toColor
 
 /** The bar of tabs, one group per project in the order of the first tab. [activeTab]: the tab of the active pane. */
@@ -32,16 +34,27 @@ internal fun TerminalTabBar(
     activeTab: TabId?,
     statuses: Map<TabKey, TabStatus>,
     controller: TerminalController,
+    onFullScreen: (() -> Unit)? = null,
 ) {
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(color = panelColor())
-                .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
+        modifier = Modifier.fillMaxWidth().background(color = panelColor()),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        groups.forEach { TabGroupChip(it, activeTab, statuses, controller) }
+        Row(
+            modifier = Modifier.weight(weight = 1f).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
+        ) {
+            groups.forEach { TabGroupChip(it, activeTab, statuses, controller) }
+        }
+        onFullScreen?.let {
+            AmIconButton(
+                IconKind.MAXIMIZE,
+                TerminalStrings["fullScreen"],
+                it,
+                Modifier.testTag(TerminalTags.FULL_SCREEN),
+                COMPACT_UNFOCUSABLE,
+            )
+        }
     }
 }
 
@@ -64,12 +77,18 @@ internal fun TabGroupChip(
             color = mutedColor(),
         )
         group.tabs.forEach { TabChip(it, selected = it.id == activeTab, status = statuses[it.key], controller) }
-        GlyphButton(TerminalTags.groupAdd(group.project.id), glyph = "+") { controller.openShell(group.project) }
+        AmIconButton(
+            IconKind.PLUS,
+            TerminalStrings["group.add"],
+            { controller.openShell(group.project) },
+            Modifier.testTag(TerminalTags.groupAdd(group.project.id)),
+            COMPACT_UNFOCUSABLE,
+        )
     }
 }
 
 /**
- * A tab: the dot of its [status], its label (click shows it), the `exit N` marker of an exited process and the x
+ * A tab: the icon of its [status], its label (click shows it), the `exit N` marker of an exited process and the x
  * that closes it.
  */
 @Composable
@@ -82,7 +101,7 @@ internal fun TabChip(
     val surfaces = AmTheme.colors.surfaces
     val shade = (if (selected) surfaces.sel else surfaces.panel).toColor()
     Row(modifier = Modifier.background(color = shade), verticalAlignment = Alignment.CenterVertically) {
-        status?.let { TabStatusDot(tab.id, it) }
+        status?.let { TabStatusMark(tab.id, it) }
         AmText(
             text = tab.label,
             modifier =
@@ -93,7 +112,13 @@ internal fun TabChip(
                     .padding(horizontal = 8.dp, vertical = 4.dp),
         )
         tab.exitCode?.let { TabExitMarker(tab.id, it) }
-        GlyphButton(TerminalTags.tabClose(tab.id), glyph = "×") { controller.close(tab.id) }
+        AmIconButton(
+            IconKind.CLOSE,
+            TerminalStrings["tab.close"],
+            { controller.close(tab.id) },
+            Modifier.testTag(TerminalTags.tabClose(tab.id)),
+            COMPACT_UNFOCUSABLE,
+        )
     }
 }
 
@@ -111,20 +136,20 @@ private fun TabExitMarker(
     )
 }
 
-/** The dot before the label of a keyed tab. Not clickable, so it never takes the focus (AM-510). */
+/** The 14 dp mark before the label of a keyed tab: the icon of its status. Not clickable, so it never takes focus. */
 @Composable
-private fun TabStatusDot(
+private fun TabStatusMark(
     tab: TabId,
     status: TabStatus,
 ) {
-    val text = TerminalStrings["tab.status.${status.name.lowercase()}"]
-    Box(
-        modifier =
-            Modifier
-                .padding(start = 8.dp)
-                .size(8.dp)
-                .background(color = status.color(AmTheme.colors).toColor(), shape = CircleShape)
-                .testTag(TerminalTags.tabStatus(tab))
-                .semantics { stateDescription = text },
+    val (icon, tone) = status.look()
+    AmIcon(
+        icon,
+        TerminalStrings["tab.status.${status.name.lowercase()}"],
+        Modifier.padding(start = 8.dp).size(14.dp).testTag(TerminalTags.tabStatus(tab)),
+        tone.markColor(),
     )
 }
+
+/** Close, add and full screen never take focus: a focused button would eat Space and Enter of the window. */
+private val COMPACT_UNFOCUSABLE = IconButtonOptions(focusable = false, size = IconButtonSize.COMPACT)

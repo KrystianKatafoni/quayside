@@ -40,7 +40,7 @@ public value class TabKey(
     public val value: String,
 )
 
-/** The state shown as a dot next to a keyed tab; `app` maps its domain state to it (AM-510). */
+/** The state shown as an icon next to a keyed tab; `app` maps its domain state to it (AM-510). */
 public enum class TabStatus { WAITING, WORKING, DONE, FAILED, STOPPED }
 
 @JvmInline

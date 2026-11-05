@@ -2,11 +2,15 @@
 
 Terminal jest pełnoprawną częścią aplikacji, nie dodatkiem. Działa w dwóch miejscach: jako panel pod listą sesji w Mission Control i jako pełnoekranowy **tryb terminala** (przycisk pełnego ekranu, bez skrótu klawiszowego). Skrót ⌘⇧↵ maksymalizuje aktywny panel w obrębie panelu terminala, a ten sam skrót przywraca układ.
 
+## Tryb terminala
+
+Układ B z mockupów z 2026-11-04. Wejście: przycisk „Tryb terminala” na końcu paska kart albo komenda palety „Tryb terminala” (bez skrótu; Attach **nie** zmienia trybu). Okno pokazuje wtedy tylko: wąski pasek ikon projektów (przycisk „Wróć do listy sesji” u góry, ikona folderu na projekt w tonie projektu, plakietka z liczbą czekających, „+” dodaje projekt), nad terminalem pasek sesji (kafelek stanu, nazwa, stan i wiek sesji aktywnej karty `attach`, przyciski Odpowiedz, Respawn i Zatrzymaj sesję) i terminal na całą resztę wysokości. Wyjście: „Wróć do listy sesji” (przycisk albo komenda palety), kliknięcie projektu w pasku ikon (wybiera projekt) oraz zamknięcie ostatniej karty. Esc nie wychodzi z trybu: należy do Claude Code w terminalu. Pasek sesji pokazuje się tylko dla sesji zaznaczonej na liście (Attach z popupu zaznacza ją).
+
 ## Funkcje
 
 | Funkcja | Opis |
 | --- | --- |
-| Karty per projekt | Karty pogrupowane nazwą projektu; kropka stanu przy karcie `attach` |
+| Karty per projekt | Karty pogrupowane nazwą projektu; przy karcie `attach` ikona stanu 14 dp (kształt i kolor stanu); „×” zamyka kartę, „+” otwiera powłokę projektu |
 | Rodzaje kart | `attach · <sesja>` (`claude attach <id>`), `zsh` (login shell w katalogu projektu lub worktree), `logs · <sesja>` (`claude logs <id> --follow`, tylko odczyt) |
 | Panele | Podział na dwa panele obok siebie ⌘D i jeden pod drugim ⌘⇧D (najwyżej 4, bez przeciągania granic), przełączanie ⌘⌥←→, maksymalizacja aktywnego panelu ⌘⇧↵ (ten sam skrót przywraca układ); aktywny panel ma ramkę w kolorze akcentu |
 | Szukanie | ⌘F otwiera pasek w prawym górnym rogu aktywnego panelu (ponowne ⌘F zaznacza tekst w polu); wszystkie trafienia w historii i na ekranie są podświetlone, bieżące mocniej; licznik `3/12`, przełączniki *Aa* (wielkość liter) i `.*` (regex, składnia Javy); ⏎ i ↑ idą do starszego trafienia, ⇧⏎ i ↓ do nowszego (cyklicznie); Esc zamyka pasek, czyści podświetlenia i oddaje fokus terminalowi |

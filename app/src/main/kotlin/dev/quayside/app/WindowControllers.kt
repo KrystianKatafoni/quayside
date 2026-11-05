@@ -7,12 +7,16 @@ import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
+import dev.quayside.projects.ui.ProjectsIntent
 import dev.quayside.terminal.ui.TerminalController
 import dev.quayside.terminal.ui.TerminalSettingsController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * The controllers and command providers of one main window; they live as long as the window and run in [scope]
@@ -74,10 +78,17 @@ internal class WindowControllers(
     /** ⌘ keys of a focused terminal, bridged to the palette and the shortcuts. */
     val terminalKeys = TerminalKeys(modules.registry, palette, scope)
 
-    val attacher = SessionAttacher(missionControl, terminal, modules.terminal.attachCommand, core.logger)
+    val attacher =
+        SessionAttacher(missionControl, terminal, modules.terminal.attachCommand, core.logger) {
+            projects.onIntent(ProjectsIntent.Select(it))
+        }
+
+    /** Which layout the window shows (AM-809); leaves the terminal mode when the last tab is gone. */
+    val mode = WindowModeState { terminal.menu.value.hasTabs }
 
     init {
         terminal.followSessions(modules.sessions.monitor.snapshot, scope)
+        mode.follow(terminal.menu, scope)
     }
 
     val providers: List<CommandProvider> =
@@ -89,5 +100,6 @@ internal class WindowControllers(
             NotificationSettingsCommands(projects, missionControl, notificationSettings, scope),
             HookSetupCommands(projects, missionControl, hookSetup, scope, hooksBlocked),
             NewAgentCommands(projects, missionControl, modules.projects, newAgent, scope, newAgentBlocked),
+            WindowModeCommands(mode, scope),
         )
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmButton
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.ButtonOptions
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.core.designsystem.amFocusFrame
 
@@ -124,7 +125,7 @@ internal fun DialogButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    AmButton(label, onClick, modifier.semantics(mergeDescendants = true) {}, enabled = enabled)
+    AmButton(label, onClick, modifier.semantics(mergeDescendants = true) {}, ButtonOptions(enabled = enabled))
 }
 
 /** The name of a field for a screen reader (its label), put on the control. */

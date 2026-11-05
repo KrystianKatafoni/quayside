@@ -42,9 +42,13 @@ public class TerminalController(
 
     private val statusStore = MutableStateFlow(emptyMap<TabKey, TabStatus>())
     private val focusStore = MutableStateFlow(0)
+    private val activeKeyStore = MutableStateFlow<TabKey?>(value = null)
 
-    /** Status dots by tab key (AM-510). */
+    /** Status icons by tab key (AM-510). */
     internal val statuses: StateFlow<Map<TabKey, TabStatus>> = statusStore
+
+    /** Key of the tab in the active pane; null without tabs or for a tab opened without a key. */
+    public val activeKey: StateFlow<TabKey?> = activeKeyStore
 
     /** Counts requests to give the widget the focus again (AM-510). */
     internal val focusRequests: StateFlow<Int> = focusStore
@@ -93,7 +97,7 @@ public class TerminalController(
         }
     }
 
-    /** Shows a dot next to every tab whose key is in [statuses]; other tabs show none. Replaces the previous map. */
+    /** Shows a status icon next to every tab whose key is in [statuses]; other tabs show none. Replaces the map. */
     public fun showStatuses(statuses: Map<TabKey, TabStatus>) {
         statusStore.value = statuses
     }
@@ -236,6 +240,7 @@ public class TerminalController(
     private fun dispatch(event: TerminalEvent) {
         store.value = TerminalState.reduce(store.value, event)
         publishMenu()
+        activeKeyStore.value = activeTab()?.key
         search.onActiveTabChanged(activeTab())
     }
 

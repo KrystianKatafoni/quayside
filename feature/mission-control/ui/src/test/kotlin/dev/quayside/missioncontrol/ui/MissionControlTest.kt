@@ -11,6 +11,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onFirst
@@ -40,7 +41,6 @@ import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.sessions.api.aSession
 import io.kotest.matchers.collections.shouldContain
-import io.kotest.matchers.collections.shouldNotContain
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
@@ -187,7 +187,9 @@ internal class MissionControlTest {
 
             // And the row shows glyph, name, summary, last event and age
             await(row("asking"))
-            textIn(row("asking"), "!").assertIsDisplayed()
+            onNode(
+                hasContentDescription(text("state.awaitingPermission")) and hasAnyAncestor(hasTestTag(row("asking"))),
+            ).assertIsDisplayed()
             textIn(row("asking"), "fix-login").assertIsDisplayed()
             textIn(row("asking"), "Fixing the login form").assertIsDisplayed()
             textIn(row("asking"), text("event.permission", "Bash")).assertIsDisplayed()
@@ -198,57 +200,29 @@ internal class MissionControlTest {
         }
 
     @Test
-    fun `FR-S2 each state shows its glyph`() =
+    fun `FR-S2 each state shows its icon announced by the state text`() =
         runComposeUiTest {
             // Given one session in every state
-            val glyphs =
+            val states =
                 mapOf(
-                    "input" to (SessionState.AwaitingInput("q") to "?"),
-                    "permission" to (SessionState.AwaitingPermission("Bash") to "!"),
-                    "working" to (SessionState.Working to "~"),
-                    "done" to (SessionState.Done to "✓"),
-                    "failed" to (SessionState.Failed to "✕"),
-                    "stopped" to (SessionState.Stopped to "○"),
+                    "input" to (SessionState.AwaitingInput("q") to "state.awaitingInput"),
+                    "permission" to (SessionState.AwaitingPermission("Bash") to "state.awaitingPermission"),
+                    "working" to (SessionState.Working to "state.working"),
+                    "done" to (SessionState.Done to "state.done"),
+                    "failed" to (SessionState.Failed to "state.failed"),
+                    "stopped" to (SessionState.Stopped to "state.stopped"),
                 )
             val sessions =
-                glyphs.entries.mapIndexed { i, (id, value) ->
+                states.entries.mapIndexed { i, (id, value) ->
                     aSession(id = id, project = project.id, state = value.first, startedAt = T0.plusSeconds(i.toLong()))
                 }
             showMissionControl(fresh(*sessions.toTypedArray()))
 
-            // Then every row shows the glyph of its state
-            glyphs.forEach { (id, value) ->
+            // Then every row has an icon that screen readers announce with the text of its state
+            states.forEach { (id, value) ->
                 await(row(id))
-                textIn(row(id), value.second).assertIsDisplayed()
-            }
-        }
-
-    @Test
-    fun `row glyph is drawn in the token colour of its tone`() =
-        runComposeUiTest {
-            // Given a session in each state with a tone of its own, in the plex theme
-            val tokens = SampleTokens.colors()
-            val states =
-                listOf(
-                    Triple("input", SessionState.AwaitingInput("q"), "?" to tokens.status.warn),
-                    Triple("working", SessionState.Working, "~" to tokens.status.work),
-                    Triple("done", SessionState.Done, "✓" to tokens.status.ok),
-                    Triple("failed", SessionState.Failed, "✕" to tokens.status.err),
-                )
-            val sessions =
-                states.mapIndexed { i, (id, state, _) ->
-                    aSession(id = id, project = project.id, state = state, startedAt = T0.plusSeconds(i.toLong()))
-                }
-            showMissionControl(fresh(*sessions.toTypedArray()))
-            states.forEach { (id, _, _) -> await(row(id)) }
-
-            // When each glyph is captured, then it has the colour of its own tone and of no other status tone
-            val statusColors = listOf(tokens.status.warn, tokens.status.work, tokens.status.ok, tokens.status.err)
-            states.forEach { (id, _, glyph) ->
-                val (symbol, tone) = glyph
-                val drawn = textIn(row(id), symbol).captureToImage().toPixelMap().colors()
-                drawn shouldContain tone.toColor().toArgb()
-                (statusColors - tone).forEach { drawn shouldNotContain it.toColor().toArgb() }
+                onNode(hasContentDescription(text(value.second)) and hasAnyAncestor(hasTestTag(row(id))))
+                    .assertIsDisplayed()
             }
         }
 
@@ -275,7 +249,6 @@ internal class MissionControlTest {
             await(MissionControlTags.DETAILS)
             awaitGone(MissionControlTags.DETAILS_EMPTY)
             textIn(MissionControlTags.DETAILS, "fix-login").assertIsDisplayed()
-            textIn(MissionControlTags.DETAILS, "✓").assertIsDisplayed()
             textIn(MissionControlTags.DETAILS, text("state.done")).assertIsDisplayed()
             textIn(MissionControlTags.DETAILS, "Done with the login form").assertIsDisplayed()
             textIn(MissionControlTags.DETAILS, session.cwd.toString()).assertIsDisplayed()

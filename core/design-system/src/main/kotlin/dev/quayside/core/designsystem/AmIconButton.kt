@@ -44,8 +44,9 @@ private fun IconButtonSize.glyph(): Dp =
     }
 
 /**
- * Icon-only button (Role.Button) announced by [label] (NFR-6). Focusable variant: amFocusFrame outside the target,
- * Space and Enter click it. The badge is drawn over the top-right corner, so a parent must not clip it.
+ * Icon-only button (Role.Button) announced by [label] (NFR-6). It draws no hover or press overlay: the style says
+ * whether it is selected, and an overlay would tint the token colours. Focusable variant: amFocusFrame outside the
+ * target, Space and Enter click it. The badge is drawn over the top-right corner, so a parent must not clip it.
  *
  * @throws IllegalArgumentException when [label] is blank (programmer error).
  */
@@ -70,8 +71,13 @@ public fun AmIconButton(
                 .size(options.size.target())
                 .background(colors.background.toColor(), shape.corner)
                 .then(outline)
-                .clickable(enabled = options.enabled, role = Role.Button, onClick = onClick)
-                .semantics { contentDescription = label },
+                .clickable(
+                    interactionSource = null,
+                    indication = null,
+                    enabled = options.enabled,
+                    role = Role.Button,
+                    onClick = onClick,
+                ).semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
         AmIcon(icon, null, Modifier.size(options.size.glyph()), colors.icon.toColor())

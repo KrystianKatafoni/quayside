@@ -6,6 +6,7 @@ import dev.quayside.terminal.api.TerminalSettingsField
 /** Semantics tags of the terminal area for UI tests. A pane frame exposes `selected` = it is the active pane. */
 internal object TerminalTags {
     const val AREA = "terminal.area"
+    const val FULL_SCREEN = "terminal.fullScreen"
     const val ERROR = "terminal.error"
     const val ERROR_DISMISS = "terminal.error.dismiss"
 
@@ -61,7 +62,7 @@ internal object TerminalTags {
     /** The `exit N` marker of an exited tab. */
     fun tabExit(tab: TabId): String = "terminal.tab.${tab.value}.exit"
 
-    /** The status dot of a keyed tab (AM-510); its `stateDescription` is the text of the status. */
+    /** The status icon of a keyed tab (AM-510, AM-809); its `contentDescription` is the text of the status. */
     fun tabStatus(tab: TabId): String = "terminal.tab.${tab.value}.status"
 
     fun pane(pane: PaneId): String = "terminal.pane.${pane.value}"

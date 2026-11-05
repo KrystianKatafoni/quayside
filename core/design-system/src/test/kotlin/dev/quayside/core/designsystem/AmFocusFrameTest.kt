@@ -39,9 +39,9 @@ class AmFocusFrameTest {
             PlexTheme {
                 Column {
                     Box(Modifier.testTag(FIRST).background(colors.surfaces.bg.toColor())) {
-                        AmButton("First", onClick = {}, kind = kind)
+                        AmButton("First", onClick = {}, options = ButtonOptions(kind = kind))
                     }
-                    AmButton("Second", onClick = {}, kind = kind)
+                    AmButton("Second", onClick = {}, options = ButtonOptions(kind = kind))
                 }
             }
         }

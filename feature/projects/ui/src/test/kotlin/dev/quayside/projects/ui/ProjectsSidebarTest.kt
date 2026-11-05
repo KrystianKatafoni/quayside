@@ -5,12 +5,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onFirst
@@ -88,13 +90,6 @@ class ProjectsSidebarTest {
         await(ProjectsTags.CONFIRM_REMOVE)
     }
 
-    /** Nothing inside the node tagged [tag] (or the node itself) shows [text]. */
-    private fun ComposeUiTest.assertNoText(
-        tag: String,
-        text: String,
-    ) = onAllNodes(hasText(text, substring = true) and (hasTestTag(tag) or hasAnyAncestor(hasTestTag(tag))))
-        .assertCountEquals(0)
-
     /** Opens the ⋯ menu of the project and picks "Rename…". */
     private fun ComposeUiTest.askToRename(id: ProjectId) {
         await(ProjectsTags.rowMenu(id)).performClick()
@@ -112,6 +107,17 @@ class ProjectsSidebarTest {
             .isNotEmpty()
     }
 
+    /** The count chips show only the number; the old counter text ("czeka: 1") is their description (AM-809). */
+    private fun ComposeUiTest.chips(
+        tag: String,
+        description: String,
+    ) = onAllNodes(hasContentDescription(description, substring = true) and hasAnyAncestor(hasTestTag(tag)))
+
+    private fun ComposeUiTest.awaitChip(
+        tag: String,
+        text: UiText,
+    ) = waitUntil { chips(tag, ProjectsStrings.format(text)).fetchSemanticsNodes().isNotEmpty() }
+
     @Test
     fun `empty list shows the add button`() =
         runComposeUiTest {
@@ -121,7 +127,9 @@ class ProjectsSidebarTest {
             // Then
             await(ProjectsTags.EMPTY).assertIsDisplayed()
             textIn(ProjectsTags.SIDEBAR, ProjectsStrings["sidebar.empty"]).assertIsDisplayed()
-            await(ProjectsTags.ADD_BUTTON).assertIsDisplayed().assertTextContains(ProjectsStrings["sidebar.add"])
+            await(
+                ProjectsTags.ADD_BUTTON,
+            ).assertIsDisplayed().assertContentDescriptionEquals(ProjectsStrings["sidebar.add"])
         }
 
     @Test
@@ -310,11 +318,10 @@ class ProjectsSidebarTest {
             showSidebar(world)
 
             // Then the project shows both counts, the other one none (zeros are not shown)
-            awaitText(ProjectsTags.row(project.id), ProjectsStrings.format(UiText("row.waiting", listOf("1"))))
-            textIn(ProjectsTags.row(project.id), ProjectsStrings.format(UiText("row.working", listOf("1"))))
-                .assertIsDisplayed()
-            assertNoText(ProjectsTags.row(other.id), "czeka")
-            assertNoText(ProjectsTags.row(other.id), "pracuje")
+            awaitChip(ProjectsTags.row(project.id), UiText("row.waiting", listOf("1")))
+            awaitChip(ProjectsTags.row(project.id), UiText("row.working", listOf("1")))
+            chips(ProjectsTags.row(other.id), "czeka").assertCountEquals(0)
+            chips(ProjectsTags.row(other.id), "pracuje").assertCountEquals(0)
         }
 
     @Test
@@ -324,14 +331,14 @@ class ProjectsSidebarTest {
             // Given a project with one working session
             val world = withSessions()
             showSidebar(world)
-            awaitText(ProjectsTags.row(project.id), ProjectsStrings.format(UiText("row.working", listOf("1"))))
+            awaitChip(ProjectsTags.row(project.id), UiText("row.working", listOf("1")))
 
             // When the session starts waiting for the user
             runBlocking { world.sessions.setState(working.id, SessionState.AwaitingPermission("Bash")) }
 
             // Then the row shows "waiting: 1" and no "working" count any more
-            awaitText(ProjectsTags.row(project.id), ProjectsStrings.format(UiText("row.waiting", listOf("1"))))
-            assertNoText(ProjectsTags.row(project.id), "pracuje")
+            awaitChip(ProjectsTags.row(project.id), UiText("row.waiting", listOf("1")))
+            chips(ProjectsTags.row(project.id), "pracuje").assertCountEquals(0)
         }
 
     @Test

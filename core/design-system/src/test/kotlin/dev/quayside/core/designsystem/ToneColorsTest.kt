@@ -1,5 +1,8 @@
 package dev.quayside.core.designsystem
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.v2.runComposeUiTest
 import dev.quayside.core.designtokens.ColorTokens
 import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.SampleTokens
@@ -211,6 +214,22 @@ class ToneColorsTest {
         contrast(text, fill(t)) shouldBeGreaterThanOrEqual Wcag.TEXT_MIN
         contrast(text, t.surfaces.raised) shouldBeGreaterThanOrEqual Wcag.TEXT_MIN
     }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(StatusTone::class)
+    @OptIn(ExperimentalTestApi::class)
+    fun `mark colour maps tone to token`(tone: StatusTone) =
+        runComposeUiTest {
+            // The six tone colours of plex are pairwise different, so a swapped mapping cannot hide
+            StatusTone.entries
+                .map { toneColor(it, plex) }
+                .toSet()
+                .size shouldBe StatusTone.entries.size
+            var mark: Color? = null
+            setContent { PlexTheme { mark = tone.markColor() } }
+
+            mark shouldBe toneColor(tone, plex).toColor()
+        }
 
     companion object {
         @JvmStatic

@@ -30,14 +30,10 @@ internal fun FrameWindowScope.MainWindow(
     WindowBindings(modules.registry, controllers.providers, controllers.palette, keys)
     AppMenu(controllers, modules.projects)
     QuaysideApp(
-        projects = controllers.projects,
-        missionControl = controllers.missionControl,
-        palette = controllers.palette,
-        terminalPanel = { modifier ->
-            TerminalArea(controllers.terminal, controllers.terminalKeys::onKey, modifier)
-        },
-        attacher = controllers.attacher,
+        controllers = AppControllers(controllers.projects, controllers.missionControl, controllers.palette),
+        terminal = remember(controllers) { terminalSlotOf(controllers) },
         onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
+        keyCaps = remember { windowKeyCaps() },
     )
     NewAgentDialog(controllers.newAgent)
     TerminalSettingsDialog(controllers.terminalSettings)
@@ -46,6 +42,17 @@ internal fun FrameWindowScope.MainWindow(
     PopupAttachHandler(modules, controllers.attacher)
     LaunchedEffect(Unit) { controllers.hookSetup.offerAtStart() }
 }
+
+/** The terminal of the window; remembered, so the movable panel keeps its state across recompositions. */
+private fun terminalSlotOf(controllers: WindowControllers): TerminalSlot =
+    TerminalSlot(
+        panel = { modifier, onFullScreen ->
+            TerminalArea(controllers.terminal, controllers.terminalKeys::onKey, modifier, onFullScreen = onFullScreen)
+        },
+        attacher = controllers.attacher,
+        mode = controllers.mode,
+        terminalKey = controllers.terminal.activeKey,
+    )
 
 /**
  * Makes the Attach action of a popup open the session's terminal tab and bring this window to the front while the

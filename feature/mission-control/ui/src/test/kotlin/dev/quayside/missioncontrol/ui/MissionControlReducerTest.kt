@@ -1,5 +1,7 @@
 package dev.quayside.missioncontrol.ui
 
+import dev.quayside.core.designsystem.IconKind
+import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
@@ -122,7 +124,7 @@ internal class MissionControlReducerTest {
         row shouldBe
             SessionRow(
                 id = SessionId("asking"),
-                glyph = Glyph("!", Tone.WARN, "state.awaitingPermission"),
+                glyph = Glyph(IconKind.PERMISSION, StatusTone.WARN, "state.awaitingPermission"),
                 name = "fix-login",
                 summary = "Fixing the login form",
                 lastEvent = UiText("event.permission", listOf("Bash")),
@@ -173,7 +175,7 @@ internal class MissionControlReducerTest {
             SessionDetails(
                 id = SessionId("picked"),
                 name = "fix-login",
-                glyph = Glyph("✓", Tone.OK, "state.done"),
+                glyph = Glyph(IconKind.DONE, StatusTone.OK, "state.done"),
                 summary = "Done with the login form",
                 worktree = session.cwd,
                 startedAt = T0,
@@ -283,6 +285,30 @@ internal class MissionControlReducerTest {
         val modeBar = reduce(snapshot, selection = Selection()).modeBar
 
         modeBar shouldBe ModeBar(project = null, waiting = 1, working = 1, freshness = UiText("fresh.live"))
+    }
+
+    @Test
+    fun `project stats ignore the filter`() {
+        // Given sessions of the project in every group and a working one elsewhere, with the ACTIVE filter on
+        val mine = project.id
+        val snapshot =
+            fresh(
+                aSession(id = "q1", project = mine, state = SessionState.AwaitingInput("q"), startedAt = T0),
+                aSession(id = "q2", project = mine, state = SessionState.AwaitingPermission("Bash"), startedAt = T0),
+                aSession(id = "w1", project = mine, state = SessionState.Working, startedAt = T0),
+                aSession(id = "d1", project = mine, state = SessionState.Done, startedAt = T0),
+                aSession(id = "d2", project = mine, state = SessionState.Done, startedAt = T0),
+                aSession(id = "d3", project = mine, state = SessionState.Done, startedAt = T0),
+                aSession(id = "f1", project = mine, state = SessionState.Failed, startedAt = T0),
+                aSession(id = "s1", project = mine, state = SessionState.Stopped, startedAt = T0),
+                aSession(id = "x1", project = other.id, state = SessionState.Working, startedAt = T0),
+            )
+
+        val page = reduce(snapshot, selection = Selection(project = mine, filter = SessionFilter.ACTIVE)).page()
+
+        // Then the list is filtered but the cards count the whole project
+        page.rows.size shouldBe 3
+        page.stats shouldBe SessionStats(waiting = 2, working = 1, done = 3, failed = 1)
     }
 
     private fun everyState(projectId: ProjectId = project.id): SessionsSnapshot =

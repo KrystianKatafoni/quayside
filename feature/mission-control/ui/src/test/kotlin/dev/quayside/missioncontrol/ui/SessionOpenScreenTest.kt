@@ -49,6 +49,8 @@ internal class SessionOpenScreenTest {
     private val asking = SessionId("asking01")
     private val finished = SessionId("finished")
     private val opened = mutableListOf<String>()
+    private val handlers =
+        MissionControlHandlers(onAttach = { opened += "attach" }, onReply = { opened += "reply" })
 
     private fun ComposeUiTest.show(): ScriptedSessionMonitor {
         val sessions =
@@ -73,7 +75,7 @@ internal class SessionOpenScreenTest {
                             tick = 1.hours,
                         )
                     }
-                MissionControl(controller, onAttach = { opened += "attach" }, onReply = { opened += "reply" })
+                MissionControl(controller, handlers = handlers)
             }
         }
         return monitor

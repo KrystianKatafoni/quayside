@@ -37,6 +37,7 @@ import dev.quayside.agentruntime.api.HookStatus
 import dev.quayside.core.designsystem.AmButton
 import dev.quayside.core.designsystem.AmPanel
 import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.ButtonOptions
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.core.designsystem.amScrim
 import java.nio.file.Path
@@ -133,7 +134,7 @@ private fun HookButton(
         label = Strings[textKey],
         onClick = onClick,
         modifier = Modifier.testTag(tag).focusRequester(requester),
-        enabled = enabled,
+        options = ButtonOptions(enabled = enabled),
     )
 }
 

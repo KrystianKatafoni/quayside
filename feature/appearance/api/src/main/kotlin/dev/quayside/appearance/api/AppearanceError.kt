@@ -13,4 +13,10 @@ public sealed interface AppearanceError {
     public data class UnknownTypography(
         val id: TypographyId,
     ) : AppearanceError
+
+    /**
+     * theme.json could not be written, or was unreadable or newer at start and is never overwritten. Settings
+     * unchanged.
+     */
+    public data object StorageFailed : AppearanceError
 }

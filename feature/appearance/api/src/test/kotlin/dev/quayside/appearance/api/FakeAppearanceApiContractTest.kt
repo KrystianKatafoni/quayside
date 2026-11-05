@@ -13,6 +13,13 @@ import org.junit.jupiter.api.Test
 class FakeAppearanceApiContractTest : AppearanceApiContract() {
     override fun api(): AppearanceApi = FakeAppearanceApi()
 
+    override fun setSystemDark(
+        api: AppearanceApi,
+        dark: Boolean?,
+    ) {
+        (api as FakeAppearanceApi).systemDark = dark
+    }
+
     @Test
     fun `fake serves the catalog it was given`() {
         val catalog =
@@ -56,4 +63,29 @@ class FakeAppearanceApiContractTest : AppearanceApiContract() {
         themes.map { it.colors.content.accent }.toSet().size shouldBe themes.size
         themes.map { it.defaultTypography?.value } shouldBe listOf(null, "geist", "plex")
     }
+
+    @Test
+    fun `failing saves return StorageFailed and keep settings and applied`() =
+        runTest {
+            val fake = FakeAppearanceApi()
+            fake.failSaves = true
+
+            val result = fake.update { it.copy(uiScale = UiScale.L) }
+
+            result shouldBe Outcome.Err(AppearanceError.StorageFailed)
+            fake.settings.value shouldBe AppearanceSettings()
+            fake.applied.value shouldBe AppearanceSettings()
+            fake.updates shouldBe 0
+        }
+
+    @Test
+    fun `saves work again after failSaves is cleared`() =
+        runTest {
+            val fake = FakeAppearanceApi()
+            fake.failSaves = true
+            fake.update { it.copy(uiScale = UiScale.L) }
+            fake.failSaves = false
+
+            fake.update { it.copy(uiScale = UiScale.L) } shouldBe Outcome.Ok(AppearanceSettings(uiScale = UiScale.L))
+        }
 }

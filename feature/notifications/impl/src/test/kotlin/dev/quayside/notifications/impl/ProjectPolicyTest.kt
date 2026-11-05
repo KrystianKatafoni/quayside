@@ -81,7 +81,7 @@ internal class ProjectPolicyTest {
 
         channels(eventOf(PERMISSION, project = OTHER), settings) shouldContainExactly
             listOf(POPUP, VOICE, SOUND, DOCK_BADGE)
-        channels(eventOf(TURN_ENDED, project = OTHER), settings) shouldContainExactly listOf(POPUP)
+        channels(eventOf(TURN_ENDED, project = OTHER), settings) shouldContainExactly listOf(POPUP, SOUND)
     }
 
     @Test
@@ -162,7 +162,7 @@ internal class ProjectPolicyTest {
             listOf(
                 arguments(ProjectProfile.DEFAULT, NEEDS_INPUT, ALL),
                 arguments(ProjectProfile.DEFAULT, PERMISSION, ALL),
-                arguments(ProjectProfile.DEFAULT, TURN_ENDED, listOf(POPUP)),
+                arguments(ProjectProfile.DEFAULT, TURN_ENDED, listOf(POPUP, SOUND)),
                 arguments(ProjectProfile.DEFAULT, FAILED, ALL),
                 arguments(ProjectProfile.DEFAULT, PULL_REQUEST, listOf(POPUP, DOCK_BADGE)),
                 arguments(ProjectProfile.DEFAULT, RUNNING_LONG, listOf(VOICE)),

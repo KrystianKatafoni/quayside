@@ -78,7 +78,12 @@ class VoiceFlowTest {
         runCurrent()
     }
 
-    private val spoken get() = runner.commands.map { it.argv.last() }
+    /** Only the calls of `say`: sounds start `afplay` through the same runner. */
+    private fun FakeProcessRunner.says() = commands.filter { it.argv.first() == "/usr/bin/say" }
+
+    private val sayCommands get() = runner.says()
+
+    private val spoken get() = sayCommands.map { it.argv.last() }
 
     @Test
     fun `a session that waits is announced by say`() =
@@ -87,11 +92,11 @@ class VoiceFlowTest {
 
             send(waiting("opcua-connector"))
 
-            runner.commands.single().argv.let {
+            sayCommands.single().argv.let {
                 it.first() shouldBe "/usr/bin/say"
                 it.last() shouldBe "[[volm 0.70]] Agent opcua connector w projekcie plantpulse-core czeka na odpowiedź"
             }
-            runner.commands.single().argv shouldBe
+            sayCommands.single().argv shouldBe
                 listOf(
                     "/usr/bin/say",
                     "-v",
@@ -111,7 +116,7 @@ class VoiceFlowTest {
             send(waiting("opcua-connector"))
             pass(30.seconds)
 
-            runner.commands shouldBe emptyList()
+            sayCommands shouldBe emptyList()
         }
 
     @Test
@@ -139,7 +144,7 @@ class VoiceFlowTest {
 
             send(waiting("a"))
 
-            runner.commands.size shouldBe 1
+            sayCommands.size shouldBe 1
         }
 
     @Test
@@ -150,7 +155,7 @@ class VoiceFlowTest {
             send(waiting("a"))
             pass(30.seconds)
 
-            runner.commands shouldBe emptyList()
+            sayCommands shouldBe emptyList()
         }
 
     @Test
@@ -182,7 +187,7 @@ class VoiceFlowTest {
 
             send(waiting("a"))
 
-            runner.commands
+            sayCommands
                 .single()
                 .argv
                 .drop(1)
@@ -200,7 +205,7 @@ class VoiceFlowTest {
             send(waiting("b"))
             pass(20.seconds)
 
-            failing.commands.size shouldBe 2
+            failing.says().size shouldBe 2
         }
 
     @Test
@@ -211,7 +216,7 @@ class VoiceFlowTest {
             send(waiting("a"))
 
             center.popups.value.size shouldBe 1
-            runner.commands shouldBe emptyList()
+            sayCommands shouldBe emptyList()
         }
 
     private val nightOn = NotificationSettings(quietHours = QuietHours(enabled = true))
@@ -229,12 +234,12 @@ class VoiceFlowTest {
 
             // Then the popup shows and say is not started
             center.popups.value.size shouldBe 1
-            runner.commands shouldBe emptyList()
+            sayCommands shouldBe emptyList()
 
             // And at noon the same settings speak again
             clock.setTo(Instant.parse("2026-11-04T11:00:00Z"))
             send(waiting("b"))
-            runner.commands.size shouldBe 1
+            sayCommands.size shouldBe 1
         }
 
     @Test
@@ -243,12 +248,12 @@ class VoiceFlowTest {
             clock.setTo(Instant.parse("2026-11-03T21:30:00Z"))
             start(settings = FakeNotificationSettingsRepo(nightOn))
             send(waiting("a"))
-            runner.commands shouldBe emptyList()
+            sayCommands shouldBe emptyList()
 
             zone = ZoneId.of("UTC")
             send(waiting("b"))
 
-            runner.commands.size shouldBe 1
+            sayCommands.size shouldBe 1
         }
 
     private val plantpulse = ProjectId("plantpulse-core")
@@ -276,7 +281,7 @@ class VoiceFlowTest {
 
             // Then there is no popup and say is not started
             center.popups.value shouldBe emptyList()
-            runner.commands shouldBe emptyList()
+            sayCommands shouldBe emptyList()
         }
 
     @Test
@@ -296,7 +301,7 @@ class VoiceFlowTest {
             )
 
             center.popups.value.size shouldBe 1
-            runner.commands.size shouldBe 1
+            sayCommands.size shouldBe 1
         }
 
     @Test
@@ -310,12 +315,12 @@ class VoiceFlowTest {
 
             // Then nothing happens
             center.popups.value shouldBe emptyList()
-            runner.commands shouldBe emptyList()
+            sayCommands shouldBe emptyList()
 
             // And when a session fails, the popup shows and say speaks
             send(failed("b"))
             center.popups.value.size shouldBe 1
-            runner.commands.size shouldBe 1
+            sayCommands.size shouldBe 1
         }
 
     @Test
@@ -328,7 +333,7 @@ class VoiceFlowTest {
             send(waiting("a"))
 
             // Then say is started with -v Anna and the global rate
-            runner.commands
+            sayCommands
                 .single()
                 .argv
                 .drop(1)
@@ -364,7 +369,7 @@ class VoiceFlowTest {
             )
             pass(20.seconds)
 
-            runner.commands.map { it.argv[2] } shouldBe listOf("Anna", "Zosia")
+            sayCommands.map { it.argv[2] } shouldBe listOf("Anna", "Zosia")
             spoken.last() shouldBe "[[volm 0.70]] 2 agenty czekają"
         }
 }

@@ -43,7 +43,7 @@ class NotificationDraftTest {
     fun `draft shows the saved switches, channels and threshold`() {
         val settings =
             defaults
-                .withChannel(NotificationKind.TURN_ENDED, NotificationChannel.SOUND, true)
+                .withChannel(NotificationKind.TURN_ENDED, NotificationChannel.VOICE, true)
                 .copy(popups = false, voice = false, runningLongMinutes = 45)
 
         val draft = draftOf(settings)
@@ -52,7 +52,7 @@ class NotificationDraftTest {
         draft.voice shouldBe false
         draft.runningLongMinutes shouldBe "45"
         draft.matrix[NotificationKind.TURN_ENDED] shouldBe
-            setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
+            setOf(NotificationChannel.POPUP, NotificationChannel.SOUND, NotificationChannel.VOICE)
     }
 
     @Test

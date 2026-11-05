@@ -105,13 +105,14 @@ class NotificationSettingsDialogWindowTest {
     @Test
     fun `FR-N1 saved channel change reaches the repo`() =
         runComposeUiTest {
-            // Given the open dialog; TURN_ENDED uses only the popup by default
+            // Given the open dialog; TURN_ENDED uses the popup and the sound by default
             val palette = window()
             openSettings(palette)
-            repo.settings.value.channelsFor(NotificationKind.TURN_ENDED) shouldBe setOf(NotificationChannel.POPUP)
+            repo.settings.value.channelsFor(NotificationKind.TURN_ENDED) shouldBe
+                setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
 
-            // When the user switches the sound channel of TURN_ENDED on and saves
-            await(WindowTags.notificationCell(NotificationKind.TURN_ENDED, NotificationChannel.SOUND))
+            // When the user switches the voice channel of TURN_ENDED on and saves
+            await(WindowTags.notificationCell(NotificationKind.TURN_ENDED, NotificationChannel.VOICE))
                 .performScrollTo()
                 .performClick()
             await(WindowTags.NOTIFICATION_SETTINGS_SAVE).performScrollTo().performClick()
@@ -119,7 +120,7 @@ class NotificationSettingsDialogWindowTest {
 
             // Then the repo holds the new channels at once
             repo.settings.value.channelsFor(NotificationKind.TURN_ENDED) shouldBe
-                setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
+                setOf(NotificationChannel.POPUP, NotificationChannel.SOUND, NotificationChannel.VOICE)
         }
 
     @Test

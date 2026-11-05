@@ -24,6 +24,8 @@ public suspend fun notificationSettingsModule(
                     JsonNotificationSettingsRepo.FILE_NAME,
                     NotificationSettingsSerializer,
                     NotificationSettings(),
+                    SETTINGS_SCHEMA_VERSION,
+                    SETTINGS_MIGRATIONS,
                 ),
             ),
         logger = logger,

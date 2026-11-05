@@ -10,6 +10,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmDropdownItems
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.sessions.api.SessionPermissionMode
@@ -103,16 +104,16 @@ private fun ProjectChoice(
 ) {
     val form = state.form
     val ids = state.projects.map { it.id }
-    val shown =
-        state.projects.firstOrNull { it.id == form.project }?.displayName
-            ?: MissionControlStrings["newAgent.project.none"]
-    ChoiceField(
-        shown,
+    Dropdown(
+        MissionControlTags.NEW_AGENT_PROJECT,
+        "newAgent.project",
+        AmDropdownItems(
+            state.projects.map { it.displayName },
+            ids.indexOf(form.project),
+            MissionControlStrings["newAgent.project.none"],
+        ),
         !state.busy,
-        Modifier.testTag(MissionControlTags.NEW_AGENT_PROJECT).described(MissionControlStrings["newAgent.project"]),
-    ) { by, _ ->
-        edit(form.copy(project = ids.stepped(form.project, by)))
-    }
+    ) { index -> edit(form.copy(project = ids[index])) }
 }
 
 @Composable
@@ -121,19 +122,19 @@ private fun ModelChoiceField(
     enabled: Boolean,
     edit: (NewAgentForm) -> Unit,
 ) {
-    val shown = form.model.alias ?: MissionControlStrings["newAgent.model.default"]
-    ChoiceField(
-        shown,
+    val models = ModelChoice.entries
+    val labels = models.map { it.alias ?: MissionControlStrings["newAgent.model.default"] }
+    Dropdown(
+        MissionControlTags.NEW_AGENT_MODEL,
+        "newAgent.model",
+        AmDropdownItems(labels, models.indexOf(form.model)),
         enabled,
-        Modifier.testTag(MissionControlTags.NEW_AGENT_MODEL).described(MissionControlStrings["newAgent.model"]),
-    ) { by, _ ->
-        edit(form.copy(model = ModelChoice.entries.stepped(form.model, by)))
-    }
+    ) { index -> edit(form.copy(model = models[index])) }
 }
 
 /**
- * `null` is Claude Code's default: no `--permission-mode` flag. The arrows stop at the ends, so one key press from
- * the default never lands on "Pomiń zgody"; a click wraps.
+ * `null` is Claude Code's default: no `--permission-mode` flag. The list opens on the current mode and its arrows
+ * stop at the ends, so from the default "Pomiń zgody" takes the list, three steps down and Enter.
  */
 private val permissions: List<SessionPermissionMode?> =
     listOf(
@@ -143,23 +144,20 @@ private val permissions: List<SessionPermissionMode?> =
         SessionPermissionMode.BYPASS_PERMISSIONS,
     )
 
+/** `DEFAULT` from outside (not set by this UI, whose list has `null`) is shown as the default mode. */
 @Composable
 private fun PermissionField(
     form: NewAgentForm,
     enabled: Boolean,
     edit: (NewAgentForm) -> Unit,
 ) {
-    val shown = MissionControlStrings[permissionKey(form.permission)]
-    ChoiceField(
-        shown,
+    val current = form.permission.takeUnless { it == SessionPermissionMode.DEFAULT }
+    Dropdown(
+        MissionControlTags.NEW_AGENT_PERMISSION,
+        "newAgent.permission",
+        AmDropdownItems(permissions.map { MissionControlStrings[permissionKey(it)] }, permissions.indexOf(current)),
         enabled,
-        Modifier
-            .testTag(
-                MissionControlTags.NEW_AGENT_PERMISSION,
-            ).described(MissionControlStrings["newAgent.permission"]),
-    ) { by, arrow ->
-        edit(form.copy(permission = permissions.stepped(form.permission, by, wrap = !arrow)))
-    }
+    ) { index -> edit(form.copy(permission = permissions[index])) }
 }
 
 private fun permissionKey(mode: SessionPermissionMode?): String =

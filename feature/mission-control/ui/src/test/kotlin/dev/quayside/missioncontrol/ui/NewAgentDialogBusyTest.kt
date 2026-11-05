@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
+import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.missioncontrol.ui.NewAgentWorld.QUAYSIDE
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.RuntimeProblem
@@ -64,7 +65,7 @@ internal class NewAgentDialogBusyTest {
         }
 
     @Test
-    fun `while the start runs the choices do not change`() =
+    fun `while the start runs the choices do not open`() =
         runComposeUiTest {
             val rig = NewAgentRig(RecordingCommands(fake, gate))
             shown(rig)
@@ -72,12 +73,39 @@ internal class NewAgentDialogBusyTest {
             waitUntil { rig.commands.specs.size == 1 }
             val before = rig.form()
 
-            onNodeWithTag(MissionControlTags.NEW_AGENT_MODEL).performClick()
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PERMISSION).performClick()
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PROJECT).performClick()
-            waitForIdle()
+            listOf(
+                MissionControlTags.NEW_AGENT_MODEL,
+                MissionControlTags.NEW_AGENT_PERMISSION,
+                MissionControlTags.NEW_AGENT_PROJECT,
+            ).forEach { tag ->
+                onNodeWithTag(tag).performClick()
+                onNodeWithTag(tag).press(Key.Enter)
+                onNodeWithTag(tag).press(Key.DirectionDown)
+                waitForIdle()
+                onNodeWithTag(AmDropdownTags.LIST).assertDoesNotExist()
+            }
 
             rig.form() shouldBe before
+        }
+
+    @Test
+    fun `a list opened before the start closes when the start runs`() =
+        runComposeUiTest {
+            val rig = NewAgentRig(RecordingCommands(fake, gate))
+            shown(rig)
+            onNodeWithTag(MissionControlTags.NEW_AGENT_MODEL).focus()
+            awaitFocus(MissionControlTags.NEW_AGENT_MODEL)
+            onNodeWithTag(MissionControlTags.NEW_AGENT_MODEL).press(Key.Enter)
+            awaitListOpen()
+
+            // When the start runs (the list takes the keys, so the controller is asked directly)
+            runOnIdle { checkNotNull(rig.controller).onEvent(NewAgentEvent.Submit) }
+            waitUntil { rig.commands.specs.size == 1 }
+
+            // Then the list closes: the field is disabled while the start runs
+            awaitListGone()
+            runOnIdle { gate.complete(Unit) }
+            awaitGone(MissionControlTags.NEW_AGENT_DIALOG)
         }
 
     @Test

@@ -5,16 +5,21 @@ package dev.quayside.missioncontrol.ui
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
@@ -153,6 +158,41 @@ internal fun SemanticsNodeInteraction.pressWithShift(key: Key) {
 
 internal fun SemanticsNodeInteraction.press(key: Key) {
     performKeyInput { pressKey(key) }
+}
+
+/** Gives the field the focus the way Tab does, without a click (a click on a dropdown field opens its list). */
+internal fun SemanticsNodeInteraction.focus() = performSemanticsAction(SemanticsActions.RequestFocus)
+
+/** Waits until a dropdown list is open. */
+internal fun ComposeUiTest.awaitListOpen() = waitUntilExactlyOneExists(hasTestTag(AmDropdownTags.LIST), FOCUS_WAIT_MS)
+
+/** Clicks the dropdown field [tag] and waits until its list is open. */
+internal fun ComposeUiTest.openList(tag: String) {
+    onNodeWithTag(tag).performClick()
+    awaitListOpen()
+}
+
+/** Waits until no dropdown list is open. */
+internal fun ComposeUiTest.awaitListGone() = awaitGone(AmDropdownTags.LIST)
+
+/** Opens the list of the dropdown field [tag] with a click, clicks its option [index] and waits for the close. */
+internal fun ComposeUiTest.pickOption(
+    tag: String,
+    index: Int,
+) {
+    openList(tag)
+    onNodeWithTag(AmDropdownTags.option(index)).performClick()
+    awaitListGone()
+}
+
+/** Sends [key] to the open dropdown list, or to the field [field] when no list is open. */
+internal fun ComposeUiTest.pressKeyOn(
+    field: String,
+    key: Key,
+) {
+    val open = onAllNodesWithTag(AmDropdownTags.LIST).fetchSemanticsNodes().isNotEmpty()
+    onNodeWithTag(if (open) AmDropdownTags.LIST else field).press(key)
+    waitForIdle()
 }
 
 internal const val FOCUS_WAIT_MS = 5_000L

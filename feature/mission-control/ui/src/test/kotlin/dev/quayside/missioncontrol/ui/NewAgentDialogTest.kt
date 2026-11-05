@@ -1,6 +1,5 @@
 package dev.quayside.missioncontrol.ui
 
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -45,14 +44,6 @@ internal class NewAgentDialogTest {
             checkNotNull(rig.controller).onEvent(NewAgentEvent.Edit(change(rig.form())))
         }
 
-    private fun ComposeUiTest.clickTimes(
-        tag: String,
-        times: Int,
-    ) = repeat(times) {
-        onNodeWithTag(tag).performClick()
-        waitForIdle()
-    }
-
     @Test
     fun `the closed dialog draws nothing`() =
         runComposeUiTest {
@@ -81,36 +72,6 @@ internal class NewAgentDialogTest {
         }
 
     @Test
-    fun `a start with no project preselected asks to pick one`() =
-        runComposeUiTest {
-            shown(project = null)
-
-            tagShows(MissionControlTags.NEW_AGENT_PROJECT, text("newAgent.project.none"))
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PROJECT).performClick()
-            waitForIdle()
-            rig.form().project shouldBe QUAYSIDE.id
-        }
-
-    @Test
-    fun `the project is picked by click and by arrow keys`() =
-        runComposeUiTest {
-            shown()
-
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PROJECT).performClick()
-            waitForIdle()
-            rig.form().project shouldBe OTHER.id
-            tagShows(MissionControlTags.NEW_AGENT_PROJECT, "Other")
-
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PROJECT).press(Key.DirectionLeft)
-            waitForIdle()
-            rig.form().project shouldBe QUAYSIDE.id
-
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PROJECT).press(Key.DirectionRight)
-            waitForIdle()
-            rig.form().project shouldBe OTHER.id
-        }
-
-    @Test
     fun `typing edits prompt, name and subagent`() =
         runComposeUiTest {
             shown()
@@ -135,99 +96,14 @@ internal class NewAgentDialogTest {
         }
 
     @Test
-    fun `the model choice goes through the aliases and wraps`() =
-        runComposeUiTest {
-            shown()
-            val expected = listOf(ModelChoice.SONNET, ModelChoice.OPUS, ModelChoice.HAIKU, ModelChoice.DEFAULT)
-
-            expected.forEach { model ->
-                clickTimes(MissionControlTags.NEW_AGENT_MODEL, 1)
-                rig.form().model shouldBe model
-            }
-            clickTimes(MissionControlTags.NEW_AGENT_MODEL, 2)
-            tagShows(MissionControlTags.NEW_AGENT_MODEL, "opus")
-        }
-
-    /**
-     * Decision: a click goes round (the last mode leads back to the default), the arrow keys never wrap, so the
-     * "Pomiń zgody" mode is reached only by steps forward and never by a left arrow from the default.
-     */
-    @Test
-    fun `the permission choice goes through the four modes by click and wraps back to the default`() =
-        runComposeUiTest {
-            shown()
-            val expected =
-                listOf(
-                    SessionPermissionMode.ACCEPT_EDITS to "Akceptuj edycje",
-                    SessionPermissionMode.PLAN to "Tylko plan",
-                    SessionPermissionMode.BYPASS_PERMISSIONS to "Pomiń zgody",
-                    null to "Domyślny",
-                )
-
-            expected.forEach { (mode, label) ->
-                clickTimes(MissionControlTags.NEW_AGENT_PERMISSION, 1)
-                rig.form().permission shouldBe mode
-                tagShows(MissionControlTags.NEW_AGENT_PERMISSION, label)
-            }
-        }
-
-    @Test
-    fun `left arrow from the default mode does not select bypass permissions`() =
-        runComposeUiTest {
-            shown()
-            clickTimes(MissionControlTags.NEW_AGENT_PERMISSION, 1)
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PERMISSION).press(Key.DirectionLeft)
-            waitForIdle()
-            rig.form().permission shouldBe null
-
-            onNodeWithTag(MissionControlTags.NEW_AGENT_PERMISSION).press(Key.DirectionLeft)
-            waitForIdle()
-
-            rig.form().permission shouldBe null
-            onNodeWithTag(MissionControlTags.NEW_AGENT_WARNING).assertDoesNotExist()
-        }
-
-    @Test
-    fun `arrows go through the modes one way and stop at the ends`() =
-        runComposeUiTest {
-            shown()
-            clickTimes(MissionControlTags.NEW_AGENT_PERMISSION, 1)
-            val field = onNodeWithTag(MissionControlTags.NEW_AGENT_PERMISSION)
-
-            repeat(4) {
-                field.press(Key.DirectionRight)
-                waitForIdle()
-            }
-
-            rig.form().permission shouldBe SessionPermissionMode.BYPASS_PERMISSIONS
-            field.press(Key.DirectionLeft)
-            waitForIdle()
-            rig.form().permission shouldBe SessionPermissionMode.PLAN
-        }
-
-    @Test
-    fun `skipping permissions shows a warning that goes away with another mode`() =
-        runComposeUiTest {
-            shown()
-            clickTimes(MissionControlTags.NEW_AGENT_PERMISSION, 2)
-            onNodeWithTag(MissionControlTags.NEW_AGENT_WARNING).assertDoesNotExist()
-
-            clickTimes(MissionControlTags.NEW_AGENT_PERMISSION, 1)
-
-            onNodeWithTag(MissionControlTags.NEW_AGENT_WARNING).assertTextEquals(text("newAgent.bypassWarning"))
-            clickTimes(MissionControlTags.NEW_AGENT_PERMISSION, 1)
-            onNodeWithTag(MissionControlTags.NEW_AGENT_WARNING).assertDoesNotExist()
-        }
-
-    @Test
     fun `Uruchom starts with the values of the fields and closes`() =
         runComposeUiTest {
             shown()
             onNodeWithTag(MissionControlTags.NEW_AGENT_PROMPT).performTextInput(" Fix the login ")
             onNodeWithTag(MissionControlTags.NEW_AGENT_NAME).performTextInput("login-fix")
             onNodeWithTag(MissionControlTags.NEW_AGENT_AGENT).performTextInput("code-reviewer")
-            clickTimes(MissionControlTags.NEW_AGENT_MODEL, 2)
-            clickTimes(MissionControlTags.NEW_AGENT_PERMISSION, 2)
+            pickOption(MissionControlTags.NEW_AGENT_MODEL, ModelChoice.entries.indexOf(ModelChoice.OPUS))
+            pickOption(MissionControlTags.NEW_AGENT_PERMISSION, 2)
 
             onNodeWithTag(MissionControlTags.NEW_AGENT_START).performClick()
 

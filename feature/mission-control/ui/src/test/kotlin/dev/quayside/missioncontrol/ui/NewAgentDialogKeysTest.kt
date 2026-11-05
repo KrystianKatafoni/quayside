@@ -95,11 +95,9 @@ internal class NewAgentDialogKeysTest {
             MissionControlTags.NEW_AGENT_PROMPT,
             MissionControlTags.NEW_AGENT_NAME,
             MissionControlTags.NEW_AGENT_AGENT,
-            MissionControlTags.NEW_AGENT_MODEL,
-            MissionControlTags.NEW_AGENT_PERMISSION,
         ],
     )
-    fun `cmd Enter starts from any field`(tag: String) =
+    fun `cmd Enter starts from any text field`(tag: String) =
         runComposeUiTest {
             shown()
             fill()
@@ -111,6 +109,47 @@ internal class NewAgentDialogKeysTest {
             awaitGone(MissionControlTags.NEW_AGENT_DIALOG)
             rig.commands.specs.size shouldBe 1
             rig.started.size shouldBe 1
+        }
+
+    /** A click on a dropdown field opens its list, so the focus comes by Tab or by request; the list stays closed. */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+        strings = [
+            MissionControlTags.NEW_AGENT_PROJECT,
+            MissionControlTags.NEW_AGENT_MODEL,
+            MissionControlTags.NEW_AGENT_PERMISSION,
+        ],
+    )
+    fun `cmd Enter starts from a closed dropdown field`(tag: String) =
+        runComposeUiTest {
+            shown()
+            fill()
+            onNodeWithTag(tag).focus()
+            awaitFocus(tag)
+
+            onNodeWithTag(tag).pressWithMeta(Key.Enter)
+
+            awaitGone(MissionControlTags.NEW_AGENT_DIALOG)
+            rig.commands.specs.size shouldBe 1
+            rig.started.size shouldBe 1
+        }
+
+    @Test
+    fun `Escape in an open list keeps the dialog and the focus goes back to the field`() =
+        runComposeUiTest {
+            shown()
+            fill()
+            onNodeWithTag(MissionControlTags.NEW_AGENT_PERMISSION).focus()
+            awaitFocus(MissionControlTags.NEW_AGENT_PERMISSION)
+            onNodeWithTag(MissionControlTags.NEW_AGENT_PERMISSION).press(Key.Enter)
+            awaitListOpen()
+
+            pressKeyOn(MissionControlTags.NEW_AGENT_PERMISSION, Key.Escape)
+            awaitListGone()
+
+            onNodeWithTag(MissionControlTags.NEW_AGENT_DIALOG).assertExists()
+            awaitFocus(MissionControlTags.NEW_AGENT_PERMISSION)
+            rig.commands.specs.shouldBeEmpty()
         }
 
     @Test
@@ -132,12 +171,12 @@ internal class NewAgentDialogKeysTest {
             MissionControlTags.NEW_AGENT_PERMISSION,
         ],
     )
-    fun `Escape cancels from any field`(tag: String) =
+    fun `Escape cancels from any field with a closed list`(tag: String) =
         runComposeUiTest {
             shown()
             fill()
-            onNodeWithTag(tag).performClick()
-            waitForIdle()
+            onNodeWithTag(tag).focus()
+            awaitFocus(tag)
             rig.commands.specs.shouldBeEmpty()
 
             onNodeWithTag(MissionControlTags.NEW_AGENT_DIALOG).press(Key.Escape)

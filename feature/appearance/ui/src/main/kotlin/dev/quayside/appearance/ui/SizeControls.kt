@@ -56,9 +56,9 @@ internal fun DensityChoice(
     ) { Modifier.testTag(AppearanceTags.density(it)) }
 }
 
-/** The row of [options]; [modifierOf] gives the tag (and more) of one choice. */
+/** The row of [options] as one selectable group; [modifierOf] gives the tag (and more) of one choice. */
 @Composable
-private fun <T> Segments(
+internal fun <T> Segments(
     options: List<T>,
     selected: T,
     label: (T) -> String,

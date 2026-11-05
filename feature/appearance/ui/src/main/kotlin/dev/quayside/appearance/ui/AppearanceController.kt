@@ -4,6 +4,7 @@ import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.api.ListDensity
 import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.ThemeCatalog
+import dev.quayside.appearance.api.ThemeFiles
 import dev.quayside.appearance.api.UiScale
 import dev.quayside.core.designtokens.TypographyId
 import dev.quayside.core.domain.Outcome
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 
 /** What the user did in the dialog. */
@@ -47,25 +49,55 @@ public sealed interface AppearanceIntent {
         val delta: Int,
     ) : AppearanceIntent
 
+    /** Turns "Dzień i noc z macOS" on or off in the draft. */
+    public data object ToggleDayNight : AppearanceIntent
+
+    /** Which of the day and night themes the list edits. */
+    public data class SelectSlot(
+        val slot: ThemeSlot,
+    ) : AppearanceIntent
+
+    /** Asks for a theme file and puts its settings into the draft; saves nothing. */
+    public data object Import : AppearanceIntent
+
+    /** Asks where to save and writes the draft (not the saved settings) as a theme file. */
+    public data object Export : AppearanceIntent
+
     public data object Apply : AppearanceIntent
 }
 
-/** Draft, busy flag and the last error (fixed category); immutable. */
+/** What a finished import or export tells the user. */
+public enum class FileNotice { IMPORTED, EXPORTED }
+
+/** Where the file dialogs of the system are shown; null = the user cancelled. */
+public interface ThemeFilePicker {
+    /** Asks for a theme file to read. */
+    public suspend fun open(): Path?
+
+    /** Asks where to save a theme file; [suggestedName] is the file name offered. */
+    public suspend fun save(suggestedName: String): Path?
+}
+
+/** Draft, busy flag, the last error (fixed category) and the last import or export notice; immutable. */
 public data class AppearanceDialogState(
     val draft: AppearanceDraft,
     val busy: Boolean,
     val error: ApplyError?,
+    val notice: FileNotice? = null,
 )
 
 /** State of the Appearance dialog (MVI); runs in [scope] (window scope, Main). Applies at most one change at a time. */
 public class AppearanceController(
     private val appearance: AppearanceApi,
     private val terminal: TerminalSettingsRepo,
+    files: ThemeFiles,
+    picker: ThemeFilePicker,
     private val scope: CoroutineScope,
 ) {
     private val dialog = MutableStateFlow<AppearanceDialogState?>(null)
     private val generation = AtomicInteger()
     private val writing = Mutex()
+    private val actions = ThemeFileActions(files, picker)
 
     /** The catalog the dialog lists (the one of the appearance module). */
     internal val catalog: ThemeCatalog get() = appearance.catalog
@@ -85,59 +117,29 @@ public class AppearanceController(
         dialog.value = null
     }
 
-    /** Changes the draft, or applies it ([AppearanceIntent.Apply]); edits are ignored while a save runs. */
+    /** Changes the draft, applies it, imports or exports; all are ignored while a save or a file action runs. */
     public fun onIntent(intent: AppearanceIntent) {
         val current = dialog.value ?: return
         if (current.busy) return
-        val edited = edit(current.draft, intent)
-        if (edited == null) apply(current.draft) else dialog.value = current.copy(draft = edited, error = null)
-    }
-
-    /** The draft after [intent], or null for [AppearanceIntent.Apply], which is no edit. */
-    private fun edit(
-        draft: AppearanceDraft,
-        intent: AppearanceIntent,
-    ): AppearanceDraft? {
-        val settings = draft.settings
-        return when (intent) {
-            AppearanceIntent.Apply -> {
-                null
-            }
-
-            is AppearanceIntent.SelectScheme -> {
-                draft.copy(settings = settings.copy(scheme = intent.id))
-            }
-
-            is AppearanceIntent.SelectTypography -> {
-                draft.copy(settings = settings.copy(typography = intent.id))
-            }
-
-            AppearanceIntent.UseSuggestedTypography -> {
-                useSuggestion(draft)
-            }
-
-            is AppearanceIntent.SelectScale -> {
-                draft.copy(settings = settings.copy(uiScale = intent.scale))
-            }
-
-            is AppearanceIntent.SelectDensity -> {
-                draft.copy(settings = settings.copy(density = intent.density))
-            }
-
-            is AppearanceIntent.SelectTerminalFont -> {
-                draft.copy(terminalFont = intent.family)
-            }
-
-            is AppearanceIntent.StepTerminalSize -> {
-                draft.copy(terminalSize = stepSize(draft.terminalSize, intent.delta))
-            }
+        val edited = editedDraft(current.draft, intent, appearance.catalog)
+        if (edited == null) {
+            start(intent, current.draft)
+        } else {
+            dialog.value = current.copy(draft = edited, error = null, notice = null)
         }
     }
 
-    private fun useSuggestion(draft: AppearanceDraft): AppearanceDraft =
-        suggestedTypography(draft, appearance.catalog)
-            ?.let { draft.copy(settings = draft.settings.copy(typography = it)) }
-            ?: draft
+    /** Starts the action of [intent] when it is one (apply, import, export); other intents are edits. */
+    private fun start(
+        intent: AppearanceIntent,
+        draft: AppearanceDraft,
+    ): Unit =
+        when (intent) {
+            AppearanceIntent.Apply -> apply(draft)
+            AppearanceIntent.Import -> runFileAction { actions.import() }
+            AppearanceIntent.Export -> runFileAction { actions.export(draft.settings) }
+            else -> Unit
+        }
 
     private fun apply(draft: AppearanceDraft) {
         val mine = generation.get()
@@ -157,6 +159,20 @@ public class AppearanceController(
         val saved =
             terminal.update { it.copy(fontFamily = draft.terminalFont, fontSize = draft.terminalSize) }
         return if (saved is Outcome.Ok) null else ApplyError.TERMINAL
+    }
+
+    private fun runFileAction(action: suspend () -> FileResult) {
+        val mine = generation.get()
+        dialog.update { it?.copy(busy = true, error = null, notice = null) }
+        scope.launch { settle(mine, action()) }
+    }
+
+    private fun settle(
+        mine: Int,
+        result: FileResult,
+    ) {
+        if (generation.get() != mine) return
+        dialog.update { it?.let { shown -> shown.copy(busy = false).withResult(result) } }
     }
 
     private fun finish(

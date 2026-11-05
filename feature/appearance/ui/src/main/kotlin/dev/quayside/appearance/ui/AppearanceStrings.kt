@@ -28,4 +28,7 @@ internal object AppearanceStrings {
 
     /** The fixed message of an apply that failed. */
     fun of(error: ApplyError): String = get("error.${error.name}")
+
+    /** The fixed message after a finished import or export. */
+    fun of(notice: FileNotice): String = get("notice.${notice.name}")
 }

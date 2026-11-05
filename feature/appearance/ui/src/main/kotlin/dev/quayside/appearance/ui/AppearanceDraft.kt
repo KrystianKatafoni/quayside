@@ -4,6 +4,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import dev.quayside.appearance.api.AppearanceSettings
 import dev.quayside.appearance.api.ListDensity
+import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.ThemeCatalog
 import dev.quayside.appearance.api.UiScale
 import dev.quayside.core.designsystem.AmDensity
@@ -11,15 +12,58 @@ import dev.quayside.core.designtokens.TypographyId
 import dev.quayside.terminal.api.TerminalSettings
 import dev.quayside.terminal.api.TerminalSettingsRules
 
-/** The not yet applied choice; [terminalFont] null = from typography. */
+/** Which of the two themes of day/night the theme list edits (FR-A5). */
+public enum class ThemeSlot { DAY, NIGHT }
+
+/** The not yet applied choice; [terminalFont] null = from typography; [slot] counts only with day/night on. */
 public data class AppearanceDraft(
     val settings: AppearanceSettings,
     val terminalFont: String?,
     val terminalSize: Int,
+    val slot: ThemeSlot = ThemeSlot.DAY,
 )
 
-/** Which save failed; no texts from files (ENG-C8). */
-public enum class ApplyError { APPEARANCE, TERMINAL }
+/**
+ * What failed; no texts from files (ENG-C8). The `IMPORT_*` ones come from reading a theme file, [EXPORT] from
+ * writing one.
+ */
+public enum class ApplyError {
+    APPEARANCE,
+    TERMINAL,
+    IMPORT_UNREADABLE,
+    IMPORT_NOT_THEME,
+    IMPORT_NEWER,
+    IMPORT_INVALID,
+    EXPORT,
+}
+
+/** The theme the preview shows: `scheme` with day/night off, otherwise the theme of the edited [ThemeSlot]. */
+internal fun previewScheme(draft: AppearanceDraft): SchemeId =
+    with(draft.settings) {
+        when {
+            !dayNight.enabled -> scheme
+            draft.slot == ThemeSlot.DAY -> dayNight.day
+            else -> dayNight.night
+        }
+    }
+
+/**
+ * [draft] with the theme [id] set where the list edits: `scheme` with day/night off, otherwise the day or night theme
+ * of the draft's slot.
+ */
+internal fun selectInSlot(
+    draft: AppearanceDraft,
+    id: SchemeId,
+): AppearanceDraft {
+    val settings = draft.settings
+    val chosen =
+        when {
+            !settings.dayNight.enabled -> settings.copy(scheme = id)
+            draft.slot == ThemeSlot.DAY -> settings.copy(dayNight = settings.dayNight.copy(day = id))
+            else -> settings.copy(dayNight = settings.dayNight.copy(night = id))
+        }
+    return draft.copy(settings = chosen)
+}
 
 /** The one mapping of the stored density to the design system; used by the preview and by `app`. */
 public fun ListDensity.toAmDensity(): AmDensity =
@@ -43,7 +87,7 @@ internal fun suggestedTypography(
     catalog: ThemeCatalog,
 ): TypographyId? =
     catalog
-        .theme(draft.settings.scheme)
+        .theme(previewScheme(draft))
         ?.defaultTypography
         ?.takeIf { it != draft.settings.typography }
 

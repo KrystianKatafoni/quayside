@@ -60,7 +60,7 @@ internal fun PreviewPane(
             .clipToBounds()
             .testTag(AppearanceTags.PREVIEW),
     ) {
-        val theme = catalog.theme(draft.settings.scheme)
+        val theme = catalog.theme(previewScheme(draft))
         val typography = catalog.typography(draft.settings.typography)
         if (theme != null && typography != null) {
             val density = previewDensity(base, maxWidth, draft.settings.uiScale)
@@ -120,7 +120,7 @@ internal fun TerminalSample(
     draft: AppearanceDraft,
     catalog: ThemeCatalog,
 ) {
-    val colors = catalog.theme(draft.settings.scheme)?.colors?.terminal ?: return
+    val colors = catalog.theme(previewScheme(draft))?.colors?.terminal ?: return
     val font = draft.terminalFont ?: catalog.typography(draft.settings.typography)?.terminalFont
     val style =
         TextStyle(

@@ -90,7 +90,7 @@ internal fun ComposeUiTest.showDialog(
     setContent {
         AmTestTheme {
             val scope = rememberCoroutineScope()
-            val controller = remember { AppearanceController(world.appearance, world.terminal, scope).also(built::add) }
+            val controller = remember { world.controller(scope).also(built::add) }
             AppearanceDialog(controller) { SampleSlot(recorder) }
         }
     }

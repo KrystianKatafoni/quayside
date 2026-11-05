@@ -38,6 +38,21 @@ internal object AppearanceTags {
     /** The fixed message of an apply that failed; absent otherwise. */
     const val ERROR = "appearance.error"
 
+    /** The switch "Dzień i noc z macOS". */
+    const val DAY_NIGHT_SWITCH = "appearance.dayNight.switch"
+
+    /** The segment "Dzień | Noc" above the theme list; absent while day/night is off. */
+    const val SLOT_SEGMENT = "appearance.slot"
+
+    /** The buttons "Importuj…" and "Eksportuj…". */
+    const val IMPORT = "appearance.import"
+    const val EXPORT = "appearance.export"
+
+    /** The fixed message after a finished import or export; absent otherwise. */
+    const val NOTICE = "appearance.notice"
+
+    fun slot(slot: ThemeSlot): String = "appearance.slot.${slot.name}"
+
     fun theme(id: SchemeId): String = "appearance.theme.${id.value}"
 
     fun typography(id: TypographyId): String = "appearance.typography.${id.value}"

@@ -124,6 +124,7 @@ private fun LeftColumn(
 ) {
     val onIntent = controller::onIntent
     Label("themes.label")
+    DayNightControls(draft, onIntent)
     ThemeList(draft, controller.catalog, onIntent)
     Label("typography.label")
     TypographyList(draft, controller.catalog, onIntent)
@@ -162,22 +163,14 @@ private fun Label(key: String) {
     )
 }
 
-/** The fixed message of a failed apply, and the Apply and Cancel buttons (Apply is off while a save runs). */
+/** The messages, the import and export buttons, and the Apply and Cancel buttons (Apply is off while a save runs). */
 @Composable
 private fun Footer(
     state: AppearanceDialogState,
     controller: AppearanceController,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(space = 8.dp)) {
-        state.error?.let {
-            AmText(
-                AppearanceStrings.of(it),
-                Modifier.testTag(AppearanceTags.ERROR),
-                color =
-                    AmTheme.colors.status.err
-                        .toColor(),
-            )
-        }
+        FileControls(state, controller::onIntent)
         Row(horizontalArrangement = Arrangement.spacedBy(space = 8.dp)) {
             AmButton(
                 AppearanceStrings["apply"],

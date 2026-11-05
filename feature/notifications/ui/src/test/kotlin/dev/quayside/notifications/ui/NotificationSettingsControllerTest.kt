@@ -31,7 +31,7 @@ class NotificationSettingsControllerTest {
             runningLongMinutes = 45,
             popup = PopupSettings(position = PopupPosition.TOP_LEFT),
             speech = SpeechSettings(rate = 250, readQuestion = false),
-        ).withChannel(NotificationKind.TURN_ENDED, NotificationChannel.SOUND, true)
+        ).withChannel(NotificationKind.TURN_ENDED, NotificationChannel.VOICE, true)
 
     private fun TestScope.controllerOver(repo: ScriptedRepo) =
         NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), backgroundScope)

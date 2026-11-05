@@ -28,6 +28,8 @@ import kotlinx.serialization.json.putJsonObject
 /**
  * `data` of `notifications.json`:
  * `{"popups": true, "voice": true, "runningLongMinutes": 30, "channels": {"needsInput": ["popup", …]}}`.
+ * `channels` lists only the kinds that differ from the default of docs/07, so a later change of a default
+ * reaches everyone who did not choose otherwise (schema 2, see [dropOldTurnEndedDefault]).
  *
  * The wire names are spelled out here so renaming an enum constant cannot change the file. Every key is
  * optional (a missing one means the default); unknown keys, kinds and channels are skipped so a newer
@@ -89,11 +91,13 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
                     put(PROJECTS, ProjectsJson.encode(value.projects))
                 }
                 putJsonObject(CHANNELS_KEY) {
-                    KINDS.forEach { (kind, name) ->
-                        putJsonArray(
-                            name,
-                        ) { value.channelsFor(kind).forEach { add(JsonPrimitive(CHANNELS.getValue(it))) } }
-                    }
+                    KINDS
+                        .filterKeys { value.channelsFor(it) != NotificationSettings.defaultChannels(it) }
+                        .forEach { (kind, name) ->
+                            putJsonArray(name) {
+                                value.channelsFor(kind).forEach { add(JsonPrimitive(CHANNELS.getValue(it))) }
+                            }
+                        }
                 }
             },
         )

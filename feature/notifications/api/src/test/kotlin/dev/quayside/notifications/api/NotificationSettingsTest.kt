@@ -16,12 +16,34 @@ class NotificationSettingsTest {
         s.channelsFor(NotificationKind.NEEDS_INPUT) shouldBe all
         s.channelsFor(NotificationKind.PERMISSION) shouldBe all
         s.channelsFor(NotificationKind.FAILED) shouldBe all
-        s.channelsFor(NotificationKind.TURN_ENDED) shouldBe setOf(NotificationChannel.POPUP)
+        s.channelsFor(NotificationKind.TURN_ENDED) shouldBe
+            setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
         s.channelsFor(NotificationKind.PULL_REQUEST) shouldBe
             setOf(NotificationChannel.POPUP, NotificationChannel.DOCK_BADGE)
         s.channelsFor(NotificationKind.RUNNING_LONG) shouldBe setOf(NotificationChannel.VOICE)
         s.channelsFor(NotificationKind.TERMINAL_BELL) shouldBe setOf(NotificationChannel.POPUP)
         s.runningLongMinutes shouldBe 30
+    }
+
+    @Test
+    fun `a finished turn has the popup and the sound but no voice by default`() {
+        val channels = NotificationSettings.defaultChannels(NotificationKind.TURN_ENDED)
+
+        channels shouldBe setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
+        NotificationSettings().channelsFor(NotificationKind.TURN_ENDED) shouldBe channels
+    }
+
+    @Test
+    fun `the terminal bell stays on the popup only`() {
+        NotificationSettings.defaultChannels(NotificationKind.TERMINAL_BELL) shouldBe setOf(NotificationChannel.POPUP)
+    }
+
+    @Test
+    fun `an entry of another kind keeps the default of a finished turn`() {
+        val s = NotificationSettings(matrix = mapOf(NotificationKind.FAILED to emptySet()))
+
+        s.channelsFor(NotificationKind.TURN_ENDED) shouldBe
+            setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
     }
 
     @Test

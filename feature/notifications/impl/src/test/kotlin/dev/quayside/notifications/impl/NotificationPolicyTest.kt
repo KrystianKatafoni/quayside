@@ -74,7 +74,8 @@ class NotificationPolicyTest {
 
         channels(waiting(SessionState.AwaitingInput("ok?")), quiet) shouldContainExactly
             listOf(VOICE, SOUND, DOCK_BADGE)
-        channels(SessionEvent.TurnFinished(aSession(state = SessionState.Done)), quiet).shouldBeEmpty()
+        channels(SessionEvent.TurnFinished(aSession(state = SessionState.Done)), quiet) shouldContainExactly
+            listOf(SOUND)
     }
 
     @Test
@@ -92,12 +93,12 @@ class NotificationPolicyTest {
             settings
                 .withChannel(
                     NotificationKind.TURN_ENDED,
-                    SOUND,
+                    VOICE,
                     true,
                 ).withChannel(NotificationKind.TURN_ENDED, POPUP, false)
 
         channels(SessionEvent.TurnFinished(aSession(state = SessionState.Done)), custom) shouldContainExactly
-            listOf(SOUND)
+            listOf(VOICE, SOUND)
     }
 
     @Test
@@ -222,6 +223,22 @@ class NotificationPolicyTest {
     }
 
     @Test
+    fun `quiet hours drop the sound of a finished turn but keep its popup`() {
+        val turnEnded = SessionEvent.TurnFinished(aSession(state = SessionState.Done))
+
+        channels(turnEnded, quietOn, ctx(localTime = night)) shouldContainExactly listOf(POPUP)
+        channels(turnEnded, quietOn, ctx(localTime = LocalTime.NOON)) shouldContainExactly listOf(POPUP, SOUND)
+    }
+
+    @Test
+    fun `a finished turn keeps the sound in the foreground and with a microphone`() {
+        val turnEnded = SessionEvent.TurnFinished(aSession(state = SessionState.Done))
+
+        channels(turnEnded, context = ctx(appActive = true)) shouldContainExactly listOf(POPUP, SOUND)
+        channels(turnEnded, context = ctx(microphoneActive = true)) shouldContainExactly listOf(POPUP, SOUND)
+    }
+
+    @Test
     fun `a Focus alone is quiet without hours and respectFocus off ignores it`() {
         val focus = ctx(focusActive = true)
 
@@ -294,7 +311,11 @@ class NotificationPolicyTest {
                     SessionEvent.BecameBlocked(aSession(state = SessionState.AwaitingPermission("Bash"))),
                     listOf(POPUP, VOICE, SOUND, DOCK_BADGE),
                 ),
-                arguments("turn ended", SessionEvent.TurnFinished(aSession(state = SessionState.Done)), listOf(POPUP)),
+                arguments(
+                    "turn ended",
+                    SessionEvent.TurnFinished(aSession(state = SessionState.Done)),
+                    listOf(POPUP, SOUND),
+                ),
                 arguments(
                     "failed",
                     SessionEvent.Failed(aSession(state = SessionState.Failed)),

@@ -32,9 +32,9 @@ import java.time.ZoneId
  *   `onAction`.
  * @param clock times the 15 minutes of a muted session and the quiet hours.
  * @param zone the time zone of the quiet hours, read at every event.
- * @param process runs `say` for the voice channel; null means no voice.
+ * @param process runs `say` for the voice channel and `afplay` for the sound channel; null means neither.
  * @param appActive true while a window of the app is active; the voice is silent then (FR-N5).
- * @param logger receives the voice's log lines (a fixed category only, never the spoken text).
+ * @param logger receives the log lines of voice and sound (a fixed category only, never the text or a file path).
  */
 @Suppress("LongParameterList")
 public fun notificationCenterModule(
@@ -59,10 +59,16 @@ public fun notificationCenterModule(
         )
     }
     val notifier = voiceNotifier(process, settings, scope, context, logger)
+    val sounds = soundNotifier(process, settings, scope, context, logger)
     val center =
-        DefaultNotificationCenter(settings, manager, projectName, context) { delivery, project ->
-            notifier?.offer(delivery, project)
-        }
+        DefaultNotificationCenter(
+            settings,
+            manager,
+            projectName,
+            context,
+            voice = { delivery, project -> notifier?.offer(delivery, project) },
+            sound = { delivery -> sounds?.offer(delivery) },
+        )
     scope.launch(start = CoroutineStart.UNDISPATCHED) { events.collect(center::onSessionEvent) }
     return center
 }
@@ -77,4 +83,16 @@ private fun voiceNotifier(
     process?.let {
         val say = MacSayAdapter(it, Path.of(System.getProperty("user.home")))
         VoiceNotifier(say, settings.settings, scope, context, logger)
+    }
+
+private fun soundNotifier(
+    process: ProcessRunner?,
+    settings: NotificationSettingsRepo,
+    scope: CoroutineScope,
+    context: () -> DeliveryContext,
+    logger: Logger,
+): SoundNotifier? =
+    process?.let {
+        val afplay = AfplayAdapter(it, Path.of(System.getProperty("user.home")))
+        SoundNotifier(afplay, settings.settings, scope, context, logger)
     }

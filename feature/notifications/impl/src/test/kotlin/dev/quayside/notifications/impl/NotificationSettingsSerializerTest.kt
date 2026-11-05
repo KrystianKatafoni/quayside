@@ -30,7 +30,7 @@ class NotificationSettingsSerializerTest {
     fun `settings survive a round trip`() {
         val settings =
             NotificationSettings(popups = false, runningLongMinutes = 45)
-                .withChannel(NotificationKind.TURN_ENDED, NotificationChannel.SOUND, true)
+                .withChannel(NotificationKind.TURN_ENDED, NotificationChannel.VOICE, true)
                 .withChannel(NotificationKind.FAILED, NotificationChannel.VOICE, false)
 
         val text = Json.encodeToString(NotificationSettingsSerializer, settings)
@@ -78,6 +78,21 @@ class NotificationSettingsSerializerTest {
             )
 
         settings.channelsFor(NotificationKind.FAILED) shouldBe setOf(NotificationChannel.POPUP)
+    }
+
+    @Test
+    fun `a file with deviations of other kinds keeps the default of a finished turn`() {
+        val settings = decode("""{"channels": {"failed": ["popup"], "needsInput": []}}""")
+
+        settings.channelsFor(NotificationKind.TURN_ENDED) shouldBe
+            setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
+        settings.channelsFor(NotificationKind.FAILED) shouldBe setOf(NotificationChannel.POPUP)
+    }
+
+    @Test
+    fun `a file without channels gives a finished turn the popup and the sound`() {
+        decode("{}").channelsFor(NotificationKind.TURN_ENDED) shouldBe
+            setOf(NotificationChannel.POPUP, NotificationChannel.SOUND)
     }
 
     @Test

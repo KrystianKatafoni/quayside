@@ -8,13 +8,17 @@ Powiadomienia mają jeden cel: gdy agent czeka, użytkownik ma się o tym dowied
 | --- | --- | :-: | :-: | :-: | :-: |
 | `?` Czeka na odpowiedź | `Notification: agent_needs_input` | ✓ | ✓ | ✓ | ✓ |
 | `!` Prośba o zgodę na narzędzie | `Notification: permission_prompt` | ✓ | ✓ | ✓ | ✓ |
-| `✓` Agent skończył turę | `Stop` | ✓ | – | – | – |
+| `✓` Agent skończył turę | `Stop` | ✓ | – | ✓ | – |
 | `✕` Błąd sesji | `StopFailure` | ✓ | ✓ | ✓ | ✓ |
 | `#` Pull request gotowy do review | status PR z `agents --json` | ✓ | – | – | ✓ |
 | `~` Pracuje dłużej niż N min (domyślnie 30) | reguła aplikacji | – | ✓ | – | – |
 | `🔔` Dzwonek terminala (BEL) | terminal; przełącznik w ustawieniach terminala | ✓ | – | – | – |
 
 Globalne przełączniki: popupy, głos, **Nie przeszkadzać** w godzinach (domyślnie 22:00–07:00), respektowanie trybu Skupienia macOS.
+
+**Dźwięk (AM-812):** kanał „Dźwięk” odtwarza krótki dźwięk systemowy przez `/usr/bin/afplay` (`ProcessRunner`, jak `say`). Stałe mapowanie: czeka na odpowiedź Glass, zgoda Ping, błąd Basso, koniec tury Hero, pull request Pop, praca dłużej niż N min Submarine, dzwonek terminala Tink; brakujący plik zastępuje Glass. Najwyżej jeden dźwięk na 2 s (ważniejszy wypiera czekający), cisza nocna i Skupienie go wyciszają, a gra także przy aktywnym oknie aplikacji i przy mikrofonie. Wybór dźwięku i głośności w ustawieniach to osobne zadanie (zadanie AM-815).
+
+**Zmiana domyślnych (AM-812):** „Agent skończył turę” ma domyślnie popup i dźwięk (wcześniej tylko popup), bo popup w tle łatwo przeoczyć. `notifications.json` zapisuje od schematu 2 tylko kanały różniące się od domyślnych; migracja ze schematu 1 usuwa wpis `turnEnded: ["popup"]` (stara domyślna), więc istniejące pliki dostają nową domyślną. Wybór „tylko popup” zapisany przed migracją nie da się odróżnić od starej domyślnej i też staje się popup + dźwięk; wystarczy wyłączyć dźwięk w macierzy (ADR 0024).
 
 ## Popup
 

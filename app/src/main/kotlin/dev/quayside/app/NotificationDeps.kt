@@ -42,7 +42,7 @@ internal class NotificationDeps(
 /**
  * The notification center fed by the session events of [sessions]; popups show the project name from [projects]. Its
  * scope lives as long as the app. The voice speaks through `core.process` while no window of the app is active
- * (AM-702, AM-703).
+ * (AM-702, AM-703); the sound plays through `core.process` too, also while a window is active (AM-812).
  */
 internal fun notificationDeps(
     core: CoreDeps,

@@ -131,3 +131,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Oddanie fokusu terminalowi po zamknięciu modalu musi pamiętać poprzedniego właściciela fokusu (`focusReturnTarget`): w trybie listy terminal leży pod Mission Control i bezwarunkowe oddanie fokusu kieruje ⏎ i spację do shella.
 - Log lub strażnik w loaderze stojący za serializerem, który już filtruje wartości, jest w produkcji martwy, choć test na `InMemoryJsonStore` (bez serializera) jest zielony — takie zachowanie testuj na prawdziwym `JsonStorage`.
 - Sprzątanie pliku tymczasowego przy atomowym zapisie testuj celem, który psuje dopiero `move` (np. istniejący niepusty katalog); test z katalogiem tylko do odczytu pada przed utworzeniem pliku i nic nie dowodzi.
+- Zmiana wartości domyślnej w `api` przy pliku, który zapisywał wszystkie pola, wymaga migracji schematu i decyzji o formacie (ADR); nowe formaty zapisują od początku tylko odstępstwa od domyślnych (ADR 0024).
+- Test „zły kształt nie psuje migracji” jest zawsze zielony, gdy serializer i tak odrzuca dane (oba kończą się plikiem `.broken`) – nazwij go po skutku i sprawdź plik `.broken`.

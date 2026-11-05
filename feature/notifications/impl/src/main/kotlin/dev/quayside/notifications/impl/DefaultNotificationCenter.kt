@@ -17,8 +17,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * [NotificationCenter] that decides with [decide] and [decideTerminalBell] over the current settings of [settings],
- * publishes the deliveries and shows the popups of [popups]. A muted session gets nothing on any channel. Emitting
- * never suspends: a slow collector loses the oldest deliveries instead of blocking the caller.
+ * publishes the deliveries, shows the popups of [popups] and hands voice and sound deliveries to [voice] and
+ * [sound]. A muted session gets nothing on any channel. Emitting never suspends: a slow collector loses the oldest
+ * deliveries instead of blocking the caller.
  *
  * @param projectName display name of a project for the popup; null when unknown.
  */
@@ -28,6 +29,7 @@ internal class DefaultNotificationCenter(
     private val projectName: (ProjectId?) -> String?,
     private val context: () -> DeliveryContext,
     private val voice: (Delivery, String?) -> Unit = { _, _ -> },
+    private val sound: (Delivery) -> Unit = {},
 ) : NotificationCenter {
     private val flow =
         MutableSharedFlow<NotificationDelivery>(
@@ -55,7 +57,8 @@ internal class DefaultNotificationCenter(
             when (delivery.channel) {
                 NotificationChannel.POPUP -> manager.show(delivery, projectName(delivery.session?.project))
                 NotificationChannel.VOICE -> voice(delivery, projectName(delivery.session?.project))
-                NotificationChannel.SOUND, NotificationChannel.DOCK_BADGE -> Unit
+                NotificationChannel.SOUND -> sound(delivery)
+                NotificationChannel.DOCK_BADGE -> Unit
             }
         }
     }

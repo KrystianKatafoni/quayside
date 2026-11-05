@@ -123,13 +123,13 @@ class NotificationSettingsDialogScreenTest {
             onNodeWithTag(cell(sound)).performKeyInput { pressKey(Key.Spacebar) }
             await(SettingsTags.SAVE).performScrollTo().performClick()
 
-            // Then both channels are saved on top of the default popup
+            // Then the voice is on and the sound, which is on by default, is off again
             waitUntil(timeoutMillis = WAIT_MS) {
                 repo.settings.value.matrix
                     .isNotEmpty()
             }
             repo.settings.value.channelsFor(NotificationKind.TURN_ENDED) shouldBe
-                setOf(NotificationChannel.POPUP, NotificationChannel.VOICE, NotificationChannel.SOUND)
+                setOf(NotificationChannel.POPUP, NotificationChannel.VOICE)
         }
 
     @Test

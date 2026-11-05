@@ -39,7 +39,7 @@ public abstract class NotificationSettingsRepoContract {
             repo.update { it.withChannel(NotificationKind.TURN_ENDED, NotificationChannel.VOICE, enabled = true) }
 
             repo.settings.value.channelsFor(NotificationKind.TURN_ENDED) shouldBe
-                setOf(NotificationChannel.POPUP, NotificationChannel.VOICE)
+                setOf(NotificationChannel.POPUP, NotificationChannel.SOUND, NotificationChannel.VOICE)
             repo.settings.value.channelsFor(NotificationKind.FAILED) shouldBe NotificationChannel.entries.toSet()
         }
 

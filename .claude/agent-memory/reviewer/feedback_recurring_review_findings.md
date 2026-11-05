@@ -103,5 +103,8 @@ Sprawdzaj od razu przy każdym review:
   **How to apply:** sonda w kopii: prawdziwy `JsonStorage` + plik z błędną wartością + `RecordingLogger`.
 - AM-804: sprzątanie pliku tymczasowego w `finally` atomowego zapisu bez testu — test „katalog tylko do odczytu” nie tworzy pliku tymczasowego wcale. Ścieżka, która tworzy temp i pada na `move`: cel = niepusty katalog. Czyszczenie `notice` przy edycji też bez testu (mutacja przeżyła).
 - AM-804: plan „nowe zadanie na własne schematy, jeśli decyzja 2 = tak” (decyzja zapadła), a ROADMAP bez nowego wpisu — przy decyzjach „wydzielić do osobnego zadania” grepuj ROADMAP.
+- AM-812 (2026-11-05): ROADMAP bez `[x]` i bez wpisu na wydzielony zakres (wybór dźwięku/głośności, pytanie 2), a „Uwagi do M7” dalej mówią „`SOUND -> Unit`”. Plan „bez `notifications:ui`”, a zmieniono 3 testy ui + test okna app (zmiana domyślnej w `api` przepisuje fikstury w każdym module) — wymagaj listy w „Moduły”/„Odstępstwa”.
+- AM-812: zmiana domyślnej w `api` przy pliku, który zapisywał wszystkie pola, wymusiła pierwszą migrację schematu i nową semantykę „zapis tylko odstępstw” — decyzja o formacie pliku w „Odstępstwach” bez ADR, choć plan mówił „ADR niepotrzebny”. Test „dane o złym kształcie nie psują migracji” jest zawsze zielony, gdy serializer i tak odrzuca te dane (oba wyjątki → `.broken` + domyślne).
+- AM-812: kolejka odtwarzania na `Channel.UNLIMITED` liczy chłodzenie od wysłania, nie od startu odtwarzania (KDoc mówi „od startu”); przy zawieszonym odtwarzaczu (timeout 10 s) zaległości rosną i grają bez ponownego sprawdzenia ciszy nocnej.
 
 Powiązane: [[reviewer-workflow]]

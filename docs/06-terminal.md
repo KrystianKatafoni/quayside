@@ -2,8 +2,6 @@
 
 Terminal jest pełnoprawną częścią aplikacji, nie dodatkiem. Działa w dwóch miejscach: jako panel pod listą sesji w Mission Control i jako pełnoekranowy **tryb terminala** (przycisk pełnego ekranu, bez skrótu klawiszowego). Skrót ⌘⇧↵ maksymalizuje aktywny panel w obrębie panelu terminala, a ten sam skrót przywraca układ.
 
-![Tryb terminala](screenshots/20-tryb-terminala.png)
-
 ## Funkcje
 
 | Funkcja | Opis |

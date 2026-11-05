@@ -10,8 +10,6 @@ Katalog ma **29 motywów**: 9 podstawowych (sekcja „Schematy kolorów”) i 20
 
 Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `plex`); terminal JediTerm też od AM-807: domyślny tekst i tło widżetu to `termText` i `termBg`, a font (gdy użytkownik nie wybrał własnego) to font terminala typografii, rejestrowany w AWT przy starcie. Zmiana działa na karty otwierane później (ADR 0016).
 
-![Ustawienia wyglądu](screenshots/22-ustawienia-wygladu.png)
-
 ## Schematy kolorów (9 podstawowych motywów)
 
 | Klucz | Nazwa | Tryb | bg | panel | text | accent | warn | ok | err | work | promień |

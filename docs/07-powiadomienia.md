@@ -2,8 +2,6 @@
 
 Powiadomienia mają jeden cel: gdy agent czeka, użytkownik ma się o tym dowiedzieć w ciągu 2 sekund i móc zareagować bez szukania okna.
 
-![Ustawienia powiadomień](screenshots/21-ustawienia-powiadomien.png)
-
 ## Zdarzenia i kanały (ustawienia domyślne)
 
 | Zdarzenie | Źródło | Popup | Głos | Dźwięk | Dock |

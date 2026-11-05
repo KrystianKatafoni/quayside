@@ -20,5 +20,7 @@ Mutacje rób wyłącznie w kopii: `rsync -a --exclude .git --exclude build --exc
 - Źródła Compose do weryfikacji twierdzeń (np. `SwingWindow` przekazuje `currentCompositionLocalContext`, granice `SemanticsNode`): `curl -sfLO https://repo1.maven.org/maven2/org/jetbrains/compose/ui/ui-desktop/<wersja>/ui-desktop-<wersja>-sources.jar`.
 - Testy z prawdziwym `ComposeWindow` działają na tym Macu i na CI macos-15 (nie headless, ok. 9 s). Sonda Esc: `onEdt { focusOwner()?.dispatchEvent(KeyEvent(owner, KEY_PRESSED, ..., VK_ESCAPE, CHAR_UNDEFINED)) }`; plik `probe.txt` w scratchpadzie bywa zostawiony przez autora — przenieś go przed sondą.
 - Mutacja `as? T` → `as T` daje błąd `-Werror` („Unnecessary safe call”, „Condition is always true”) — użyj `?.let { it as T }`. Fragment do podmiany musi być unikalny (np. `queue = SoundQueue()` trafia najpierw w deklarację pola) — po każdej serii sprawdź `grep -E '^e: |tests completed' m_*.log`, „BUILD FAILED in <1s” bez „tests completed” to kompilacja.
+- Podmiana na `Unit` jako mutacja daje pod -Werror „Expression is unused” — zamiast tego odwróć/wyzeruj warunek (`closes > 0` → `closes < 0`, `if (!enabled)` → `if (label.isEmpty() && !enabled)`). Mutację, która przeżyła w module komponentu, puść też na testach modułów `ui` (tam bywa zabijana).
+- Testy prawdziwego okna AWT (ModalOver/DropdownOver) w tle bez okna na pierwszym planie: jedne padają, inne (z `assumeTrue`) są pomijane — przed wnioskiem o regresji porównaj z bazą w tej samej sesji.
 
 Powiązane: [[recurring-review-findings]]

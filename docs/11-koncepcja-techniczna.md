@@ -345,6 +345,11 @@ enum class StatusTone { NEUTRAL, ACCENT, WARN, WORK, OK, ERR }
 @Composable fun AmStatCard(value: String, label: String, icon: IconKind, modifier: Modifier = Modifier, tone: StatusTone = NEUTRAL)
 data class IconButtonOptions(val enabled: Boolean = true, val focusable: Boolean = true, val tone: StatusTone = NEUTRAL, val size: IconButtonSize = REGULAR, val style: IconButtonStyle = GHOST, val badge: String? = null)
 enum class IconButtonSize { COMPACT, REGULAR, LARGE }; enum class IconButtonStyle { GHOST, OUTLINED, SELECTED, DANGER }
+// AM-809: przycisk z tekstem w trzech rodzajach, opcjonalna ikona i skrót; kolor znaku stanu
+enum class ButtonKind { PRIMARY, SECONDARY, DANGER }
+data class ButtonOptions(val kind: ButtonKind = SECONDARY, val enabled: Boolean = true, val focusable: Boolean = true, val icon: IconKind? = null, val shortcut: String? = null)
+@Composable fun AmButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, options: ButtonOptions = ButtonOptions())
+@Composable fun StatusTone.markColor(): Color      // kolor ikony tonu, 3:1 na bg, panel, raised, sel
 
 // appearance:api (typy z core:design-tokens, bez Compose); AM-801 daje tylko `catalog`, reszta w AM-804
 interface AppearanceApi {

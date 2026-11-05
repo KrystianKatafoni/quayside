@@ -122,3 +122,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - `SwingPanel(background = …)` jest `@Deprecated` w Compose MP 1.12 (`allWarningsAsErrors`): tło ustaw na komponencie w `factory`.
 - Gdy kod odchodzi od planu (parametry fabryki, podział na pliki), popraw plan w tym samym PR — review wyłapuje rozjazd plan-kod.
 - AWT zwraca dla pliku SemiBold osobną rodzinę (np. „IBM Plex Mono SemiBold”) — asercje rodzin fontów rób po tablicy `name` pliku, nie po nazwie rodziny Compose.
+- `remember(measurer.measure(...))` musi mieć w kluczu `measurer` i gęstość — zmiana skali ekranu zmienia metryki tekstu; `clearAndSetSemantics` nie ukrywa tekstu w drzewie niescalonym (`useUnmergedTree`), więc test „bez węzła semantyki” wymusza rysowanie tekstu przez `drawText`.
+- Nazwa sekcji mockupu z zadania może różnić się od sekcji w HTML (np. „PODSUMOWANIE” vs kafelki liczników) — sprawdź układ w pliku mockupu, nie po nazwie.

@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.toColor
 import javax.swing.JComponent
+import java.awt.Color as AwtColor
 
 /** What the panes of one frame need: the tabs by id, the active pane and how a widget is embedded. */
 private class PaneEnv(
@@ -29,7 +31,15 @@ private class PaneEnv(
 /** Embeds [component] in the composition; the widget keeps its state while it is moved between panes. */
 @Composable
 internal fun EmbeddedWidget(component: JComponent) {
-    SwingPanel(factory = { component }, modifier = Modifier.fillMaxSize())
+    val background = termBgColor().toArgb()
+    // The overload with `background` is deprecated: the factory sets it, so no white shows while the panel resizes.
+    SwingPanel(
+        factory = {
+            component.background = AwtColor(background)
+            component
+        },
+        modifier = Modifier.fillMaxSize(),
+    )
 }
 
 /**

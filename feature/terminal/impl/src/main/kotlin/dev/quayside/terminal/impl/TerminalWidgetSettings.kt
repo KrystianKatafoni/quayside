@@ -1,7 +1,10 @@
 package dev.quayside.terminal.impl
 
+import com.jediterm.terminal.TerminalColor
 import com.jediterm.terminal.ui.TerminalActionPresentation
 import com.jediterm.terminal.ui.settings.DefaultSettingsProvider
+import dev.quayside.core.designtokens.Rgba
+import dev.quayside.core.designtokens.TerminalColors
 import dev.quayside.terminal.api.TerminalSettings
 import java.awt.Font
 import java.awt.font.TextAttribute
@@ -12,11 +15,15 @@ import javax.swing.KeyStroke
  * selection, Cmd-K/F left free. [fontAvailable] says whether a font family is installed; a missing one falls back to
  * the JediTerm default font. It is asked at most once, when the widget is built.
  */
+@Suppress("TooManyFunctions") // One override per JediTerm setting this module changes.
 internal class TerminalWidgetSettings(
     private val settings: TerminalSettings,
+    colors: TerminalColors,
     fontAvailable: (String) -> Boolean,
 ) : DefaultSettingsProvider() {
     private val font: Font = buildFont(fontAvailable)
+    private val foreground: TerminalColor = colors.termText.toTerminalColor()
+    private val background: TerminalColor = colors.termBg.toTerminalColor()
 
     override fun altSendsEscape(): Boolean = settings.optionAsMeta
 
@@ -31,6 +38,10 @@ internal class TerminalWidgetSettings(
     override fun getTerminalFontSize(): Float = settings.fontSize.toFloat()
 
     override fun emulateX11CopyPaste(): Boolean = false
+
+    override fun getDefaultForeground(): TerminalColor = foreground
+
+    override fun getDefaultBackground(): TerminalColor = background
 
     /** No shortcut, so Cmd-K stays with the app's palette (ADR 0012 decision 3). */
     override fun getClearBufferActionPresentation(): TerminalActionPresentation =
@@ -52,3 +63,6 @@ internal class TerminalWidgetSettings(
         }
     }
 }
+
+/** Opaque JediTerm colour with the red, green and blue of this token; alpha is dropped (termBg is opaque). */
+internal fun Rgba.toTerminalColor(): TerminalColor = TerminalColor.rgb(red, green, blue)

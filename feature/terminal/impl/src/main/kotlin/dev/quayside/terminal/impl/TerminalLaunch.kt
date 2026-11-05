@@ -1,5 +1,6 @@
 package dev.quayside.terminal.impl
 
+import dev.quayside.core.designtokens.TerminalColors
 import dev.quayside.terminal.api.TerminalSettings
 import kotlinx.coroutines.flow.StateFlow
 import java.nio.file.Path
@@ -12,6 +13,7 @@ import java.nio.file.Path
 internal class TerminalLaunch(
     val shell: Path,
     val settings: StateFlow<TerminalSettings>,
+    val colors: StateFlow<TerminalColors>,
     /** The environment a shell inherits before the module adds its own variables; tests pass a fixed map. */
     val baseEnvironment: Map<String, String> = System.getenv(),
 )

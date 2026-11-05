@@ -16,6 +16,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmDropdownItems
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.notifications.api.NotificationKind
@@ -64,15 +65,11 @@ private fun VoiceRow(
     val choices = voiceChoices(state.voices, saved)
     val selected = choices.indexOfFirst { it.id == state.draft.speech.voice }.coerceAtLeast(minimumValue = 0)
     val select = { index: Int -> controller.editSpeech { it.copy(voice = choices[index].id) } }
-    SettingRow(SettingsStrings["settings.speechVoice"], invalid = null) { named ->
+    val label = SettingsStrings["settings.speechVoice"]
+    SettingRow(label, invalid = null) { _ ->
         val names = choices.map { it.id?.name }
-        ChoiceField(
-            SettingsTags.SPEECH_VOICE,
-            choices.map(SettingsStrings::of),
-            selected,
-            named.letterJump(names, selected, select),
-            select,
-        )
+        val items = AmDropdownItems(choices.map(SettingsStrings::of), selected)
+        Dropdown(SettingsTags.SPEECH_VOICE, label, items, Modifier.letterJump(names, selected, select), select)
     }
     if (state.voicesFailed) {
         val tag = Modifier.testTag(SettingsTags.VOICES_FAILED)

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmDropdownItems
 import dev.quayside.core.designsystem.AmText
 
 /** The "Popup" section (FR-N3): position, duration, max visible, style; always editable, even with popups off. */
@@ -41,7 +42,7 @@ private fun MaxVisibleRow(
     }
 }
 
-/** A [SettingRow] (`settings.popup<Prefix>`) with a [ChoiceField] over every [T]; labels from `<prefix>.<NAME>`. */
+/** A [SettingRow] (`settings.popup<Prefix>`) with a [Dropdown] over every [T]; labels from `<prefix>.<NAME>`. */
 @Composable
 private inline fun <reified T : Enum<T>> EnumRow(
     prefix: String,
@@ -51,9 +52,8 @@ private inline fun <reified T : Enum<T>> EnumRow(
 ) {
     val entries = enumValues<T>()
     val label = SettingsStrings["settings.popup${prefix.replaceFirstChar { it.uppercase() }}"]
-    SettingRow(label, invalid = null) { named ->
-        ChoiceField(tag, entries.map { SettingsStrings.option(prefix, it) }, selected.ordinal, named) { index ->
-            onSelect(entries[index])
-        }
+    SettingRow(label, invalid = null) { _ ->
+        val items = AmDropdownItems(entries.map { SettingsStrings.option(prefix, it) }, selected.ordinal)
+        Dropdown(tag, label, items) { index -> onSelect(entries[index]) }
     }
 }

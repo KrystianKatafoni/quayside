@@ -7,7 +7,7 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertContentDescriptionEquals
-import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
@@ -200,40 +201,79 @@ class NotificationSettingsDialogScreenTest {
         }
 
     private fun ComposeUiTest.assertPosition(position: PopupPosition) {
-        await(SettingsTags.POPUP_POSITION).assertTextEquals(SettingsStrings.option("position", position))
-    }
-
-    private fun ComposeUiTest.pressOnPosition(key: Key) {
-        onNodeWithTag(SettingsTags.POPUP_POSITION).performKeyInput { pressKey(key) }
+        waitUntilExactlyOneExists(
+            hasTestTag(SettingsTags.POPUP_POSITION) and
+                hasText(SettingsStrings.option("position", position), substring = true),
+            WAIT_MS,
+        )
     }
 
     @Test
-    fun `arrow keys move the popup position through 6 places`() =
+    fun `the popup position list has 6 places and the choice is saved`() =
         runComposeUiTest {
             // Given the open dialog with the default position at the bottom right
             showDialog()
             assertPosition(PopupPosition.BOTTOM_RIGHT)
 
-            // When the user clicks the field (focus and one step forward, wrapping)
-            await(SettingsTags.POPUP_POSITION).performScrollTo().performClick()
+            // When the user opens the list, it holds the 6 places in order, the current one marked
+            openList(SettingsTags.POPUP_POSITION)
+            PopupPosition.entries.forEachIndexed { index, place ->
+                optionShows(index, SettingsStrings.option("position", place))
+            }
+            onNodeWithTag(AmDropdownTags.option(PopupPosition.entries.size)).assertDoesNotExist()
+            onNodeWithTag(AmDropdownTags.option(PopupPosition.BOTTOM_RIGHT.ordinal)).assertIsSelected()
+
+            // And picks the top left and saves
+            clickOption(PopupPosition.TOP_LEFT.ordinal)
+            assertPosition(PopupPosition.TOP_LEFT)
+            await(SettingsTags.SAVE).performScrollTo().performClick()
+
+            // Then the repo holds the new position
+            waitUntil(timeoutMillis = WAIT_MS) { repo.settings.value.popup.position == PopupPosition.TOP_LEFT }
+        }
+
+    @Test
+    fun `a side arrow on a closed popup field opens the list and changes nothing`() =
+        runComposeUiTest {
+            // Given the open dialog and the focus on the position field
+            showDialog()
+            await(SettingsTags.POPUP_POSITION).performScrollTo().focus()
             awaitFocus(SettingsTags.POPUP_POSITION)
 
-            // Then the position wrapped to the top left
-            assertPosition(PopupPosition.TOP_LEFT)
+            // When the user presses Right and then Escape
+            onNodeWithTag(SettingsTags.POPUP_POSITION).performKeyInput { pressKey(Key.DirectionRight) }
+            awaitListOpen()
+            pressKeyOn(SettingsTags.POPUP_STYLE, Key.Escape)
+            awaitListGone()
 
-            // When the user presses the right arrow 5 times, the position steps through the whole list
-            PopupPosition.entries.drop(1).forEach { next ->
-                pressOnPosition(Key.DirectionRight)
-                assertPosition(next)
-            }
-
-            // And once more: it wraps to the first place
-            pressOnPosition(Key.DirectionRight)
-            assertPosition(PopupPosition.TOP_LEFT)
-
-            // And the left arrow goes back (wrapping to the last place)
-            pressOnPosition(Key.DirectionLeft)
+            // Then the position stays
             assertPosition(PopupPosition.BOTTOM_RIGHT)
+        }
+
+    @Test
+    fun `Escape in an open list keeps the dialog`() =
+        runComposeUiTest {
+            // Given the open dialog and the open list of the popup style
+            showDialog()
+            await(SettingsTags.POPUP_STYLE).performScrollTo().focus()
+            awaitFocus(SettingsTags.POPUP_STYLE)
+            pressKeyOn(SettingsTags.POPUP_STYLE, Key.Enter)
+            awaitListOpen()
+
+            // When the user presses Escape
+            pressKeyOn(SettingsTags.POPUP_STYLE, Key.Escape)
+
+            // Then only the list is gone, the dialog stays with the focus on the field and nothing is saved
+            awaitListGone()
+            onNodeWithTag(SettingsTags.DIALOG).assertExists()
+            awaitFocus(SettingsTags.POPUP_STYLE)
+            repo.settings.value.popup.style shouldBe PopupStyle.DETAILED
+
+            // And the next Escape closes the dialog
+            pressKeyOn(SettingsTags.POPUP_STYLE, Key.Escape)
+            waitUntil(timeoutMillis = WAIT_MS) {
+                onAllNodesWithTag(SettingsTags.DIALOG).fetchSemanticsNodes().isEmpty()
+            }
         }
 
     @Test
@@ -282,14 +322,24 @@ class NotificationSettingsDialogScreenTest {
         }
 
     @Test
-    fun `popup choices are saved`() =
+    fun `popup duration and style are picked from lists`() =
         runComposeUiTest {
             // Given the open dialog with the default duration and style
             showDialog()
 
-            // When the user clicks the style and the duration (each click steps forward) and saves
-            await(SettingsTags.POPUP_STYLE).performScrollTo().performClick()
-            await(SettingsTags.POPUP_DURATION).performScrollTo().performClick()
+            // When the user picks the compact style (2 places) and the timed duration (3 places) and saves
+            openList(SettingsTags.POPUP_STYLE)
+            PopupStyle.entries.forEachIndexed { index, style ->
+                optionShows(index, SettingsStrings.option("style", style))
+            }
+            onNodeWithTag(AmDropdownTags.option(PopupStyle.entries.size)).assertDoesNotExist()
+            clickOption(PopupStyle.COMPACT.ordinal)
+            openList(SettingsTags.POPUP_DURATION)
+            PopupDuration.entries.forEachIndexed { index, duration ->
+                optionShows(index, SettingsStrings.option("duration", duration))
+            }
+            onNodeWithTag(AmDropdownTags.option(PopupDuration.entries.size)).assertDoesNotExist()
+            clickOption(PopupDuration.ALWAYS_TIMED.ordinal)
             await(SettingsTags.SAVE).performScrollTo().performClick()
 
             // Then the repo holds the new style and duration, and the position stays
@@ -305,8 +355,8 @@ class NotificationSettingsDialogScreenTest {
             showDialog()
             await(SettingsTags.POPUPS).performScrollTo().performClick()
 
-            // When the user clicks the style and saves
-            await(SettingsTags.POPUP_STYLE).performScrollTo().performClick()
+            // When the user picks the compact style and saves
+            pickOption(SettingsTags.POPUP_STYLE, PopupStyle.COMPACT.ordinal)
             await(SettingsTags.SAVE).performScrollTo().performClick()
 
             // Then popups are off and the new style is saved

@@ -1,7 +1,6 @@
 package dev.quayside.notifications.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,11 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -26,6 +20,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmButton
+import dev.quayside.core.designsystem.AmDropdown
+import dev.quayside.core.designsystem.AmDropdownItems
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.TextRole
@@ -89,44 +85,17 @@ internal fun TextSetting(
     )
 }
 
-/** One of [labels]; ← and → step through them (wrapping), a click steps forward and takes the focus. */
+/** An [AmDropdown] as wide as a text field, named [label] for the screen reader; the list holds the choices. */
 @Composable
-internal fun ChoiceField(
+internal fun Dropdown(
     tag: String,
-    labels: List<String>,
-    selected: Int,
+    label: String,
+    items: AmDropdownItems,
     modifier: Modifier = Modifier,
     onSelect: (Int) -> Unit,
 ) {
-    val step = { by: Int -> onSelect(Math.floorMod(selected + by, labels.size)) }
-    Row(
-        modifier
-            .width(width = 260.dp)
-            .testTag(tag)
-            .onPreviewKeyEvent { event ->
-                val by = arrowStep(event.key).takeIf { event.type == KeyEventType.KeyDown }
-                by?.let(step)
-                by != null
-            }.amFocusFrame()
-            .background(
-                color = raisedColor(),
-                shape = AmTheme.shape.corner,
-            ).clickable(role = Role.DropdownList) { step(1) }
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
-    ) {
-        AmText("‹", Modifier.clearAndSetSemantics {})
-        AmText(labels[selected], Modifier.weight(weight = 1f))
-        AmText("›", Modifier.clearAndSetSemantics {})
-    }
+    AmDropdown(items, label, onSelect, modifier.width(width = 260.dp).testTag(tag))
 }
-
-private fun arrowStep(key: Key): Int? =
-    when (key) {
-        Key.DirectionRight -> 1
-        Key.DirectionLeft -> -1
-        else -> null
-    }
 
 /** The box of a checkbox: a tick when [on]. */
 @Composable

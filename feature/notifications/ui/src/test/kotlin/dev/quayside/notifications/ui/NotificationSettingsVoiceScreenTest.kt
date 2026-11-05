@@ -7,6 +7,7 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import androidx.compose.ui.test.withKeyDown
+import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
@@ -91,7 +93,7 @@ class NotificationSettingsVoiceScreenTest {
         tag: String,
         text: String,
     ) {
-        waitUntilExactlyOneExists(hasTestTag(tag) and hasText(text), WAIT_MS)
+        waitUntilExactlyOneExists(hasTestTag(tag) and hasText(text, substring = true), WAIT_MS)
     }
 
     private fun ComposeUiTest.awaitFocus(tag: String) {
@@ -120,7 +122,7 @@ class NotificationSettingsVoiceScreenTest {
         runComposeUiTest {
             // Given the open dialog and the focus on the popup style
             showDialog()
-            await(SettingsTags.POPUP_STYLE).performScrollTo().performClick()
+            await(SettingsTags.POPUP_STYLE).performScrollTo().focus()
             awaitFocus(SettingsTags.POPUP_STYLE)
 
             // When the user presses Tab, once per control
@@ -133,17 +135,30 @@ class NotificationSettingsVoiceScreenTest {
         }
 
     @Test
-    fun `voice choice steps through the loaded voices and is saved`() =
+    fun `voice is picked from the list and saved`() =
         runComposeUiTest {
             // Given the open dialog with the saved voice Zosia and the list of voices loaded
             showDialog()
             awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
             onNodeWithTag(SettingsTags.VOICES_FAILED).assertDoesNotExist()
 
-            // When the user clicks the field (focus and one step forward) and presses the right arrow
-            await(SettingsTags.SPEECH_VOICE).performScrollTo().performClick()
-            awaitText(SettingsTags.SPEECH_VOICE, "Alex (en_US)")
-            press(SettingsTags.SPEECH_VOICE, Key.DirectionRight)
+            // When the user opens the list: the system voice, the saved one and the installed ones are there
+            openList(SettingsTags.SPEECH_VOICE)
+            val labels =
+                listOf(
+                    "Głos systemowy",
+                    "Ewa (pl_PL)",
+                    "Zosia (pl_PL)",
+                    "Alex (en_US)",
+                    "Daniel (en_GB)",
+                    "Zuzana (cs_CZ)",
+                )
+            labels.forEachIndexed { index, label -> optionShows(index, label) }
+            onNodeWithTag(AmDropdownTags.option(labels.size)).assertDoesNotExist()
+            onNodeWithTag(AmDropdownTags.option(2)).assertIsSelected()
+
+            // And picks Daniel and saves
+            clickOption(4)
             awaitText(SettingsTags.SPEECH_VOICE, "Daniel (en_GB)")
             save()
 
@@ -153,16 +168,14 @@ class NotificationSettingsVoiceScreenTest {
         }
 
     @Test
-    fun `the left arrow reaches the system voice and saving it keeps no voice name`() =
+    fun `the system voice is picked from the list and keeps no voice name`() =
         runComposeUiTest {
-            // Given the open dialog with the saved voice Zosia, preceded by Ewa and the system voice
+            // Given the open dialog with the saved voice Zosia
             showDialog()
             awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
-            await(SettingsTags.SPEECH_VOICE).performScrollTo().performClick()
-            awaitFocus(SettingsTags.SPEECH_VOICE)
 
-            // When the user steps back from Alex over Zosia and Ewa to the system voice, and saves
-            repeat(times = 3) { press(SettingsTags.SPEECH_VOICE, Key.DirectionLeft) }
+            // When the user picks the system voice, the first of the list, and saves
+            pickOption(SettingsTags.SPEECH_VOICE, 0)
             awaitText(SettingsTags.SPEECH_VOICE, "Głos systemowy")
             save()
 
@@ -172,13 +185,31 @@ class NotificationSettingsVoiceScreenTest {
         }
 
     @Test
-    fun `a letter jumps to the next voice with that letter`() =
+    fun `the side arrows on the closed voice field open the list and do not change the voice`() =
         runComposeUiTest {
-            // Given the open dialog and the focus on the voice field (the click stepped from Zosia to Alex)
+            // Given the open dialog and the focus on the voice field
             showDialog()
             awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
-            await(SettingsTags.SPEECH_VOICE).performScrollTo().performClick()
-            awaitText(SettingsTags.SPEECH_VOICE, "Alex (en_US)")
+            await(SettingsTags.SPEECH_VOICE).performScrollTo().focus()
+            awaitFocus(SettingsTags.SPEECH_VOICE)
+
+            // When the user presses Right and closes the list with Escape
+            press(SettingsTags.SPEECH_VOICE, Key.DirectionRight)
+            awaitListOpen()
+            pressKeyOn(SettingsTags.SPEECH_VOICE, Key.Escape)
+            awaitListGone()
+
+            // Then the voice stays
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+        }
+
+    @Test
+    fun `a letter jumps to the next voice with that letter`() =
+        runComposeUiTest {
+            // Given the open dialog and the focus on the closed voice field, which shows Zosia
+            showDialog()
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            await(SettingsTags.SPEECH_VOICE).performScrollTo().focus()
             awaitFocus(SettingsTags.SPEECH_VOICE)
 
             // When the user presses D, Z, Z, Q and E, then the choice follows
@@ -201,10 +232,10 @@ class NotificationSettingsVoiceScreenTest {
     @Test
     fun `a letter with a modifier key does not change the choice`() =
         runComposeUiTest {
-            // Given the open dialog and the focus on the voice field (the click stepped from Zosia to Alex)
+            // Given the open dialog and the focus on the closed voice field, which shows Zosia
             showDialog()
-            await(SettingsTags.SPEECH_VOICE).performScrollTo().performClick()
-            awaitText(SettingsTags.SPEECH_VOICE, "Alex (en_US)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            await(SettingsTags.SPEECH_VOICE).performScrollTo().focus()
             awaitFocus(SettingsTags.SPEECH_VOICE)
 
             // When the user presses D with Cmd, Ctrl or Alt held
@@ -214,8 +245,8 @@ class NotificationSettingsVoiceScreenTest {
                 }
             }
 
-            // Then the choice stays on Alex; a plain D still jumps (the field was listening)
-            awaitText(SettingsTags.SPEECH_VOICE, "Alex (en_US)")
+            // Then the choice stays on Zosia; a plain D still jumps (the field was listening)
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
             press(SettingsTags.SPEECH_VOICE, Key.D)
             awaitText(SettingsTags.SPEECH_VOICE, "Daniel (en_GB)")
         }
@@ -226,17 +257,21 @@ class NotificationSettingsVoiceScreenTest {
             // Given a saved voice that is not on the list
             showDialog(saved = NotificationSettings(speech = SpeechSettings(voice = VoiceId("Ghost"))))
 
-            // Then once the list is loaded the voice is labelled as not installed
+            // Then once the list is loaded the voice is labelled as not installed, in the field and in the list
             awaitText(SettingsTags.SPEECH_VOICE, "Ghost (niezainstalowany)")
+            openList(SettingsTags.SPEECH_VOICE)
+            optionShows(1, "Ghost (niezainstalowany)")
+            onNodeWithTag(AmDropdownTags.option(1)).assertIsSelected()
 
-            // And after a click moves the choice away and the left arrow brings it back, it is still labelled so
-            await(SettingsTags.SPEECH_VOICE).performScrollTo().performClick()
+            // And after another voice is picked, the saved one is still in the list with its label
+            clickOption(2)
             awaitText(SettingsTags.SPEECH_VOICE, "Ewa (pl_PL)")
-            awaitFocus(SettingsTags.SPEECH_VOICE)
-            press(SettingsTags.SPEECH_VOICE, Key.DirectionLeft)
+            openList(SettingsTags.SPEECH_VOICE)
+            optionShows(1, "Ghost (niezainstalowany)")
+            clickOption(1)
             awaitText(SettingsTags.SPEECH_VOICE, "Ghost (niezainstalowany)")
 
-            // And saving without touching the field keeps the voice
+            // And saving keeps the voice
             save()
             awaitClosed()
             repo.settings.value.speech.voice shouldBe VoiceId("Ghost")
@@ -252,8 +287,12 @@ class NotificationSettingsVoiceScreenTest {
             awaitText(SettingsTags.VOICES_FAILED, "Nie udało się wczytać listy głosów.")
             awaitText(SettingsTags.SPEECH_VOICE, "Zosia")
 
-            // When the user clicks the field, the choice steps from Zosia to the system voice (wrapping)
-            await(SettingsTags.SPEECH_VOICE).performScrollTo().performClick()
+            // When the user opens the list it holds the system voice and the saved one, and picks the system voice
+            openList(SettingsTags.SPEECH_VOICE)
+            optionShows(0, "Głos systemowy")
+            optionShows(1, "Zosia")
+            onNodeWithTag(AmDropdownTags.option(2)).assertDoesNotExist()
+            clickOption(0)
             awaitText(SettingsTags.SPEECH_VOICE, "Głos systemowy")
         }
 

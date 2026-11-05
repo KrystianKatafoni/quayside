@@ -92,6 +92,56 @@ class AmThemeTest {
         }
 
     @Test
+    fun `density defaults to comfortable`() =
+        runComposeUiTest {
+            var density: AmDensity? = null
+
+            setContent {
+                AmTheme(SampleTokens.colors(), SampleTokens.shape(), PLEX_SPEC) { density = AmTheme.density }
+            }
+            waitForIdle()
+
+            density shouldBe AmDensity.COMFORTABLE
+        }
+
+    @Test
+    fun `nested AmTheme overrides the density`() =
+        runComposeUiTest {
+            // Given a compact outer theme with a comfortable one nested in it
+            var outer: AmDensity? = null
+            var inner: AmDensity? = null
+
+            setContent {
+                AmTheme(SampleTokens.colors(), SampleTokens.shape(), PLEX_SPEC, AmDensity.COMPACT) {
+                    outer = AmTheme.density
+                    AmTheme(SampleTokens.colors(), SampleTokens.shape(), PLEX_SPEC, AmDensity.COMFORTABLE) {
+                        inner = AmTheme.density
+                    }
+                }
+            }
+            waitForIdle()
+
+            outer shouldBe AmDensity.COMPACT
+            inner shouldBe AmDensity.COMFORTABLE
+        }
+
+    @Test
+    fun `density change recomposes readers`() =
+        runComposeUiTest {
+            var density by mutableStateOf(AmDensity.COMFORTABLE)
+            var seen: AmDensity? = null
+            setContent {
+                AmTheme(SampleTokens.colors(), SampleTokens.shape(), PLEX_SPEC, density) { seen = AmTheme.density }
+            }
+            waitForIdle()
+
+            density = AmDensity.COMPACT
+            waitForIdle()
+
+            seen shouldBe AmDensity.COMPACT
+        }
+
+    @Test
     fun `reading AmTheme outside provider fails with clear message`() =
         runComposeUiTest {
             val failure =

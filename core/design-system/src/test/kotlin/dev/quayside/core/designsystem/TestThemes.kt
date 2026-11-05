@@ -68,5 +68,5 @@ internal fun squareShape(): ShapeTokens = SampleTokens.shape(radius = 0)
 /** Wraps [content] in the default test theme: `plex` colours, 8 dp corners and IBM Plex fonts. */
 @Composable
 internal fun PlexTheme(content: @Composable () -> Unit) {
-    AmTheme(SampleTokens.colors(), SampleTokens.shape(), PLEX_SPEC, content)
+    AmTheme(SampleTokens.colors(), SampleTokens.shape(), PLEX_SPEC, content = content)
 }

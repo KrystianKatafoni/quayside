@@ -68,16 +68,25 @@ private fun FrameWindowScope.WindowContent(
             onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
             keyCaps = remember { windowKeyCaps() },
         )
-        NewAgentDialog(controllers.newAgent)
-        TerminalSettingsDialog(controllers.terminalSettings)
-        NotificationSettingsDialog(controllers.notificationSettings)
-        SummarySettingsDialog(controllers.summarySettings)
-        HookSetupDialog(controllers.hookSetup, hooks.backupDir)
+        WindowDialogs(controllers, hooks)
     }
     // Outside the scale: the preview of the dialog scales the base density itself (previewDensity).
     AppearanceDialog(controllers.appearance) { AppearancePreviewSlot() }
     PopupAttachHandler(modules, controllers.attacher)
     LaunchedEffect(Unit) { controllers.hookSetup.offerAtStart() }
+}
+
+/** The dialogs drawn over the window content: "Nowy agent", the settings and the hooks. */
+@Composable
+private fun WindowDialogs(
+    controllers: WindowControllers,
+    hooks: HookDeps,
+) {
+    NewAgentDialog(controllers.newAgent)
+    TerminalSettingsDialog(controllers.terminalSettings)
+    NotificationSettingsDialog(controllers.notificationSettings)
+    SummarySettingsDialog(controllers.summarySettings)
+    HookSetupDialog(controllers.hookSetup, hooks.backupDir)
 }
 
 /** The terminal of the window; remembered, so the movable panel keeps its state across recompositions. */

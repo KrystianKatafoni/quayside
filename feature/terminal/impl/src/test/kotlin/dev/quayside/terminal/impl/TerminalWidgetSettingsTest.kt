@@ -1,6 +1,9 @@
 package dev.quayside.terminal.impl
 
+import com.jediterm.terminal.TerminalColor
 import com.jediterm.terminal.ui.settings.DefaultSettingsProvider
+import dev.quayside.core.designtokens.Rgba
+import dev.quayside.core.designtokens.TerminalColors
 import dev.quayside.terminal.api.TerminalSettings
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -17,8 +20,9 @@ import java.util.stream.Stream
 class TerminalWidgetSettingsTest {
     private fun widget(
         settings: TerminalSettings = TerminalSettings(),
+        colors: TerminalColors = COLORS,
         fontAvailable: (String) -> Boolean = { true },
-    ) = TerminalWidgetSettings(settings, fontAvailable)
+    ) = TerminalWidgetSettings(settings, colors, fontAvailable)
 
     private val settings = widget()
 
@@ -85,16 +89,35 @@ class TerminalWidgetSettingsTest {
 
     @Test
     fun `installed font family is used`() {
-        val custom = widget(TerminalSettings(fontFamily = "Serif")) { it == "Serif" }
+        val custom = widget(TerminalSettings(fontFamily = "Serif"), fontAvailable = { it == "Serif" })
 
         custom.terminalFont.family shouldBe "Serif"
     }
 
     @Test
     fun `missing font family falls back to the default font`() {
-        val custom = widget(TerminalSettings(fontFamily = "No Such Font")) { false }
+        val custom = widget(TerminalSettings(fontFamily = "No Such Font"), fontAvailable = { false })
 
         custom.terminalFont.family shouldBe DefaultSettingsProvider().terminalFont.family
+    }
+
+    @Test
+    fun `default foreground is termText`() {
+        settings.defaultForeground shouldBe TerminalColor.rgb(0xE0, 0xD0, 0xC0)
+    }
+
+    @Test
+    fun `default background is termBg`() {
+        settings.defaultBackground shouldBe TerminalColor.rgb(0x10, 0x20, 0x30)
+    }
+
+    @Test
+    fun `colours follow the snapshot given at build`() {
+        val other = TerminalColors(termBg = Rgba(0xFF010203), termText = Rgba(0xFF0A0B0C))
+        val custom = widget(colors = other)
+
+        custom.defaultBackground shouldBe TerminalColor.rgb(1, 2, 3)
+        custom.defaultForeground shouldBe TerminalColor.rgb(10, 11, 12)
     }
 
     @Test
@@ -108,6 +131,8 @@ class TerminalWidgetSettingsTest {
     }
 
     companion object {
+        private val COLORS = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0))
+
         @JvmStatic
         fun flags(): Stream<Arguments> =
             Stream.of(

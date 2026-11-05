@@ -1,15 +1,21 @@
 package dev.quayside.app
 
+import dev.quayside.appearance.api.ThemeSpec
 import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.Wcag
 import io.kotest.assertions.withClue
 import io.kotest.matchers.doubles.shouldBeGreaterThanOrEqual
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.stream.Stream
 
 /**
  * NFR-6 for the pairs the screens draw (AM-806), on the real `plex` of the catalog: which token stands on which
- * surface is fixed by the plan (docs/plans/AM-806.md, "Mapowanie"). The whole catalog is audited by AM-803.
+ * surface is fixed by the plan (docs/plans/AM-806.md, "Mapowanie"). The whole catalog is audited by AM-803, except
+ * terminal `termText`/`termBg` (AM-807), which are audited for the whole catalog here.
  */
 class ScreenContrastTest {
     private val colors = appearanceModule().catalog.defaultLook().colors
@@ -95,5 +101,22 @@ class ScreenContrastTest {
             "err" to status.err,
             "accent" to colors.content.accent,
         ).forEach { (name, color) -> color.shouldMeet(Wcag.NON_TEXT_MIN, on, name) }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("themes")
+    fun `terminal text meets 4_5 on terminal background in every theme`(theme: ThemeSpec) {
+        val terminal = theme.colors.terminal
+
+        terminal.termText.shouldMeet(Wcag.TEXT_MIN, mapOf("termBg" to terminal.termBg), "termText in ${theme.id.value}")
+    }
+
+    companion object {
+        @JvmStatic
+        fun themes(): Stream<Arguments> =
+            appearanceModule()
+                .catalog.themes
+                .stream()
+                .map { Arguments.of(it) }
     }
 }

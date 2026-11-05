@@ -11,4 +11,6 @@ dependencies {
     testFixturesImplementation(platform(libs.junit.bom))
     testFixturesImplementation(libs.junit.jupiter)
     testFixturesImplementation(libs.kotest.assertions)
+    // runTest in SummarySettingsRepoContract.
+    testFixturesImplementation(libs.kotlinx.coroutines.test)
 }

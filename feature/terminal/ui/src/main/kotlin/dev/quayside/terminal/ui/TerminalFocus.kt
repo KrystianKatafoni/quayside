@@ -6,9 +6,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import dev.quayside.core.designsystem.LocalAmModalGate
 import java.awt.Component
 import java.awt.KeyboardFocusManager
 import java.beans.PropertyChangeListener
+import javax.swing.JComponent
 import javax.swing.SwingUtilities
 
 /**
@@ -58,6 +60,7 @@ private fun FocusActivePane(controller: TerminalController) {
             ?.leaves()
             ?.firstOrNull { it.pane == state.active }
             ?.tab
+    val gate = LocalAmModalGate.current
     LaunchedEffect(state.active, activeTab, requests) {
         val widget =
             state.tabs
@@ -65,9 +68,29 @@ private fun FocusActivePane(controller: TerminalController) {
                 ?.session
                 ?.component()
         // After this frame: a freshly embedded widget is not in the window yet.
-        if (widget != null) SwingUtilities.invokeLater { widget.requestFocusInWindow() }
+        val target = focusTarget(gate.active, widget)
+        if (target != null) SwingUtilities.invokeLater { target.requestFocusInWindow() }
+    }
+    val modal = gate.active
+    LaunchedEffect(modal) {
+        // The layer is gone: the focus goes back to a widget only if it was in one before the layer came.
+        val before = if (modal) null else gate.takeFocusBeforeModal()
+        val back = focusReturnTarget(before, state.tabs.map { it.session.component() })
+        if (back != null) SwingUtilities.invokeLater { back.requestFocusInWindow() }
     }
 }
+
+/** The widget that may take the focus: none while a modal layer owns the keyboard. */
+internal fun focusTarget(
+    modalActive: Boolean,
+    widget: JComponent?,
+): JComponent? = widget.takeUnless { modalActive }
+
+/** The widget that held the focus before a modal layer ([before]), if any; the focus returns to it, not elsewhere. */
+internal fun focusReturnTarget(
+    before: Component?,
+    widgets: List<JComponent>,
+): JComponent? = before?.let { owner -> widgets.firstOrNull { SwingUtilities.isDescendingFrom(owner, it) } }
 
 /** Runs the pane command of a key. */
 internal fun TerminalController.perform(command: PaneCommand) {

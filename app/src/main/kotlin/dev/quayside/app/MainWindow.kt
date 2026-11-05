@@ -1,6 +1,7 @@
 package dev.quayside.app
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -12,6 +13,8 @@ import dev.quayside.appearance.ui.AppearanceDialog
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
+import dev.quayside.core.designsystem.AmModalGate
+import dev.quayside.core.designsystem.LocalAmModalGate
 import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.terminal.ui.TerminalArea
@@ -22,6 +25,22 @@ import java.awt.Frame
 /** The content and menu of the main window; its controllers live as long as the window (AM-408). */
 @Composable
 internal fun FrameWindowScope.MainWindow(
+    core: CoreDeps,
+    modules: AppModules,
+    keys: WindowKeys,
+    hooks: HookDeps,
+) {
+    // One modal gate per window: the terminals of this window yield to the dialogs of this window (ADR 0012).
+    CompositionLocalProvider(
+        LocalAmModalGate provides
+            remember {
+                AmModalGate()
+            },
+    ) { WindowContent(core, modules, keys, hooks) }
+}
+
+@Composable
+private fun FrameWindowScope.WindowContent(
     core: CoreDeps,
     modules: AppModules,
     keys: WindowKeys,

@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.LocalAmModalGate
 import dev.quayside.core.designsystem.toColor
 import javax.swing.JComponent
 import java.awt.Color as AwtColor
@@ -32,11 +33,12 @@ private class PaneEnv(
 @Composable
 internal fun EmbeddedWidget(component: JComponent) {
     val background = termBgColor().toArgb()
+    val gate = LocalAmModalGate.current
     // The overload with `background` is deprecated: the factory sets it, so no white shows while the panel resizes.
     SwingPanel(
         factory = {
             component.background = AwtColor(background)
-            component
+            ModalShield(component) { gate.active }
         },
         modifier = Modifier.fillMaxSize(),
     )

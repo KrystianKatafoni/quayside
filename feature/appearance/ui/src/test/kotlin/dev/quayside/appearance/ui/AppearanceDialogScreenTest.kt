@@ -344,6 +344,20 @@ class AppearanceDialogScreenTest {
         }
 
     @Test
+    fun `cancel closes after the terminal font and size were touched`() =
+        runComposeUiTest {
+            val world = DialogWorld()
+            showDialog(world)
+            await(AppearanceTags.terminalFont("Geist Mono")).performClick()
+            await(AppearanceTags.TERMINAL_SIZE_PLUS).performClick()
+
+            await(AppearanceTags.CANCEL).performClick()
+
+            awaitGone(AppearanceTags.DIALOG)
+            world.terminal.saves shouldBe 0
+        }
+
+    @Test
     fun `apply saves the draft and closes the dialog`() =
         runComposeUiTest {
             val world = DialogWorld(appearanceStart = AppearanceSettings())

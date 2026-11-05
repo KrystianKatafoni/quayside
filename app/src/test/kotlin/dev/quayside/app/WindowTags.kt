@@ -62,6 +62,7 @@ internal object WindowTags {
     const val SETTINGS_DIALOG = "terminal.settings"
     const val SETTINGS_FONT_SIZE = "terminal.settings.fontSize"
     const val SETTINGS_SAVE = "terminal.settings.save"
+    const val SETTINGS_CANCEL = "terminal.settings.cancel"
 
     /** The notification settings dialog (AM-704); tags of `notifications:ui`, `internal` there. */
     const val NOTIFICATION_SETTINGS_DIALOG = "notifications.settings"

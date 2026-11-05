@@ -75,5 +75,6 @@ Kryterium TAK (F1–F5, K1–K4, H1, R1, Z1) jest spełnione pod warunkami 2 i 3
 - Okno testowe `app/src/terminalSpike` żyje do AM-503, potem jest usuwane.
 - ADR 0001 w części „Terminal” pozostaje w mocy; plan B (osobne okno) nie jest potrzebny.
 - `compose.interop.blending` jest flagą Compose Desktop — przy aktualizacji Compose sprawdzać, czy nadal działa (F6).
+- Modale nad `SwingPanel` (AM-803): kontener interop jest w AWT przed warstwą popupu i bierze kliknięcia, więc okno modalne wymaga bramki (`AmModalGate`, zgłaszanej przez `amScrim()`), osłony trafień widgetu (`ModalShield`) i oddania fokusu terminalowi dopiero po zamknięciu, jeśli w nim był. Test w prawdziwym oknie AWT: `ModalOverSwingWindowTest`.
 - Option jako Meta i polskie znaki: do rozstrzygnięcia w AM-504.
 - Artefakty przy szybkim resize (R2): do obserwacji w AM-503.

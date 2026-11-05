@@ -142,6 +142,25 @@ class TerminalSettingsDialogWindowTest {
             terminals.settingsAtOpen.map { it.fontSize } shouldBe listOf(13, 20)
         }
 
+    @Test
+    fun `FR-T7 Cancel closes terminal settings and saves nothing`() =
+        runComposeUiTest {
+            // Given the settings dialog open over a project with a shell tab and an edited font size
+            val palette = window()
+            selectProject()
+            newShell(palette)
+            await(WindowTags.terminalTab(1))
+            openSettings(palette)
+            await(WindowTags.SETTINGS_FONT_SIZE).performTextReplacement("20")
+
+            // When the user clicks Cancel
+            await(WindowTags.SETTINGS_CANCEL).performClick()
+
+            // Then the dialog is gone and the size is unchanged
+            waitUntilDoesNotExist(hasTestTag(WindowTags.SETTINGS_DIALOG))
+            repo.settings.value.fontSize shouldBe 13
+        }
+
     /**
      * Keys go to the dialog because its popup takes the focus (a focusable `Popup`), not because the commands
      * check for it; the guard of the commands is tested in [TerminalSettingsCommandsTest].

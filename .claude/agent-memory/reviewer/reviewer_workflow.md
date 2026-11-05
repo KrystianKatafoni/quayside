@@ -18,5 +18,6 @@ Mutacje rób wyłącznie w kopii: `rsync -a --exclude .git --exclude build --exc
 - Rozmiar diffu z nowymi plikami: NIE używaj `git add -N .` + `git reset` — `reset` zdejmuje z indeksu wcześniejsze `git rm` autora (AM-806: musiałem przywracać `git rm --cached`). Licz `git diff HEAD --numstat` dla śledzonych i `wc -l` dla `git ls-files -o --exclude-standard`.
 - Sondy (np. wypisanie par kontrastu prawdziwego motywu z katalogu) pisz jako tymczasowy test w kopii, wynik do pliku w scratchpadzie; usuń przed mutacjami.
 - Źródła Compose do weryfikacji twierdzeń (np. `SwingWindow` przekazuje `currentCompositionLocalContext`, granice `SemanticsNode`): `curl -sfLO https://repo1.maven.org/maven2/org/jetbrains/compose/ui/ui-desktop/<wersja>/ui-desktop-<wersja>-sources.jar`.
+- Testy z prawdziwym `ComposeWindow` działają na tym Macu i na CI macos-15 (nie headless, ok. 9 s). Sonda Esc: `onEdt { focusOwner()?.dispatchEvent(KeyEvent(owner, KEY_PRESSED, ..., VK_ESCAPE, CHAR_UNDEFINED)) }`; plik `probe.txt` w scratchpadzie bywa zostawiony przez autora — przenieś go przed sondą.
 
 Powiązane: [[recurring-review-findings]]

@@ -8,7 +8,7 @@ Terminy w tym dokumencie:
 
 Katalog ma **29 motywów**: 9 podstawowych (sekcja „Schematy kolorów”) i 20 motywów z kształtem (sekcja „Motywy z kształtem”). Jasnych jest 12, ciemnych 17, w tym 2 motywy wysokiego kontrastu (`contrast` ciemny, `hc-light` jasny). Motyw i typografia są **niezależne**: każdą z 22 typografii można połączyć z każdym z 29 motywów (638 kombinacji). Wybór odbywa się w *Ustawienia → Wygląd*, z podglądem prawdziwego ekranu Mission Control na żywo.
 
-Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `plex`); terminal JediTerm jeszcze nie: jego kolory i font ustawia `terminal:impl`.
+Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `plex`); terminal JediTerm też od AM-807: domyślny tekst i tło widżetu to `termText` i `termBg`, a font (gdy użytkownik nie wybrał własnego) to font terminala typografii, rejestrowany w AWT przy starcie. Zmiana działa na karty otwierane później (ADR 0016).
 
 ![Ustawienia wyglądu](screenshots/22-ustawienia-wygladu.png)
 

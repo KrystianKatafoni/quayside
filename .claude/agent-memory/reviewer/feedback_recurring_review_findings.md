@@ -82,5 +82,8 @@ Sprawdzaj od razu przy każdym review:
 - AM-806: test kontrastu par ekranów pokrywał pary z planu („muted i statusy tylko na bg/panel”), a ekrany kładą `muted` i statusy na `sel` (wybrany wiersz MC, licznik sidebara, kod wyjścia karty terminala, licznik widoku globalnego) i `muted` na `warnBg` (× w banerze). Na `plex` przechodzi (≥ 5,9:1), ale audyt i KDoc (`Tone.tint`: „tylko bg i panel”) kłamią; AM-803 otwiera inne motywy.
   **How to apply:** grepuj `if (selected) sel`/`selColor()` i `warnBgColor()`, potem kolory tekstów w środku tych kontenerów; porównaj z mapami w `ScreenContrastTest`.
 - Granice węzła semantyki w Compose = zewnętrzny modyfikator *scalający* (`SemanticsNode.findCoordinatorToGetBounds`), więc `testTag` przed `amFocusFrame` + `clickable` w środku daje granice bez ramki; obejście `semantics(mergeDescendants = true) {}` zmienia tylko granice (nie właściwości). Lepsze miejsce: wewnątrz `AmButton`.
+- AM-807 (2026-11-05): znów brak ROADMAP `[x]` i CHANGELOG `[Unreleased]` mimo commitu 4 planu — szósty raz w M8. Do tego plan nie poprawiony po odstępstwie (plan: `SwingPanel(background = …)`, kod: tło w `factory`, bo przeciążenie z `background` jest `@Deprecated` w CMP 1.12 i i tak ustawiało `it.background` na komponencie — zmiana równoważna).
+- Przeniesienie własności zasobu (scope z `app` do fabryki modułu) zostawia w KDoc zdania o sytuacji już nieosiągalnej z zewnątrz („If that scope is cancelled…”) — sprawdzaj KDoc fabryki po każdej zmianie parametrów.
+- `stateIn(scope, Eagerly, initial)` testowany na `UnconfinedTestDispatcher`: wartość `initial` jest natychmiast nadpisana, więc mutacja „initial bez mapowania” przeżywa; przypięcie wymaga `StandardTestDispatcher` bez `runCurrent`.
 
 Powiązane: [[reviewer-workflow]]

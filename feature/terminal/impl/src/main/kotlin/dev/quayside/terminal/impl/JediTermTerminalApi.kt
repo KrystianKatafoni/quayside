@@ -123,7 +123,7 @@ internal class JediTermTerminalApi(
             TerminalError.StartFailed
         }) {
             val connector = PtyTtyConnector(process)
-            val widget = SearchableWidget(TerminalWidgetSettings(settings, ::fontAvailable))
+            val widget = SearchableWidget(TerminalWidgetSettings(settings, launch.colors.value, ::fontAvailable))
             widget.setTtyConnector(connector)
             widget.start()
             val id = TerminalId("t-${counter.incrementAndGet()}")

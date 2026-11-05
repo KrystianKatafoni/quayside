@@ -49,6 +49,8 @@ dependencies {
     implementation(project(":feature:terminal:api"))
     // JsonStorage and StoreSpec for terminal.json (AM-508, ADR 0016); the serializer works on JsonElement.
     implementation(project(":core:storage"))
+    // TerminalColors in the factory signature: termBg and termText of the widget (AM-807).
+    implementation(project(":core:design-tokens"))
     implementation(libs.kotlinx.serialization.json)
     // Dispatchers.Swing: widgets are built and disposed on the event thread.
     implementation(libs.kotlinx.coroutines.swing)

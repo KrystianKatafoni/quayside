@@ -119,3 +119,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Funkcja wyprowadzająca, która rzuca dla części wejść (brak trójki statusów dla akcentu o odcieniu ok. 350–10°), potrzebuje testu ścieżki błędu i zdania w KDoc, że wyjątek dotyczy tylko stałych katalogu (dla theme.json — `Outcome`).
 - Audyt kontrastu musi obejmować pary faktycznie rysowane na ekranach (muted i statusy na sel/warnBg, nie tylko bg/panel) — inaczej wybór innego motywu w AM-803 psuje NFR-6 bez czerwonego testu.
 - Zmiana ekranu na nowe tokeny: kolory przekazywane do composable (kropka statusu, pasek popupu, glif tonu) mają testy pikselowe, a „przy okazji” formatowanie obcych plików (ktlint) cofnij — nie należy do zadania.
+- `SwingPanel(background = …)` jest `@Deprecated` w Compose MP 1.12 (`allWarningsAsErrors`): tło ustaw na komponencie w `factory`.
+- Gdy kod odchodzi od planu (parametry fabryki, podział na pliki), popraw plan w tym samym PR — review wyłapuje rozjazd plan-kod.
+- AWT zwraca dla pliku SemiBold osobną rodzinę (np. „IBM Plex Mono SemiBold”) — asercje rodzin fontów rób po tablicy `name` pliku, nie po nazwie rodziny Compose.

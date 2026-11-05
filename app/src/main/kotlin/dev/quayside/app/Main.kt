@@ -12,6 +12,7 @@ import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.agentruntime.impl.oneShotPromptModule
 import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
+import dev.quayside.core.designtokens.TerminalColors
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
 import dev.quayside.notifications.api.NotificationSettingsRepo
@@ -31,6 +32,7 @@ import dev.quayside.terminal.impl.terminalModule
 import dev.quayside.terminal.impl.terminalSettingsModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
@@ -49,12 +51,14 @@ fun main() {
     val core = productionCoreDeps()
     core.logger.info("app start")
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
-    val modules = appModules(core, projects, runBlocking { storedSettings(core) })
+    val look = appearanceModule().catalog.defaultLook()
+    // Before the first terminal opens: JediTerm finds the font by name (installedFonts is read once).
+    registerTerminalFont(look.typography.terminalFont, core.logger)
+    val modules = appModules(core, projects, runBlocking { storedSettings(core) }, look)
     val hooks = hookDeps(core)
     val keys = WindowKeys()
     // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
     System.setProperty("compose.interop.blending", "true")
-    val look = appearanceModule().catalog.defaultLook()
     application {
         // Window passes the composition locals of its parent composition to its content, so one AppTheme is enough.
         AppTheme(look) {
@@ -79,6 +83,7 @@ private fun appModules(
     core: CoreDeps,
     projects: ProjectsApi,
     stored: StoredSettings,
+    look: AppLook,
 ): AppModules {
     val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir, injectHookToken = true)
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
@@ -94,7 +99,8 @@ private fun appModules(
     // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
     val registry = commandPaletteModule(CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger)
     val notifications = notificationDeps(core, stored.notifications, sessions, projects)
-    val terminal = terminalDeps(core, LoginShellProcessRunner.defaultShell(), runtime, stored.terminal, notifications)
+    val terminal =
+        terminalDeps(core, runtime, stored.terminal, notifications, look)
     return AppModules(projects, sessions, inspector, registry, terminal, notifications)
 }
 
@@ -135,37 +141,37 @@ private suspend fun storedSettings(core: CoreDeps): StoredSettings =
         summariesModule(core.storage, oneShotPromptModule(core.process, core.homeDir), core.logger),
     )
 
-/** The terminal module on [shell] over the stored settings. Its bells become notifications of [notifications]. */
+/**
+ * The terminal module on the login shell over the stored settings, with the colours and font of [look]. Its bells
+ * become notifications of [notifications].
+ */
 private fun terminalDeps(
     core: CoreDeps,
-    shell: Path,
     runtime: AgentRuntime,
     stored: TerminalSettingsRepo,
     notifications: NotificationDeps,
+    look: AppLook,
 ): TerminalDeps {
-    val api = startTerminals(core, shell, stored.settings)
+    val shell = LoginShellProcessRunner.defaultShell()
     val scope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
+    val settings = typographySettings(stored.settings, look.typography.terminalFont, scope)
+    val api = startTerminals(core, shell, settings, look.colors.terminal)
     forwardBells(api.bells, stored.settings, notifications.center, scope)
     return TerminalDeps(api, stored, shell, runtime::attachCommand)
 }
 
 /**
- * The terminal module on [shell] with [settings]. Its scope lives as long as the app (it disposes widgets on Main).
+ * The terminal module on [shell] with [settings] and [colors]. Its scope lives as long as the app (it disposes
+ * widgets on Main).
  * Cmd-Q bypasses `onCloseRequest`, so a shutdown hook also kills every shell tree.
  */
 private fun startTerminals(
     core: CoreDeps,
     shell: Path,
     settings: StateFlow<TerminalSettings>,
+    colors: TerminalColors,
 ): TerminalApi {
-    val terminal =
-        terminalModule(
-            core.dispatchers,
-            CoroutineScope(SupervisorJob() + core.dispatchers.default),
-            core.logger,
-            shell,
-            settings,
-        )
+    val terminal = terminalModule(core.dispatchers, core.logger, shell, settings, MutableStateFlow(colors))
     Runtime.getRuntime().addShutdownHook(Thread { terminal.close() })
     return terminal
 }

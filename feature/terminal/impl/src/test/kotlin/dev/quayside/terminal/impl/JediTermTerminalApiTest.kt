@@ -1,5 +1,8 @@
 package dev.quayside.terminal.impl
 
+import com.jediterm.terminal.TerminalColor
+import dev.quayside.core.designtokens.Rgba
+import dev.quayside.core.designtokens.TerminalColors
 import dev.quayside.core.domain.LogLevel
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ShellCommand
@@ -33,7 +36,8 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Settings applied by the real `terminalModule` (pty4j + JediTerm, `/bin/sh`): the shell profile, the commands that
- * ignore it and the rule that a change reaches the next tab only (ADR 0016). Need a display.
+ * ignore it and the rule that a change of settings or colours reaches the next tab only (ADR 0016, AM-807).
+ * Need a display.
  */
 @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
 class JediTermTerminalApiTest {
@@ -110,6 +114,34 @@ class JediTermTerminalApiTest {
         }
 
     @Test
+    fun `colours at open are the module colours`() =
+        runTest {
+            val session = kit.openShell()
+
+            session.defaultColours() shouldBe
+                (
+                    TerminalTestKit.DEFAULT_COLORS.termBg.toTerminalColor() to
+                        TerminalTestKit.DEFAULT_COLORS.termText.toTerminalColor()
+                )
+        }
+
+    @Test
+    fun `colors changed after open apply to the next tab only`() =
+        runTest {
+            val first = kit.openShell()
+            kit.colors.value = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0))
+            val second = kit.openShell()
+
+            first.defaultColours() shouldBe
+                (
+                    TerminalTestKit.DEFAULT_COLORS.termBg.toTerminalColor() to
+                        TerminalTestKit.DEFAULT_COLORS.termText.toTerminalColor()
+                )
+            second.defaultColours() shouldBe
+                (TerminalColor.rgb(0x10, 0x20, 0x30) to TerminalColor.rgb(0xE0, 0xD0, 0xC0))
+        }
+
+    @Test
     @Suppress("InjectDispatcher") // Real time and real dispatchers on purpose: the PTY tests wait for real processes.
     fun `a bell in a terminal reaches the bells flow with its id`() =
         runTest {
@@ -140,6 +172,15 @@ class JediTermTerminalApiTest {
     private suspend fun TerminalSession.printLines() {
         send("seq 1 $PRINTED\r")
         widget().awaitRow(PRINTED.toString())
+    }
+
+    /** (background, text) the widget's panel draws by default: what its settings provider gave at build. */
+    private fun TerminalSession.defaultColours(): Pair<TerminalColor, TerminalColor> {
+        val panel = widget().terminalPanel
+        val background = panel.windowBackground
+        val foreground = panel.windowForeground
+        return TerminalColor.rgb(background.red, background.green, background.blue) to
+            TerminalColor.rgb(foreground.red, foreground.green, foreground.blue)
     }
 
     private fun TerminalSession.historyLines(): Int = widget().terminalTextBuffer.historyLinesCount

@@ -13,8 +13,9 @@ import kotlinx.coroutines.sync.withLock
 
 /**
  * In-memory [AppearanceApi] for tests of other modules: a small fixed catalog unless one is given, the settings in
- * memory, the same validation as `impl` (ids must be in the catalog). A test sets [failure] to simulate a refusal.
- * Passes [AppearanceApiContract].
+ * memory, the same validation as `impl` (ids must be in the catalog, also the day and night ones). A test sets
+ * [failure] to simulate a refusal, [failSaves] to simulate a theme.json that cannot be written and [systemDark] to
+ * simulate the macOS mode. Passes [AppearanceApiContract].
  */
 public class FakeAppearanceApi(
     override val catalog: ThemeCatalog = defaultCatalog(),
@@ -22,10 +23,26 @@ public class FakeAppearanceApi(
 ) : AppearanceApi {
     private val mutex = Mutex()
     private val current = MutableStateFlow(initial)
+    private val effective = MutableStateFlow(initial.appliedFor(null))
+
+    @Volatile
+    private var dark: Boolean? = null
 
     /** When set, [update] returns this error and keeps the settings. */
     @Volatile
     public var failure: AppearanceError? = null
+
+    /** When true, [update] returns [AppearanceError.StorageFailed] and keeps the settings. */
+    @Volatile
+    public var failSaves: Boolean = false
+
+    /** The macOS mode as the app sees it: true dark, false light, null unknown. Setting it republishes [applied]. */
+    public var systemDark: Boolean?
+        get() = dark
+        set(value) {
+            dark = value
+            effective.value = current.value.appliedFor(value)
+        }
 
     /** Number of accepted updates. */
     @Volatile
@@ -34,17 +51,20 @@ public class FakeAppearanceApi(
 
     override val settings: StateFlow<AppearanceSettings> get() = current
 
+    override val applied: StateFlow<AppearanceSettings> get() = effective
+
     override suspend fun update(
         change: (AppearanceSettings) -> AppearanceSettings,
     ): Outcome<AppearanceSettings, AppearanceError> =
         mutex.withLock {
             val refused = failure
             val next = change(current.value)
-            val unknown = refused ?: refusalOf(next)
+            val unknown = refused ?: refusalOf(next) ?: AppearanceError.StorageFailed.takeIf { failSaves }
             if (unknown != null) {
                 Outcome.Err(unknown)
             } else {
                 current.value = next
+                effective.value = next.appliedFor(dark)
                 updates++
                 Outcome.Ok(next)
             }
@@ -53,6 +73,8 @@ public class FakeAppearanceApi(
     private fun refusalOf(next: AppearanceSettings): AppearanceError? =
         when {
             catalog.theme(next.scheme) == null -> AppearanceError.UnknownScheme(next.scheme)
+            catalog.theme(next.dayNight.day) == null -> AppearanceError.UnknownScheme(next.dayNight.day)
+            catalog.theme(next.dayNight.night) == null -> AppearanceError.UnknownScheme(next.dayNight.night)
             catalog.typography(next.typography) == null -> AppearanceError.UnknownTypography(next.typography)
             else -> null
         }

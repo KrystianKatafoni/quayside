@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 /** Every typography of the catalog can be rendered: its fonts are bundled, or it uses a macOS system font. */
 class TypographyFontsTest {
-    private val typographies = appearanceModule().catalog.typographies
+    private val typographies = builtInCatalog().typographies
 
     @Test
     fun `every catalog typography has bundled fonts or is a macOS system font`() {

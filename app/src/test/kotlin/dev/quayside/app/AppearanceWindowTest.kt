@@ -27,7 +27,7 @@ import dev.quayside.appearance.api.FakeAppearanceApi
 import dev.quayside.appearance.api.ListDensity
 import dev.quayside.appearance.api.ThemeSpec
 import dev.quayside.appearance.api.UiScale
-import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.impl.builtInCatalog
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.designsystem.toColor
 import dev.quayside.core.domain.SessionId
@@ -57,7 +57,7 @@ class AppearanceWindowTest {
     @TempDir
     lateinit var root: Path
 
-    private val catalog = appearanceModule().catalog
+    private val catalog = builtInCatalog()
     private val api = FakeAppearanceApi(catalog)
     private val projectDir by lazy { Files.createDirectory(root.resolve("quayside")) }
     private val project by lazy { aProject(id = "project0001", dir = projectDir, displayName = "Quayside") }

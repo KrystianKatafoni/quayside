@@ -7,7 +7,7 @@ import dev.quayside.appearance.api.ListDensity
 import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.ThemeCatalog
 import dev.quayside.appearance.api.UiScale
-import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.impl.builtInCatalog
 import dev.quayside.core.designsystem.AmDensity
 import dev.quayside.core.designtokens.TypographyId
 import io.kotest.matchers.floats.plusOrMinus
@@ -23,7 +23,7 @@ import java.util.stream.Stream
  * settings, never by position, with the list density and the UI scale of the settings.
  */
 class LookOfTest {
-    private val catalog = appearanceModule().catalog
+    private val catalog = builtInCatalog()
 
     private fun ThemeCatalog.themeOf(key: String) = checkNotNull(theme(SchemeId(key))) { "$key theme missing" }
 

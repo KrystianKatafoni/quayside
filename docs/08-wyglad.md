@@ -223,16 +223,25 @@ Znak (ikona) ma ten sam wybór z progiem 3:1 (WCAG 1.4.11). Plakietka licznika n
 
 ```json
 {
-  "scheme": "plex",
-  "typography": "plex",
-  "uiScale": "M",
-  "density": "comfy",
-  "terminal": { "font": "auto", "size": 13 },
-  "followSystem": true,
-  "dayScheme": "paper",
-  "nightScheme": "plex",
-  "customSchemes": {}
+  "schemaVersion": 1,
+  "data": {
+    "scheme": "plex",
+    "typography": "plex",
+    "uiScale": "M",
+    "density": "COMFORTABLE",
+    "followSystem": false,
+    "dayScheme": "paper",
+    "nightScheme": "plex"
+  }
 }
 ```
 
-Plik leży w `~/Library/Application Support/Quayside/theme.json`. W Kotlinie mapuje się 1:1 na `data class Theme` z kotlinx.serialization, a schematy na `data class ColorScheme(val bg: Color, …)` dostarczane przez `CompositionLocalProvider`. Pola `scheme`, `dayScheme` i `nightScheme` przyjmują klucz każdego z 29 motywów; format pliku się nie zmienia. Wybór motywu nie zmienia `typography` — ekran Wygląd tylko podpowiada domyślną typografię motywu.
+Format ustala [ADR 0023](adr/0023-format-theme-json-i-tryb-macos.md). Koperta `schemaVersion` + `data` jest taka sama jak w pozostałych plikach konfiguracji (`JsonStore`). `uiScale` przyjmuje `S`, `M`, `L`, a `density` `COMPACT` lub `COMFORTABLE`. Sekcji `terminal` nie ma: font i rozmiar terminala zostają w `terminal.json` (ADR 0016). Sekcji `customSchemes` też nie ma: własne schematy kolorów to osobne zadanie.
+
+Plik leży w `~/Library/Application Support/Quayside/theme.json`. Pola `scheme`, `dayScheme` i `nightScheme` przyjmują klucz każdego z 29 motywów. Wybór motywu nie zmienia `typography` — ekran Wygląd tylko podpowiada domyślną typografię motywu.
+
+Odczyt przy starcie jest łagodny: brak klucza, zły typ, nieznana nazwa enuma albo id spoza katalogu daje wartość domyślną tego pola. Plik, który nie jest obiektem JSON, trafia do `theme.json.broken`. Plik z nowszym `schemaVersion` nie jest czytany ani nadpisywany (aplikacja używa wartości domyślnych, a „Zastosuj” kończy się błędem zapisu).
+
+**Dzień i noc (FR-A5).** Przy `followSystem: true` aplikacja co 5 s czyta tryb macOS poleceniem `defaults read -g AppleInterfaceStyle` i rysuje motyw `nightScheme` (tryb ciemny) albo `dayScheme` (jasny); `scheme` zostaje wyborem zapisanym. Pierwszy odczyt jest przed otwarciem okna. Gdy odczyt się nie uda, obowiązuje ostatni znany tryb.
+
+**Import i eksport (FR-A6).** Na ekranie Wygląd „Eksportuj…” zapisuje szkic (to, co widać w podglądzie) w tym samym formacie, więc wyeksportowany plik można położyć jako `theme.json`. „Importuj…” czyta plik ściśle (obecne, ale złe pole to błąd; brak pola daje wartość domyślną; plik do 64 KiB), wkłada wynik do szkicu i niczego nie zapisuje — zapis dopiero przez „Zastosuj”.

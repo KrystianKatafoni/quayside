@@ -53,6 +53,8 @@ dependencies {
     testImplementation(libs.compose.ui.test)
     // FakeAppearanceApi behind the Appearance dialog in the window test (AM-803).
     testImplementation(testFixtures(project(":feature:appearance:api")))
+    // FakeProcessRunner for the `defaults` of the appearance module in the restart test (AM-804).
+    testImplementation(testFixtures(project(":core:process")))
     // FakeProjectsApi and FakeProjectInspector for the window test.
     testImplementation(testFixtures(project(":feature:projects:api")))
     // FakeSessions behind the sidebar counts and Mission Control in the window test (AM-405, AM-305).

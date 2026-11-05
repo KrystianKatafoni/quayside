@@ -1,6 +1,7 @@
 package dev.quayside.app
 
 import dev.quayside.appearance.ui.AppearanceController
+import dev.quayside.appearance.ui.ThemeFilePicker
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.missioncontrol.ui.MissionControlController
@@ -19,6 +20,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** The system file dialogs of the window: folders for projects, files for themes (AM-804). */
+internal class WindowPickers(
+    val directory: DirectoryPicker,
+    val themeFile: ThemeFilePicker,
+)
+
 /**
  * The controllers and command providers of one main window; they live as long as the window and run in [scope]
  * (AM-408, AM-503).
@@ -26,7 +33,7 @@ import kotlinx.coroutines.launch
 internal class WindowControllers(
     core: CoreDeps,
     modules: AppModules,
-    picker: DirectoryPicker,
+    pickers: WindowPickers,
     scope: CoroutineScope,
     hooks: HookDeps,
 ) {
@@ -35,7 +42,7 @@ internal class WindowControllers(
             modules.projects.api,
             modules.projects.inspector,
             modules.sessions,
-            picker,
+            pickers.directory,
             scope,
             core.logger,
         )
@@ -65,7 +72,14 @@ internal class WindowControllers(
 
     private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
 
-    val appearance = AppearanceController(modules.appearance.api, modules.terminal.repo, scope)
+    val appearance =
+        AppearanceController(
+            modules.appearance.api,
+            modules.terminal.repo,
+            modules.appearance.files,
+            pickers.themeFile,
+            scope,
+        )
 
     val hookSetup = HookSetupController(hooks.installer, hooks.offer, scope, core.logger)
 

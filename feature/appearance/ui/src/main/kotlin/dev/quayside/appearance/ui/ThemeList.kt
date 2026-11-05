@@ -42,7 +42,7 @@ internal fun ThemeList(
     onIntent: (AppearanceIntent) -> Unit,
 ) {
     val focus = remember { FocusRequester() }
-    val chosen = draft.settings.scheme
+    val chosen = previewScheme(draft)
     val start = catalog.themes.indexOfFirst { it.id == chosen }.coerceAtLeast(minimumValue = 0)
     LaunchedEffect(Unit) { focus.requestFocus() }
     LazyColumn(

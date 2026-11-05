@@ -1,6 +1,6 @@
 # 05 · Mission Control — specyfikacja głównego ekranu
 
-![Mission Control — Plex Violet](screenshots/10-mc-plex-violet.png)
+![Mission Control](screenshots/mockups-2026-11-04/01-mission-control.png)
 
 ## Układ
 
@@ -60,12 +60,4 @@ Skróty są przyspieszeniem dla wprawionych; każdy ma odpowiednik w menu albo p
 
 ## Warianty wyglądu
 
-Ten sam ekran działa z każdym schematem kolorów i każdą typografią (szczegóły w [08](08-wyglad.md)). Wszystkie 9 schematów, każdy z przykładową typografią:
-
-| | |
-| --- | --- |
-| ![Plex Violet](screenshots/10-mc-plex-violet.png) **Plex Violet** · IBM Plex | ![Graphite](screenshots/11-mc-graphite.png) **Graphite** · Geist |
-| ![Paper Indigo](screenshots/12-mc-paper-indigo.png) **Paper Indigo** · Instrument Sans + DM Mono | ![Phosphor](screenshots/13-mc-phosphor.png) **Phosphor** · JetBrains Mono |
-| ![Synth](screenshots/14-mc-synth.png) **Synth** · Chakra Petch + Fira Code | ![Amber CRT](screenshots/15-mc-amber-crt-space.png) **Amber CRT** · Space Grotesk + Space Mono |
-| ![Sand](screenshots/16-mc-sand-hyperlegible.png) **Sand** · Atkinson Hyperlegible | ![Rose Night](screenshots/17-mc-rose-night-martian.png) **Rose Night** · Martian Mono |
-| ![Wysoki kontrast](screenshots/18-mc-wysoki-kontrast.png) **Wysoki kontrast** · Atkinson Hyperlegible | |
+Ten sam ekran działa z każdym schematem kolorów i każdą typografią. Dostępne motywy opisuje [08](08-wyglad.md) oraz [Quayside Themes Documentation.md](Quayside%20Themes%20Documentation.md).

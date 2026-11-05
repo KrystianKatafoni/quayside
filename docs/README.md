@@ -7,7 +7,7 @@ Quayside to natywna aplikacja desktopowa na macOS 15 Sequoia do zarządzania lok
 
 Aplikacja **nie uruchamia własnego orkiestratora**. Steruje oficjalnym supervisorem sesji w tle Claude Code (`claude --bg`, `claude agents --json`, `claude attach/stop/logs/respawn`) i odbiera zdarzenia przez hooki HTTP.
 
-![Mission Control — wariant Plex Violet](screenshots/10-mc-plex-violet.png)
+![Mission Control](screenshots/mockups-2026-11-04/01-mission-control.png)
 
 ## Spis treści
 
@@ -34,7 +34,7 @@ Aplikacja **nie uruchamia własnego orkiestratora**. Steruje oficjalnym supervis
 | [compat.md](compat.md) | Zgodność z wersjami Claude Code i historia przeglądów |
 | [adr/](adr/) | Decyzje architektoniczne (ADR) |
 | [plans/](plans/) | Plany zadań tworzone przez agenta `architect` |
-| [screenshots/](screenshots/) | 17 zrzutów mockupów (PNG, 1440 px × 1,5), diagram architektury i diagram modułów |
+| [screenshots/](screenshots/) | Diagram architektury i diagram modułów oraz mockupy z 4.11.2026 ([mockups-2026-11-04/](screenshots/mockups-2026-11-04/)) |
 | [Agent-Manager-podsumowanie.pdf](Agent-Manager-podsumowanie.pdf) | 13-stronicowe podsumowanie całej koncepcji, z koncepcją techniczną |
 
 ## Decyzje w skrócie
@@ -56,4 +56,4 @@ Aplikacja **nie uruchamia własnego orkiestratora**. Steruje oficjalnym supervis
 
 - Interaktywna kanwa z mockupami (claude.ai, artefakt „Agent Manager — 5 koncepcji UX”), strony *Koncepcje* i *Mission Control*.
 - Dokument researchu „Claude Code Agent Manager na macOS — research” (claude.ai).
-- Zrzuty w `screenshots/` są renderami tych mockupów z 18.10.2026.
+- Zrzuty koncepcji z 18.10.2026 zastąpiono mockupami z 4.11.2026 w `screenshots/mockups-2026-11-04/`.

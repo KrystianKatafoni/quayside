@@ -13,6 +13,8 @@ Testy mają dawać pewność, że zmiana w jednym module nie zepsuła innego, i 
 | Funkcjonalne | Scenariusze użytkownika przez UI całej aplikacji na fake'owym runtime | Compose UI test (desktop), wirtualny czas | `tests/functional` | każdy PR |
 | E2E | Pełny przepływ z prawdziwym Claude Code w repo testowym | JUnit 5 + tag `e2e` | `tests/e2e` | nocą / ręcznie |
 
+Testy w prawdziwym oknie AWT (tag `awt-window`, np. `ModalOverSwingWindowTest` w `terminal:ui`) sprawdzają to, czego nie widać w `runComposeUiTest`: kolejność trafień i fokus AWT nad `SwingPanel`. Wymagają wyświetlacza i są pomijane bez niego (`assumeFalse(isHeadless)`); na CI bez ekranu nie biegną.
+
 ## 1. Testy jednostkowe czystych rdzeni
 
 Najwięcej wartości daje testowanie tablicowe funkcji decyzyjnych. Przykład dla reducera stanu sesji:

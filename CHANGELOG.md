@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ## [Unreleased]
 
+### Fixed
+
+- Dialogi i paleta komend nad otwartą kartą terminala: „Anuluj” i inne przyciski reagują na kliknięcie, a Esc zamyka okno; po zamknięciu fokus wraca do terminala tylko, jeśli w nim był (AM-803).
+
 ### Added
 
 - Ekran „Wygląd” (Widok → Wygląd… i paleta komend): lista 29 motywów z próbką kolorów i plakietką trybu, lista 22 typografii z podpowiedzią motywu, rozmiar interfejsu S/M/L, gęstość listy sesji (Kompaktowa / Komfortowa), font i rozmiar terminala (8–32) oraz podgląd na żywo na prawdziwym ekranie Mission Control z przykładowymi sesjami; „Zastosuj” zmienia kolory, kształt, fonty i skalę okna, a nowe karty terminala dostają kolory i font wybranego motywu. Wybór działa do zamknięcia aplikacji (zapis w `theme.json` dochodzi w AM-804) (AM-803).

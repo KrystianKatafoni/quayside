@@ -21,9 +21,14 @@ internal class AppModules(
     val sessions: SessionsApi,
     val registry: CommandRegistry,
     val terminal: TerminalDeps,
-    val notifications: NotificationDeps,
+    val settings: SettingsDeps,
     val appearance: AppearanceDeps,
-    val summarySettings: SummarySettingsRepo,
+)
+
+/** The notification module and the summaries switch: what the settings dialogs besides the terminal's work on. */
+internal class SettingsDeps(
+    val notifications: NotificationDeps,
+    val summaries: SummarySettingsRepo,
 )
 
 /**

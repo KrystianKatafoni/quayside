@@ -78,7 +78,7 @@ fun main() {
             ) {
                 MainWindow(core, modules, keys, hooks)
             }
-            PopupWindow(modules.notifications.popups)
+            PopupWindow(modules.settings.notifications.popups)
         }
     }
 }
@@ -112,9 +112,8 @@ private fun appModules(
         sessions,
         registry,
         terminal,
-        notifications,
+        SettingsDeps(notifications, stored.summarySettings),
         AppearanceDeps(appearance, looks, themeFilesModule(appearance.catalog, core.dispatchers.io, core.logger)),
-        stored.summarySettings,
     )
 }
 

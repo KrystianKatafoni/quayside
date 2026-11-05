@@ -69,11 +69,15 @@ internal class WindowControllers(
     val terminalSettings = TerminalSettingsController(modules.terminal.repo, scope)
 
     val notificationSettings =
-        NotificationSettingsController(modules.notifications.settings, modules.notifications.voices, scope)
+        NotificationSettingsController(
+            modules.settings.notifications.settings,
+            modules.settings.notifications.voices,
+            scope,
+        )
 
     private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
 
-    val summarySettings = SummarySettingsController(modules.summarySettings, scope)
+    val summarySettings = SummarySettingsController(modules.settings.summaries, scope)
 
     val appearance =
         AppearanceController(

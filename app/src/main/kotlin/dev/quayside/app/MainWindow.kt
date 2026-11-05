@@ -111,7 +111,7 @@ private fun FrameWindowScope.PopupAttachHandler(
 ) {
     val scope = rememberCoroutineScope()
     DisposableEffect(Unit) {
-        modules.notifications.attach.handler = { id ->
+        modules.settings.notifications.attach.handler = { id ->
             scope.launch {
                 val sessions = modules.sessions.monitor.snapshot.value.sessions
                 attacher.attachSession(id, sessions, modules.projects.api.projects.value)
@@ -119,7 +119,7 @@ private fun FrameWindowScope.PopupAttachHandler(
                 window.toFront()
             }
         }
-        onDispose { modules.notifications.attach.handler = null }
+        onDispose { modules.settings.notifications.attach.handler = null }
     }
 }
 

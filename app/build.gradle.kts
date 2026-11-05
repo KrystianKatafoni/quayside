@@ -37,6 +37,8 @@ dependencies {
     // Session summaries from the last message of a turn (AM-604).
     implementation(project(":feature:summaries:api"))
     implementation(project(":feature:summaries:impl"))
+    // The summaries settings dialog (AM-606).
+    implementation(project(":feature:summaries:ui"))
     // AmTheme over both windows, and the default look from the built-in catalog (AM-806).
     implementation(project(":core:design-system"))
     implementation(project(":feature:appearance:api"))
@@ -67,6 +69,8 @@ dependencies {
     testImplementation(testFixtures(project(":feature:agent-runtime:api")))
     // RecordingNotificationCenter for the bell forwarding (AM-509).
     testImplementation(testFixtures(project(":feature:notifications:api")))
+    // FakeSummarySettingsRepo behind the summaries settings dialog in the window test (AM-606).
+    testImplementation(testFixtures(project(":feature:summaries:api")))
 }
 
 compose.desktop {

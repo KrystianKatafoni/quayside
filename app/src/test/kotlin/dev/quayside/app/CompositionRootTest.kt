@@ -57,6 +57,8 @@ class CompositionRootTest {
                 "command.terminalSettings",
                 "command.notificationSettings",
                 "menu.notificationSettings",
+                "command.summarySettings",
+                "menu.summarySettings",
                 "command.hookSetup",
                 "menu.hookSetup",
                 "command.newAgent",

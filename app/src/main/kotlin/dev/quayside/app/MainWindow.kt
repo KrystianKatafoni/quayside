@@ -17,6 +17,7 @@ import dev.quayside.core.designsystem.AmModalGate
 import dev.quayside.core.designsystem.LocalAmModalGate
 import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.ui.NotificationSettingsDialog
+import dev.quayside.summaries.ui.SummarySettingsDialog
 import dev.quayside.terminal.ui.TerminalArea
 import dev.quayside.terminal.ui.TerminalSettingsDialog
 import kotlinx.coroutines.launch
@@ -70,6 +71,7 @@ private fun FrameWindowScope.WindowContent(
         NewAgentDialog(controllers.newAgent)
         TerminalSettingsDialog(controllers.terminalSettings)
         NotificationSettingsDialog(controllers.notificationSettings)
+        SummarySettingsDialog(controllers.summarySettings)
         HookSetupDialog(controllers.hookSetup, hooks.backupDir)
     }
     // Outside the scale: the preview of the dialog scales the base density itself (previewDensity).

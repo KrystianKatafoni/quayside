@@ -8,6 +8,7 @@ import dev.quayside.core.domain.ShellCommand
 import dev.quayside.projects.api.ProjectInspector
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
+import dev.quayside.summaries.api.SummarySettingsRepo
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalSettings
 import dev.quayside.terminal.api.TerminalSettingsRepo
@@ -22,6 +23,7 @@ internal class AppModules(
     val terminal: TerminalDeps,
     val notifications: NotificationDeps,
     val appearance: AppearanceDeps,
+    val summarySettings: SummarySettingsRepo,
 )
 
 /**

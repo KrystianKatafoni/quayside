@@ -26,7 +26,9 @@ import dev.quayside.projects.impl.projectsModule
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.impl.sessionsModule
 import dev.quayside.summaries.api.SummariesApi
+import dev.quayside.summaries.api.SummarySettingsRepo
 import dev.quayside.summaries.impl.summariesModule
+import dev.quayside.summaries.impl.summarySettingsModule
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalSettings
 import dev.quayside.terminal.api.TerminalSettingsRepo
@@ -112,6 +114,7 @@ private fun appModules(
         terminal,
         notifications,
         AppearanceDeps(appearance, looks, themeFilesModule(appearance.catalog, core.dispatchers.io, core.logger)),
+        stored.summarySettings,
     )
 }
 
@@ -143,6 +146,7 @@ private class StoredSettings(
     val terminal: TerminalSettingsRepo,
     val notifications: NotificationSettingsRepo,
     val summaries: SummariesApi,
+    val summarySettings: SummarySettingsRepo,
 )
 
 private suspend fun storedSettings(core: CoreDeps): StoredSettings =
@@ -150,6 +154,7 @@ private suspend fun storedSettings(core: CoreDeps): StoredSettings =
         terminalSettingsModule(core.storage, core.logger),
         notificationSettingsModule(core.storage, core.logger),
         summariesModule(core.storage, oneShotPromptModule(core.process, core.homeDir), core.logger),
+        summarySettingsModule(core.storage, core.logger),
     )
 
 /**

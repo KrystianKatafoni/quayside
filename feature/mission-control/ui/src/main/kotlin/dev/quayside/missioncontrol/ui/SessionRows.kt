@@ -29,12 +29,14 @@ import dev.quayside.core.designsystem.AmChip
 import dev.quayside.core.designsystem.AmIconButton
 import dev.quayside.core.designsystem.AmIconTile
 import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.ButtonKind
 import dev.quayside.core.designsystem.ButtonOptions
 import dev.quayside.core.designsystem.IconButtonOptions
 import dev.quayside.core.designsystem.IconButtonStyle
 import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.TextRole
+import dev.quayside.core.designsystem.listMetrics
 import dev.quayside.core.domain.SessionId
 
 /**
@@ -98,23 +100,35 @@ private fun SessionRowView(
                 .background(color = if (row.selected) selColor() else Color.Transparent),
     ) {
         Box(Modifier.matchParentSize().focusProperties { canFocus = false }.clickable(onClick = select))
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(space = 10.dp),
-        ) {
+        RowLine {
             RowCells(row)
             RowButtons(row.id, shown, rowMenu, onEvent)
         }
     }
 }
 
+/** The cells of a row; the padding above and below comes from the density of the list. */
+@Composable
+private fun RowLine(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth().padding(
+                horizontal = 10.dp,
+                vertical = AmTheme.density.listMetrics().vertical,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(space = 10.dp),
+        content = content,
+    )
+}
+
 @Composable
 private fun RowScope.RowCells(row: SessionRow) {
-    AmIconTile(row.glyph.icon, row.glyph.tone, MissionControlStrings[row.glyph.key], Modifier.size(TILE))
+    val metrics = AmTheme.density.listMetrics()
+    AmIconTile(row.glyph.icon, row.glyph.tone, MissionControlStrings[row.glyph.key], Modifier.size(metrics.tile))
     Column(modifier = Modifier.weight(weight = 1f)) {
         AmText(row.name, role = TextRole.CODE)
-        AmText(row.summary.orEmpty(), role = TextRole.CAPTION, color = mutedColor())
+        if (metrics.twoLines) AmText(row.summary.orEmpty(), role = TextRole.CAPTION, color = mutedColor())
     }
     row.project?.let { AmText(MissionControlStrings.format(it), color = mutedColor()) }
     AmChip(MissionControlStrings.format(row.lastEvent), tone = row.glyph.tone)
@@ -148,5 +162,3 @@ private fun RowButtons(
     }
     RowMenuButton(MissionControlTags.rowMenuButton(id), menu, onEvent)
 }
-
-private val TILE = 38.dp

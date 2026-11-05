@@ -1,5 +1,7 @@
 package dev.quayside.missioncontrol.ui
 
+import dev.quayside.core.designsystem.IconKind
+import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.SessionState
@@ -98,6 +100,7 @@ internal sealed interface Screen {
         val details: SessionDetails?,
         val banner: UiText?,
         val loading: Boolean,
+        val stats: SessionStats = SessionStats(),
     ) : Screen
 
     /** A global view: sessions of every project, [sessions] of them, without filter tabs. */
@@ -123,8 +126,8 @@ internal enum class Tone { WARN, WORK, OK, ERR, DIM }
 
 /** @property key text key of the state, e.g. `state.working`. */
 internal data class Glyph(
-    val symbol: String,
-    val tone: Tone,
+    val icon: IconKind,
+    val tone: StatusTone,
     val key: String,
 )
 

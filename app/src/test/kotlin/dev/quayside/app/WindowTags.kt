@@ -35,6 +35,16 @@ internal object WindowTags {
 
     const val TERMINAL_AREA = "terminal.area"
 
+    /** Terminal mode (AM-809): the full screen button of `terminal:ui`, the session bar of `mission-control:ui` and the
+     * rail of `projects:ui`; all `internal` there. */
+    const val FULL_SCREEN = "terminal.fullScreen"
+    const val MISSION_CONTROL = "missionControl"
+    const val SESSION_BAR = "missionControl.sessionBar"
+    const val SESSION_BAR_REPLY = "missionControl.sessionBar.reply"
+    const val RAIL = "projects.rail"
+
+    fun railButton(projectId: String): String = "projects.rail.$projectId"
+
     /** The "Nowy agent" button and dialog (AM-608); tags of `mission-control:ui`, `internal` there. */
     const val NEW_AGENT_BUTTON = "missionControl.newAgent"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"

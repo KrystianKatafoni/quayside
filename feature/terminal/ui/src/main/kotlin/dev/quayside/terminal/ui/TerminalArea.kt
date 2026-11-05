@@ -16,7 +16,8 @@ private val embeddedPaneContent: @Composable (JComponent) -> Unit = { EmbeddedWi
 /**
  * The tab bar and the panes; [onAppKey] gets ⌘ keys pressed in a terminal that are not terminal shortcuts.
  * Draws nothing while there are no tabs and no error. [paneContent] embeds the widget of a tab (null: `SwingPanel`);
- * tests replace it with a plain marker.
+ * tests replace it with a plain marker. [onFullScreen] non-null: MAXIMIZE icon button "Tryb terminala" at the end of
+ * the tab bar. 5 parameters (ENG-C2).
  */
 @Composable
 public fun TerminalArea(
@@ -24,6 +25,7 @@ public fun TerminalArea(
     onAppKey: (TerminalKey) -> Boolean,
     modifier: Modifier = Modifier,
     paneContent: (@Composable (JComponent) -> Unit)? = null,
+    onFullScreen: (() -> Unit)? = null,
 ) {
     val state by controller.state.collectAsState()
     val statuses by controller.statuses.collectAsState()
@@ -33,7 +35,7 @@ public fun TerminalArea(
         modifier =
             modifier.testTag(TerminalTags.AREA).background(color = termBgColor()),
     ) {
-        TerminalTabBar(TabGroups.of(state.tabs), state.activeTab(), statuses, controller)
+        TerminalTabBar(TabGroups.of(state.tabs), state.activeTab(), statuses, controller, onFullScreen)
         state.error?.let { ErrorBar(it, onDismiss = controller::dismissError) }
         Box(modifier = Modifier.weight(weight = 1f).fillMaxWidth()) {
             TerminalPanes(state, controller.search, paneContent ?: embeddedPaneContent)

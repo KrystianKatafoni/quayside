@@ -2,27 +2,56 @@ package dev.quayside.core.designsystem
 
 import dev.quayside.core.designtokens.ColorTokens
 import dev.quayside.core.designtokens.Rgba
+import dev.quayside.core.designtokens.Wcag
+import dev.quayside.core.designtokens.over
 
 // Colour pairs of the components. Components read their colours only from here, so the contrast test covers every
 // pair on screen (NFR-6, at least 4.5:1 for text). Pairs are (background, foreground); borders have their own
 // functions.
 private val NO_BACKGROUND = Rgba(0x00000000L)
 
+/** Colours of a button: [border] null = none; a transparent [background] has alpha 0. */
+internal data class ButtonColors(
+    val background: Rgba,
+    val border: Rgba?,
+    val label: Rgba,
+)
+
 /**
- * (background, label) of a button. PRIMARY is accentInk on accent, SECONDARY is text on raised. A disabled button
+ * Colours of a button. PRIMARY is accentInk on accent, SECONDARY is text on raised with a border2 frame, DANGER is
+ * err on a transparent background with a tinted err border (text when err is below 4.5:1 on panel). A disabled button
  * uses the dim label: WCAG exempts inactive controls from the contrast minimum.
  */
 internal fun buttonColors(
     kind: ButtonKind,
     enabled: Boolean,
     tokens: ColorTokens,
-): Pair<Rgba, Rgba> {
-    val (background, label) =
+): ButtonColors {
+    val colors =
         when (kind) {
-            ButtonKind.PRIMARY -> tokens.content.accent to tokens.content.accentInk
-            ButtonKind.SECONDARY -> tokens.surfaces.raised to tokens.content.text
+            ButtonKind.PRIMARY -> {
+                ButtonColors(tokens.content.accent, null, tokens.content.accentInk)
+            }
+
+            ButtonKind.SECONDARY -> {
+                ButtonColors(tokens.surfaces.raised, tokens.surfaces.border2, tokens.content.text)
+            }
+
+            ButtonKind.DANGER -> {
+                ButtonColors(
+                    NO_BACKGROUND,
+                    tinted(tokens.status.err, tokens, DANGER_BORDER_PERCENT),
+                    dangerLabel(tokens),
+                )
+            }
         }
-    return background to if (enabled) label else tokens.content.dim
+    return if (enabled) colors else colors.copy(label = tokens.content.dim)
+}
+
+private fun dangerLabel(tokens: ColorTokens): Rgba {
+    val err = tokens.status.err
+    val panel = tokens.surfaces.panel.over(tokens.surfaces.bg)
+    return if (Wcag.contrast(err, panel) >= Wcag.TEXT_MIN) err else tokens.content.text
 }
 
 /** (background, text) of a list row; an unselected row is transparent over its container. */

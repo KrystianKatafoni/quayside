@@ -1,5 +1,7 @@
 package dev.quayside.core.designsystem
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import dev.quayside.core.designtokens.ColorTokens
 import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.Wcag
@@ -8,7 +10,7 @@ import dev.quayside.core.designtokens.over
 
 // Colour rules of tones (docs/08): tinted(c) = panel.over(bg).mix(c, 15), the same rule that gives warnBg in plex.
 private const val TINT_PERCENT = 15
-private const val DANGER_BORDER_PERCENT = 35
+internal const val DANGER_BORDER_PERCENT = 35
 private val NO_BACKGROUND = Rgba(0x00000000L)
 
 /** Colours of a pill or tile: [background], text [label] (4.5:1 or text), [mark] (icon, 3:1 or text). */
@@ -25,7 +27,7 @@ internal data class IconButtonColors(
     val icon: Rgba,
 )
 
-private fun tinted(
+internal fun tinted(
     color: Rgba,
     tokens: ColorTokens,
     percent: Int = TINT_PERCENT,
@@ -111,3 +113,7 @@ internal fun counterBadgeColors(tokens: ColorTokens): Pair<Rgba, Rgba> = tokens.
 
 /** (text, border) of a key cap: muted and border2. */
 internal fun keyCapColors(tokens: ColorTokens): Pair<Rgba, Rgba> = tokens.content.muted to tokens.surfaces.border2
+
+/** Mark colour of this tone for icons (toneColor of AM-808): 3:1 audited on bg, panel, raised, sel (plex). */
+@Composable
+public fun StatusTone.markColor(): Color = toneColor(this, AmTheme.colors).toColor()

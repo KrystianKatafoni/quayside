@@ -1,64 +1,76 @@
 package dev.quayside.missioncontrol.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmButton
 import dev.quayside.core.designsystem.AmText
-import dev.quayside.core.designsystem.AmTheme
+import dev.quayside.core.designsystem.ButtonKind
+import dev.quayside.core.designsystem.ButtonOptions
 
-/** Attach and reply buttons, then stop, respawn, remove and "Podgląd", then the "in progress" text or the failure. */
+/**
+ * The "in progress" text or the failure, then the buttons of [detailsControls]: the main one, the ordinary ones and
+ * the dangerous ones apart (C).
+ */
 @Composable
 internal fun SessionActionsView(
     details: SessionDetails,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
-    listOf(details.openControls(), details.otherControls()).filter { it.isNotEmpty() }.forEach { controls ->
-        Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-            controls.forEach { control ->
-                ActionButton(MissionControlTags.details(control.id), control.labelKey) { onEvent(control.event) }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(space = 6.dp)) {
+        details.busy?.let {
+            Box(Modifier.testTag(MissionControlTags.DETAILS_BUSY)) {
+                AmText(MissionControlStrings["action.${it.name.lowercase()}.busy"], color = mutedColor())
             }
         }
-    }
-    details.busy?.let {
-        Box(Modifier.testTag(MissionControlTags.DETAILS_BUSY)) {
-            AmText(MissionControlStrings["action.${it.name.lowercase()}.busy"], color = mutedColor())
+        details.failure?.let {
+            Column(Modifier.testTag(MissionControlTags.DETAILS_FAILURE)) {
+                AmText(MissionControlStrings["action.${it.action.name.lowercase()}.failed"], color = Tone.ERR.tint())
+                AmText(MissionControlStrings.format(it.reason), color = Tone.ERR.tint())
+            }
         }
-    }
-    details.failure?.let {
-        Column(Modifier.testTag(MissionControlTags.DETAILS_FAILURE)) {
-            AmText(MissionControlStrings["action.${it.action.name.lowercase()}.failed"], color = Tone.ERR.tint())
-            AmText(MissionControlStrings.format(it.reason), color = Tone.ERR.tint())
+        val controls = details.detailsControls()
+        val firstDanger = controls.firstOrNull { it.kind == ButtonKind.DANGER }
+        controls.forEach { control ->
+            if (control === firstDanger) Spacer(Modifier.height(8.dp))
+            ControlButton(control, onEvent, Modifier.fillMaxWidth())
         }
     }
 }
 
+/** A button of the panel; it never takes focus (Space and Enter belong to the window). */
 @Composable
-private fun ActionButton(
-    tag: String,
-    labelKey: String,
-    onClick: () -> Unit,
+internal fun ControlButton(
+    control: SessionControl,
+    onEvent: (MissionControlEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .testTag(tag)
-                .focusProperties { canFocus = false }
-                .clip(AmTheme.shape.corner)
-                .clickable(role = Role.Button, onClick = onClick)
-                .background(color = raisedColor())
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-    ) {
-        AmText(MissionControlStrings[labelKey])
-    }
+    val options =
+        ButtonOptions(
+            kind = control.kind,
+            focusable = false,
+            icon = control.icon,
+            shortcut = control.shortcutIn(LocalKeyCaps.current),
+        )
+    AmButton(
+        MissionControlStrings[control.labelKey],
+        { onEvent(control.event) },
+        modifier.testTag(MissionControlTags.details(control.id)),
+        options,
+    )
 }
+
+private fun SessionControl.shortcutIn(caps: SessionKeyCaps?): String? =
+    when (id) {
+        "attach" -> caps?.attach
+        "reply" -> caps?.reply
+        "stop" -> caps?.stop
+        else -> null
+    }

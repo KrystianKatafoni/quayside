@@ -46,7 +46,7 @@ class NewAgentWindowTest {
             world.fake.calls shouldBe listOf("start project0001")
             await(WindowTags.missionRow("00000001"))
             awaitDetails("00000001")
-            awaitDetails("~")
+            awaitDetails("Pracuje")
             waitUntilExactlyOneExists(hasText("Quayside") and hasAnyAncestor(hasTestTag(WindowTags.HEADER)))
         }
 

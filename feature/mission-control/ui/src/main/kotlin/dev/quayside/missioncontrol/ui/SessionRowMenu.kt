@@ -36,8 +36,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import dev.quayside.core.designsystem.AmIconButton
 import dev.quayside.core.designsystem.AmPanel
 import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.IconButtonOptions
+import dev.quayside.core.designsystem.IconKind
 
 /** The "⋯" button of a row; the popup of [menu] hangs under it. Never takes focus (see [SessionRowView]). */
 @Composable
@@ -46,15 +49,14 @@ internal fun RowMenuButton(
     menu: RowMenu,
     onPick: (MissionControlEvent) -> Unit,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .testTag(tag)
-                .focusProperties { canFocus = false }
-                .clickable(role = Role.Button) { menu.setOpen(true) }
-                .padding(horizontal = 8.dp),
-    ) {
-        AmText(MissionControlStrings["row.menu"], color = mutedColor())
+    Box {
+        AmIconButton(
+            IconKind.MORE,
+            MissionControlStrings["row.menu.label"],
+            { menu.setOpen(true) },
+            Modifier.testTag(tag),
+            IconButtonOptions(focusable = false),
+        )
         if (menu.open && menu.controls.isNotEmpty()) RowMenuPopup(menu, onPick)
     }
 }

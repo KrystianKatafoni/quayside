@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -27,15 +28,27 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import dev.quayside.core.designsystem.AmButton
+import dev.quayside.core.designsystem.AmChip
+import dev.quayside.core.designsystem.AmIcon
+import dev.quayside.core.designsystem.AmIconButton
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
-import dev.quayside.core.designsystem.TextRole
-import dev.quayside.core.designsystem.toColor
+import dev.quayside.core.designsystem.IconButtonOptions
+import dev.quayside.core.designsystem.IconButtonSize
+import dev.quayside.core.designsystem.IconKind
+import dev.quayside.core.designsystem.StatusTone
+import dev.quayside.core.designsystem.markColor
 import dev.quayside.projects.api.Project
+import dev.quayside.sessions.api.SessionCounts
 
 /** The sidebar with its dialogs; stateless apart from [controller]. */
 @Composable
@@ -56,17 +69,28 @@ public fun ProjectsSidebar(
                     .testTag(ProjectsTags.SIDEBAR),
             verticalArrangement = Arrangement.spacedBy(space = 8.dp),
         ) {
-            AmText(
-                ProjectsStrings["sidebar.title"],
-                color = mutedColor(),
-            )
+            SidebarHeader { controller.onIntent(ProjectsIntent.AddRequested) }
             state.banner?.let { Banner(it) { controller.onEvent(SidebarEvent.DismissBanner) } }
             ProjectList(state, controller)
-            TextButton(ProjectsStrings["sidebar.add"], ProjectsTags.ADD_BUTTON) {
-                controller.onIntent(ProjectsIntent.AddRequested)
-            }
         }
         state.dialog?.let { ProjectsDialog(it, controller::onEvent) }
+    }
+}
+
+/** "PROJEKTY" with the "+" icon button that adds a project; it never takes focus. */
+@Composable
+private fun SidebarHeader(onAdd: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.weight(weight = 1f)) {
+            AmText(ProjectsStrings["sidebar.title"], color = mutedColor())
+        }
+        AmIconButton(
+            IconKind.PLUS,
+            ProjectsStrings["sidebar.add"],
+            onAdd,
+            Modifier.testTag(ProjectsTags.ADD_BUTTON),
+            IconButtonOptions(focusable = false, size = IconButtonSize.COMPACT),
+        )
     }
 }
 
@@ -89,7 +113,7 @@ private fun ColumnScope.ProjectList(
                 ProjectRow(
                     project = project,
                     selected = project.id == state.selected,
-                    badges = CountBadges.of(state.sessions.counts[project.id]),
+                    counts = state.sessions.counts[project.id],
                     onEvent = controller::onEvent,
                     onRemove = {
                         controller.onEvent(SidebarEvent.Select(project.id))
@@ -104,51 +128,69 @@ private fun ColumnScope.ProjectList(
 /**
  * The row never takes focus: a focused `selectable` would consume `space` and Enter before the window shortcuts. A
  * click requests focus anyway and an unfocusable parent hands it to its first focusable child, so the ⋯ button of the
- * row is unfocusable too.
+ * row is unfocusable too. The selection is taken by a layer behind the cells, so the count chips are separate nodes
+ * of the semantics tree; the tagged node itself carries the name and says whether the row is selected.
  */
 @Composable
 private fun ProjectRow(
     project: Project,
     selected: Boolean,
-    badges: List<UiText>,
+    counts: SessionCounts?,
     onEvent: (SidebarEvent) -> Unit,
     onRemove: () -> Unit,
 ) {
-    Row(
+    Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .testTag(ProjectsTags.row(project.id))
-                .focusProperties { canFocus = false }
-                .selectable(selected = selected, onClick = { onEvent(SidebarEvent.Select(project.id)) })
-                .background(
-                    color = if (selected) selColor() else Color.Transparent,
-                ).padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+                .semantics {
+                    this.selected = selected
+                    text = AnnotatedString(project.displayName)
+                }.background(color = if (selected) selColor() else Color.Transparent),
     ) {
-        Column(modifier = Modifier.weight(weight = 1f)) {
-            AmText(project.displayName)
-            Counters(badges)
-        }
-        RowMenu(project, { onEvent(SidebarEvent.RenameRequested(project.id)) }, onRemove)
+        Box(
+            Modifier
+                .matchParentSize()
+                .focusProperties { canFocus = false }
+                .selectable(selected = selected, onClick = { onEvent(SidebarEvent.Select(project.id)) }),
+        )
+        RowCells(project, counts, { onEvent(SidebarEvent.RenameRequested(project.id)) }, onRemove)
     }
 }
 
-/** "waiting: n" (highlighted, it needs the user) and "working: n"; nothing for zeros. */
+/** Folder in the tone of the project, its name over the count chips, and the ⋯ menu. */
+@Composable
+private fun RowCells(
+    project: Project,
+    counts: SessionCounts?,
+    onRename: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+    ) {
+        AmIcon(IconKind.FOLDER, null, Modifier.size(20.dp), projectTone(counts).markColor())
+        Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
+            AmText(project.displayName, Modifier.clearAndSetSemantics {})
+            Counters(CountBadges.of(counts))
+        }
+        RowMenu(project, onRename, onRemove)
+    }
+}
+
+/** "waiting: n" (warn, it needs the user) and "working: n" as chips with the number; nothing for zeros. */
 @Composable
 private fun Counters(badges: List<UiText>) {
     if (badges.isEmpty()) return
-    Row(horizontalArrangement = Arrangement.spacedBy(space = 8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
         badges.forEach { badge ->
-            AmText(ProjectsStrings.format(badge), role = TextRole.CAPTION, color = badgeColor(badge))
+            val tone = if (badge.key == CountBadges.WAITING_KEY) StatusTone.WARN else StatusTone.WORK
+            AmChip(badge.args.first(), tone = tone, description = ProjectsStrings.format(badge))
         }
     }
-}
-
-@Composable
-private fun badgeColor(badge: UiText): Color {
-    val colors = AmTheme.colors
-    return (if (badge.key == CountBadges.WAITING_KEY) colors.status.warn else colors.content.muted).toColor()
 }
 
 /** The ⋯ button of a row with its menu: rename and remove. */

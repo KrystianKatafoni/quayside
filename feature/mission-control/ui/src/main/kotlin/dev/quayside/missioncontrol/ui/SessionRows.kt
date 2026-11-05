@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,7 +24,16 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmButton
+import dev.quayside.core.designsystem.AmChip
+import dev.quayside.core.designsystem.AmIconButton
+import dev.quayside.core.designsystem.AmIconTile
 import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.ButtonKind
+import dev.quayside.core.designsystem.ButtonOptions
+import dev.quayside.core.designsystem.IconButtonOptions
+import dev.quayside.core.designsystem.IconButtonStyle
+import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.core.domain.SessionId
 
@@ -43,10 +53,12 @@ internal fun SessionRows(
     LaunchedEffect(selectedId) { if (menuFor != selectedId) menuFor = null }
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
         rows.forEach { row ->
-            val controls = details?.takeIf { row.selected && it.id == row.id }?.let(SessionDetails::allControls)
+            val shown = details?.takeIf { row.selected && it.id == row.id }
             val menu =
-                RowMenu(controls.orEmpty(), open = menuFor == row.id) { open -> menuFor = if (open) row.id else null }
-            SessionRowView(row, menu, onEvent)
+                RowMenu(shown?.allControls().orEmpty(), open = menuFor == row.id) { open ->
+                    menuFor = if (open) row.id else null
+                }
+            SessionRowView(row, shown, menu, onEvent)
         }
     }
 }
@@ -54,14 +66,16 @@ internal fun SessionRows(
 /**
  * A row never takes focus: a focused `clickable` handles `space` and Enter as a click and consumes them before the
  * window shortcuts (`space` preview, later `⏎` attach) see them. A click requests focus anyway, and an unfocusable
- * node hands it to its first focusable child, so the children (the texts and the "⋯" button) must not be focusable
- * either. The first click of a double click has already selected the row, so `attachSelected` in `app` reads the
- * right session; `select()` in the double-click path is only a guard. A click selects at once (no wait for a
- * double click); a double click also attaches, a right click and "⋯" select and open the [menu] (AM-511).
+ * node hands it to its first focusable child, so the children (the buttons) must not be focusable either. The click
+ * is taken by a layer behind the cells, so the tile and the buttons are separate nodes of the semantics tree. The
+ * first click of a double click has already selected the row, so `attachSelected` in `app` reads the right session;
+ * `select()` in the double-click path is only a guard. A click selects at once (no wait for a double click); a
+ * double click also attaches, a right click and "⋯" select and open the [menu] (AM-511).
  */
 @Composable
 private fun SessionRowView(
     row: SessionRow,
+    shown: SessionDetails?,
     menu: RowMenu,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
@@ -75,36 +89,64 @@ private fun SessionRowView(
         select()
         onEvent(MissionControlEvent.Attach)
     }
-    Row(
+    Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .testTag(MissionControlTags.row(row.id))
-                .focusProperties { canFocus = false }
                 .onRowMouse(row.id, onSecondary = { rowMenu.setOpen(true) }, onDouble = attach)
-                .clickable(onClick = select)
                 .background(color = if (row.selected) selColor() else Color.Transparent),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
-        RowCells(row)
-        RowMenuButton(MissionControlTags.rowMenuButton(row.id), rowMenu, onEvent)
+        Box(Modifier.matchParentSize().focusProperties { canFocus = false }.clickable(onClick = select))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(space = 10.dp),
+        ) {
+            RowCells(row)
+            RowButtons(row.id, shown, rowMenu, onEvent)
+        }
     }
 }
 
 @Composable
 private fun RowScope.RowCells(row: SessionRow) {
-    Box(
-        Modifier
-            .size(
-                width = 3.dp,
-                height = 28.dp,
-            ).background(if (row.selected) accentColor() else Color.Transparent),
-    )
-    AmText(row.glyph.symbol, color = row.glyph.tone.tint())
-    AmText(row.name, role = TextRole.CODE)
+    AmIconTile(row.glyph.icon, row.glyph.tone, MissionControlStrings[row.glyph.key], Modifier.size(TILE))
+    Column(modifier = Modifier.weight(weight = 1f)) {
+        AmText(row.name, role = TextRole.CODE)
+        AmText(row.summary.orEmpty(), role = TextRole.CAPTION, color = mutedColor())
+    }
     row.project?.let { AmText(MissionControlStrings.format(it), color = mutedColor()) }
-    Box(modifier = Modifier.weight(weight = 1f)) { AmText(row.summary.orEmpty(), color = mutedColor()) }
-    AmText(MissionControlStrings.format(row.lastEvent), color = mutedColor())
+    AmChip(MissionControlStrings.format(row.lastEvent), tone = row.glyph.tone)
     AmText(MissionControlStrings.format(row.age), color = mutedColor())
 }
+
+/** Reply and Attach appear in the selected row only; none of the buttons takes focus. */
+@Composable
+private fun RowButtons(
+    id: SessionId,
+    shown: SessionDetails?,
+    menu: RowMenu,
+    onEvent: (MissionControlEvent) -> Unit,
+) {
+    if (shown?.canReply == true) {
+        AmButton(
+            MissionControlStrings["action.reply"],
+            { onEvent(MissionControlEvent.Reply) },
+            Modifier.testTag(MissionControlTags.rowReply(id)),
+            ButtonOptions(kind = ButtonKind.PRIMARY, focusable = false),
+        )
+    }
+    if (shown?.canAttach == true) {
+        AmIconButton(
+            IconKind.ATTACH,
+            MissionControlStrings["action.attach"],
+            { onEvent(MissionControlEvent.Attach) },
+            Modifier.testTag(MissionControlTags.rowAttach(id)),
+            IconButtonOptions(focusable = false, style = IconButtonStyle.OUTLINED),
+        )
+    }
+    RowMenuButton(MissionControlTags.rowMenuButton(id), menu, onEvent)
+}
+
+private val TILE = 38.dp

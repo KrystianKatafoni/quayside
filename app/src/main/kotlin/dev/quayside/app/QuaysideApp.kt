@@ -2,11 +2,16 @@ package dev.quayside.app
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.quayside.commandpalette.ui.CommandPalette
@@ -14,50 +19,107 @@ import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.missioncontrol.ui.GlobalViews
 import dev.quayside.missioncontrol.ui.MissionControl
 import dev.quayside.missioncontrol.ui.MissionControlController
+import dev.quayside.missioncontrol.ui.MissionControlHandlers
+import dev.quayside.missioncontrol.ui.SessionKeyCaps
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
 import dev.quayside.projects.ui.ProjectsSidebar
+import dev.quayside.terminal.ui.TabKey
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
+
+/** The three controllers every window has. */
+internal class AppControllers(
+    val projects: ProjectsController,
+    val missionControl: MissionControlController,
+    val palette: CommandPaletteController,
+)
+
+/**
+ * The terminal parts of a window: [panel] draws the terminal and gets the size and the full screen action; [attacher]
+ * serves the mouse paths; [mode] says which layout is shown and [terminalKey] is the key of the active tab, which the
+ * session bar of the terminal mode shows. All optional: a window can run without a terminal.
+ */
+internal data class TerminalSlot(
+    val panel: (@Composable (Modifier, (() -> Unit)?) -> Unit)? = null,
+    val attacher: SessionAttacher? = null,
+    val mode: WindowModeState? = null,
+    val terminalKey: StateFlow<TabKey?>? = null,
+)
 
 /**
  * The window content: the projects sidebar with the global views under it, next to Mission Control (AM-304,
  * AM-405, AM-407). A shown global view clears the project in the sidebar (AM-407, decision 1).
  *
- * [terminalPanel], when given, draws the terminal under Mission Control; it gets the size to take and draws nothing
- * while there are no tabs and no error (AM-503). [attacher], when given, serves the mouse paths to the terminal:
- * the Attach and Odpowiedz buttons, the row menu and a double click (AM-511); it is the one `⏎` and `r` use.
- * [onNewAgent] is the "Nowy agent" button of the project page (AM-608).
+ * [terminal] says how the terminal is drawn and used (see [TerminalSlot]); the terminal panel draws nothing while
+ * there are no tabs and no error (AM-503). [onNewAgent] is the "Nowy agent" button of the project page (AM-608);
+ * [keyCaps] are the shortcut marks next to the actions (AM-809).
  */
 @Composable
-@Suppress("LongParameterList") // the sidebar, centre, palette and the two terminal parts of one window (AM-511)
 internal fun QuaysideApp(
-    projects: ProjectsController,
-    missionControl: MissionControlController,
-    palette: CommandPaletteController,
+    controllers: AppControllers,
     modifier: Modifier = Modifier,
-    terminalPanel: (@Composable (Modifier) -> Unit)? = null,
-    attacher: SessionAttacher? = null,
+    terminal: TerminalSlot = TerminalSlot(),
     onNewAgent: () -> Unit = {},
+    keyCaps: SessionKeyCaps? = null,
 ) {
+    val projects = controllers.projects
+    val missionControl = controllers.missionControl
+    val attacher = terminal.attacher
+    val mode = terminal.mode
     LaunchedEffect(projects, missionControl) {
         missionControl.view.filterNotNull().collect { projects.onIntent(ProjectsIntent.ClearSelection) }
     }
+    val windowMode by (mode?.mode ?: LIST_ONLY).collectAsState()
+    // One movable panel, so the terminal widget survives the switch of the layout (AM-809, risks).
+    val panel = remember(terminal.panel) { terminal.panel?.let(::movablePanel) }
+    val handlers =
+        MissionControlHandlers(
+            onAttach = { attacher?.attachSelected() },
+            onReply = { attacher?.replySelected() },
+            onNewAgent = onNewAgent,
+            keyCaps = keyCaps,
+        )
     Row(modifier = modifier.fillMaxSize()) {
-        Column {
-            ProjectsSidebar(projects, Modifier.weight(weight = 1f))
-            GlobalViews(missionControl)
-        }
-        Column(modifier = Modifier.weight(weight = 1f)) {
-            MissionControl(
-                missionControl,
-                Modifier.weight(weight = 1f).fillMaxWidth(),
-                onAttach = { attacher?.attachSelected() },
-                onReply = { attacher?.replySelected() },
-                onNewAgent = onNewAgent,
+        if (mode != null && windowMode == WindowMode.TERMINAL) {
+            TerminalModeLayout(
+                Modifier.weight(weight = 1f),
+                TerminalModeParts(projects, missionControl, mode, panel, terminal.terminalKey, attacher),
             )
-            terminalPanel?.invoke(Modifier.fillMaxWidth().height(TERMINAL_HEIGHT))
+        } else {
+            ListLayout(projects, missionControl, handlers, panel, mode)
         }
-        CommandPalette(palette)
+        CommandPalette(controllers.palette)
+    }
+}
+
+private val LIST_ONLY: StateFlow<WindowMode> = MutableStateFlow(WindowMode.LIST)
+
+private fun movablePanel(
+    panel: @Composable (Modifier, (() -> Unit)?) -> Unit,
+): @Composable (Modifier, (() -> Unit)?) -> Unit =
+    movableContentOf { modifier: Modifier, onFullScreen: (() -> Unit)? -> panel(modifier, onFullScreen) }
+
+/** The list mode: the sidebar with the global views, Mission Control and the terminal panel under it. */
+@Composable
+private fun RowScope.ListLayout(
+    projects: ProjectsController,
+    missionControl: MissionControlController,
+    handlers: MissionControlHandlers,
+    panel: (@Composable (Modifier, (() -> Unit)?) -> Unit)?,
+    mode: WindowModeState?,
+) {
+    Column {
+        ProjectsSidebar(projects, Modifier.weight(weight = 1f))
+        GlobalViews(missionControl)
+    }
+    Column(modifier = Modifier.weight(weight = 1f)) {
+        MissionControl(missionControl, Modifier.weight(weight = 1f).fillMaxWidth(), handlers = handlers)
+        panel?.invoke(
+            Modifier.fillMaxWidth().height(TERMINAL_HEIGHT),
+            mode?.let { { it.onEvent(WindowModeEvent.FullScreen) } },
+        )
     }
 }
 

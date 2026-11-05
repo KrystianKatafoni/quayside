@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
+import dev.quayside.projects.ui.ProjectsIntent
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionsApi
@@ -99,6 +101,9 @@ internal class WindowSetup(
     val starts: SessionCommands? = null,
 ) {
     var keys: TerminalKeys? = null
+
+    /** The attacher of the window's terminal (null without one): what the popup Attach and the buttons call. */
+    var attacher: SessionAttacher? = null
 }
 
 /** [showWindow] for a [WindowSetup] with the "Nowy agent" dialog, its command and its button (AM-608). */
@@ -127,13 +132,20 @@ private fun WindowContent(
         val agent =
             remember { AgentWiring(setup, projects, missionControl, scope).also { it.register(registry, palette) } }
         PaletteKeys(keys, palette)
+        SideEffect { setup.attacher = terminal.wiring.attacher }
+        val mode = remember { terminal.controller?.let { windowMode(it, registry, scope) } }
         KeysBox(keys) {
             QuaysideApp(
-                projects = projects,
-                missionControl = missionControl,
-                palette = palette,
-                terminalPanel = terminalPanel(terminal.controller, setup.terminal),
-                attacher = terminal.wiring.attacher,
+                controllers = AppControllers(projects, missionControl, palette),
+                terminal =
+                    remember(terminal.controller) {
+                        TerminalSlot(
+                            panel = terminalPanel(terminal.controller, setup.terminal),
+                            attacher = terminal.wiring.attacher,
+                            mode = mode,
+                            terminalKey = terminal.controller?.activeKey,
+                        )
+                    },
                 onNewAgent = agent::openForSelection,
             )
             SettingsHosts(setup.settings, registry, WindowParts(projects, missionControl, scope))
@@ -338,7 +350,10 @@ private class TerminalWiring(
     ) {
         terminal.followSessions(sessions.snapshot, scope)
         registry.register(TerminalCommands(projects, controller, missionControl, terminal, scope))
-        val created = SessionAttacher(missionControl, terminal, attachCommand, NoOpLogger)
+        val created =
+            SessionAttacher(missionControl, terminal, attachCommand, NoOpLogger) {
+                controller.onIntent(ProjectsIntent.Select(it))
+            }
         attacher = created
         registry.register(AttachCommands(controller, missionControl, created, scope))
     }
@@ -435,11 +450,27 @@ private fun shellStartOf(
         )
     } ?: PlainShellStart()
 
+/** The mode of the window over [terminal] and its palette commands, registered the way `MainWindow` will (AM-809). */
+private fun windowMode(
+    terminal: TerminalController,
+    registry: FakeCommandRegistry,
+    scope: CoroutineScope,
+): WindowModeState =
+    WindowModeState { terminal.menu.value.hasTabs }.also {
+        registry.register(WindowModeCommands(it, scope))
+        it.follow(terminal.menu, scope)
+    }
+
 /** The terminal panel slot of the window: the area over [controller] with markers for the widgets of [terminals]. */
 private fun terminalPanel(
     controller: TerminalController?,
     terminals: RecordingTerminals?,
-): (@Composable (Modifier) -> Unit)? {
+): (@Composable (Modifier, (() -> Unit)?) -> Unit)? {
     if (controller == null) return null
-    return { modifier -> TerminalArea(controller, { false }, modifier, terminals?.paneContent) }
+    return {
+        modifier,
+        onFullScreen,
+        ->
+        TerminalArea(controller, { false }, modifier, terminals?.paneContent, onFullScreen)
+    }
 }

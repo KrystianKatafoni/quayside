@@ -78,6 +78,7 @@ internal object MissionControlReducer {
             details = picked?.let(::details),
             banner = (snapshot.status as? SnapshotStatus.Stale)?.let { Freshness.of(it, zone) },
             loading = snapshot.status == SnapshotStatus.Loading,
+            stats = SessionStats.of(mine.map { it.state }),
         )
     }
 
@@ -89,7 +90,7 @@ internal object MissionControlReducer {
     ): SessionRow =
         SessionRow(
             id = session.id,
-            glyph = StateGlyph.of(session.state),
+            glyph = StatusLook.of(session.state),
             name = session.name,
             summary = session.summary,
             lastEvent = LastEvent.of(session.state),
@@ -102,25 +103,12 @@ internal object MissionControlReducer {
         SessionDetails(
             id = session.id,
             name = session.name,
-            glyph = StateGlyph.of(session.state),
+            glyph = StatusLook.of(session.state),
             summary = session.summary,
             worktree = session.cwd,
             startedAt = session.startedAt,
             lastActivityAt = session.lastActivityAt,
         )
-}
-
-/** Symbol, tone and text key of a state (docs/05 table). */
-internal object StateGlyph {
-    fun of(state: SessionState): Glyph =
-        when (state) {
-            is SessionState.AwaitingInput -> Glyph("?", Tone.WARN, "state.awaitingInput")
-            is SessionState.AwaitingPermission -> Glyph("!", Tone.WARN, "state.awaitingPermission")
-            SessionState.Working -> Glyph("~", Tone.WORK, "state.working")
-            SessionState.Done -> Glyph("✓", Tone.OK, "state.done")
-            SessionState.Failed -> Glyph("✕", Tone.ERR, "state.failed")
-            SessionState.Stopped -> Glyph("○", Tone.DIM, "state.stopped")
-        }
 }
 
 /** The "last event" column, e.g. "prosi o zgodę: Bash". */

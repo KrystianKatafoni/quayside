@@ -277,6 +277,7 @@ internal fun decide(event: SessionEvent, settings: NotificationSettings, ctx: De
 // DeliveryContext(appActive, microphoneActive, localTime, focusActive); quietNow(quiet, ctx) = (enabled && covers(localTime)) || (respectFocus && focusActive)
 internal interface FocusMonitor { val active: StateFlow<Boolean> }   // AM-705: tylko port; NoFocus (zawsze false), adapter Skupienia osobno
 internal interface SpeechPort { suspend fun speak(text: String, voice: VoiceId, rate: Int) }  // adapter: MacSayAdapter
+internal interface SoundPort { suspend fun play(sound: SystemSound): Outcome<Unit, SoundError> }  // AM-812, adapter: AfplayAdapter; SoundNotifier + SoundQueue (chłodzenie 2 s)
 // Fabryki modułu (public): notificationCenterModule(settings, scope, clock, zone: () -> ZoneId, ...) (strefa czytana przy każdym zdarzeniu) oraz voiceCatalogModule(process, workDir): VoiceCatalog
 ```
 
@@ -432,7 +433,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 | Plik w `~/Library/Application Support/Quayside/` | Właściciel (moduł) |
 | --- | --- |
 | `projects.json` | `projects:impl` |
-| `notifications.json` | `notifications:impl` |
+| `notifications.json` | `notifications:impl` (schemat 2: `channels` tylko z odstępstwami od `defaultChannels`, brak klucza = bieżąca domyślna; [ADR 0024](adr/0024-format-notifications-json.md)) |
 | `terminal.json` | `terminal:impl` |
 | `summaries.json` | `summaries:impl` (`{"useModel": false}`: streszczenia modelem Haiku, domyślnie wyłączone; brak lub uszkodzony plik = wyłączone) |
 | `theme.json` | `appearance:impl` |

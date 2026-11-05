@@ -10,6 +10,7 @@ import dev.quayside.agentruntime.impl.agentRuntimeModule
 import dev.quayside.agentruntime.impl.hookEventSourceModule
 import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.agentruntime.impl.oneShotPromptModule
+import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
 import dev.quayside.core.designtokens.TerminalColors
@@ -32,7 +33,6 @@ import dev.quayside.terminal.impl.terminalModule
 import dev.quayside.terminal.impl.terminalSettingsModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import java.nio.file.Path
@@ -51,17 +51,19 @@ fun main() {
     val core = productionCoreDeps()
     core.logger.info("app start")
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
-    val look = appearanceModule().catalog.defaultLook()
-    // Before the first terminal opens: JediTerm finds the font by name (installedFonts is read once).
-    registerTerminalFont(look.typography.terminalFont, core.logger)
-    val modules = appModules(core, projects, runBlocking { storedSettings(core) }, look)
+    val appearance = appearanceModule()
+    val appScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
+    val looks = appLooks(appearance, appScope)
+    // Before the first window (JediTerm reads the installed fonts once, by name): every font the dialog offers.
+    registerTerminalFonts(appearance.catalog, core.logger)
+    val modules = appModules(core, projects, runBlocking { storedSettings(core) }, appearance, looks)
     val hooks = hookDeps(core)
     val keys = WindowKeys()
     // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
     System.setProperty("compose.interop.blending", "true")
     application {
         // Window passes the composition locals of its parent composition to its content, so one AppTheme is enough.
-        AppTheme(look) {
+        AppTheme(looks) {
             Window(
                 onCloseRequest = {
                     modules.terminal.api.close()
@@ -83,7 +85,8 @@ private fun appModules(
     core: CoreDeps,
     projects: ProjectsApi,
     stored: StoredSettings,
-    look: AppLook,
+    appearance: AppearanceApi,
+    looks: StateFlow<AppLook>,
 ): AppModules {
     val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir, injectHookToken = true)
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
@@ -100,8 +103,15 @@ private fun appModules(
     val registry = commandPaletteModule(CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger)
     val notifications = notificationDeps(core, stored.notifications, sessions, projects)
     val terminal =
-        terminalDeps(core, runtime, stored.terminal, notifications, look)
-    return AppModules(projects, sessions, inspector, registry, terminal, notifications)
+        terminalDeps(core, runtime, stored.terminal, notifications, looks)
+    return AppModules(
+        ProjectDeps(projects, inspector),
+        sessions,
+        registry,
+        terminal,
+        notifications,
+        AppearanceDeps(appearance, looks),
+    )
 }
 
 /** The sessions module fed by the hook server (AM-601, AM-603); both live in [scope], as long as the app. */
@@ -142,20 +152,20 @@ private suspend fun storedSettings(core: CoreDeps): StoredSettings =
     )
 
 /**
- * The terminal module on the login shell over the stored settings, with the colours and font of [look]. Its bells
- * become notifications of [notifications].
+ * The terminal module on the login shell over the stored settings, with the colours and font of the applied
+ * [looks]. Its bells become notifications of [notifications].
  */
 private fun terminalDeps(
     core: CoreDeps,
     runtime: AgentRuntime,
     stored: TerminalSettingsRepo,
     notifications: NotificationDeps,
-    look: AppLook,
+    looks: StateFlow<AppLook>,
 ): TerminalDeps {
     val shell = LoginShellProcessRunner.defaultShell()
     val scope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
-    val settings = typographySettings(stored.settings, look.typography.terminalFont, scope)
-    val api = startTerminals(core, shell, settings, look.colors.terminal)
+    val settings = appliedTerminalSettings(stored.settings, looks, scope)
+    val api = startTerminals(core, shell, settings, appliedTerminalColors(looks, scope))
     forwardBells(api.bells, stored.settings, notifications.center, scope)
     return TerminalDeps(api, stored, shell, runtime::attachCommand)
 }
@@ -169,9 +179,9 @@ private fun startTerminals(
     core: CoreDeps,
     shell: Path,
     settings: StateFlow<TerminalSettings>,
-    colors: TerminalColors,
+    colors: StateFlow<TerminalColors>,
 ): TerminalApi {
-    val terminal = terminalModule(core.dispatchers, core.logger, shell, settings, MutableStateFlow(colors))
+    val terminal = terminalModule(core.dispatchers, core.logger, shell, settings, colors)
     Runtime.getRuntime().addShutdownHook(Thread { terminal.close() })
     return terminal
 }

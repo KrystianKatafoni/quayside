@@ -75,6 +75,18 @@ internal object WindowTags {
         channel: NotificationChannel,
     ): String = "notifications.settings.matrix.${kind.name}.${channel.name}"
 
+    /** The Appearance dialog (AM-803) and its parts; tags of `appearance:ui`, `internal` there. */
+    const val APPEARANCE_DIALOG = "appearance.dialog"
+    const val APPEARANCE_APPLY = "appearance.apply"
+    const val APPEARANCE_CANCEL = "appearance.cancel"
+    const val APPEARANCE_PREVIEW = "appearance.preview"
+
+    fun appearanceTheme(schemeId: String): String = "appearance.theme.$schemeId"
+
+    fun appearanceScale(name: String): String = "appearance.scale.$name"
+
+    fun appearanceDensity(name: String): String = "appearance.density.$name"
+
     /** Tags of `terminal:ui`, which are `internal` there; tab and pane ids count from 1 in opening order. */
     fun terminalGroup(projectId: String): String = "terminal.group.$projectId"
 

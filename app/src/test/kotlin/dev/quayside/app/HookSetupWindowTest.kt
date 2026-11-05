@@ -26,6 +26,7 @@ import dev.quayside.agentruntime.api.HookError
 import dev.quayside.agentruntime.api.HookKind
 import dev.quayside.agentruntime.api.HookScope
 import dev.quayside.agentruntime.api.HookStatus
+import dev.quayside.appearance.api.AppearanceSettings
 import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.designsystem.toColor
@@ -213,7 +214,7 @@ class HookSetupWindowTest {
             val err =
                 appearanceModule()
                     .catalog
-                    .defaultLook()
+                    .lookOf(AppearanceSettings())
                     .colors.status.err
             hooks.failNext(HookError.WriteFailed(Path.of("/home/test/.claude/settings.json"), "reason"))
             openHooks(window())

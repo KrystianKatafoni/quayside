@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -21,7 +23,11 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.agentruntime.api.FakeHookInstaller
+import dev.quayside.appearance.api.AppearanceSettings
+import dev.quayside.appearance.api.FakeAppearanceApi
 import dev.quayside.appearance.impl.appearanceModule
+import dev.quayside.appearance.ui.AppearanceController
+import dev.quayside.appearance.ui.AppearanceDialog
 import dev.quayside.commandpalette.api.FakeCommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.domain.NoOpLogger
@@ -111,12 +117,29 @@ internal class WindowSetup(
 internal fun ComposeUiTest.showWindowOf(setup: WindowSetup): CommandPaletteController {
     val built = mutableListOf<CommandPaletteController>()
     val keys = WindowKeys()
-    val look = appearanceModule().catalog.defaultLook()
+    val look = appearanceModule().catalog.lookOf(AppearanceSettings())
     setContent {
-        AppTheme(look) { WindowContent(setup, keys) { built += it } }
+        val content = @Composable { WindowContent(setup, keys) { built += it } }
+        val appearance = setup.settings.appearance
+        if (appearance == null) AppTheme(look, content) else LiveLook(appearance, content)
     }
     waitUntil { built.isNotEmpty() }
     return built.single()
+}
+
+/**
+ * [content] in the look of [appearance], the way `Main` and `MainWindow` do it: AmTheme from the settings over the
+ * window, the UI scale inside it (AM-803).
+ */
+@Composable
+private fun LiveLook(
+    appearance: FakeAppearanceApi,
+    content: @Composable () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val looks = remember { appLooks(appearance, scope) }
+    val look by looks.collectAsState()
+    AppTheme(looks) { AppScaled(look.scale, content) }
 }
 
 /** The window content of [setup] under [AppTheme]; [onPalette] gets the palette for the test. */
@@ -230,6 +253,8 @@ private class AgentWiring(
  * The settings repos whose dialogs the window shows; a dialog without its repo is not shown. With [hooks] the window
  * also gets the "Hooki Claude Code" dialog and its palette command (AM-607); [hookOffer] is then required (a store on
  * a temp directory of the test). The start offer runs only with [hookOfferAtStart], the way `MainWindow` does.
+ * With [appearance] the window is drawn in the look of its settings and gets the Appearance dialog, its palette
+ * command and its preview (AM-803); the catalog of the fake should be the real one.
  */
 internal class SettingsRepos(
     val terminal: FakeTerminalSettingsRepo? = null,
@@ -238,7 +263,10 @@ internal class SettingsRepos(
     val hooks: FakeHookInstaller? = null,
     val hookOffer: HookOfferStore? = null,
     val hookOfferAtStart: Boolean = false,
-)
+) {
+    /** Set before the window is shown (the constructor is at the limit of parameters). */
+    var appearance: FakeAppearanceApi? = null
+}
 
 /** The backup folder the hooks dialog of the window shows. */
 internal val WINDOW_HOOK_BACKUP_DIR: Path = Path.of(System.getProperty("java.io.tmpdir")).resolve("hooks-backup")
@@ -262,6 +290,27 @@ private fun SettingsHosts(
     SettingsDialogHost(repos.terminal, registry, window, notifications?.dialogOpen(window.scope))
     NotificationDialogHost(notifications, registry, window)
     HookDialogHost(repos, registry, window)
+    AppearanceDialogHost(repos, registry, window)
+}
+
+/**
+ * The Appearance dialog over [SettingsRepos.appearance] with its palette command and the preview of `app`; nothing
+ * without one. The terminal repo is the one of [SettingsRepos.terminal], or a fake of its own.
+ */
+@Composable
+private fun AppearanceDialogHost(
+    repos: SettingsRepos,
+    registry: FakeCommandRegistry,
+    window: WindowParts,
+) {
+    val appearance = repos.appearance ?: return
+    val controller =
+        remember {
+            AppearanceController(appearance, repos.terminal ?: FakeTerminalSettingsRepo(), window.scope).also {
+                registry.register(AppearanceCommands(window.projects, window.missionControl, it, window.scope))
+            }
+        }
+    AppearanceDialog(controller) { AppearancePreviewSlot() }
 }
 
 /** The hooks dialog over [SettingsRepos.hooks] with its palette command registered; nothing without one. */

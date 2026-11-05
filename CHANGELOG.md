@@ -6,6 +6,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Ekran „Wygląd” (Widok → Wygląd… i paleta komend): lista 29 motywów z próbką kolorów i plakietką trybu, lista 22 typografii z podpowiedzią motywu, rozmiar interfejsu S/M/L, gęstość listy sesji (Kompaktowa / Komfortowa), font i rozmiar terminala (8–32) oraz podgląd na żywo na prawdziwym ekranie Mission Control z przykładowymi sesjami; „Zastosuj” zmienia kolory, kształt, fonty i skalę okna, a nowe karty terminala dostają kolory i font wybranego motywu. Wybór działa do zamknięcia aplikacji (zapis w `theme.json` dochodzi w AM-804) (AM-803).
+- Kompaktowa gęstość listy sesji: kafelek 28 dp, mniejszy odstęp i jedna linia (podsumowanie tylko w panelu szczegółów) (AM-803).
+
 - Przebudowa Mission Control i paska bocznego wg mockupów z 2026-11-04: „+” w nagłówku PROJEKTY, ikony i pigułki liczników, kafelki liczników strony projektu, wiersze z kafelkiem stanu, panel szczegółów z hierarchią przycisków (główny, zwykłe, groźne), skróty przy akcjach; `AmButton` z rodzajem `DANGER`, ikoną i skrótem (AM-809).
 - Tryb terminala (przycisk „Tryb terminala” na pasku kart albo komenda palety): wąski pasek ikon projektów, pasek sesji nad terminalem i „Wróć do listy sesji”; karty z ikoną stanu i przyciskami ikonowymi (AM-809).
 
@@ -67,5 +70,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Changed
 
+- Kolory 23 z 29 motywów poprawione tak, by ekrany spełniały kontrast 4,5:1 (tekst) i 3:1 (znaki): `warn`, `ok`, `err`, `work`, `muted` i w `oatmeal-light` `accent` są minimalnie ściemnione lub rozjaśnione tam, gdzie wcześniej zawodziły; motywy `plex`, `graphite`, `phosphor`, `synth`, `amber` i `contrast` bez zmian (AM-803).
 - Nowa nazwa aplikacji: Quayside (wcześniej Agent Manager). Dane aplikacji leżą w `~/Library/Application Support/Quayside/`; listę projektów ze starego katalogu `AgentManager/` trzeba przenieść ręcznie.
 - API `feature:terminal:api`: `TerminalSession` ma nowe pole `search` (`TerminalSearch`, `SearchQuery`, `ScrollbackMatcher`) — zmiana kontraktu wg ENG-I6.

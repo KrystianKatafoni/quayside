@@ -329,8 +329,9 @@ data class ShapeTokens(val radius: Int, val borderWidth: Int, val shadow: Shadow
 data class TypographySpec(val id: TypographyId, val name: String, val uiFont: String, val terminalFont: String)
 
 // core:design-system (AM-802; Compose, wątek UI, niemutowalne)
-object AmTheme { val colors: ColorTokens; val shape: AmShape; val typography: AmTypography }   // @Composable, CompositionLocal
-@Composable fun AmTheme(colors: ColorTokens, shape: ShapeTokens, typography: TypographySpec, content: @Composable () -> Unit)
+object AmTheme { val colors: ColorTokens; val shape: AmShape; val typography: AmTypography; val density: AmDensity }   // @Composable, CompositionLocal
+@Composable fun AmTheme(colors: ColorTokens, shape: ShapeTokens, typography: TypographySpec, density: AmDensity = COMFORTABLE, content: @Composable () -> Unit)
+enum class AmDensity { COMPACT, COMFORTABLE }; data class ListMetrics(val tile: Dp, val vertical: Dp, val twoLines: Boolean); fun AmDensity.listMetrics(): ListMetrics   // AM-803
 fun Rgba.toColor(): Color; fun ShapeTokens.toAmShape(): AmShape; fun TypographySpec.toAmTypography(): AmTypography
 enum class TextRole { TITLE, HEADING, BODY, CAPTION, CODE }; object AmFonts { val families: Set<String>; fun family(name: String): FontFamily? }
 @Composable fun AmText(...); AmButton(...); AmListRow(...); AmPanel(...); AmModeBar(...); AmModeBadge(...); fun Modifier.amFocusFrame()
@@ -351,13 +352,14 @@ data class ButtonOptions(val kind: ButtonKind = SECONDARY, val enabled: Boolean 
 @Composable fun AmButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, options: ButtonOptions = ButtonOptions())
 @Composable fun StatusTone.markColor(): Color      // kolor ikony tonu, 3:1 na bg, panel, raised, sel
 
-// appearance:api (typy z core:design-tokens, bez Compose); AM-801 daje tylko `catalog`, reszta w AM-804
+// appearance:api (typy z core:design-tokens, bez Compose); AM-803: settings + update w pamięci, AM-804 dodaje theme.json i dzień/noc
 interface AppearanceApi {
-    val theme: StateFlow<ResolvedTheme>           // aktualny motyw (kolory + kształt) + typografia + skala
     val catalog: ThemeCatalog                     // 29 motywów, 22 typografie, własne (08-wyglad)
-    suspend fun select(scheme: SchemeId? = null, typography: TypographyId? = null)
-    suspend fun update(change: (AppearanceSettings) -> AppearanceSettings)
+    val settings: StateFlow<AppearanceSettings>   // scheme, typography, uiScale (S/M/L), density (COMPACT/COMFORTABLE)
+    suspend fun update(change: (AppearanceSettings) -> AppearanceSettings): Outcome<AppearanceSettings, AppearanceError>
 }
+// appearance:ui (AM-803, tylko `app` go widzi): AppearanceController(appearance, terminal, scope), AppearanceDialog(controller, preview);
+// podgląd to prawdziwy Mission Control składany w `app` (ADR 0022)
 
 // command-palette:api (komendy składa `app`, ADR 0011; typy skrótu bez Compose, ENG-I8)
 interface CommandRegistry {

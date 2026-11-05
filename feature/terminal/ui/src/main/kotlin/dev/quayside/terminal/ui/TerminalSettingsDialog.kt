@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import dev.quayside.core.designsystem.AmDropdownItems
 import dev.quayside.core.designsystem.AmPanel
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.TextRole
@@ -132,19 +133,19 @@ private fun ChoiceRows(
     LaunchedEffect(Unit) { first.requestFocus() }
     val shells = ShellProfile.entries
     SettingRow("settings.shell", invalid = null) {
-        ChoiceField(
+        Dropdown(
             TerminalTags.SETTINGS_SHELL,
-            shells.map(TerminalStrings::of),
-            shells.indexOf(state.draft.shell),
+            "settings.shell",
+            AmDropdownItems(shells.map(TerminalStrings::of), shells.indexOf(state.draft.shell)),
             Modifier.focusRequester(first),
         ) { index -> controller.edit { it.copy(shell = shells[index]) } }
     }
     val directories = StartDirectory.entries
     SettingRow("settings.startDirectory", invalid = null) {
-        ChoiceField(
+        Dropdown(
             TerminalTags.SETTINGS_START_DIRECTORY,
-            directories.map(TerminalStrings::of),
-            directories.indexOf(state.draft.startDirectory),
+            "settings.startDirectory",
+            AmDropdownItems(directories.map(TerminalStrings::of), directories.indexOf(state.draft.startDirectory)),
         ) { index -> controller.edit { it.copy(startDirectory = directories[index]) } }
     }
 }

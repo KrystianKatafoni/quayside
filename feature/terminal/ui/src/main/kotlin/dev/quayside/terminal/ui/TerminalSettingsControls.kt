@@ -1,7 +1,6 @@
 package dev.quayside.terminal.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,16 +13,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmButton
+import dev.quayside.core.designsystem.AmDropdown
+import dev.quayside.core.designsystem.AmDropdownItems
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.TextRole
@@ -80,44 +76,17 @@ internal fun TextSetting(
     )
 }
 
-/**
- * Picks one of [labels]: a click, Enter or Space goes to the next one, the arrow keys to the next and the previous.
- * [selected] is an index into [labels].
- */
+/** An [AmDropdown] as wide as a text field, named by the setting `labelKey`; the list holds the choices. */
 @Composable
-internal fun ChoiceField(
+internal fun Dropdown(
     tag: String,
-    labels: List<String>,
-    selected: Int,
+    labelKey: String,
+    items: AmDropdownItems,
     modifier: Modifier = Modifier,
     onSelect: (Int) -> Unit,
 ) {
-    val step = { by: Int -> onSelect(Math.floorMod(selected + by, labels.size)) }
-    Box(
-        modifier
-            .width(width = 260.dp)
-            .testTag(tag)
-            .onPreviewKeyEvent { event ->
-                val by = arrowStep(event.key).takeIf { event.type == KeyEventType.KeyDown }
-                by?.let(step)
-                by != null
-            }.amFocusFrame()
-            .background(
-                color = raisedColor(),
-                shape = AmTheme.shape.corner,
-            ).clickable(role = Role.DropdownList) { step(1) }
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-    ) {
-        AmText("‹  ${labels[selected]}  ›")
-    }
+    AmDropdown(items, TerminalStrings[labelKey], onSelect, modifier.width(width = 260.dp).testTag(tag))
 }
-
-private fun arrowStep(key: Key): Int? =
-    when (key) {
-        Key.DirectionRight -> 1
-        Key.DirectionLeft -> -1
-        else -> null
-    }
 
 /** A checkbox with its label; Space toggles it. */
 @Composable

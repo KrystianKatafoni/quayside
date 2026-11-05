@@ -8,6 +8,7 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -20,11 +21,13 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.designsystem.toColor
 import dev.quayside.core.designtokens.SampleTokens
 import dev.quayside.terminal.api.FakeTerminalSettingsRepo
 import dev.quayside.terminal.api.ShellProfile
+import dev.quayside.terminal.api.StartDirectory
 import dev.quayside.terminal.api.TerminalSettingsField
 import dev.quayside.terminal.api.TerminalSettingsIssue
 import io.kotest.matchers.collections.shouldContain
@@ -199,32 +202,150 @@ class TerminalSettingsDialogScreenTest {
             }
         }
 
+    /** Keys go to the open list, else to the shell field (a key sent to the dialog panel does not reach a field). */
+    private fun ComposeUiTest.pressInDialog(key: Key) {
+        val open = onAllNodesWithTag(AmDropdownTags.LIST).fetchSemanticsNodes().isNotEmpty()
+        val target = if (open) AmDropdownTags.LIST else TerminalTags.SETTINGS_SHELL
+        onNodeWithTag(target).performKeyInput { pressKey(key) }
+        waitForIdle()
+    }
+
+    private fun ComposeUiTest.awaitListGone() {
+        waitUntil(timeoutMillis = WAIT_MS) {
+            onAllNodesWithTag(AmDropdownTags.LIST).fetchSemanticsNodes().isEmpty()
+        }
+    }
+
+    private fun ComposeUiTest.shellShows(index: Int) =
+        waitUntilExactlyOneExists(
+            hasTestTag(TerminalTags.SETTINGS_SHELL) and
+                hasText(TerminalStrings.of(ShellProfile.entries[index]), substring = true),
+            WAIT_MS,
+        )
+
+    /** Opens the list of [field] with a click and clicks its option [index]. */
+    private fun ComposeUiTest.pick(
+        field: String,
+        index: Int,
+    ) {
+        await(field).performClick()
+        await(AmDropdownTags.option(index)).performClick()
+        awaitListGone()
+    }
+
     @Test
-    fun `NFR-6 arrow keys and Space change a choice`() =
+    fun `NFR-6 shell field has the focus when the dialog opens`() =
         runComposeUiTest {
-            // Given the open dialog; the shell shows the first profile
+            showDialog()
+
+            awaitFocus(TerminalTags.SETTINGS_SHELL)
+            onNodeWithTag(AmDropdownTags.LIST).assertDoesNotExist()
+        }
+
+    @Test
+    fun `NFR-6 Enter opens a choice and arrow keys with Enter change it`() =
+        runComposeUiTest {
+            // Given the open dialog; the shell shows the first profile and has the focus
             showDialog()
             awaitFocus(TerminalTags.SETTINGS_SHELL)
-            val field = onNodeWithTag(TerminalTags.SETTINGS_SHELL)
-            val shows = { index: Int ->
-                hasTestTag(TerminalTags.SETTINGS_SHELL) and
-                    hasText(TerminalStrings.of(ShellProfile.entries[index]), substring = true)
+            shellShows(0)
+
+            // When the user presses Enter, the list opens on the first profile
+            pressInDialog(Key.Enter)
+            await(AmDropdownTags.LIST)
+            ShellProfile.entries.indices.forEach { await(AmDropdownTags.option(it)) }
+            awaitFocus(AmDropdownTags.option(0))
+
+            // And Down then Enter picks the next profile; the focus goes back to the field
+            pressInDialog(Key.DirectionDown)
+            awaitFocus(AmDropdownTags.option(1))
+            pressInDialog(Key.Enter)
+            awaitListGone()
+            shellShows(1)
+            awaitFocus(TerminalTags.SETTINGS_SHELL)
+
+            // And a side arrow on the closed field only opens the list; Escape closes it with no change
+            pressInDialog(Key.DirectionRight)
+            await(AmDropdownTags.LIST)
+            pressInDialog(Key.Escape)
+            awaitListGone()
+            shellShows(1)
+
+            // And Space opens the list again, Escape closes it with no change
+            pressInDialog(Key.Spacebar)
+            await(AmDropdownTags.LIST)
+            pressInDialog(Key.Escape)
+            awaitListGone()
+            shellShows(1)
+        }
+
+    @Test
+    fun `NFR-6 Escape in an open list closes only the list`() =
+        runComposeUiTest {
+            // Given the open dialog and the open list of the shell
+            showDialog()
+            awaitFocus(TerminalTags.SETTINGS_SHELL)
+            pressInDialog(Key.Enter)
+            await(AmDropdownTags.LIST)
+
+            // When the user presses Escape
+            pressInDialog(Key.Escape)
+
+            // Then the list is gone, the dialog stays and the field has the focus
+            awaitListGone()
+            onNodeWithTag(TerminalTags.SETTINGS_DIALOG).assertExists()
+            awaitFocus(TerminalTags.SETTINGS_SHELL)
+
+            // And the next Escape cancels the dialog
+            pressInDialog(Key.Escape)
+            waitUntil(timeoutMillis = WAIT_MS) {
+                onAllNodesWithTag(TerminalTags.SETTINGS_DIALOG).fetchSemanticsNodes().isEmpty()
             }
-            waitUntilExactlyOneExists(shows(0), WAIT_MS)
+        }
 
-            // When the user presses Right
-            field.performKeyInput { pressKey(Key.DirectionRight) }
+    @Test
+    fun `FR-T7 shell and start directory are picked from lists and saved`() =
+        runComposeUiTest {
+            // Given the open dialog with the default shell and start directory
+            val repo = FakeTerminalSettingsRepo()
+            showDialog(repo)
 
-            // Then the next profile shows
-            waitUntilExactlyOneExists(shows(1), WAIT_MS)
+            // When the user picks fish and the home directory by clicks and saves
+            pick(TerminalTags.SETTINGS_SHELL, ShellProfile.entries.indexOf(ShellProfile.FISH))
+            pick(TerminalTags.SETTINGS_START_DIRECTORY, StartDirectory.entries.indexOf(StartDirectory.HOME))
+            await(TerminalTags.SETTINGS_SAVE).performClick()
 
-            // When the user presses Left, then Space
-            field.performKeyInput { pressKey(Key.DirectionLeft) }
-            waitUntilExactlyOneExists(shows(0), WAIT_MS)
-            field.performKeyInput { pressKey(Key.Spacebar) }
+            // Then the repo holds both
+            waitUntil(timeoutMillis = WAIT_MS) { repo.saves == 1 }
+            repo.settings.value.shell shouldBe ShellProfile.FISH
+            repo.settings.value.startDirectory shouldBe StartDirectory.HOME
+        }
 
-            // Then Space goes to the next profile again
-            waitUntilExactlyOneExists(shows(1), WAIT_MS)
+    @Test
+    fun `NFR-6 the list of the start directory offers its 3 places`() =
+        runComposeUiTest {
+            showDialog()
+
+            await(TerminalTags.SETTINGS_START_DIRECTORY).performClick()
+
+            StartDirectory.entries.forEachIndexed { index, directory ->
+                waitUntilExactlyOneExists(
+                    hasTestTag(AmDropdownTags.option(index)) and
+                        hasText(TerminalStrings.of(directory), substring = true),
+                    WAIT_MS,
+                )
+            }
+            onNodeWithTag(AmDropdownTags.option(StartDirectory.entries.size)).assertDoesNotExist()
+        }
+
+    @Test
+    fun `NFR-6 each choice has exactly its own name for the screen reader`() =
+        runComposeUiTest {
+            showDialog()
+
+            await(TerminalTags.SETTINGS_SHELL).assertContentDescriptionEquals(TerminalStrings["settings.shell"])
+            await(TerminalTags.SETTINGS_START_DIRECTORY)
+                .assertContentDescriptionEquals(TerminalStrings["settings.startDirectory"])
         }
 
     @Test

@@ -5,8 +5,14 @@ import dev.quayside.appearance.api.ThemeMode
 import dev.quayside.appearance.api.ThemeSpec
 import dev.quayside.core.designtokens.Backdrop
 import dev.quayside.core.designtokens.ShapeTokens
+import dev.quayside.core.designtokens.TypographyId
 
-/** The nine base schemes followed by the 20 shaped themes of docs/08, in docs/08 order. */
+private const val PLEX = "plex"
+
+/**
+ * The nine base schemes followed by the 20 shaped themes of docs/08, in docs/08 order. Only `plex` suggests a
+ * typography (the Plex fonts); the other base schemes suggest none.
+ */
 internal object BuiltInSchemes {
     val all: List<ThemeSpec> = rows().map(::toSpec) + ShapedThemes.all
 
@@ -17,7 +23,7 @@ internal object BuiltInSchemes {
             mode = row.mode,
             colors = deriveTokens(row),
             shape = ShapeTokens(row.radius, borderWidth = 1, shadow = null, backdrop = Backdrop.OPAQUE),
-            defaultTypography = null,
+            defaultTypography = if (row.key == PLEX) TypographyId(PLEX) else null,
         )
 
     @Suppress("LongMethod")

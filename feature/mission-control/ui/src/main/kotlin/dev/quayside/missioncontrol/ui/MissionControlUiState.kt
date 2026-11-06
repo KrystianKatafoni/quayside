@@ -53,9 +53,6 @@ internal sealed interface MissionControlEvent {
 
     /** "Odpowiedz" in the details panel or the row menu (AM-511); `app` handles it. */
     data object Reply : MissionControlEvent
-
-    /** "Nowy agent" in the header of the project page (AM-608); `app` handles it. */
-    data object NewAgent : MissionControlEvent
 }
 
 /** What the user picked: the project (from the sidebar), the filter and the session. */

@@ -1,5 +1,6 @@
 package dev.quayside.missioncontrol.ui
 
+import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionState
@@ -155,6 +156,14 @@ internal object AgeText {
  */
 internal object Freshness {
     private val time: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+
+    /** Tone of the freshness dot for the [short] text: OK when live, NEUTRAL while loading, ERR when stale. */
+    fun tone(short: UiText): StatusTone =
+        when (short.key) {
+            "fresh.live" -> StatusTone.OK
+            "fresh.loading" -> StatusTone.NEUTRAL
+            else -> StatusTone.ERR
+        }
 
     fun of(
         status: SnapshotStatus,

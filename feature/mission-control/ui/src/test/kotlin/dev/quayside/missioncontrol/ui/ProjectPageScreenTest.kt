@@ -7,7 +7,6 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
-import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.sessions.api.SessionState
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
@@ -69,24 +68,6 @@ internal class ProjectPageScreenTest {
             listOf("waiting", "working", "done", "failed").forEach {
                 hasTag(MissionControlTags.stat(it)) shouldBe false
             }
-        }
-
-    @Test
-    fun `header shows path chip, session count and new agent with its key cap`() =
-        runComposeUiTest {
-            showMc(sessions(), MissionControlHandlers(keyCaps = SessionKeyCaps("⏎", "r", "x", "⌘N")))
-
-            awaitTag(MissionControlTags.HEADER_PATH).assertTextEquals(A_PROJECT_DIR.toString())
-            awaitTag(MissionControlTags.HEADER_COUNT).assertTextEquals(mcText("header.sessions", "11"))
-            awaitTag(MissionControlTags.NEW_AGENT).assertTextEquals(mcText("newAgent.button"), "⌘N")
-        }
-
-    @Test
-    fun `new agent button has no key cap without key caps`() =
-        runComposeUiTest {
-            showMc(sessions())
-
-            awaitTag(MissionControlTags.NEW_AGENT).assertTextEquals("Nowy agent")
         }
 
     @Test

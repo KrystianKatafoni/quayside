@@ -53,3 +53,6 @@ internal fun Selection.onProject(id: ProjectId?): Selection =
         id == null && view != null -> copy(project = null)
         else -> Selection(project = id)
     }
+
+/** Title of the view as in the sidebar, e.g. "Czeka na mnie". */
+public fun GlobalView.title(): String = MissionControlStrings["view.${name.lowercase()}"]

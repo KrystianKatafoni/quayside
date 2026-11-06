@@ -21,9 +21,9 @@ import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.TextRole
 
 /**
- * The centre of the window: header, filter, session list, details panel and mode bar; stateless apart from
- * [controller]. [handlers] say what `app` does on Attach, Reply and "Nowy agent" (AM-511, AM-608); they do nothing
- * by default.
+ * The centre of the window: header with the filter segments, session list, key hints and details panel; stateless
+ * apart from [controller]. The status bar is [StatusBar], drawn by `app` (AM-816). [handlers] say what `app` does on
+ * Attach and Reply (AM-511); they do nothing by default.
  */
 @Composable
 public fun MissionControl(
@@ -36,14 +36,12 @@ public fun MissionControl(
         when (event) {
             MissionControlEvent.Attach -> handlers.onAttach()
             MissionControlEvent.Reply -> handlers.onReply()
-            MissionControlEvent.NewAgent -> handlers.onNewAgent()
             else -> controller.onEvent(event)
         }
     }
     CompositionLocalProvider(LocalKeyCaps provides handlers.keyCaps) {
         Column(modifier = modifier.fillMaxSize().background(color = bgColor()).testTag(MissionControlTags.ROOT)) {
             Box(modifier = Modifier.weight(weight = 1f).fillMaxWidth()) { ScreenContent(state, onEvent) }
-            ModeBarView(state.modeBar)
         }
         state.dialog?.let { SessionDialogView(it, onEvent) }
     }
@@ -83,10 +81,11 @@ private fun ProjectPage(
     preview: PreviewUi?,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
-    val filters = @Composable { Filters(page.filter, onEvent) }
-    SessionPage(page.banner, page.loading, page.rows, page.details, preview, onEvent, filters) {
-        ProjectHeaderView(page.header, onEvent)
-        StatCards(page.stats)
+    CompositionLocalProvider(LocalProjectDir provides page.header.path) {
+        SessionPage(page.banner, page.loading, page.rows, page.details, preview, onEvent) {
+            ProjectHeaderView(page.header, page.filter, onEvent)
+            StatCards(page.stats)
+        }
     }
 }
 
@@ -100,7 +99,6 @@ internal fun SessionPage(
     details: SessionDetails?,
     preview: PreviewUi?,
     onEvent: (MissionControlEvent) -> Unit,
-    filters: @Composable () -> Unit,
     header: @Composable () -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
@@ -116,7 +114,6 @@ internal fun SessionPage(
                     MissionControlTags.BANNER,
                 )
             }
-            filters()
             if (loading) {
                 Text(UiText("list.loading"), tag = MissionControlTags.LOADING)
             } else {
@@ -124,6 +121,7 @@ internal fun SessionPage(
                 SessionRows(rows, details, onEvent, Modifier.weight(weight = listWeight))
             }
             preview?.let { SessionPreviewView(it, onEvent, Modifier.weight(weight = 1f - LIST_SHARE)) }
+            KeyHintsBar()
         }
         Details(details, rows.firstOrNull { it.id == details?.id }?.age, onEvent)
     }

@@ -1,13 +1,16 @@
 package dev.quayside.missioncontrol.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -37,6 +41,7 @@ import dev.quayside.core.designsystem.IconButtonStyle
 import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.core.designsystem.listMetrics
+import dev.quayside.core.designsystem.toColor
 import dev.quayside.core.domain.SessionId
 
 /**
@@ -54,15 +59,54 @@ internal fun SessionRows(
     val selectedId = rows.firstOrNull { it.selected }?.id
     LaunchedEffect(selectedId) { if (menuFor != selectedId) menuFor = null }
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
-        rows.forEach { row ->
-            val shown = details?.takeIf { row.selected && it.id == row.id }
-            val menu =
-                RowMenu(shown?.allControls().orEmpty(), open = menuFor == row.id) { open ->
-                    menuFor = if (open) row.id else null
+        if (rows.isNotEmpty()) {
+            ListCard {
+                rows.forEachIndexed { index, row ->
+                    if (index > 0) Separator()
+                    val shown = details?.takeIf { row.selected && it.id == row.id }
+                    val menu =
+                        RowMenu(shown?.allControls().orEmpty(), open = menuFor == row.id) { open ->
+                            menuFor = if (open) row.id else null
+                        }
+                    SessionRowView(row, shown, menu, onEvent)
                 }
-            SessionRowView(row, shown, menu, onEvent)
+            }
         }
     }
+}
+
+/** The rows as one card: panel fill, the theme frame and the card radius (r+4). */
+@Composable
+private fun ListCard(content: @Composable ColumnScope.() -> Unit) {
+    val shape = AmTheme.shape
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .testTag(MissionControlTags.LIST_CARD)
+                .clip(shape.card)
+                .background(panelColor())
+                .border(
+                    shape.borderWidth,
+                    AmTheme.colors.surfaces.border
+                        .toColor(),
+                    shape.card,
+                ),
+        content = content,
+    )
+}
+
+@Composable
+private fun Separator() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(AmTheme.shape.borderWidth)
+            .background(
+                AmTheme.colors.surfaces.border
+                    .toColor(),
+            ),
+    )
 }
 
 /**
@@ -127,7 +171,7 @@ private fun RowScope.RowCells(row: SessionRow) {
     val metrics = AmTheme.density.listMetrics()
     AmIconTile(row.glyph.icon, row.glyph.tone, MissionControlStrings[row.glyph.key], Modifier.size(metrics.tile))
     Column(modifier = Modifier.weight(weight = 1f)) {
-        AmText(row.name, role = TextRole.CODE)
+        AmText(row.name, role = TextRole.NAME)
         if (metrics.twoLines) AmText(row.summary.orEmpty(), role = TextRole.CAPTION, color = mutedColor())
     }
     row.project?.let { AmText(MissionControlStrings.format(it), color = mutedColor()) }

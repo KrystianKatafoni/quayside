@@ -9,19 +9,25 @@ import org.junit.jupiter.api.Test
 
 /** Behaviour every [VoiceCatalog] must have (ENG-T2). Runs on the fake and on the `say` adapter. */
 public abstract class VoiceCatalogContract {
-    /** A catalog that lists [lines] (name to locale) in this order. */
-    protected abstract fun catalogOf(lines: List<Pair<String, String>>): VoiceCatalog
+    /** A catalog that lists [voices] in this order. */
+    protected abstract fun catalogOf(voices: List<VoiceOption>): VoiceCatalog
 
     /** A catalog whose ask fails. */
     protected abstract fun failing(): VoiceCatalog
 
-    private suspend fun names(lines: List<Pair<String, String>>): List<VoiceOption> =
-        (catalogOf(lines).voices() as Outcome.Ok).value
+    private fun voice(
+        name: String,
+        locale: String,
+        sample: String = "",
+    ) = VoiceOption(VoiceId(name), locale, sample)
+
+    private suspend fun listed(vararg voices: VoiceOption): List<VoiceOption> =
+        (catalogOf(voices.toList()).voices() as Outcome.Ok).value
 
     @Test
     public fun `voices are sorted by name`(): Unit =
         runTest {
-            val voices = names(listOf("bob" to "pl_PL", "Carl" to "en_US", "Anna" to "de_DE"))
+            val voices = listed(voice("bob", "pl_PL"), voice("Carl", "en_US"), voice("Anna", "de_DE"))
 
             voices.map { it.id.name } shouldBe listOf("Anna", "bob", "Carl")
             voices.map { it.locale } shouldBe listOf("de_DE", "pl_PL", "en_US")
@@ -30,12 +36,29 @@ public abstract class VoiceCatalogContract {
     @Test
     public fun `duplicates are dropped`(): Unit =
         runTest {
-            val voices = names(listOf("Eddy" to "de_DE", "Zosia" to "pl_PL", "Eddy" to "pl_PL"))
+            val voices = listed(voice("Eddy", "de_DE"), voice("Zosia", "pl_PL"), voice("Eddy", "pl_PL"))
 
-            voices shouldBe
+            voices shouldBe listOf(voice("Eddy", "de_DE"), voice("Zosia", "pl_PL"))
+        }
+
+    @Test
+    public fun `the sample comes with its voice`(): Unit =
+        runTest {
+            val voices =
+                listed(
+                    voice("Zosia", "pl_PL", "Witaj, nazywam się Zosia."),
+                    voice("Alex", "en_US", "Hello #1 here"),
+                    voice("Eddy", "de_DE", "first"),
+                    voice("Eddy", "pl_PL", "second"),
+                    voice("Ewa", "pl_PL"),
+                )
+
+            voices.map { it.id.name to it.sample } shouldBe
                 listOf(
-                    VoiceOption(VoiceId("Eddy"), "de_DE"),
-                    VoiceOption(VoiceId("Zosia"), "pl_PL"),
+                    "Alex" to "Hello #1 here",
+                    "Eddy" to "first",
+                    "Ewa" to "",
+                    "Zosia" to "Witaj, nazywam się Zosia.",
                 )
         }
 

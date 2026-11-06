@@ -24,6 +24,7 @@ import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.PopupDuration
@@ -55,7 +56,8 @@ class NotificationSettingsDialogScreenTest {
                 val scope = rememberCoroutineScope()
                 val controller =
                     remember {
-                        NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), scope).also(built::add)
+                        NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), FakeVoicePreview(), scope)
+                            .also(built::add)
                     }
                 NotificationSettingsDialog(controller)
             }

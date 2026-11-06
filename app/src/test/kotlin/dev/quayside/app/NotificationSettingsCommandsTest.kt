@@ -4,6 +4,7 @@ import dev.quayside.commandpalette.api.CommandGroup
 import dev.quayside.commandpalette.api.CommandId
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.ui.NotificationSettingsController
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
@@ -16,7 +17,12 @@ import org.junit.jupiter.api.Test
 /** The palette command "Ustawienia powiadomień" and its guard against open dialogs (FR-N1, AM-704). */
 class NotificationSettingsCommandsTest {
     private fun TestScope.settings() =
-        NotificationSettingsController(FakeNotificationSettingsRepo(), FakeVoiceCatalog(emptyList()), backgroundScope)
+        NotificationSettingsController(
+            FakeNotificationSettingsRepo(),
+            FakeVoiceCatalog(emptyList()),
+            FakeVoicePreview(),
+            backgroundScope,
+        )
 
     @Test
     fun `offers notification settings when no dialog is open`() =

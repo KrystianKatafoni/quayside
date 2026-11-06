@@ -6,8 +6,7 @@ import org.junit.jupiter.api.Test
 
 /** The fake passes the same contract as the `say` adapter (ENG-T2). */
 class FakeVoiceCatalogContractTest : VoiceCatalogContract() {
-    override fun catalogOf(lines: List<Pair<String, String>>): VoiceCatalog =
-        FakeVoiceCatalog(lines.map { (name, locale) -> VoiceOption(VoiceId(name), locale) })
+    override fun catalogOf(voices: List<VoiceOption>): VoiceCatalog = FakeVoiceCatalog(voices)
 
     override fun failing(): VoiceCatalog = FakeVoiceCatalog.failing()
 

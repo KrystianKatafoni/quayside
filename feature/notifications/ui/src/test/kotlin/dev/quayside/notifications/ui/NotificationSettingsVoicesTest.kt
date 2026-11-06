@@ -3,6 +3,7 @@ package dev.quayside.notifications.ui
 import dev.quayside.core.domain.Outcome
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.VoiceCatalog
 import dev.quayside.notifications.api.VoiceCatalogError
@@ -25,7 +26,7 @@ class NotificationSettingsVoicesTest {
     private fun TestScope.controllerOver(
         repo: ScriptedRepo,
         voices: VoiceCatalog = FakeVoiceCatalog(emptyList()),
-    ) = NotificationSettingsController(repo, voices, backgroundScope)
+    ) = NotificationSettingsController(repo, voices, FakeVoicePreview(), backgroundScope)
 
     @Test
     fun `voices are loaded when the dialog opens`() =

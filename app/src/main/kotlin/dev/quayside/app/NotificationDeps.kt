@@ -4,8 +4,10 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.notifications.api.NotificationCenter
 import dev.quayside.notifications.api.NotificationSettingsRepo
 import dev.quayside.notifications.api.VoiceCatalog
+import dev.quayside.notifications.api.VoicePreview
 import dev.quayside.notifications.impl.notificationCenterModule
 import dev.quayside.notifications.impl.voiceCatalogModule
+import dev.quayside.notifications.impl.voicePreviewModule
 import dev.quayside.notifications.ui.PopupController
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
@@ -37,6 +39,7 @@ internal class NotificationDeps(
     val attach: AttachBridge,
     val settings: NotificationSettingsRepo,
     val voices: VoiceCatalog,
+    val preview: VoicePreview,
 )
 
 /**
@@ -70,5 +73,6 @@ internal fun notificationDeps(
             core.logger,
         )
     val voices = voiceCatalogModule(core.process, core.homeDir)
-    return NotificationDeps(center, PopupController(center, settings, scope), attach, settings, voices)
+    val preview = voicePreviewModule(core.process, core.homeDir)
+    return NotificationDeps(center, PopupController(center, settings, scope), attach, settings, voices, preview)
 }

@@ -73,6 +73,7 @@ internal class WindowControllers(
         NotificationSettingsController(
             modules.settings.notifications.settings,
             modules.settings.notifications.voices,
+            modules.settings.notifications.preview,
             scope,
         )
 

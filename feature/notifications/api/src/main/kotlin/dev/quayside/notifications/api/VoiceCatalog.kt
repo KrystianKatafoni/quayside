@@ -2,10 +2,14 @@ package dev.quayside.notifications.api
 
 import dev.quayside.core.domain.Outcome
 
-/** An installed macOS voice as `say -v ?` lists it; [locale] such as `pl_PL` or `es_419`. Immutable. */
+/**
+ * An installed macOS voice as `say -v ?` lists it; [locale] such as `pl_PL` or `es_419`; [sample] the text after `#`
+ * (trimmed, may be empty), in the voice's language. Immutable.
+ */
 public data class VoiceOption(
     val id: VoiceId,
     val locale: String,
+    val sample: String = "",
 )
 
 /** Why [VoiceCatalog.voices] gave no list: [UNAVAILABLE] the program cannot start, [FAILED] it ran and failed. */

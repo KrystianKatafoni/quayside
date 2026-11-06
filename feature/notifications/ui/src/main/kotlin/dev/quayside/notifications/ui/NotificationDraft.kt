@@ -148,9 +148,15 @@ private fun number(
     range: IntRange,
     field: NotificationField,
 ): Outcome<Int, InvalidField> {
-    val value = text.trim().toIntOrNull()?.takeIf { it in range }
+    val value = parseInRange(text, range)
     return if (value == null) Outcome.Err(InvalidField(field)) else Outcome.Ok(value)
 }
+
+/** `text.trim()` as an Int inside [range], else null. */
+internal fun parseInRange(
+    text: String,
+    range: IntRange,
+): Int? = text.trim().toIntOrNull()?.takeIf { it in range }
 
 private val MINUTES = NotificationSettings.MIN_RUNNING_LONG_MINUTES..NotificationSettings.MAX_RUNNING_LONG_MINUTES
 private val VISIBLE = PopupSettings.MIN_VISIBLE..PopupSettings.MAX_VISIBLE_LIMIT

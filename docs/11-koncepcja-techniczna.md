@@ -265,10 +265,15 @@ interface NotificationSettingsRepo {
     val settings: StateFlow<NotificationSettings>
     suspend fun update(change: (NotificationSettings) -> NotificationSettings)
 }
-data class VoiceOption(val id: VoiceId, val locale: String)   // np. Zosia / pl_PL
+data class VoiceOption(val id: VoiceId, val locale: String, val sample: String = "")   // np. Zosia / pl_PL / przykład po `#` z `say -v ?`
 enum class VoiceCatalogError { UNAVAILABLE, FAILED }          // program nie startuje | wystartował i zawiódł
 interface VoiceCatalog {                          // AM-704: głosy zainstalowane w systemie (`say -v ?`)
     suspend fun voices(): Outcome<List<VoiceOption>, VoiceCatalogError>   // posortowane po nazwie, bez cache
+}
+data class VoiceSample(val voice: VoiceId?, val text: String, val rate: Int, val volume: Int)   // AM-813: require na zakresach SpeechSettings; toString ukrywa text
+enum class VoicePreviewError { UNAVAILABLE, FAILED }          // program nie startuje | zawiódł, przekroczył czas, głos nieznany albo `[[`/`]]` w tekście
+interface VoicePreview {                          // AM-813: odsłuch próbki w dialogu; bez powrotu do głosu systemowego, anulowanie zatrzymuje
+    suspend fun play(sample: VoiceSample): Outcome<Unit, VoicePreviewError>
 }
 enum class TemplateProblem { EMBEDDED_COMMAND, TOO_LONG }   // SpeechSettings.templateProblem(text)
 data class QuietHours(val enabled: Boolean = false, val from: LocalTime = 22:00, val to: LocalTime = 07:00,
@@ -285,7 +290,7 @@ internal fun decide(event: SessionEvent, settings: NotificationSettings, ctx: De
 internal interface FocusMonitor { val active: StateFlow<Boolean> }   // AM-705: tylko port; NoFocus (zawsze false), adapter Skupienia osobno
 internal interface SpeechPort { suspend fun speak(text: String, voice: VoiceId, rate: Int) }  // adapter: MacSayAdapter
 internal interface SoundPort { suspend fun play(sound: SystemSound): Outcome<Unit, SoundError> }  // AM-812, adapter: AfplayAdapter; SoundNotifier + SoundQueue (chłodzenie 2 s)
-// Fabryki modułu (public): notificationCenterModule(settings, scope, clock, zone: () -> ZoneId, ...) (strefa czytana przy każdym zdarzeniu) oraz voiceCatalogModule(process, workDir): VoiceCatalog
+// Fabryki modułu (public): notificationCenterModule(settings, scope, clock, zone: () -> ZoneId, ...) (strefa czytana przy każdym zdarzeniu) oraz voiceCatalogModule(process, workDir): VoiceCatalog i voicePreviewModule(process, workDir): VoicePreview
 ```
 
 ```kotlin

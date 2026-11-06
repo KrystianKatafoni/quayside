@@ -29,12 +29,9 @@ internal fun FrameWindowScope.AppMenu(
     val palette = controllers.palette
     val terminal = controllers.terminal
     val terminalSettings = controllers.terminalSettings
-    val menu by projects.menu.collectAsState()
     val list by projectsApi.projects.collectAsState()
     val selection by projects.selection.collectAsState()
-    val paletteOpen by palette.isOpen.collectAsState()
-    val dialogOpen = anyDialogOpen(controllers)
-    val enabled = AppMenuState.of(menu, paletteOpen, dialogOpen, list.isNotEmpty())
+    val enabled = menuStateOf(controllers, projectsApi)
     MenuBar {
         Menu(Strings["menu.projects"]) {
             ProjectItems(projects, controllers.newAgent, enabled)
@@ -46,6 +43,29 @@ internal fun FrameWindowScope.AppMenu(
             Strings["menu.view"],
         ) { ViewItems(palette, controllers, enabled) }
     }
+}
+
+/** Which menu items (and the "Nowy agent" button of the top bar) are enabled now. */
+@Composable
+internal fun menuStateOf(
+    controllers: WindowControllers,
+    projectsApi: ProjectsApi,
+): AppMenuState {
+    val list by projectsApi.projects.collectAsState()
+    return menuStateOf(controllers.projects, controllers.palette, anyDialogOpen(controllers), list.isNotEmpty())
+}
+
+/** [AppMenuState.of] over the live state of [projects] and [palette]; the window of the tests calls it directly. */
+@Composable
+internal fun menuStateOf(
+    projects: ProjectsController,
+    palette: CommandPaletteController,
+    dialogOpen: Boolean,
+    hasProjects: Boolean,
+): AppMenuState {
+    val menu by projects.menu.collectAsState()
+    val paletteOpen by palette.isOpen.collectAsState()
+    return AppMenuState.of(menu, paletteOpen, dialogOpen, hasProjects)
 }
 
 /**

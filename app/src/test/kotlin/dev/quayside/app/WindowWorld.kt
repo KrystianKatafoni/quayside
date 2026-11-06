@@ -126,6 +126,23 @@ internal class WindowSetup(
 
     /** The hooks of the projects for the remove dialog (AM-610); default: none anywhere. */
     var projectHooks: ProjectHooks = NoProjectHooks
+
+    /** The folder chooser of the sidebar (AM-816): counts its openings and answers with a cancel. */
+    val picker = CountingPicker()
+
+    /** The version of Claude Code the status bar shows, as `readSupervisor` would give it; null = unknown. */
+    var supervisor: String? = null
+}
+
+/** [DirectoryPicker] that counts how many times it was opened and answers like a cancelled dialog. */
+internal class CountingPicker : DirectoryPicker {
+    var picks: Int = 0
+        private set
+
+    override suspend fun pick(): Path? {
+        picks++
+        return null
+    }
 }
 
 /** [ProjectHooks] of a window whose projects have no hooks of ours: nothing to warn about, nothing to remove. */
@@ -181,6 +198,7 @@ private fun WindowContent(
         SideEffect { setup.attacher = terminal.wiring.attacher }
         val mode = remember { terminal.controller?.let { windowMode(it, registry, scope) } }
         val parts = WindowParts(projects, missionControl, scope, setup.projects.projects)
+        val notifications = remember { notificationsOf(setup, parts) }
         KeysBox(keys) {
             QuaysideApp(
                 controllers = AppControllers(projects, missionControl, palette),
@@ -193,12 +211,54 @@ private fun WindowContent(
                             terminalKey = terminal.controller?.activeKey,
                         )
                     },
-                onNewAgent = agent::openForSelection,
+                chrome = chromeOf(setup, agent, notifications, this),
             )
-            SettingsHosts(setup.settings, registry, parts)
+            SettingsHosts(setup.settings, registry, parts, notifications)
             NewAgentDialog(agent.newAgent)
         }
     }
+}
+
+/** The notification settings controller of the window; null without a notification repo. */
+private fun notificationsOf(
+    setup: WindowSetup,
+    window: WindowParts,
+): NotificationSettingsController? =
+    setup.settings.notifications?.let {
+        NotificationSettingsController(
+            it,
+            setup.settings.voices,
+            setup.settings.preview,
+            window.projectList,
+            window.scope,
+        )
+    }
+
+/**
+ * What `MainWindow` hands to the top bar (AM-816): "Nowy agent" enabled as the menu item is ([menuStateOf]), the
+ * voice chip over the notification settings, and the version of Claude Code of [setup].
+ */
+@Composable
+private fun chromeOf(
+    setup: WindowSetup,
+    agent: AgentWiring,
+    notifications: NotificationSettingsController?,
+    core: WindowCore,
+): WindowChrome {
+    val agentOpen by agent.newAgent.isOpen.collectAsState()
+    val actions by core.missionControl.actions.collectAsState()
+    val list by setup.projects.projects.collectAsState()
+    val enabled =
+        menuStateOf(core.projects, core.palette, agentOpen || actions.dialogOpen, list.isNotEmpty()).newAgent
+    return WindowChrome(
+        onNewAgent = agent::openForSelection,
+        newAgentEnabled = enabled,
+        notifications =
+            setup.settings.notifications?.let { repo ->
+                notifications?.let { NotificationChrome(repo.settings, it::open) }
+            },
+        supervisor = setup.supervisor,
+    )
 }
 
 /** The controllers every window has, and the registry the palette reads: the sidebar, Mission Control, the palette. */
@@ -233,7 +293,7 @@ private fun windowCore(
     scope: CoroutineScope,
     onPalette: (CommandPaletteController) -> Unit,
 ): WindowCore {
-    val controller = projectsController(setup.projects, setup.sessions, setup.projectHooks, scope)
+    val controller = projectsController(setup.projects, setup.sessions, setup.projectHooks, setup.picker, scope)
     val missionControl = missionControlController(setup.projects, setup.sessions, controller, scope)
     val registry = FakeCommandRegistry(scope)
     val palette = CommandPaletteController(registry, scope, NoOpLogger).also(onPalette)
@@ -318,19 +378,8 @@ private fun SettingsHosts(
     repos: SettingsRepos,
     registry: FakeCommandRegistry,
     window: WindowParts,
+    notifications: NotificationSettingsController?,
 ) {
-    val notifications =
-        remember {
-            repos.notifications?.let {
-                NotificationSettingsController(
-                    it,
-                    repos.voices,
-                    repos.preview,
-                    window.projectList,
-                    window.scope,
-                )
-            }
-        }
     SettingsDialogHost(repos.terminal, registry, window, notifications?.dialogOpen(window.scope))
     NotificationDialogHost(notifications, registry, window)
     SummaryDialogHost(repos.summaries, registry, window)
@@ -529,13 +578,14 @@ private fun projectsController(
     projects: FakeProjectsApi,
     sessions: FakeSessions,
     hooks: ProjectHooks,
+    picker: DirectoryPicker,
     scope: CoroutineScope,
 ): ProjectsController =
     ProjectsController(
         projects = projects,
         inspector = FakeProjectInspector(projects = projects),
         sessions = SessionsApi(monitor = sessions, commands = sessions),
-        ports = ProjectsPorts(DirectoryPicker { null }, hooks),
+        ports = ProjectsPorts(picker, hooks),
         scope = scope,
         logger = NoOpLogger,
     )

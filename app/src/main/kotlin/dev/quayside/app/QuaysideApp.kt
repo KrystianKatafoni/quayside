@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +22,7 @@ import dev.quayside.missioncontrol.ui.MissionControl
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.MissionControlHandlers
 import dev.quayside.missioncontrol.ui.SessionKeyCaps
+import dev.quayside.missioncontrol.ui.ShortcutsHelp
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
 import dev.quayside.projects.ui.ProjectsSidebar
@@ -49,11 +51,12 @@ internal data class TerminalSlot(
 )
 
 /**
- * The window content: the projects sidebar with the global views under it, next to Mission Control (AM-304,
- * AM-405, AM-407). A shown global view clears the project in the sidebar (AM-407, decision 1).
+ * The window content: the top bar, then the projects sidebar with the global views and the cheat sheet under it, next
+ * to Mission Control (AM-304, AM-405, AM-407), or the terminal mode, and the status bar at the bottom of both. A shown
+ * global view clears the project in the sidebar (AM-407, decision 1).
  *
  * [terminal] says how the terminal is drawn and used (see [TerminalSlot]); the terminal panel draws nothing while
- * there are no tabs and no error (AM-503). [onNewAgent] is the "Nowy agent" button of the project page (AM-608);
+ * there are no tabs and no error (AM-503). [chrome] is what the top bar and the status bar need (AM-816);
  * [keyCaps] are the shortcut marks next to the actions (AM-809).
  */
 @Composable
@@ -61,7 +64,7 @@ internal fun QuaysideApp(
     controllers: AppControllers,
     modifier: Modifier = Modifier,
     terminal: TerminalSlot = TerminalSlot(),
-    onNewAgent: () -> Unit = {},
+    chrome: WindowChrome = WindowChrome(),
     keyCaps: SessionKeyCaps? = null,
 ) {
     val projects = controllers.projects
@@ -72,27 +75,36 @@ internal fun QuaysideApp(
         missionControl.view.filterNotNull().collect { projects.onIntent(ProjectsIntent.ClearSelection) }
     }
     val windowMode by (mode?.mode ?: LIST_ONLY).collectAsState()
-    // One movable panel, so the terminal widget survives the switch of the layout (AM-809, risks).
-    val panel = remember(terminal.panel) { terminal.panel?.let(::movablePanel) }
-    val handlers =
-        MissionControlHandlers(
-            onAttach = { attacher?.attachSelected() },
-            onReply = { attacher?.replySelected() },
-            onNewAgent = onNewAgent,
-            keyCaps = keyCaps,
-        )
-    Row(modifier = modifier.fillMaxSize()) {
-        if (mode != null && windowMode == WindowMode.TERMINAL) {
-            TerminalModeLayout(
-                Modifier.weight(weight = 1f),
-                TerminalModeParts(projects, missionControl, mode, panel, terminal.terminalKey, attacher),
-            )
-        } else {
-            ListLayout(projects, missionControl, handlers, panel, mode)
+    val terminalMode = mode != null && windowMode == WindowMode.TERMINAL
+    Column(modifier = modifier.fillMaxSize()) {
+        val crumbs = rememberCrumbs(missionControl, terminal.terminalKey, terminalMode)
+        WindowTopBar(controllers, chrome, crumbs) { mode?.onEvent(WindowModeEvent.Back) }
+        // One movable panel, so the terminal widget survives the switch of the layout (AM-809, risks).
+        val panel = remember(terminal.panel) { terminal.panel?.let(::movablePanel) }
+        Row(modifier = Modifier.weight(weight = 1f).fillMaxWidth()) {
+            if (mode != null && terminalMode) {
+                TerminalModeLayout(
+                    Modifier.weight(weight = 1f),
+                    TerminalModeParts(projects, missionControl, mode, panel, terminal.terminalKey, attacher),
+                )
+            } else {
+                ListLayout(projects, missionControl, handlersOf(attacher, keyCaps), panel, mode)
+            }
         }
+        WindowStatusBar(controllers, chrome, terminalMode)
         CommandPalette(controllers.palette)
     }
 }
+
+private fun handlersOf(
+    attacher: SessionAttacher?,
+    keyCaps: SessionKeyCaps?,
+): MissionControlHandlers =
+    MissionControlHandlers(
+        onAttach = { attacher?.attachSelected() },
+        onReply = { attacher?.replySelected() },
+        keyCaps = keyCaps,
+    )
 
 private val LIST_ONLY: StateFlow<WindowMode> = MutableStateFlow(WindowMode.LIST)
 
@@ -111,8 +123,9 @@ private fun RowScope.ListLayout(
     mode: WindowModeState?,
 ) {
     Column {
-        ProjectsSidebar(projects, Modifier.weight(weight = 1f))
+        ProjectsSidebar(projects, Modifier.weight(weight = 1f), keyCapOf(AppShortcuts.ADD_PROJECT))
         GlobalViews(missionControl)
+        ShortcutsHelp(Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
     }
     Column(modifier = Modifier.weight(weight = 1f)) {
         MissionControl(missionControl, Modifier.weight(weight = 1f).fillMaxWidth(), handlers = handlers)

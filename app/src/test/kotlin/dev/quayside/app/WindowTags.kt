@@ -28,6 +28,19 @@ internal object WindowTags {
     const val SIDEBAR = "projects.sidebar"
     const val ADD_BUTTON = "projects.add"
     const val MODE_BAR = "missionControl.modeBar"
+
+    /** The top bar of the window (AM-816): `TopBarTags` of `app`, the bell of `mission-control:ui`. */
+    const val TOP_BAR = "app.topBar"
+    const val CRUMBS = "app.topBar.crumbs"
+    const val SEARCH = "app.topBar.search"
+    const val VOICE_CHIP = "app.topBar.voice"
+    const val BELL = "missionControl.alertsBell"
+
+    /** The hints under the list, the cheat sheet toggle and "Dodaj projekt z dysku…" (`internal` there). */
+    const val KEY_HINTS = "missionControl.keyHints"
+    const val SHORTCUTS_TOGGLE = "missionControl.shortcuts.toggle"
+    const val SHORTCUTS = "missionControl.shortcuts"
+    const val ADD_FROM_DISK = "projects.addFromDisk"
     const val HEADER = "missionControl.header"
     const val ROW_MENU_REMOVE = "projects.row.menu.remove"
     const val CONFIRM_REMOVE_PROJECT = "projects.dialog.remove"
@@ -51,8 +64,8 @@ internal object WindowTags {
 
     fun railButton(projectId: String): String = "projects.rail.$projectId"
 
-    /** The "Nowy agent" button and dialog (AM-608); tags of `mission-control:ui`, `internal` there. */
-    const val NEW_AGENT_BUTTON = "missionControl.newAgent"
+    /** The "Nowy agent" button of the top bar (AM-816, `TopBarTags.NEW_AGENT`) and the dialog (AM-608). */
+    const val NEW_AGENT_BUTTON = "app.topBar.newAgent"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"
     const val NEW_AGENT_PROJECT = "missionControl.newAgent.project"
     const val NEW_AGENT_PROMPT = "missionControl.newAgent.prompt"

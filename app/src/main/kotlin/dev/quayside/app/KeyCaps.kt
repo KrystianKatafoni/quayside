@@ -37,11 +37,13 @@ private fun chordCap(chord: KeyChord): String {
     return modifiers + key
 }
 
-/** The key caps of the window shortcuts for Mission Control (attach, reply, stop, new agent). */
+/** The key caps of the window shortcuts for Mission Control (attach, reply, stop, next, previous, preview). */
 internal fun windowKeyCaps(): SessionKeyCaps =
     SessionKeyCaps(
         attach = keyCapOf(AppShortcuts.ATTACH_SESSION),
         reply = keyCapOf(AppShortcuts.REPLY_SESSION),
         stop = keyCapOf(AppShortcuts.STOP_SESSION),
-        newAgent = keyCapOf(AppShortcuts.NEW_AGENT),
+        next = keyCapOf(AppShortcuts.NEXT_SESSION),
+        previous = keyCapOf(AppShortcuts.PREVIOUS_SESSION),
+        preview = keyCapOf(AppShortcuts.PREVIEW_SESSION),
     )

@@ -19,5 +19,7 @@ dependencies {
     testImplementation(testFixtures(project(":feature:agent-runtime:api")))
     // Tree access to summaries.json (SummarySettingsSerializer); the compiler plugin is not needed.
     implementation(libs.kotlinx.serialization.json)
+    // InMemoryJsonStore behind the start-up cases of JsonSummarySettingsRepoTest.
+    testImplementation(testFixtures(project(":core:storage")))
     testImplementation(project(":core:testing"))
 }

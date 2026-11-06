@@ -66,6 +66,10 @@ internal object WindowTags {
 
     /** The notification settings dialog (AM-704); tags of `notifications:ui`, `internal` there. */
     const val NOTIFICATION_SETTINGS_DIALOG = "notifications.settings"
+    const val SUMMARY_SETTINGS_DIALOG = "summaries.settings"
+    const val SUMMARY_USE_MODEL = "summaries.settings.useModel"
+    const val SUMMARY_SETTINGS_SAVE = "summaries.settings.save"
+    const val SUMMARY_RESTART_NOTE = "summaries.settings.restartNote"
     const val NOTIFICATION_SETTINGS_SAVE = "notifications.settings.save"
     const val NOTIFICATION_POPUP_POSITION = "notifications.settings.popup.position"
     const val NOTIFICATION_SPEECH_VOICE = "notifications.settings.speech.voice"

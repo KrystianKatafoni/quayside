@@ -52,6 +52,9 @@ import dev.quayside.projects.ui.ProjectsIntent
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionsApi
+import dev.quayside.summaries.api.FakeSummarySettingsRepo
+import dev.quayside.summaries.ui.SummarySettingsController
+import dev.quayside.summaries.ui.SummarySettingsDialog
 import dev.quayside.terminal.api.FakeTerminalSettingsRepo
 import dev.quayside.terminal.ui.ShellStart
 import dev.quayside.terminal.ui.TerminalArea
@@ -268,6 +271,9 @@ internal class SettingsRepos(
 ) {
     /** Set before the window is shown (the constructor is at the limit of parameters). */
     var appearance: FakeAppearanceApi? = null
+
+    /** The summaries settings dialog and its palette command appear with this repo (AM-606). */
+    var summaries: FakeSummarySettingsRepo? = null
 }
 
 /** The backup folder the hooks dialog of the window shows. */
@@ -291,6 +297,7 @@ private fun SettingsHosts(
         remember { repos.notifications?.let { NotificationSettingsController(it, repos.voices, window.scope) } }
     SettingsDialogHost(repos.terminal, registry, window, notifications?.dialogOpen(window.scope))
     NotificationDialogHost(notifications, registry, window)
+    SummaryDialogHost(repos.summaries, registry, window)
     HookDialogHost(repos, registry, window)
     AppearanceDialogHost(repos, registry, window)
 }
@@ -319,6 +326,22 @@ private fun AppearanceDialogHost(
             }
         }
     AppearanceDialog(controller) { AppearancePreviewSlot() }
+}
+
+/** The summaries settings dialog over [repo] with its palette command registered; nothing without a repo. */
+@Composable
+private fun SummaryDialogHost(
+    repo: FakeSummarySettingsRepo?,
+    registry: FakeCommandRegistry,
+    window: WindowParts,
+) {
+    val controller =
+        remember {
+            repo?.let { SummarySettingsController(it, window.scope) }?.also {
+                registry.register(SummarySettingsCommands(window.projects, window.missionControl, it, window.scope))
+            }
+        }
+    controller?.let { SummarySettingsDialog(it) }
 }
 
 /** The hooks dialog over [SettingsRepos.hooks] with its palette command registered; nothing without one. */

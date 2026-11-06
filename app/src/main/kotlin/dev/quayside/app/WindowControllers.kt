@@ -10,6 +10,7 @@ import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
+import dev.quayside.summaries.ui.SummarySettingsController
 import dev.quayside.terminal.ui.TerminalController
 import dev.quayside.terminal.ui.TerminalSettingsController
 import kotlinx.coroutines.CoroutineScope
@@ -68,9 +69,15 @@ internal class WindowControllers(
     val terminalSettings = TerminalSettingsController(modules.terminal.repo, scope)
 
     val notificationSettings =
-        NotificationSettingsController(modules.notifications.settings, modules.notifications.voices, scope)
+        NotificationSettingsController(
+            modules.settings.notifications.settings,
+            modules.settings.notifications.voices,
+            scope,
+        )
 
     private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
+
+    val summarySettings = SummarySettingsController(modules.settings.summaries, scope)
 
     val appearance =
         AppearanceController(
@@ -93,9 +100,12 @@ internal class WindowControllers(
         )
 
     private val settingsDialogOpen =
-        combine(terminalSettings.state, notificationDialogOpen, appearance.state) { terminal, notification, look ->
-            terminal != null || notification || look != null
-        }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
+        combine(
+            combine(terminalSettings.state, notificationDialogOpen, appearance.state) { terminal, notification, look ->
+                terminal != null || notification || look != null
+            },
+            summarySettings.isOpen,
+        ) { others, summaries -> others || summaries }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
 
     /** What hides the hooks command: the settings dialogs and "Nowy agent" (the hooks dialog hides it itself). */
     private val hooksBlocked =
@@ -130,6 +140,7 @@ internal class WindowControllers(
             AttachCommands(projects, missionControl, attacher, scope),
             TerminalSettingsCommands(projects, missionControl, terminalSettings, scope, notificationDialogOpen),
             NotificationSettingsCommands(projects, missionControl, notificationSettings, scope),
+            SummarySettingsCommands(projects, missionControl, summarySettings, scope),
             AppearanceCommands(projects, missionControl, appearance, scope),
             HookSetupCommands(projects, missionControl, hookSetup, scope, hooksBlocked),
             NewAgentCommands(projects, missionControl, modules.projects.api, newAgent, scope, newAgentBlocked),

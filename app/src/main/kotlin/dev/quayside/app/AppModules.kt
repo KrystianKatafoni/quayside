@@ -8,6 +8,7 @@ import dev.quayside.core.domain.ShellCommand
 import dev.quayside.projects.api.ProjectInspector
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
+import dev.quayside.summaries.api.SummarySettingsRepo
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalSettings
 import dev.quayside.terminal.api.TerminalSettingsRepo
@@ -20,8 +21,14 @@ internal class AppModules(
     val sessions: SessionsApi,
     val registry: CommandRegistry,
     val terminal: TerminalDeps,
-    val notifications: NotificationDeps,
+    val settings: SettingsDeps,
     val appearance: AppearanceDeps,
+)
+
+/** The notification module and the summaries switch: what the settings dialogs besides the terminal's work on. */
+internal class SettingsDeps(
+    val notifications: NotificationDeps,
+    val summaries: SummarySettingsRepo,
 )
 
 /**

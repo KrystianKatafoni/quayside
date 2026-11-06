@@ -17,6 +17,7 @@ import dev.quayside.core.designsystem.AmModalGate
 import dev.quayside.core.designsystem.LocalAmModalGate
 import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.ui.NotificationSettingsDialog
+import dev.quayside.summaries.ui.SummarySettingsDialog
 import dev.quayside.terminal.ui.TerminalArea
 import dev.quayside.terminal.ui.TerminalSettingsDialog
 import kotlinx.coroutines.launch
@@ -67,15 +68,25 @@ private fun FrameWindowScope.WindowContent(
             onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
             keyCaps = remember { windowKeyCaps() },
         )
-        NewAgentDialog(controllers.newAgent)
-        TerminalSettingsDialog(controllers.terminalSettings)
-        NotificationSettingsDialog(controllers.notificationSettings)
-        HookSetupDialog(controllers.hookSetup, hooks.backupDir)
+        WindowDialogs(controllers, hooks)
     }
     // Outside the scale: the preview of the dialog scales the base density itself (previewDensity).
     AppearanceDialog(controllers.appearance) { AppearancePreviewSlot() }
     PopupAttachHandler(modules, controllers.attacher)
     LaunchedEffect(Unit) { controllers.hookSetup.offerAtStart() }
+}
+
+/** The dialogs drawn over the window content: "Nowy agent", the settings and the hooks. */
+@Composable
+private fun WindowDialogs(
+    controllers: WindowControllers,
+    hooks: HookDeps,
+) {
+    NewAgentDialog(controllers.newAgent)
+    TerminalSettingsDialog(controllers.terminalSettings)
+    NotificationSettingsDialog(controllers.notificationSettings)
+    SummarySettingsDialog(controllers.summarySettings)
+    HookSetupDialog(controllers.hookSetup, hooks.backupDir)
 }
 
 /** The terminal of the window; remembered, so the movable panel keeps its state across recompositions. */
@@ -100,7 +111,7 @@ private fun FrameWindowScope.PopupAttachHandler(
 ) {
     val scope = rememberCoroutineScope()
     DisposableEffect(Unit) {
-        modules.notifications.attach.handler = { id ->
+        modules.settings.notifications.attach.handler = { id ->
             scope.launch {
                 val sessions = modules.sessions.monitor.snapshot.value.sessions
                 attacher.attachSession(id, sessions, modules.projects.api.projects.value)
@@ -108,7 +119,7 @@ private fun FrameWindowScope.PopupAttachHandler(
                 window.toFront()
             }
         }
-        onDispose { modules.notifications.attach.handler = null }
+        onDispose { modules.settings.notifications.attach.handler = null }
     }
 }
 

@@ -34,7 +34,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller` | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller` | – |
 | `projects` | `ProjectsApi` | `JsonProjectStore`, `DirectoryInspector` (git, `CLAUDE.md`, hooki) | sidebar, dialogi dodaj/usuń |
 | `sessions` | `SessionMonitor`, `SessionCommands` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami | – |
-| `summaries` | `Summarizer`, `SummariesApi` | `LastMessageSummary` (czysty) z `last_assistant_message`; model Haiku przez `claude -p` w części B (ADR 0019) | – |
+| `summaries` | `Summarizer`, `SummariesApi`, `SummarySettingsRepo` | `LastMessageSummary` (czysty) z `last_assistant_message`; model Haiku przez `claude -p` w części B (ADR 0019) | okno „Ustawienia podsumowań” |
 | `notifications` | `NotificationCenter`, `NotificationSettingsRepo` | `NotificationPolicy` (czysta), `MacSayAdapter`, `SoundAdapter`, `DockBadgeAdapter` | okna popupów, ekran ustawień |
 | `terminal` | `TerminalApi`, `TerminalSession` | JediTerm + pty4j, profile powłoki, OSC 133 | karty, panele, szukanie |
 | `appearance` | `AppearanceApi`, katalog schematów i typografii | `JsonThemeStore`, wbudowany katalog, przełączanie dzień/noc | ekran Wygląd |
@@ -239,6 +239,13 @@ sealed interface SummaryError {                                     // błąd zo
 // refiner == null: model wyłączony (domyślnie; włącza go `summaries.json`, §8)
 data class SummariesApi(val summarizer: Summarizer, val refiner: SummaryRefiner? = null)
 // fabryka: summariesModule(storage, prompt, logger) — czyta summaries.json raz
+// przełącznik z ekranu ustawień (AM-606): zapis działa od następnego startu, bo fabryka czyta plik raz
+interface SummarySettingsRepo {
+    val useModel: StateFlow<Boolean>                                // zapisany przełącznik
+    val startedWithModel: Boolean                                   // z czym wystartowała ta instancja aplikacji
+    suspend fun setUseModel(on: Boolean): Outcome<Unit, SummarySettingsError>  // WRITE_FAILED, NEWER_SCHEMA
+}
+// fabryka: summarySettingsModule(storage, logger) — obok summariesModule, ten sam plik
 
 // agent-runtime:api — jedno pytanie do modelu przez `claude -p`, poza sesją i bez hooków (ADR 0019)
 fun interface OneShotPrompt {
@@ -496,7 +503,7 @@ quayside/
 │   ├── agent-runtime/  { api/ impl/ }
 │   ├── projects/       { api/ impl/ ui/ }
 │   ├── sessions/       { api/ impl/ }
-│   ├── summaries/      { api/ impl/ }
+│   ├── summaries/      { api/ impl/ ui/ }
 │   ├── notifications/  { api/ impl/ ui/ }
 │   ├── terminal/       { api/ impl/ ui/ }
 │   ├── appearance/     { api/ impl/ ui/ }

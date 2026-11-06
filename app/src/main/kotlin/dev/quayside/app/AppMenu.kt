@@ -49,8 +49,8 @@ internal fun FrameWindowScope.AppMenu(
 }
 
 /**
- * The palette, the notification settings (AM-704), the appearance (AM-803) and the hooks (AM-607); all wait for
- * dialogs like the palette.
+ * The palette, the notification settings (AM-704), the summaries settings (AM-606), the appearance (AM-803) and the
+ * hooks (AM-607); all wait for dialogs like the palette.
  */
 @Composable
 private fun MenuScope.ViewItems(
@@ -68,6 +68,11 @@ private fun MenuScope.ViewItems(
         text = Strings["menu.notificationSettings"],
         enabled = enabled.palette,
         onClick = { controllers.notificationSettings.open() },
+    )
+    Item(
+        text = Strings["menu.summarySettings"],
+        enabled = enabled.palette,
+        onClick = { controllers.summarySettings.open() },
     )
     Item(
         text = Strings["menu.appearance"],
@@ -118,6 +123,7 @@ private fun anyDialogOpen(controllers: WindowControllers): Boolean {
     val sessionActions by controllers.missionControl.actions.collectAsState()
     val settingsDialog by controllers.terminalSettings.state.collectAsState()
     val notificationDialog by controllers.notificationSettings.state.collectAsState()
+    val summaryDialog by controllers.summarySettings.state.collectAsState()
     val hookDialog by controllers.hookSetup.state.collectAsState()
     val newAgentOpen by controllers.newAgent.isOpen.collectAsState()
     val appearanceDialog by controllers.appearance.state.collectAsState()
@@ -125,6 +131,7 @@ private fun anyDialogOpen(controllers: WindowControllers): Boolean {
         appearanceDialog != null ||
         settingsDialog != null ||
         notificationDialog != null ||
+        summaryDialog != null ||
         hookDialog != null ||
         newAgentOpen
 }

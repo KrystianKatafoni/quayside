@@ -74,6 +74,7 @@ internal class WindowControllers(
             modules.settings.notifications.settings,
             modules.settings.notifications.voices,
             modules.settings.notifications.preview,
+            modules.projects.api.projects,
             scope,
         )
 

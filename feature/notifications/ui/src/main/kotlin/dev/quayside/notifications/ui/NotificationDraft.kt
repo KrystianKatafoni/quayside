@@ -12,11 +12,13 @@ import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.PopupStyle
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
+import dev.quayside.projects.api.Project
 
 /**
  * The settings as the dialog edits them (AM-704); numbers stay text until save. [matrix] has every kind.
- * Part A: global switches, the matrix and the threshold of [NotificationKind.RUNNING_LONG];
- * part B1: the popup; part B2: speech.
+ * It holds the global switches, the matrix, the threshold of [NotificationKind.RUNNING_LONG], the popup, the
+ * speech, the quiet hours (FR-N6) and the exceptions of the registered projects (FR-N7, sorted by name ignoring
+ * case; the exceptions of other projects are kept as stored).
  */
 public data class NotificationDraft(
     val popups: Boolean,
@@ -25,6 +27,8 @@ public data class NotificationDraft(
     val runningLongMinutes: String,
     val popup: PopupDraft,
     val speech: SpeechDraft,
+    val quiet: QuietDraft,
+    val projects: List<ProjectDraft>,
 )
 
 /** The popup part of [NotificationDraft] (FR-N3); [maxVisible] stays text until save. */
@@ -46,8 +50,8 @@ public data class SpeechDraft(
     val muteWhenMicrophoneActive: Boolean,
 )
 
-/** The fields of the dialog that a save can refuse. Covers the threshold, the popup and the speech fields. */
-public enum class NotificationField { RUNNING_LONG_MINUTES, MAX_VISIBLE, RATE, VOLUME, TEMPLATE }
+/** The fields of the dialog that a save can refuse. Covers the threshold, the popup, the speech and the quiet hours. */
+public enum class NotificationField { RUNNING_LONG_MINUTES, MAX_VISIBLE, RATE, VOLUME, TEMPLATE, QUIET_FROM, QUIET_TO }
 
 /** A field the last save refused; [kind] only for [NotificationField.TEMPLATE]. */
 public data class InvalidField(
@@ -56,7 +60,10 @@ public data class InvalidField(
 )
 
 /** The draft of [settings]: every kind in the matrix (its channels or the default), numbers as text. */
-internal fun draftOf(settings: NotificationSettings): NotificationDraft =
+internal fun draftOf(
+    settings: NotificationSettings,
+    projects: List<Project> = emptyList(),
+): NotificationDraft =
     NotificationDraft(
         popups = settings.popups,
         voice = settings.voice,
@@ -70,6 +77,8 @@ internal fun draftOf(settings: NotificationSettings): NotificationDraft =
                 style = settings.popup.style,
             ),
         speech = speechDraftOf(settings.speech),
+        quiet = quietDraftOf(settings.quietHours),
+        projects = projectDraftsOf(projects, settings.projects),
     )
 
 private fun speechDraftOf(speech: SpeechSettings): SpeechDraft =
@@ -94,15 +103,19 @@ internal fun settingsOf(
     val deviations = draft.matrix.filter { (kind, channels) -> channels != NotificationSettings.defaultChannels(kind) }
     return number(draft.runningLongMinutes, MINUTES, NotificationField.RUNNING_LONG_MINUTES).flatMap { minutes ->
         number(draft.popup.maxVisible, VISIBLE, NotificationField.MAX_VISIBLE).flatMap { visible ->
-            speechOf(draft.speech, current.speech).map { speech ->
-                current.copy(
-                    popups = draft.popups,
-                    voice = draft.voice,
-                    matrix = deviations,
-                    runningLongMinutes = minutes,
-                    popup = PopupSettings(draft.popup.position, draft.popup.duration, visible, draft.popup.style),
-                    speech = speech,
-                )
+            speechOf(draft.speech, current.speech).flatMap { speech ->
+                quietOf(draft.quiet, current.quietHours).map { quiet ->
+                    current.copy(
+                        popups = draft.popups,
+                        voice = draft.voice,
+                        matrix = deviations,
+                        runningLongMinutes = minutes,
+                        popup = PopupSettings(draft.popup.position, draft.popup.duration, visible, draft.popup.style),
+                        speech = speech,
+                        quietHours = quiet,
+                        projects = projectsOf(draft.projects, current.projects),
+                    )
+                }
             }
         }
     }

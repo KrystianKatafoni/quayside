@@ -48,7 +48,7 @@ internal fun VoiceSection(
     }
 }
 
-private fun NotificationDialogState.invalidAt(field: NotificationField): InvalidField? =
+internal fun NotificationDialogState.invalidAt(field: NotificationField): InvalidField? =
     invalid?.takeIf { it.field == field }
 
 private fun NotificationSettingsController.editSpeech(change: (SpeechDraft) -> SpeechDraft) {

@@ -49,6 +49,7 @@ import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.Project
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectHooks
 import dev.quayside.projects.ui.ProjectHooksError
@@ -179,6 +180,7 @@ private fun WindowContent(
         PaletteKeys(keys, palette)
         SideEffect { setup.attacher = terminal.wiring.attacher }
         val mode = remember { terminal.controller?.let { windowMode(it, registry, scope) } }
+        val parts = WindowParts(projects, missionControl, scope, setup.projects.projects)
         KeysBox(keys) {
             QuaysideApp(
                 controllers = AppControllers(projects, missionControl, palette),
@@ -193,7 +195,7 @@ private fun WindowContent(
                     },
                 onNewAgent = agent::openForSelection,
             )
-            SettingsHosts(setup.settings, registry, WindowParts(projects, missionControl, scope))
+            SettingsHosts(setup.settings, registry, parts)
             NewAgentDialog(agent.newAgent)
         }
     }
@@ -307,6 +309,7 @@ private class WindowParts(
     val projects: ProjectsController,
     val missionControl: MissionControlController,
     val scope: CoroutineScope,
+    val projectList: StateFlow<List<Project>>,
 )
 
 /** The settings dialogs of [repos] with their palette commands. */
@@ -323,6 +326,7 @@ private fun SettingsHosts(
                     it,
                     repos.voices,
                     repos.preview,
+                    window.projectList,
                     window.scope,
                 )
             }

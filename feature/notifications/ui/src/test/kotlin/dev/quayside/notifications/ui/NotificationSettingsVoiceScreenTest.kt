@@ -33,6 +33,7 @@ import dev.quayside.notifications.api.VoiceCatalog
 import dev.quayside.notifications.api.VoiceId
 import dev.quayside.notifications.api.VoiceOption
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.jupiter.api.Test
 
 /** Cold JVM start-up can exceed the default 1 s of `waitUntil` in the first test. */
@@ -62,6 +63,11 @@ private val SPEECH_ORDER =
             SettingsTags.READ_QUESTION,
             SettingsTags.ONLY_IN_BACKGROUND,
             SettingsTags.MUTE_MICROPHONE,
+            // the quiet hours section follows the voice section (AM-706)
+            SettingsTags.QUIET_ENABLED,
+            SettingsTags.QUIET_FROM,
+            SettingsTags.QUIET_TO,
+            SettingsTags.RESPECT_FOCUS,
             SettingsTags.SAVE,
         )
 
@@ -85,7 +91,13 @@ class NotificationSettingsVoiceScreenTest {
                 val scope = rememberCoroutineScope()
                 val controller =
                     remember {
-                        NotificationSettingsController(repo, voices, FakeVoicePreview(), scope).also {
+                        NotificationSettingsController(
+                            repo,
+                            voices,
+                            FakeVoicePreview(),
+                            MutableStateFlow(emptyList()),
+                            scope,
+                        ).also {
                             built +=
                                 it
                         }
@@ -143,7 +155,8 @@ class NotificationSettingsVoiceScreenTest {
             SPEECH_ORDER.zipWithNext().forEach { (from, to) ->
                 press(from, Key.Tab)
 
-                // Then the focus moves to the next one: voice, rate, volume, 7 x (template, restore), 3 switches, Save
+                // Then the focus moves to the next one: voice, rate, volume, 7 x (template, restore), 3 switches,
+                // quiet section, Save
                 awaitFocus(to)
             }
         }

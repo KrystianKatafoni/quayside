@@ -20,6 +20,7 @@ import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -47,7 +48,13 @@ class NotificationSettingsPreviewTest {
     private fun TestScope.controllerOver(
         repo: ScriptedRepo,
         preview: VoicePreview,
-    ) = NotificationSettingsController(repo, FakeVoiceCatalog(listOf(ewa, alex)), preview, backgroundScope)
+    ) = NotificationSettingsController(
+        repo,
+        FakeVoiceCatalog(listOf(ewa, alex)),
+        preview,
+        MutableStateFlow(emptyList()),
+        backgroundScope,
+    )
 
     /** An opened controller with the voices loaded and Ewa drafted. */
     private fun TestScope.opened(

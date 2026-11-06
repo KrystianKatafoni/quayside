@@ -8,6 +8,7 @@ import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceCatalog
 import dev.quayside.notifications.api.VoiceOption
 import dev.quayside.notifications.api.VoicePreview
+import dev.quayside.projects.api.Project
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -32,15 +33,18 @@ public data class NotificationDialogState(
 )
 
 /**
- * Logic of the "Ustawienia powiadomień" dialog (FR-N1, FR-N2, FR-N4 voice sample). Main thread; [save] writes in
- * [scope], one write at a time (`saving` is set by [save], cleared when the write ends or the dialog is opened or
- * cancelled), a result arriving after cancel is dropped. An edit made while a write runs is lost when the write ends
- * Ok, because the dialog closes. Logs nothing (the values are the user's).
+ * Logic of the "Ustawienia powiadomień" dialog (FR-N1, FR-N2, FR-N4 voice sample, FR-N6 quiet hours, FR-N7
+ * project exceptions). Main thread. [projects]: the registered projects, read at every [open]; the exceptions of
+ * other projects are kept as stored. [save] writes in [scope], one write at a time (`saving` is set by [save],
+ * cleared when the write ends or the dialog is opened or cancelled), a result arriving after cancel is dropped.
+ * An edit made while a write runs is lost when the write ends Ok, because the dialog closes. Logs nothing (the
+ * values are the user's).
  */
 public class NotificationSettingsController(
     private val repo: NotificationSettingsRepo,
     private val voices: VoiceCatalog,
     private val preview: VoicePreview,
+    private val projects: StateFlow<List<Project>>,
     private val scope: CoroutineScope,
 ) {
     private val dialog = MutableStateFlow<NotificationDialogState?>(null)
@@ -60,7 +64,7 @@ public class NotificationSettingsController(
         stopPreview()
         generation++
         saving = false
-        dialog.value = NotificationDialogState(draftOf(repo.settings.value), null, null, voiceList)
+        dialog.value = NotificationDialogState(draftOf(repo.settings.value, projects.value), null, null, voiceList)
         loadVoices()
     }
 

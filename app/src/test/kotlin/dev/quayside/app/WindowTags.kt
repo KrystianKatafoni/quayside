@@ -82,6 +82,11 @@ internal object WindowTags {
     const val NOTIFICATION_SPEECH_VOICE = "notifications.settings.speech.voice"
     const val NOTIFICATION_PREVIEW = "notifications.settings.speech.preview"
     const val NOTIFICATION_SPEECH_RATE = "notifications.settings.speech.rate"
+    const val NOTIFICATION_QUIET_ENABLED = "notifications.settings.quiet.enabled"
+    const val NOTIFICATION_QUIET_FROM = "notifications.settings.quiet.from"
+    const val NOTIFICATION_QUIET_TO = "notifications.settings.quiet.to"
+
+    fun notificationProjectProfile(id: String): String = "notifications.settings.projects.profile.$id"
 
     fun notificationCell(
         kind: NotificationKind,

@@ -7,6 +7,7 @@ internal object ProjectsTags {
     const val SIDEBAR = "projects.sidebar"
     const val EMPTY = "projects.empty"
     const val ADD_BUTTON = "projects.add"
+    const val ADD_FROM_DISK = "projects.addFromDisk"
     const val BANNER = "projects.banner"
     const val BANNER_DISMISS = "projects.banner.dismiss"
     const val ROW_MENU_REMOVE = "projects.row.menu.remove"

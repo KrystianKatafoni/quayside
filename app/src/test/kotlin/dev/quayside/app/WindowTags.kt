@@ -29,6 +29,9 @@ internal object WindowTags {
     const val ADD_BUTTON = "projects.add"
     const val MODE_BAR = "missionControl.modeBar"
     const val HEADER = "missionControl.header"
+    const val ROW_MENU_REMOVE = "projects.row.menu.remove"
+    const val CONFIRM_REMOVE_PROJECT = "projects.dialog.remove"
+    const val UNINSTALL_PROJECT_HOOKS = "projects.dialog.remove.hooks.uninstall"
     const val RENAME_DIALOG = "projects.dialog.rename"
     const val RENAME_FIELD = "projects.dialog.rename.field"
     const val RENAME_SAVE = "projects.dialog.rename.save"
@@ -42,6 +45,9 @@ internal object WindowTags {
     const val SESSION_BAR = "missionControl.sessionBar"
     const val SESSION_BAR_REPLY = "missionControl.sessionBar.reply"
     const val RAIL = "projects.rail"
+
+    /** The ⋯ button of the sidebar row of a project (`projects:ui`, `internal` there). */
+    fun rowMenu(projectId: String): String = "projects.row.$projectId.menu"
 
     fun railButton(projectId: String): String = "projects.rail.$projectId"
 

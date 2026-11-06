@@ -22,5 +22,6 @@ Mutacje rób wyłącznie w kopii: `rsync -a --exclude .git --exclude build --exc
 - Mutacja `as? T` → `as T` daje błąd `-Werror` („Unnecessary safe call”, „Condition is always true”) — użyj `?.let { it as T }`. Fragment do podmiany musi być unikalny (np. `queue = SoundQueue()` trafia najpierw w deklarację pola) — po każdej serii sprawdź `grep -E '^e: |tests completed' m_*.log`, „BUILD FAILED in <1s” bez „tests completed” to kompilacja.
 - Podmiana na `Unit` jako mutacja daje pod -Werror „Expression is unused” — zamiast tego odwróć/wyzeruj warunek (`closes > 0` → `closes < 0`, `if (!enabled)` → `if (label.isEmpty() && !enabled)`). Mutację, która przeżyła w module komponentu, puść też na testach modułów `ui` (tam bywa zabijana).
 - Testy prawdziwego okna AWT (ModalOver/DropdownOver) w tle bez okna na pierwszym planie: jedne padają, inne (z `assumeTrue`) są pomijane — przed wnioskiem o regresji porównaj z bazą w tej samej sesji.
+- Dowód doręczenia klawisza w teście Compose: mutacja „klawisz bez skutku” (Space → ShiftLeft w `press`) musi wywrócić test. Wybór korzenia w `onAllNodes(isRoot()).onLast()`/`onFirst()` nie ma znaczenia (mutacja przeżyła, AM-610): `performKeyInput` trafia do węzła z fokusem.
 
 Powiązane: [[recurring-review-findings]]

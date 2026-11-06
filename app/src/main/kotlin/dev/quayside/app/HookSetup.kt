@@ -7,6 +7,7 @@ import dev.quayside.agentruntime.api.HookStatus
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.warn
+import dev.quayside.projects.ui.ProjectHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,7 @@ internal class HookDeps(
     val backupDir: Path,
     val offer: HookOfferStore,
     val targets: HookTargetSource,
+    val projectHooks: ProjectHooks,
 )
 
 /** One row of the dialog. [status] is null while it is read or when the project folder is missing. */

@@ -33,6 +33,7 @@ import dev.quayside.appearance.ui.ThemeFilePicker
 import dev.quayside.commandpalette.api.FakeCommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.domain.NoOpLogger
+import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.TestClock
@@ -47,8 +48,12 @@ import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.ui.DirectoryPicker
+import dev.quayside.projects.ui.ProjectHooks
+import dev.quayside.projects.ui.ProjectHooksError
+import dev.quayside.projects.ui.ProjectHooksState
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
+import dev.quayside.projects.ui.ProjectsPorts
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionsApi
@@ -115,6 +120,16 @@ internal class WindowSetup(
 
     /** The attacher of the window's terminal (null without one): what the popup Attach and the buttons call. */
     var attacher: SessionAttacher? = null
+
+    /** The hooks of the projects for the remove dialog (AM-610); default: none anywhere. */
+    var projectHooks: ProjectHooks = NoProjectHooks
+}
+
+/** [ProjectHooks] of a window whose projects have no hooks of ours: nothing to warn about, nothing to remove. */
+internal object NoProjectHooks : ProjectHooks {
+    override suspend fun status(dir: Path): ProjectHooksState = ProjectHooksState.ABSENT
+
+    override suspend fun uninstall(dir: Path): Outcome<Unit, ProjectHooksError> = Outcome.Ok(Unit)
 }
 
 /** [showWindow] for a [WindowSetup] with the "Nowy agent" dialog, its command and its button (AM-608). */
@@ -214,7 +229,7 @@ private fun windowCore(
     scope: CoroutineScope,
     onPalette: (CommandPaletteController) -> Unit,
 ): WindowCore {
-    val controller = projectsController(setup.projects, setup.sessions, scope)
+    val controller = projectsController(setup.projects, setup.sessions, setup.projectHooks, scope)
     val missionControl = missionControlController(setup.projects, setup.sessions, controller, scope)
     val registry = FakeCommandRegistry(scope)
     val palette = CommandPaletteController(registry, scope, NoOpLogger).also(onPalette)
@@ -495,13 +510,14 @@ private fun KeysBox(
 private fun projectsController(
     projects: FakeProjectsApi,
     sessions: FakeSessions,
+    hooks: ProjectHooks,
     scope: CoroutineScope,
 ): ProjectsController =
     ProjectsController(
         projects = projects,
         inspector = FakeProjectInspector(projects = projects),
         sessions = SessionsApi(monitor = sessions, commands = sessions),
-        picker = DirectoryPicker { null },
+        ports = ProjectsPorts(DirectoryPicker { null }, hooks),
         scope = scope,
         logger = NoOpLogger,
     )

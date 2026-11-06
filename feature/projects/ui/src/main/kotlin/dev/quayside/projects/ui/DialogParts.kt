@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -45,12 +47,18 @@ internal fun DialogText(
 internal fun DialogButton(
     label: String,
     tag: String,
+    focus: FocusRequester? = null,
     onClick: () -> Unit,
 ) {
-    AmButton(label = label, onClick = onClick, modifier = Modifier.testTag(tag))
+    val modifier = if (focus == null) Modifier else Modifier.focusRequester(focus)
+    AmButton(label = label, onClick = onClick, modifier = modifier.testTag(tag))
 }
 
+/** "Anuluj"; with [focus] it takes the start focus (a button that changes nothing, NFR-5). */
 @Composable
-internal fun Cancel(onClick: () -> Unit) {
-    DialogButton(ProjectsStrings["dialog.cancel"], ProjectsTags.CANCEL, onClick)
+internal fun Cancel(
+    focus: FocusRequester? = null,
+    onClick: () -> Unit,
+) {
+    DialogButton(ProjectsStrings["dialog.cancel"], ProjectsTags.CANCEL, focus, onClick)
 }

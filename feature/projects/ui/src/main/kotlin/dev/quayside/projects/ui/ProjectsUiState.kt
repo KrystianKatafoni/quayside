@@ -37,6 +37,9 @@ internal sealed interface Dialog {
 
         /** A confirmed command (add, stop, remove, rename) is running. */
         BUSY(ProjectsTags.BUSY, "dialog.busy"),
+
+        /** The hooks of the project are being read before the remove dialog opens; Dismiss cancels it. */
+        CHECKING_HOOKS(ProjectsTags.CHECKING_HOOKS, "remove.checkingHooks"),
     }
 
     /** Inspection report waiting for "Add"; [error] is set when adding failed and the dialog stays. */
@@ -49,6 +52,8 @@ internal sealed interface Dialog {
     data class ConfirmRemove(
         val project: Project,
         val active: SessionCounts?,
+        val hooks: ProjectHooksState = ProjectHooksState.ABSENT,
+        val hooksNotice: UiText? = null,
     ) : Dialog
 
     /** New name of [project] typed so far in [draft]; [error] is set when saving failed and the dialog stays. */
@@ -95,6 +100,9 @@ internal sealed interface SidebarEvent {
 
     /** "Cancel" or "Close": closes the open dialog and cancels a running inspection. */
     data object Dismiss : SidebarEvent
+
+    /** "Odinstaluj hooki" in [Dialog.ConfirmRemove] with hooks present. */
+    data object UninstallHooks : SidebarEvent
 
     /** Closes the storage issue banner. */
     data object DismissBanner : SidebarEvent

@@ -19,6 +19,10 @@ internal object ProjectsTags {
     const val ADD = "projects.dialog.add.confirm"
     const val CONFIRM_REMOVE = "projects.dialog.remove"
     const val BUSY = "projects.dialog.busy"
+    const val CHECKING_HOOKS = "projects.dialog.checking-hooks"
+
+    /** "Odinstaluj hooki" in the remove dialog with our hooks in the project file (AM-610). */
+    const val UNINSTALL_HOOKS = "projects.dialog.remove.hooks.uninstall"
 
     /** The only remove button: no active sessions, or they could not be listed. */
     const val REMOVE = "projects.dialog.remove.confirm"

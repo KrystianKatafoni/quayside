@@ -30,7 +30,7 @@ Każdy etap kończy się czymś, czego da się realnie używać.
 
 ## Otwarte kwestie do decyzji
 
-- [x] Gdzie instalować hooki: globalnie w `~/.claude/settings.json` czy per projekt w `.claude/settings.local.json`? — rozstrzygnięte 2026-11-02 „globalnie” (AM-607, `HookScope.Global`); hooki per projekt to osobne zadanie
+- [x] Gdzie instalować hooki: globalnie w `~/.claude/settings.json` czy per projekt w `.claude/settings.local.json`? — rozstrzygnięte 2026-11-02 „globalnie” (AM-607, `HookScope.Global`); hooki per projekt: AM-609 (okno hooków pokazuje też każdy dodany projekt, `.claude/settings.local.json`)
 - [x] Odpowiedź na pytanie agenta: wystarczy przez attach, czy potrzebny własny widok czatu (wtedy Agent SDK jako sidecar)? — rozstrzygnięte 2026-10-19 „Etapami” ([ADR 0013](adr/0013-strategia-odpowiedzi-na-pytania-agenta.md)): AM-411 podgląd (`space`), AM-506 `r` = attach w karcie terminala, AM-507 spike ukrytego attach dla FR-S5, fallback Agent SDK
 - [ ] Streszczenia modelem Haiku: domyślnie włączone czy opcjonalne (koszt i limity)?
 - [ ] Popup systemowy macOS: potrzebny w 1.0, czy wystarczy własny?

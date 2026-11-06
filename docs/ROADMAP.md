@@ -83,7 +83,7 @@
 - [x] AM-603 · Scalanie hooków z pollingiem w reducerze · moduły: sessions:impl · zależy: AM-601, AM-403 · wymagania: NFR-2 · issue: #6
 - [x] AM-604 · Summarizer (last_assistant_message, opcjonalnie Haiku) · moduły: summaries:* · zależy: AM-603 · wymagania: FR-S7 · issue: #7
 - [x] AM-606 · Ekran ustawień podsumowań (przełącznik streszczeń modelem Haiku w summaries.json) · moduły: summaries:ui · zależy: AM-604 · wymagania: FR-S7 · issue: #67
-- [ ] AM-609 · Hooki per projekt: instalacja w `.claude/settings.local.json` dodanych projektów (`HookScope.Project`), status w oknie „Hooki Claude Code” · moduły: app, projects:ui (opcjonalnie) · zależy: AM-607 · wymagania: NFR-5 · issue: #68
+- [~] AM-609 · Hooki per projekt: instalacja w `.claude/settings.local.json` dodanych projektów (`HookScope.Project`), status w oknie „Hooki Claude Code” · moduły: app, projects:ui (opcjonalnie) · zależy: AM-607 · wymagania: NFR-5 · issue: #68
 
 ## M7 · Powiadomienia
 

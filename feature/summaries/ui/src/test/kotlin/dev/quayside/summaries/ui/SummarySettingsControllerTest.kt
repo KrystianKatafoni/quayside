@@ -101,12 +101,17 @@ class SummarySettingsControllerTest {
 
             act { controller.save() }
 
-            controller.state.value.shouldNotBeNull().saveError shouldBe SummarySettingsError.WRITE_FAILED
+            controller.state.value
+                .shouldNotBeNull()
+                .saveError shouldBe SummarySettingsError.WRITE_FAILED
             inner.useModel.value shouldBe false
 
             act { controller.setUseModel(false) }
 
-            controller.state.value.shouldNotBeNull().saveError.shouldBeNull()
+            controller.state.value
+                .shouldNotBeNull()
+                .saveError
+                .shouldBeNull()
         }
 
     @Test

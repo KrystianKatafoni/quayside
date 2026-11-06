@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Okno ustawień powiadomień: Nie przeszkadzać w godzinach i wyjątki projektów (AM-706).
 - Wybór głosu powiadomień pokazuje nazwy języków po polsku („Zosia — polski (Polska)”), pod polem „Przykład: …” z próbką głosu i przycisk „Odsłuchaj”/„Zatrzymaj”; gdy system ma najwyżej jeden polski głos, ustawienia podpowiadają, jak doinstalować kolejne (Ustawienia systemowe → Dostępność → Treść mówiona → Głos systemowy → Zarządzaj głosami) (AM-813).
 - Dialog usuwania projektu ostrzega, gdy projekt ma hooki Quayside w pliku ustawień lokalnych projektu (po usunięciu z listy zostają w pliku), i ma przycisk „Odinstaluj hooki” (AM-610).
 - Hooki Claude Code per projekt: okno „Hooki Claude Code” ma listę wierszy „Globalnie” i każdy dodany projekt; „Zainstaluj” i „Odinstaluj” działają na zaznaczonym wierszu i zapisują hooki projektu w `.claude/settings.local.json`; projekt bez folderu pokazuje „Folder projektu nie istnieje.”, a Quayside nie zmienia `.gitignore` projektu (AM-609).

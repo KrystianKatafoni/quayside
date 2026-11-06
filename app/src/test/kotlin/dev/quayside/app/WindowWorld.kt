@@ -42,7 +42,9 @@ import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.VoiceCatalog
+import dev.quayside.notifications.api.VoicePreview
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.projects.api.FakeProjectInspector
@@ -84,7 +86,7 @@ import kotlin.time.Duration.Companion.hours
  * their label and directory from [SettingsShellStart]; without, from [PlainShellStart].
  *
  * With a notification repo in [settings] it also gets the notification settings dialog and its palette command
- * (AM-704); its list of voices comes from [SettingsRepos.voices].
+ * (AM-704); its list of voices comes from [SettingsRepos.voices] and its samples go to [SettingsRepos.preview].
  *
  * With [terminal] the window also registers [AttachCommands] (AM-505); [attachCommand] stands for
  * `AgentRuntime.attachCommand`.
@@ -290,6 +292,9 @@ internal class SettingsRepos(
     /** The targets of the hooks dialog (AM-609): `ProjectHookTargets` over the fake projects; default: global only. */
     var hookTargets: HookTargetSource? = null
 
+    /** Where the voice samples of the notification settings dialog go (AM-813); a fake that plays at once. */
+    var preview: VoicePreview = FakeVoicePreview()
+
     /** The summaries settings dialog and its palette command appear with this repo (AM-606). */
     var summaries: FakeSummarySettingsRepo? = null
 }
@@ -312,7 +317,16 @@ private fun SettingsHosts(
     window: WindowParts,
 ) {
     val notifications =
-        remember { repos.notifications?.let { NotificationSettingsController(it, repos.voices, window.scope) } }
+        remember {
+            repos.notifications?.let {
+                NotificationSettingsController(
+                    it,
+                    repos.voices,
+                    repos.preview,
+                    window.scope,
+                )
+            }
+        }
     SettingsDialogHost(repos.terminal, registry, window, notifications?.dialogOpen(window.scope))
     NotificationDialogHost(notifications, registry, window)
     SummaryDialogHost(repos.summaries, registry, window)

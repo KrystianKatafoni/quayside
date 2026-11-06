@@ -21,11 +21,13 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.VoiceId
 import dev.quayside.notifications.api.VoiceOption
+import dev.quayside.notifications.api.VoiceSample
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.FakeSessions
@@ -34,6 +36,7 @@ import dev.quayside.sessions.api.SessionsWorld
 import dev.quayside.sessions.api.WorldProject
 import dev.quayside.sessions.api.WorldSession
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
@@ -45,6 +48,10 @@ import java.nio.file.Path
  */
 @OptIn(ExperimentalTestApi::class)
 class NotificationSettingsDialogWindowTest {
+    private companion object {
+        const val WAIT_MS = 5_000L
+    }
+
     @TempDir
     lateinit var root: Path
 
@@ -73,13 +80,20 @@ class NotificationSettingsDialogWindowTest {
         )
 
     private val voices =
-        FakeVoiceCatalog(listOf(VoiceOption(VoiceId("Zosia"), "pl_PL"), VoiceOption(VoiceId("Alex"), "en_US")))
+        FakeVoiceCatalog(
+            listOf(
+                VoiceOption(VoiceId("Zosia"), "pl_PL", "Witaj, nazywam się Zosia."),
+                VoiceOption(VoiceId("Alex"), "en_US", "Hi, I am Alex."),
+            ),
+        )
+
+    private val preview = FakeVoicePreview()
 
     private fun ComposeUiTest.window(): CommandPaletteController =
         showWindow(
             FakeProjectsApi(initial = listOf(project)),
             sessions(),
-            settings = SettingsRepos(notifications = repo, voices = voices),
+            settings = SettingsRepos(notifications = repo, voices = voices).also { it.preview = preview },
         )
 
     private fun ComposeUiTest.openSettings(palette: CommandPaletteController) {
@@ -150,12 +164,18 @@ class NotificationSettingsDialogWindowTest {
             // Given the open dialog; the saved voice is Zosia at 190 words per minute, and the list is loaded
             val palette = window()
             openSettings(palette)
-            waitUntilExactlyOneExists(hasTestTag(WindowTags.NOTIFICATION_SPEECH_VOICE) and hasText("Zosia (pl_PL)"))
+            waitUntilExactlyOneExists(
+                hasTestTag(WindowTags.NOTIFICATION_SPEECH_VOICE) and hasText("Zosia — polski (Polska)"),
+            )
 
             // When the user opens the voice list, picks Alex, types a rate and saves
             await(WindowTags.NOTIFICATION_SPEECH_VOICE).performScrollTo().performClick()
-            waitUntilExactlyOneExists(hasText("Alex (en_US)") and hasAnyAncestor(hasTestTag(AmDropdownTags.LIST)))
-            onNode(hasText("Alex (en_US)") and hasAnyAncestor(hasTestTag(AmDropdownTags.LIST))).performClick()
+            waitUntilExactlyOneExists(
+                hasText("Alex — angielski (Stany Zjednoczone)") and hasAnyAncestor(hasTestTag(AmDropdownTags.LIST)),
+            )
+            onNode(
+                hasText("Alex — angielski (Stany Zjednoczone)") and hasAnyAncestor(hasTestTag(AmDropdownTags.LIST)),
+            ).performClick()
             waitUntilDoesNotExist(hasTestTag(AmDropdownTags.LIST))
             await(WindowTags.NOTIFICATION_SPEECH_RATE).performScrollTo().performTextReplacement("250")
             await(WindowTags.NOTIFICATION_SETTINGS_SAVE).performScrollTo().performClick()
@@ -164,6 +184,46 @@ class NotificationSettingsDialogWindowTest {
             // Then the repo holds the new voice and rate at once
             repo.settings.value.speech.voice shouldBe VoiceId("Alex")
             repo.settings.value.speech.rate shouldBe 250
+        }
+
+    @Test
+    fun `FR-N4 preview plays through the wired port`() =
+        runComposeUiTest {
+            // Given the open dialog with Zosia, rate 190 and volume 70, and the list loaded
+            val palette = window()
+            openSettings(palette)
+            waitUntilExactlyOneExists(
+                hasTestTag(WindowTags.NOTIFICATION_SPEECH_VOICE) and hasText("Zosia — polski (Polska)"),
+            )
+
+            // When the user clicks "Odsłuchaj"
+            await(WindowTags.NOTIFICATION_PREVIEW).performScrollTo().performClick()
+
+            // Then the port got Zosia's example with the drafted rate and volume
+            waitUntil(timeoutMillis = WAIT_MS) { preview.played.isNotEmpty() }
+            preview.played shouldBe
+                listOf(VoiceSample(VoiceId("Zosia"), "Witaj, nazywam się Zosia.", rate = 190, volume = 70))
+        }
+
+    @Test
+    fun `FR-N4 closing the dialog stops the preview`() =
+        runComposeUiTest {
+            // Given a sample that plays until stopped
+            preview.gate = CompletableDeferred()
+            val palette = window()
+            openSettings(palette)
+            waitUntilExactlyOneExists(
+                hasTestTag(WindowTags.NOTIFICATION_SPEECH_VOICE) and hasText("Zosia — polski (Polska)"),
+            )
+            await(WindowTags.NOTIFICATION_PREVIEW).performScrollTo().performClick()
+            waitUntil(timeoutMillis = WAIT_MS) { preview.played.isNotEmpty() }
+
+            // When the user closes the dialog with "Anuluj"
+            await(WindowTags.NOTIFICATION_SETTINGS_CANCEL).performScrollTo().performClick()
+            waitUntilDoesNotExist(hasTestTag(WindowTags.NOTIFICATION_SETTINGS_DIALOG))
+
+            // Then the sample is stopped
+            waitUntil(timeoutMillis = WAIT_MS) { preview.cancelled == 1 }
         }
 
     /**

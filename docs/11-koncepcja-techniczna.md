@@ -475,6 +475,8 @@ fun main() = application {
 }
 ```
 
+Okno „Hooki Claude Code” obejmuje zakres globalny i każdy dodany projekt (`HookScope.Project`, AM-609); cele dostarcza `ProjectHookTargets` nad `ProjectsApi.projects`.
+
 Każda fabryka `xxxModule(…)` zwraca obiekt z interfejsami `api`, np. `SessionsApi(monitor: SessionMonitor, commands: SessionCommands)`. Klasy implementacji pozostają `internal`.
 
 ## 10. Izolacja zmian: gdzie ląduje typowa zmiana

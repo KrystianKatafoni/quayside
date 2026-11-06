@@ -7,6 +7,7 @@ import dev.quayside.agentruntime.api.HookStatus
 import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.Outcome
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.getOrNull
 import dev.quayside.core.testing.TestClock
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -91,9 +92,15 @@ class HookSetupIntegrationTest {
         runTest {
             writeForeign()
             val controller =
-                HookSetupController(installer(), hookOfferStore(root.resolve("app")), backgroundScope, NoOpLogger)
+                HookSetupController(
+                    installer(),
+                    hookOfferStore(root.resolve("app")),
+                    globalOnlyTargets,
+                    backgroundScope,
+                    NoOpLogger,
+                )
             controller.open()
-            controller.state.first { it?.status == HookStatus.NotInstalled }
+            controller.state.first { it?.current?.status == HookStatus.NotInstalled }
 
             controller.install()
             controller.state.first { it?.notice == HookNotice.Installed }
@@ -103,5 +110,89 @@ class HookSetupIntegrationTest {
             controller.state.first { it?.notice == HookNotice.Uninstalled }
             settings.readText() shouldNotContain "127.0.0.1"
             settings.readText() shouldContain "x.sh"
+        }
+
+    private val project get() = root.resolve("work/alpha")
+    private val projectSettings get() = project.resolve(".claude/settings.local.json")
+    private val projectScope get() = HookScope.Project(project)
+
+    private fun writeProjectForeign() {
+        projectSettings.parent.createDirectories()
+        projectSettings.writeText(foreign)
+    }
+
+    @Test
+    fun `project install writes settings local json with the app port`() =
+        runTest {
+            project.createDirectories()
+
+            installer().install(projectScope).shouldBeInstanceOf<Outcome.Ok<BackupRef>>()
+
+            val text = projectSettings.readText()
+            text shouldContain "http://127.0.0.1:$HOOK_PORT/hooks"
+            events.forEach { text shouldContain it }
+            installer().status(projectScope) shouldBe HookStatus.Installed
+        }
+
+    @Test
+    fun `project install keeps foreign settings and makes a backup`() =
+        runTest {
+            writeProjectForeign()
+
+            val ref = installer().install(projectScope).getOrNull().shouldNotBeNull()
+
+            projectSettings.readText() shouldContain "x.sh"
+            projectSettings.readText() shouldContain "\"model\": \"opus\""
+            backups.resolve(ref.value).readText() shouldBe foreign
+        }
+
+    @Test
+    fun `project uninstall removes only our hooks`() =
+        runTest {
+            writeProjectForeign()
+            val installer = installer()
+            installer.install(projectScope)
+
+            installer.uninstall(projectScope, backup = null) shouldBe Outcome.Ok(Unit)
+
+            projectSettings.readText() shouldNotContain "127.0.0.1"
+            projectSettings.readText() shouldContain "x.sh"
+            installer.status(projectScope) shouldBe HookStatus.NotInstalled
+        }
+
+    @Test
+    fun `project install does not touch the global settings`() =
+        runTest {
+            writeForeign()
+            project.createDirectories()
+
+            installer().install(projectScope)
+
+            settings.readText() shouldBe foreign
+            installer().status(HookScope.Global) shouldBe HookStatus.NotInstalled
+        }
+
+    @Test
+    fun `controller installs in a project through the real installer and the target list`() =
+        runTest {
+            project.createDirectories()
+            val target = HookTarget.Project(ProjectId("p1"), "alpha", project, present = true)
+            val controller =
+                HookSetupController(
+                    installer(),
+                    hookOfferStore(root.resolve("app")),
+                    hookTargets(target),
+                    backgroundScope,
+                    NoOpLogger,
+                )
+            controller.open()
+            controller.state.first { s -> s != null && s.rows.size == 2 && s.rows.all { it.status != null } }
+            controller.select(1)
+
+            controller.install()
+            controller.state.first { it?.notice == HookNotice.Installed }
+
+            projectSettings.readText() shouldContain "127.0.0.1:$HOOK_PORT"
+            settings.toFile().exists() shouldBe false
         }
 }

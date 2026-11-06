@@ -31,6 +31,7 @@ import dev.quayside.notifications.api.PopupDuration
 import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupStyle
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.jupiter.api.Test
 
 /** Cold JVM start-up can exceed the default 1 s of `waitUntil` in the first test. */
@@ -56,8 +57,13 @@ class NotificationSettingsDialogScreenTest {
                 val scope = rememberCoroutineScope()
                 val controller =
                     remember {
-                        NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), FakeVoicePreview(), scope)
-                            .also(built::add)
+                        NotificationSettingsController(
+                            repo,
+                            FakeVoiceCatalog(emptyList()),
+                            FakeVoicePreview(),
+                            MutableStateFlow(emptyList()),
+                            scope,
+                        ).also(built::add)
                     }
                 NotificationSettingsDialog(controller)
             }

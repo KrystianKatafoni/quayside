@@ -81,6 +81,8 @@ private fun SettingsPanel(
             ThresholdRow(state, controller)
             PopupSection(state, controller)
             VoiceSection(state, controller)
+            QuietSection(state, controller)
+            ProjectsSection(state, controller)
             SettingsFooter(state.saveError, controller)
         }
     }

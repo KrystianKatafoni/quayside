@@ -1,5 +1,6 @@
 package dev.quayside.notifications.ui
 
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 
@@ -25,6 +26,14 @@ internal object SettingsTags {
     const val PREVIEW_FAILED = "notifications.settings.speech.previewFailed"
     const val POLISH_HINT = "notifications.settings.speech.polishHint"
     const val VOICES_FAILED = "notifications.settings.speech.voicesFailed"
+    const val QUIET_ENABLED = "notifications.settings.quiet.enabled"
+    const val QUIET_FROM = "notifications.settings.quiet.from"
+    const val QUIET_TO = "notifications.settings.quiet.to"
+    const val QUIET_HINT = "notifications.settings.quiet.hint"
+    const val RESPECT_FOCUS = "notifications.settings.quiet.respectFocus"
+    const val FOCUS_NOTE = "notifications.settings.quiet.focusNote"
+    const val PROJECTS_HINT = "notifications.settings.projects.hint"
+    const val PROJECTS_EMPTY = "notifications.settings.projects.empty"
     const val SAVE = "notifications.settings.save"
     const val CANCEL = "notifications.settings.cancel"
 
@@ -45,4 +54,10 @@ internal object SettingsTags {
 
     /** The message under [field]; absent while the field is valid. */
     fun invalid(field: NotificationField): String = "notifications.settings.invalid.${field.name}"
+
+    /** The profile choice of the project [id]. */
+    fun projectProfile(id: ProjectId): String = "notifications.settings.projects.profile.${id.value}"
+
+    /** The voice choice of the project [id]. */
+    fun projectVoice(id: ProjectId): String = "notifications.settings.projects.voice.${id.value}"
 }

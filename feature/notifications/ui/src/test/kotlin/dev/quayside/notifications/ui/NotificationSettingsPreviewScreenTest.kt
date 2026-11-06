@@ -24,6 +24,7 @@ import dev.quayside.notifications.api.VoiceId
 import dev.quayside.notifications.api.VoiceSample
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.jupiter.api.Test
 
 private const val PREVIEW_WAIT_MS = 5_000L
@@ -48,7 +49,18 @@ class NotificationSettingsPreviewScreenTest {
             AmTestTheme {
                 val scope = rememberCoroutineScope()
                 val controller =
-                    remember { NotificationSettingsController(repo, voices, sampler, scope).also { built += it } }
+                    remember {
+                        NotificationSettingsController(
+                            repo,
+                            voices,
+                            sampler,
+                            MutableStateFlow(emptyList()),
+                            scope,
+                        ).also {
+                            built +=
+                                it
+                        }
+                    }
                 NotificationSettingsDialog(controller)
             }
         }

@@ -40,7 +40,7 @@ private fun hintText(hint: PolishHint): String =
     }
 
 @Composable
-private fun caption(
+internal fun caption(
     tag: String,
     text: String,
     color: Color,

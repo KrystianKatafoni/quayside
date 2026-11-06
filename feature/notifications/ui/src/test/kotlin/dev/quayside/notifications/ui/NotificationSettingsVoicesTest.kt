@@ -12,6 +12,7 @@ import dev.quayside.notifications.api.VoiceOption
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -26,7 +27,7 @@ class NotificationSettingsVoicesTest {
     private fun TestScope.controllerOver(
         repo: ScriptedRepo,
         voices: VoiceCatalog = FakeVoiceCatalog(emptyList()),
-    ) = NotificationSettingsController(repo, voices, FakeVoicePreview(), backgroundScope)
+    ) = NotificationSettingsController(repo, voices, FakeVoicePreview(), MutableStateFlow(emptyList()), backgroundScope)
 
     @Test
     fun `voices are loaded when the dialog opens`() =

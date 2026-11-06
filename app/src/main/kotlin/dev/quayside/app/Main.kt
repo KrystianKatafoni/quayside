@@ -60,7 +60,7 @@ fun main() {
     // Before the first window (JediTerm reads the installed fonts once, by name): every font the dialog offers.
     registerTerminalFonts(appearance.catalog, core.logger)
     val modules = appModules(core, projects, runBlocking { storedSettings(core) }, appearance, looks)
-    val hooks = hookDeps(core)
+    val hooks = hookDeps(core, projects)
     val keys = WindowKeys()
     // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
     System.setProperty("compose.interop.blending", "true")
@@ -133,11 +133,15 @@ private fun sessionsDeps(
  * The hooks setup: the installer writes URLs with the same [HOOK_PORT] the hook server listens on; its backups go
  * to `hooks-backup` in the app support directory, never into the user's files (AM-607).
  */
-private fun hookDeps(core: CoreDeps): HookDeps {
+private fun hookDeps(
+    core: CoreDeps,
+    projects: ProjectsApi,
+): HookDeps {
     val backupDir = appSupportDir(core.homeDir).resolve("hooks-backup")
     val installer =
         hookInstallerModule(core.homeDir, backupDir, core.clock, core.dispatchers.io, core.logger, port = HOOK_PORT)
-    return HookDeps(installer, backupDir, HookOfferStore(core.storage))
+    val targets = ProjectHookTargets(projects.projects, core.dispatchers.io)
+    return HookDeps(installer, backupDir, HookOfferStore(core.storage), targets)
 }
 
 /** The settings files read in `main` before the window opens, like the project list. */

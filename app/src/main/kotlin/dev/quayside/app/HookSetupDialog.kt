@@ -32,8 +32,6 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import dev.quayside.agentruntime.api.HookError
-import dev.quayside.agentruntime.api.HookKind
-import dev.quayside.agentruntime.api.HookStatus
 import dev.quayside.core.designsystem.AmButton
 import dev.quayside.core.designsystem.AmPanel
 import dev.quayside.core.designsystem.AmText
@@ -90,14 +88,11 @@ private fun HookPanel(
             verticalArrangement = Arrangement.spacedBy(space = 10.dp),
         ) {
             AmText(Strings["hooks.title"], role = TextRole.HEADING)
-            HookText(
-                infoText(backupDir),
-                HookTags.INFO,
-                mutedColor(),
-            )
-            HookText(statusText(state.status), HookTags.STATUS)
+            HookText(infoText(state.current.target, backupDir), HookTags.INFO, mutedColor())
+            HookText(rowStatus(state.current), HookTags.STATUS)
             state.notice?.let { HookText(noticeText(it, backupDir), HookTags.NOTICE, noticeColor(it)) }
             HookButtons(state, controller)
+            HookTargetList(state, controller::select)
         }
     }
 }
@@ -149,28 +144,22 @@ private fun HookText(
 }
 
 /** What changes before the install: the port and the backup folder come from the app wiring, not from constants. */
-private fun infoText(backupDir: Path): String = Strings.format("hooks.info", HOOK_PORT.toString(), backupDir.toString())
-
-private fun statusText(status: HookStatus?): String =
-    when (status) {
-        null -> {
-            Strings["hooks.status.reading"]
+private fun infoText(
+    target: HookTarget,
+    backupDir: Path,
+): String =
+    when (target) {
+        HookTarget.Global -> {
+            Strings.format("hooks.info", HOOK_PORT.toString(), backupDir.toString())
         }
 
-        HookStatus.NotInstalled -> {
-            Strings["hooks.status.notInstalled"]
-        }
-
-        HookStatus.Installed -> {
-            Strings["hooks.status.installed"]
-        }
-
-        is HookStatus.Partial -> {
-            Strings.format("hooks.status.partial", status.missing.sorted().joinToString { it.eventName() })
-        }
-
-        is HookStatus.Unreadable -> {
-            Strings["hooks.status.unreadable"]
+        is HookTarget.Project -> {
+            val file =
+                target.dir
+                    .resolve(".claude")
+                    .resolve("settings.local.json")
+                    .toString()
+            Strings.format("hooks.info.project", file, HOOK_PORT.toString(), backupDir.toString())
         }
     }
 
@@ -194,16 +183,6 @@ private fun errorText(error: HookError): String =
 
 @Composable
 private fun noticeColor(notice: HookNotice): Color? = if (notice is HookNotice.Failed) errColor() else null
-
-/** The name of the event in the Claude Code settings file. */
-private fun HookKind.eventName(): String =
-    when (this) {
-        HookKind.NOTIFICATION -> "Notification"
-        HookKind.STOP -> "Stop"
-        HookKind.STOP_FAILURE -> "StopFailure"
-        HookKind.SESSION_START -> "SessionStart"
-        HookKind.SESSION_END -> "SessionEnd"
-    }
 
 /** Places the dialog layer over the whole window, whatever the anchor. */
 private object WholeWindow : PopupPositionProvider {

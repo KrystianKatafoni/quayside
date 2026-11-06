@@ -9,4 +9,7 @@ internal object HookTags {
     const val INSTALL = "hooks.install"
     const val UNINSTALL = "hooks.uninstall"
     const val CLOSE = "hooks.close"
+
+    /** The row [index] of the target list (AM-609). */
+    fun row(index: Int): String = "hooks.row.$index"
 }

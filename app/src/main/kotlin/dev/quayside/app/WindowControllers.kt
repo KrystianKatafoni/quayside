@@ -88,7 +88,7 @@ internal class WindowControllers(
             scope,
         )
 
-    val hookSetup = HookSetupController(hooks.installer, hooks.offer, scope, core.logger)
+    val hookSetup = HookSetupController(hooks.installer, hooks.offer, hooks.targets, scope, core.logger)
 
     val newAgent =
         NewAgentController(

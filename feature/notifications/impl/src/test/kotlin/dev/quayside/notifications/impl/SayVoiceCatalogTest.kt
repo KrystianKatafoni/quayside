@@ -50,7 +50,12 @@ class SayVoiceCatalogTest {
             val result = voiceCatalogModule(runner, home).voices()
 
             result shouldBe
-                Outcome.Ok(listOf(VoiceOption(VoiceId("Alex"), "en_US"), VoiceOption(VoiceId("Zosia"), "pl_PL")))
+                Outcome.Ok(
+                    listOf(
+                        VoiceOption(VoiceId("Alex"), "en_US", "Hi"),
+                        VoiceOption(VoiceId("Zosia"), "pl_PL", "Witaj"),
+                    ),
+                )
             runner.commands.single() shouldBe ShellCommand(listOf("/usr/bin/say", "-v", "?"), home)
             runner.calls
                 .single()
@@ -86,7 +91,8 @@ class SayVoiceCatalogTest {
         runTest {
             val runner = FakeProcessRunner { ok("Zosia pl_PL # Witaj\nAl", truncated = true) }
 
-            SayVoiceCatalog(runner, home).voices() shouldBe Outcome.Ok(listOf(VoiceOption(VoiceId("Zosia"), "pl_PL")))
+            SayVoiceCatalog(runner, home).voices() shouldBe
+                Outcome.Ok(listOf(VoiceOption(VoiceId("Zosia"), "pl_PL", "Witaj")))
         }
 
     @Test

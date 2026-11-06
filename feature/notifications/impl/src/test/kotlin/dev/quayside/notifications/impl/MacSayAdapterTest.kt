@@ -125,6 +125,17 @@ class MacSayAdapterTest {
         }
 
     @Test
+    fun `without fallback a failed voice is not retried`() =
+        runTest {
+            val runner = FakeProcessRunner { ok(1) }
+
+            val result = MacSayAdapter(runner, workDir, fallbackToSystemVoice = false).speak(utterance())
+
+            result shouldBe Outcome.Err(SpeechError.Failed(1))
+            runner.commands.size shouldBe 1
+        }
+
+    @Test
     fun `fails with the code of the retry when it fails too`() =
         runTest {
             val runner = FakeProcessRunner { if ("-v" in it.argv) ok(1) else ok(2) }

@@ -11,3 +11,7 @@ Obsługa wielu loginów/kont Claude naraz. Gdy limit jednej subskrypcji się wyc
 ## 2. Import i eksport konfiguracji
 
 Możliwość wyeksportowania całej konfiguracji aplikacji do pliku i zaimportowania jej na innym komputerze lub po reinstalacji.
+
+## 3. Obsługa sesji z telefonu
+
+Podgląd i obsługa sesji agentów zdalnie z telefonu: lista sesji, stan, odpowiedź agentowi, który czeka. Telefon łączy się bezpośrednio z aplikacją na macOS albo przez serwer pośredniczący (relay), gdy Mac nie jest osiągalny bezpośrednio. W 1.0 jest to poza zakresem (`01-wizja-i-zakres.md`, sekcja „Poza zakresem”).

@@ -141,7 +141,13 @@ private fun hookDeps(
     val installer =
         hookInstallerModule(core.homeDir, backupDir, core.clock, core.dispatchers.io, core.logger, port = HOOK_PORT)
     val targets = ProjectHookTargets(projects.projects, core.dispatchers.io)
-    return HookDeps(installer, backupDir, HookOfferStore(core.storage), targets)
+    return HookDeps(
+        installer,
+        backupDir,
+        HookOfferStore(core.storage),
+        targets,
+        InstallerProjectHooks(installer, core.dispatchers.io),
+    )
 }
 
 /** The settings files read in `main` before the window opens, like the project list. */

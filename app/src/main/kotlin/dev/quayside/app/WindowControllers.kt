@@ -10,6 +10,7 @@ import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
+import dev.quayside.projects.ui.ProjectsPorts
 import dev.quayside.summaries.ui.SummarySettingsController
 import dev.quayside.terminal.ui.TerminalController
 import dev.quayside.terminal.ui.TerminalSettingsController
@@ -43,7 +44,7 @@ internal class WindowControllers(
             modules.projects.api,
             modules.projects.inspector,
             modules.sessions,
-            pickers.directory,
+            ProjectsPorts(pickers.directory, hooks.projectHooks),
             scope,
             core.logger,
         )

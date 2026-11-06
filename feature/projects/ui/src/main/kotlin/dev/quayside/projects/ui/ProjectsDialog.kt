@@ -91,7 +91,7 @@ private fun Waiting(
     step: Dialog.Waiting,
     onCancel: (() -> Unit)?,
 ) {
-    Panel(step.tag, ProjectsStrings[step.key]) { onCancel?.let { Cancel(it) } }
+    Panel(step.tag, ProjectsStrings[step.key]) { onCancel?.let { Cancel(onClick = it) } }
 }
 
 @Composable
@@ -100,7 +100,7 @@ private fun Message(
     onClose: () -> Unit,
 ) {
     Panel(ProjectsTags.MESSAGE, ProjectsStrings.format(text)) {
-        DialogButton(ProjectsStrings["dialog.close"], ProjectsTags.CANCEL, onClose)
+        DialogButton(ProjectsStrings["dialog.close"], ProjectsTags.CANCEL, onClick = onClose)
     }
 }
 
@@ -115,37 +115,6 @@ private fun ConfirmAdd(
         ReportSummary.lines(dialog.report).forEach { DialogText(ProjectsStrings.format(it), muted = true) }
         dialog.error?.let { DialogText(ProjectsStrings.format(it)) }
         DialogButton(ProjectsStrings["add.confirm"], ProjectsTags.ADD) { onEvent(SidebarEvent.ConfirmAdd) }
-        Cancel { onEvent(SidebarEvent.Dismiss) }
-    }
-}
-
-@Composable
-private fun ConfirmRemove(
-    dialog: Dialog.ConfirmRemove,
-    onEvent: (SidebarEvent) -> Unit,
-) {
-    val keepSessions = { onEvent(SidebarEvent.RemoveKeepSessions) }
-    Panel(ProjectsTags.CONFIRM_REMOVE, ProjectsStrings["remove.title"]) {
-        DialogText(dialog.project.displayName)
-        val active = dialog.active
-        when {
-            active == null -> {
-                DialogText(ProjectsStrings["remove.sessionsUnknown"])
-                DialogButton(ProjectsStrings["remove.removeFromList"], ProjectsTags.REMOVE, keepSessions)
-            }
-
-            active.active == 0 -> {
-                DialogButton(ProjectsStrings["remove.confirm"], ProjectsTags.REMOVE, keepSessions)
-            }
-
-            else -> {
-                DialogText(ProjectsStrings.format(UiText("remove.activeSessions", listOf(active.active.toString()))))
-                DialogButton(ProjectsStrings["remove.stopAndRemove"], ProjectsTags.STOP_AND_REMOVE) {
-                    onEvent(SidebarEvent.StopAndRemove)
-                }
-                DialogButton(ProjectsStrings["remove.keepSessions"], ProjectsTags.REMOVE_KEEP_SESSIONS, keepSessions)
-            }
-        }
         Cancel { onEvent(SidebarEvent.Dismiss) }
     }
 }

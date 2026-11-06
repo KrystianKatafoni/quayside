@@ -6,13 +6,14 @@ import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
 import dev.quayside.projects.api.DirectoryReport
-import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectError
 import dev.quayside.projects.api.ProjectInspector
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,18 +31,20 @@ import kotlinx.coroutines.launch
  *
  * @param sessions read side for the per-project counts (only `monitor.snapshot` is collected, never `events`),
  *   `commands` for "stop sessions and remove".
- * @param picker the folder chooser; called from [scope].
+ * @param ports the folder chooser (called from [scope]) and the project hooks.
  * @param scope confined to one thread, like the window's Main dispatcher: the controller is not thread-safe.
  */
 public class ProjectsController(
     private val projects: ProjectsApi,
     private val inspector: ProjectInspector,
     private val sessions: SessionsApi,
-    private val picker: DirectoryPicker,
+    ports: ProjectsPorts,
     private val scope: CoroutineScope,
     private val logger: Logger,
 ) {
-    private val commands = ProjectCommands(projects, sessions.commands, logger)
+    private val picker = ports.picker
+    private val hooks = ports.hooks
+    private val commands = ProjectCommands(projects, sessions.commands, hooks, logger)
 
     private val ui =
         MutableStateFlow(
@@ -84,7 +87,15 @@ public class ProjectsController(
             }
 
             ProjectsIntent.RemoveSelectedRequested -> {
-                current.selectedProject()?.let { ui.update { s -> s.copy(dialog = s.confirmRemove(it)) } }
+                current.selectedProject()?.let { project ->
+                    // Reads the hooks first; a result that arrives after "Anuluj" opens nothing.
+                    begin(Dialog.Waiting.CHECKING_HOOKS) {
+                        val status = hooks.status(project.dir)
+                        // Defence against an adapter that ignores cancellation (no withContext inside).
+                        currentCoroutineContext().ensureActive()
+                        ui.update { it.copy(dialog = it.confirmRemove(project).copy(hooks = status)) }
+                    }
+                }
             }
 
             ProjectsIntent.RenameSelectedRequested -> {
@@ -108,6 +119,7 @@ public class ProjectsController(
             event == SidebarEvent.Dismiss -> dismiss(dialog)
             event == SidebarEvent.ConfirmAdd && dialog is Dialog.ConfirmAdd -> confirmAdd(dialog)
             event == SidebarEvent.ConfirmRename && dialog is Dialog.Rename -> confirmRename(dialog)
+            event == SidebarEvent.UninstallHooks -> uninstallHooks(dialog)
             event == SidebarEvent.StopAndRemove -> confirmRemove(dialog, stop = true)
             event == SidebarEvent.RemoveKeepSessions -> confirmRemove(dialog, stop = false)
             else -> ui.update { it.reduce(event) }
@@ -119,6 +131,16 @@ public class ProjectsController(
         if (dialog == null || dialog == Dialog.Picking || dialog == Dialog.Waiting.BUSY) return
         running?.cancel()
         ui.update { it.copy(dialog = null) }
+    }
+
+    /** Only in the remove dialog that shows our hooks; the project stays listed and the dialog stays open. */
+    private fun uninstallHooks(dialog: Dialog?) {
+        if (dialog !is Dialog.ConfirmRemove || dialog.hooks != ProjectHooksState.PRESENT) return
+        begin(Dialog.Waiting.BUSY) {
+            val notice = commands.uninstallHooks(dialog.project)
+            val status = hooks.status(dialog.project.dir)
+            ui.update { it.copy(dialog = dialog.copy(hooks = status, hooksNotice = notice)) }
+        }
     }
 
     /** Stopping needs active sessions in a fresh snapshot: without them only removing is offered. */
@@ -167,8 +189,14 @@ public class ProjectsController(
         }
         ui.update { it.copy(dialog = Dialog.Waiting.INSPECTING) }
         when (val inspected = inspector.inspect(dir)) {
-            is Outcome.Err -> fail("project inspection failed", inspected.error)
-            is Outcome.Ok -> offer(inspected.value)
+            is Outcome.Err -> {
+                logger.warn("project inspection failed", "reason" to inspected.error.category())
+                ui.update { it.copy(dialog = Dialog.Message(ProjectMessages.of(inspected.error))) }
+            }
+
+            is Outcome.Ok -> {
+                offer(inspected.value)
+            }
         }
     }
 
@@ -198,13 +226,5 @@ public class ProjectsController(
             val message = Dialog.Message(ProjectMessages.of(ProjectError.AlreadyAdded(existing)))
             ui.update { it.copy(selected = existing, dialog = message) }
         }
-    }
-
-    private fun fail(
-        message: String,
-        error: ProjectError,
-    ) {
-        logger.warn(message, "reason" to error.category())
-        ui.update { it.copy(dialog = Dialog.Message(ProjectMessages.of(error))) }
     }
 }

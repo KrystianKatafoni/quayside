@@ -77,14 +77,14 @@ internal object SettingsStrings {
         max: Int,
     ): String = get(key).replace("{min}", min.toString()).replace("{max}", max.toString())
 
-    /** The label of a voice choice: system voice, `<name> (<locale>)` or `<name> (niezainstalowany)`. */
+    /** The label of a voice choice: system voice, `<name> — <language>` or `<name> (niezainstalowany)`. */
     fun of(choice: VoiceChoice): String {
         val name = choice.id?.name ?: return get("voice.system")
         val locale = choice.locale
         return when {
             choice.missing -> get("voice.missing").replace("{name}", name)
             locale == null -> name
-            else -> get("voice.installed").replace("{name}", name).replace("{locale}", locale)
+            else -> get("voice.installed").replace("{name}", name).replace("{language}", languageName(locale))
         }
     }
 

@@ -136,11 +136,15 @@ class SettingsStringsTest {
     }
 
     @Test
-    fun `voice labels show system, locale and not installed`() {
+    fun `voice label shows the language name`() {
         SettingsStrings.of(VoiceChoice(id = null, locale = null, missing = false)) shouldBe "Głos systemowy"
-        SettingsStrings.of(VoiceChoice(VoiceId("Zosia"), "pl_PL", missing = false)) shouldBe "Zosia (pl_PL)"
+        SettingsStrings.of(VoiceChoice(VoiceId("Zosia"), "pl_PL", missing = false)) shouldBe "Zosia — polski (Polska)"
+        SettingsStrings.of(VoiceChoice(VoiceId("Paulina"), "es_419", missing = false)) shouldBe
+            "Paulina — hiszpański (Ameryka Łacińska)"
         SettingsStrings.of(VoiceChoice(VoiceId("Eddy (polski (Polska))"), "pl_PL", missing = false)) shouldBe
-            "Eddy (polski (Polska)) (pl_PL)"
+            "Eddy (polski (Polska)) — polski (Polska)"
+        // An unknown code stays raw.
+        SettingsStrings.of(VoiceChoice(VoiceId("Foo"), "xx_ZZ", missing = false)) shouldBe "Foo — xx_ZZ"
         SettingsStrings.of(VoiceChoice(VoiceId("Zosia"), locale = null, missing = true)) shouldBe
             "Zosia (niezainstalowany)"
         // The list is not loaded yet: the saved voice is shown by its name alone.
@@ -160,5 +164,30 @@ class SettingsStringsTest {
         SettingsStrings["settings.onlyInBackground"] shouldBe "Tylko gdy aplikacja jest w tle"
         SettingsStrings["settings.muteWhenMicrophoneActive"] shouldBe "Wycisz przy aktywnym mikrofonie"
         SettingsStrings["settings.micNote"] shouldBe "Jeszcze nie działa: wykrywanie mikrofonu czeka na ADR 0018"
+    }
+
+    @Test
+    fun `hint texts name the System Settings path`() {
+        val path = "Ustawienia systemowe → Dostępność → Treść mówiona → Głos systemowy → Zarządzaj głosami"
+
+        SettingsStrings["hint.polishNone"] shouldStartWith "Brak polskiego głosu"
+        SettingsStrings["hint.polishNone"] shouldContain path
+        SettingsStrings["hint.polishOnly"] shouldContain path
+    }
+
+    @Test
+    fun `only hint names the voice`() {
+        val text = SettingsStrings["hint.polishOnly"]
+
+        text shouldStartWith "Jedyny polski głos to {name}"
+        text.replace("{name}", "Zosia") shouldStartWith "Jedyny polski głos to Zosia"
+    }
+
+    @Test
+    fun `the preview texts exist`() {
+        SettingsStrings["voice.preview"] shouldBe "Odsłuchaj"
+        SettingsStrings["voice.previewStop"] shouldBe "Zatrzymaj"
+        SettingsStrings["voice.sample"] shouldBe "Przykład: {text}"
+        SettingsStrings["voice.previewFailed"].shouldNotBeBlank()
     }
 }

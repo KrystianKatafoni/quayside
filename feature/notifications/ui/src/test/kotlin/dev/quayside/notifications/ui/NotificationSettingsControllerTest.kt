@@ -3,6 +3,7 @@ package dev.quayside.notifications.ui
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
@@ -34,7 +35,7 @@ class NotificationSettingsControllerTest {
         ).withChannel(NotificationKind.TURN_ENDED, NotificationChannel.VOICE, true)
 
     private fun TestScope.controllerOver(repo: ScriptedRepo) =
-        NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), backgroundScope)
+        NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), FakeVoicePreview(), backgroundScope)
 
     private fun scripted(
         settings: NotificationSettings = saved,

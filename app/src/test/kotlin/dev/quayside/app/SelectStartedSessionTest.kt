@@ -16,6 +16,7 @@ import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.aProject
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
+import dev.quayside.projects.ui.ProjectsPorts
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsApi
@@ -64,9 +65,7 @@ class SelectStartedSessionTest {
                 list,
                 FakeProjectInspector(projects = list),
                 api,
-                DirectoryPicker {
-                    null
-                },
+                ProjectsPorts(DirectoryPicker { null }, NoProjectHooks),
                 backgroundScope,
                 NoOpLogger,
             )

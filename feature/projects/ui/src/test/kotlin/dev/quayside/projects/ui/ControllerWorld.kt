@@ -21,8 +21,8 @@ import kotlinx.coroutines.test.runCurrent
 import java.nio.file.Path
 
 /**
- * Fakes around a [ProjectsController]: the project list, the sessions, the folder chooser and an inspector
- * that answers from [inspection] and sees the same list as [projects], so `alreadyAdded` is real.
+ * Fakes around a [ProjectsController]: the project list, the sessions, the folder chooser, the project hooks
+ * and an inspector that answers from [inspection] and sees the same list as [projects], so `alreadyAdded` is real.
  *
  * [sessions] knows the projects [projects] starts with plus [extraProjects] (for projects the test adds later)
  * and runs [running]; which project a session belongs to follows from its directory.
@@ -43,11 +43,19 @@ internal class ControllerWorld(
             ),
         )
     val picker = FakeDirectoryPicker()
+    val hooks = FakeProjectHooks()
     val inspector = RecordingInspector(FakeProjectInspector(inspection, projects, pathKind), gatedInspection)
     val logger = RecordingLogger()
 
     fun controller(scope: CoroutineScope): ProjectsController =
-        ProjectsController(projects, inspector, SessionsApi(sessions, sessions), picker, scope, logger)
+        ProjectsController(
+            projects,
+            inspector,
+            SessionsApi(sessions, sessions),
+            ProjectsPorts(picker, hooks),
+            scope,
+            logger,
+        )
 }
 
 /** The controller of [world] running in `backgroundScope`, after it has read the initial state. */

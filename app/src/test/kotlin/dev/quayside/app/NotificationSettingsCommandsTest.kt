@@ -10,6 +10,7 @@ import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -21,6 +22,7 @@ class NotificationSettingsCommandsTest {
             FakeNotificationSettingsRepo(),
             FakeVoiceCatalog(emptyList()),
             FakeVoicePreview(),
+            MutableStateFlow(emptyList()),
             backgroundScope,
         )
 

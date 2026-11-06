@@ -25,6 +25,9 @@ import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.PopupPosition
+import dev.quayside.notifications.api.ProjectNotifications
+import dev.quayside.notifications.api.ProjectProfile
+import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.VoiceId
 import dev.quayside.notifications.api.VoiceOption
 import dev.quayside.notifications.api.VoiceSample
@@ -41,6 +44,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.LocalTime
 
 /**
  * The notification settings dialog in the whole window on fakes (FR-N1, AM-704). The project `Quayside` has two
@@ -224,6 +228,45 @@ class NotificationSettingsDialogWindowTest {
 
             // Then the sample is stopped
             waitUntil(timeoutMillis = WAIT_MS) { preview.cancelled == 1 }
+        }
+
+    @Test
+    fun `FR-N6 saved quiet hours reach the repo`() =
+        runComposeUiTest {
+            // Given the open dialog; the quiet hours are off by default
+            val palette = window()
+            openSettings(palette)
+            repo.settings.value.quietHours shouldBe QuietHours()
+
+            // When the user switches them on, types 23:00 and 06:30 and saves
+            await(WindowTags.NOTIFICATION_QUIET_ENABLED).performScrollTo().performClick()
+            await(WindowTags.NOTIFICATION_QUIET_FROM).performScrollTo().performTextReplacement("23:00")
+            await(WindowTags.NOTIFICATION_QUIET_TO).performScrollTo().performTextReplacement("06:30")
+            await(WindowTags.NOTIFICATION_SETTINGS_SAVE).performScrollTo().performClick()
+            waitUntilDoesNotExist(hasTestTag(WindowTags.NOTIFICATION_SETTINGS_DIALOG))
+
+            // Then the repo holds the hours at once
+            repo.settings.value.quietHours shouldBe
+                QuietHours(enabled = true, from = LocalTime.of(23, 0), to = LocalTime.of(6, 30))
+        }
+
+    @Test
+    fun `FR-N7 saved project profile reaches the repo`() =
+        runComposeUiTest {
+            // Given the open dialog; the project Quayside has no exception
+            val palette = window()
+            openSettings(palette)
+            repo.settings.value.projects shouldBe emptyMap()
+
+            // When the user opens the profile list of Quayside, picks "Wyciszony" and saves
+            await(WindowTags.notificationProjectProfile(project.id.value)).performScrollTo().performClick()
+            await(AmDropdownTags.option(ProjectProfile.MUTED.ordinal)).performClick()
+            waitUntilDoesNotExist(hasTestTag(AmDropdownTags.LIST))
+            await(WindowTags.NOTIFICATION_SETTINGS_SAVE).performScrollTo().performClick()
+            waitUntilDoesNotExist(hasTestTag(WindowTags.NOTIFICATION_SETTINGS_DIALOG))
+
+            // Then the repo holds the exception under the id of the project
+            repo.settings.value.projects shouldBe mapOf(project.id to ProjectNotifications(ProjectProfile.MUTED))
         }
 
     /**

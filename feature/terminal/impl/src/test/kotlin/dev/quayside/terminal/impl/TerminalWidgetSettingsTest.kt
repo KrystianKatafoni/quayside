@@ -121,6 +121,18 @@ class TerminalWidgetSettingsTest {
     }
 
     @Test
+    fun `scrollbar colours come from termBg and termText`() {
+        settings.scrollbar shouldBe scrollbarColors(COLORS)
+    }
+
+    @Test
+    fun `scrollbar colours follow the snapshot given at build`() {
+        val other = TerminalColors(termBg = Rgba(0xFF010203), termText = Rgba(0xFFF0E0D0))
+
+        widget(colors = other).scrollbar shouldBe scrollbarColors(other)
+    }
+
+    @Test
     fun `clearBufferActionPresentation keyStrokes is empty so Cmd-K stays free`() {
         settings.clearBufferActionPresentation.keyStrokes shouldBe emptyList()
     }

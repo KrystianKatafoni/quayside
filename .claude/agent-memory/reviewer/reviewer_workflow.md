@@ -26,4 +26,7 @@ Mutacje rób wyłącznie w kopii: `rsync -a --exclude .git --exclude build --exc
 - Skrypt mutacji czytający wyniki z `build/test-results/test/*.xml` (regex `<testcase name=… ><failure`) podaje nazwy padniętych testów zamiast samego kodu wyjścia; seria 23 mutacji `terminal:impl` z testami PTY trwa ok. 20 min — uruchamiaj w tle.
 - Sonda katalogu motywów dla reguły `internal` z `impl`: przepisz regułę 1:1 w tymczasowym teście `app` (widzi `builtInCatalog()`), wynik do pliku w scratchpadzie.
 
+- Mutacja „wywołanie bez skutku” przez `call().takeIf { false }` nie jest mutacją — wywołanie i tak się wykonuje; zastąp całą lambdę `{ }`. Mutacje w module `ui` z logiką używaną przez `app` (np. `names` dla okruszków) puszczaj też na `:app:test`.
+- `Modifier.border` rysuje PO treści (`onDrawWithContent { drawContent(); … }`, foundation-desktop 1.12.2), więc przy `compose.interop.blending=true` ramka leży nad `SwingPanel`; wcięcie widżetu wystarcza do łuku zewnętrznego, nie trzeba doliczać grubości ramki.
+
 Powiązane: [[recurring-review-findings]]

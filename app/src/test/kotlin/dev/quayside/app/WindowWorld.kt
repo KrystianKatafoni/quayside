@@ -272,6 +272,9 @@ internal class SettingsRepos(
     /** Set before the window is shown (the constructor is at the limit of parameters). */
     var appearance: FakeAppearanceApi? = null
 
+    /** The targets of the hooks dialog (AM-609): `ProjectHookTargets` over the fake projects; default: global only. */
+    var hookTargets: HookTargetSource? = null
+
     /** The summaries settings dialog and its palette command appear with this repo (AM-606). */
     var summaries: FakeSummarySettingsRepo? = null
 }
@@ -355,7 +358,13 @@ private fun HookDialogHost(
     val offer = checkNotNull(repos.hookOffer) { "SettingsRepos.hooks needs hookOffer on a temp directory" }
     val controller =
         remember {
-            HookSetupController(installer, offer, window.scope, NoOpLogger).also {
+            HookSetupController(
+                installer,
+                offer,
+                repos.hookTargets ?: globalOnlyTargets,
+                window.scope,
+                NoOpLogger,
+            ).also {
                 val others = MutableStateFlow(value = false)
                 registry.register(HookSetupCommands(window.projects, window.missionControl, it, window.scope, others))
             }

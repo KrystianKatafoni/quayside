@@ -4,6 +4,7 @@ import dev.quayside.core.domain.SystemClock
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotBeBlank
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +66,9 @@ class CompositionRootTest {
                 "menu.newAgent",
                 "hooks.title",
                 "hooks.info",
+                "hooks.info.project",
+                "hooks.row.global",
+                "hooks.status.missingDir",
                 "hooks.status.reading",
                 "hooks.status.notInstalled",
                 "hooks.status.installed",
@@ -82,6 +86,17 @@ class CompositionRootTest {
                 "picker.title",
             )
         Strings.keys.forEach { Strings[it].shouldNotBeBlank() }
+    }
+
+    @Test
+    fun `project hooks text names the file, the port, the backup folder and the limits`() {
+        val file = "/work/alpha/.claude/settings.local.json"
+        val text = Strings.format("hooks.info.project", file, "47321", "/backups")
+
+        listOf(file, "47321", "/backups", ".gitignore", "Notification", "SessionEnd").forEach {
+            text shouldContain it
+        }
+        Strings["hooks.row.global"] shouldBe "~/.claude/settings.json"
     }
 
     @Test

@@ -11,6 +11,7 @@ import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.Rectangle
+import javax.swing.JScrollBar
 
 /**
  * What the terminal panel of a searchable widget draws (plan AM-504, decision 7): [hits] are all hits of the last
@@ -33,6 +34,15 @@ internal class SearchableWidget(
         styleState: StyleState,
         backBuffer: TerminalTextBuffer,
     ): TerminalPanel = HighlightingPanel(settingsProvider, backBuffer, styleState)
+
+    /**
+     * A [ThemedScrollBar] in the terminal colours (AM-810). Called by the super constructor, so it reads only
+     * `mySettingsProvider`, which JediTerm sets before; other settings keep the JediTerm bar.
+     */
+    override fun createScrollBar(): JScrollBar {
+        val colors = (mySettingsProvider as? TerminalWidgetSettings)?.scrollbar
+        return if (colors == null) super.createScrollBar() else ThemedScrollBar(colors)
+    }
 }
 
 /**

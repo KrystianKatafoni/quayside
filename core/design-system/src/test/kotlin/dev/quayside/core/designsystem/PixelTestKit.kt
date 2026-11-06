@@ -68,3 +68,19 @@ internal fun ComposeUiTest.press(key: Key) {
     }
     waitForIdle()
 }
+
+/**
+ * Diagonal pixel index that lies outside the arc of a [radiusDp] corner (a square or smaller-radius corner would be
+ * filled there) at 4 px per dp.
+ */
+internal fun outsideArcPixel(radiusDp: Int): Int =
+    (0 until px(radiusDp)).last { ((radiusDp - (it + 0.5) / PIXEL_SCALE) * SQRT_2) > radiusDp + 0.25 }
+
+/**
+ * Diagonal pixel index inside the arc of a [radiusDp] corner and clear of a 1 dp border (a larger-radius corner
+ * would be cut out there) at 4 px per dp.
+ */
+internal fun insideArcPixel(radiusDp: Int): Int =
+    (0 until px(radiusDp)).first { ((radiusDp - (it + 0.5) / PIXEL_SCALE) * SQRT_2) < radiusDp - 1.25 }
+
+private const val SQRT_2 = 1.4142135623730951

@@ -31,8 +31,8 @@ public fun AmStatCard(
         modifier =
             modifier
                 .semantics(mergeDescendants = true) {}
-                .background(colors.surfaces.panel.toColor(), shape.corner)
-                .border(shape.borderWidth, colors.surfaces.border.toColor(), shape.corner)
+                .background(colors.surfaces.panel.toColor(), shape.card)
+                .border(shape.borderWidth, colors.surfaces.border.toColor(), shape.card)
                 .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

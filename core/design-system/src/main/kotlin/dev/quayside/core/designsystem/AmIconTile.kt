@@ -14,7 +14,7 @@ import androidx.compose.ui.semantics.semantics
 private const val ICON_SHARE = 0.5f
 
 /**
- * [icon] centred on the tone background (rounded with the theme corner), icon about half the tile; size via
+ * [icon] centred on the tone background (rounded with the tile radius, r+2), icon about half the tile; size via
  * [modifier]. [contentDescription] as in [AmIcon].
  */
 @Composable
@@ -35,7 +35,7 @@ public fun AmIconTile(
             }
         }
     Box(
-        modifier = modifier.then(described).background(colors.background.toColor(), AmTheme.shape.corner),
+        modifier = modifier.then(described).background(colors.background.toColor(), AmTheme.shape.tile),
         contentAlignment = Alignment.Center,
     ) {
         AmIcon(icon, null, Modifier.fillMaxSize(ICON_SHARE), colors.mark.toColor())

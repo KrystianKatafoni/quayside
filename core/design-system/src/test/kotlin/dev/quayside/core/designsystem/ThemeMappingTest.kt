@@ -47,7 +47,15 @@ class ThemeMappingTest {
     fun `opaque shape maps to rounded corner border and no shadow`() {
         val shape = ShapeTokens(8, 1, null, Backdrop.OPAQUE).toAmShape()
 
-        shape shouldBe AmShape(RoundedCornerShape(8.dp), 1.dp, null, Backdrop.OPAQUE)
+        shape shouldBe
+            AmShape(
+                RoundedCornerShape(8.dp),
+                1.dp,
+                null,
+                Backdrop.OPAQUE,
+                CornerRadii(10.dp, 12.dp, 10.dp),
+                RoundedCornerShape(percent = 50),
+            )
     }
 
     @Test
@@ -56,7 +64,37 @@ class ThemeMappingTest {
 
         val shape = ShapeTokens(0, 2, shadow, Backdrop.TRANSLUCENT).toAmShape()
 
-        shape shouldBe AmShape(RoundedCornerShape(0.dp), 2.dp, shadow, Backdrop.TRANSLUCENT)
+        shape shouldBe
+            AmShape(
+                RoundedCornerShape(0.dp),
+                2.dp,
+                shadow,
+                Backdrop.TRANSLUCENT,
+                CornerRadii(0.dp, 0.dp, 0.dp),
+                RoundedCornerShape(0.dp),
+            )
+    }
+
+    @Test
+    fun `amShape passes radii and counter shape`() {
+        val shape = ShapeTokens(2, 1, null, Backdrop.OPAQUE).toAmShape()
+
+        // Each field on its own: corner keeps r, the derived radii and shapes follow r + 2 / r + 4 / r + 2
+        shape.corner shouldBe RoundedCornerShape(2.dp)
+        shape.radii.row shouldBe 4.dp
+        shape.radii.card shouldBe 6.dp
+        shape.radii.tile shouldBe 4.dp
+        shape.row shouldBe RoundedCornerShape(4.dp)
+        shape.card shouldBe RoundedCornerShape(6.dp)
+        shape.tile shouldBe RoundedCornerShape(4.dp)
+        shape.counter shouldBe RoundedCornerShape(percent = 50)
+    }
+
+    @Test
+    fun `square token radius gives square derived shapes and a square counter`() {
+        val shape = ShapeTokens(0, 1, null, Backdrop.OPAQUE).toAmShape()
+
+        listOf(shape.row, shape.card, shape.tile, shape.counter) shouldBe List(4) { RoundedCornerShape(0.dp) }
     }
 
     @ParameterizedTest(name = "{0}")
@@ -86,6 +124,8 @@ class ThemeMappingTest {
                 Arguments.of(TextRole.BODY, 13),
                 Arguments.of(TextRole.CAPTION, 11),
                 Arguments.of(TextRole.CODE, 13),
+                Arguments.of(TextRole.NAME, 15),
+                Arguments.of(TextRole.LABEL, 11),
             )
     }
 }

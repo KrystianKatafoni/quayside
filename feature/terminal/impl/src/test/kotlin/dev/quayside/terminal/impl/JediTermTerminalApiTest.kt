@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
+import javax.swing.SwingUtilities
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -140,6 +141,28 @@ class JediTermTerminalApiTest {
             second.defaultColours() shouldBe
                 (TerminalColor.rgb(0x10, 0x20, 0x30) to TerminalColor.rgb(0xE0, 0xD0, 0xC0))
         }
+
+    @Test
+    fun `scroll bar of the next tab follows changed colours`() =
+        runTest {
+            val first = kit.openShell()
+            val changed = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0))
+            kit.colors.value = changed
+            val second = kit.openShell()
+
+            first.scrollbarThumb() shouldBe thumbRgb(TerminalTestKit.DEFAULT_COLORS)
+            second.scrollbarThumb() shouldBe thumbRgb(changed)
+        }
+
+    /** Thumb pixel (RGB) of the themed scroll bar of this tab; a fresh tab has no history, so the thumb fills it. */
+    private fun TerminalSession.scrollbarThumb(): Int? {
+        val widget = widget()
+        var thumb: Int? = null
+        SwingUtilities.invokeAndWait { thumb = widget.findThemedBar()?.centrePixel() }
+        return thumb
+    }
+
+    private fun thumbRgb(colors: TerminalColors): Int = scrollbarColors(colors).thumb.toAwtColor().rgb and 0xFFFFFF
 
     @Test
     @Suppress("InjectDispatcher") // Real time and real dispatchers on purpose: the PTY tests wait for real processes.

@@ -23,5 +23,7 @@ Mutacje rób wyłącznie w kopii: `rsync -a --exclude .git --exclude build --exc
 - Podmiana na `Unit` jako mutacja daje pod -Werror „Expression is unused” — zamiast tego odwróć/wyzeruj warunek (`closes > 0` → `closes < 0`, `if (!enabled)` → `if (label.isEmpty() && !enabled)`). Mutację, która przeżyła w module komponentu, puść też na testach modułów `ui` (tam bywa zabijana).
 - Testy prawdziwego okna AWT (ModalOver/DropdownOver) w tle bez okna na pierwszym planie: jedne padają, inne (z `assumeTrue`) są pomijane — przed wnioskiem o regresji porównaj z bazą w tej samej sesji.
 - Dowód doręczenia klawisza w teście Compose: mutacja „klawisz bez skutku” (Space → ShiftLeft w `press`) musi wywrócić test. Wybór korzenia w `onAllNodes(isRoot()).onLast()`/`onFirst()` nie ma znaczenia (mutacja przeżyła, AM-610): `performKeyInput` trafia do węzła z fokusem.
+- Skrypt mutacji czytający wyniki z `build/test-results/test/*.xml` (regex `<testcase name=… ><failure`) podaje nazwy padniętych testów zamiast samego kodu wyjścia; seria 23 mutacji `terminal:impl` z testami PTY trwa ok. 20 min — uruchamiaj w tle.
+- Sonda katalogu motywów dla reguły `internal` z `impl`: przepisz regułę 1:1 w tymczasowym teście `app` (widzi `builtInCatalog()`), wynik do pliku w scratchpadzie.
 
 Powiązane: [[recurring-review-findings]]

@@ -25,6 +25,9 @@ internal class TerminalWidgetSettings(
     private val foreground: TerminalColor = colors.termText.toTerminalColor()
     private val background: TerminalColor = colors.termBg.toTerminalColor()
 
+    /** Colours of the scroll bar of this widget, derived from the terminal colours (AM-810). */
+    val scrollbar: ScrollbarColors = scrollbarColors(colors)
+
     override fun altSendsEscape(): Boolean = settings.optionAsMeta
 
     override fun getTerminalFont(): Font = font

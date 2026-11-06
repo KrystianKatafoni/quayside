@@ -8,7 +8,7 @@ Terminy w tym dokumencie:
 
 Katalog ma **29 motywów**: 9 podstawowych (sekcja „Schematy kolorów”) i 20 motywów z kształtem (sekcja „Motywy z kształtem”). Jasnych jest 12, ciemnych 17, w tym 2 motywy wysokiego kontrastu (`contrast` ciemny, `hc-light` jasny). Motyw i typografia są **niezależne**: każdą z 22 typografii można połączyć z każdym z 29 motywów (638 kombinacji). Wybór odbywa się w *Ustawienia → Wygląd*, z podglądem prawdziwego ekranu Mission Control na żywo.
 
-Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `plex`); terminal JediTerm też od AM-807: domyślny tekst i tło widżetu to `termText` i `termBg`, a font (gdy użytkownik nie wybrał własnego) to font terminala typografii, rejestrowany w AWT przy starcie. Zmiana działa na karty otwierane później (ADR 0016).
+Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `plex`); terminal JediTerm też od AM-807: domyślny tekst i tło widżetu to `termText` i `termBg`, a font (gdy użytkownik nie wybrał własnego) to font terminala typografii, rejestrowany w AWT przy starcie. Zmiana działa na karty otwierane później (ADR 0016). Pasek przewijania terminala (AM-810) rysuje własny UI w kolorach wyprowadzonych z tych dwóch tokenów: tło `termBg` (dziś zakryte przez ścieżkę, zostaje na wypadek mniejszej ścieżki), ścieżka `termBg` z 6 % `termText`, uchwyt `termBg` z najmniejszym udziałem `termText` (45–100 %), przy którym ma ≥ 3:1 względem ścieżki i `termBg` (NFR-6); przy braku historii uchwyt wypełnia ścieżkę.
 
 ## Schematy kolorów (9 podstawowych motywów)
 

@@ -15,3 +15,7 @@ Możliwość wyeksportowania całej konfiguracji aplikacji do pliku i zaimportow
 ## 3. Obsługa sesji z telefonu
 
 Podgląd i obsługa sesji agentów zdalnie z telefonu: lista sesji, stan, odpowiedź agentowi, który czeka. Telefon łączy się bezpośrednio z aplikacją na macOS albo przez serwer pośredniczący (relay), gdy Mac nie jest osiągalny bezpośrednio. W 1.0 jest to poza zakresem (`01-wizja-i-zakres.md`, sekcja „Poza zakresem”).
+
+## 4. Sandbox Docker dla agenta
+
+Uruchamianie agenta Claude Code w kontenerze Docker ze wszystkimi uprawnieniami (bez pytań o zgodę), odizolowanego od hosta, z dostępem do git. Wstępny kierunek i ryzyka: [ADR 0026](adr/0026-sandbox-docker-dla-agenta.md) (proponowana).

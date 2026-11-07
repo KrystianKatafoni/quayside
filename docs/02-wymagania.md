@@ -15,6 +15,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-P5 | Import projektów z historii `~/.claude/projects/` | C |
 | FR-P6 | Zmiana nazwy wyświetlanej projektu, licznik sesji czekających i pracujących w sidebarze | S |
 | FR-P7 | Grupa projektu: projekt z podfolderami (np. `plant-puls/` z `soft/`, `marketing/`) pokazany w sidebarze jako grupa z podpozycjami, filtr sesji po podfolderze, liczniki per podfolder | S |
+| FR-P8 | Przegląd grupy projektu: po wybraniu grupy widok z każdym podprojektem i liczbą agentów, którzy na mnie czekają (oraz pracujących i z błędem), klik w podprojekt otwiera jego sesje | S |
 
 ### Sesje agentów
 

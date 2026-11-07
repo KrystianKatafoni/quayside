@@ -112,7 +112,7 @@ private fun appModules(
         sessions,
         registry,
         terminal,
-        SettingsDeps(notifications, stored.summarySettings),
+        SettingsDeps(notifications, stored.summarySettings, stored.layout),
         AppearanceDeps(appearance, looks, themeFilesModule(appearance.catalog, core.dispatchers.io, core.logger)),
     )
 }
@@ -156,15 +156,19 @@ private class StoredSettings(
     val notifications: NotificationSettingsRepo,
     val summaries: SummariesApi,
     val summarySettings: SummarySettingsRepo,
+    val layout: WindowLayoutDeps,
 )
 
-private suspend fun storedSettings(core: CoreDeps): StoredSettings =
-    StoredSettings(
+private suspend fun storedSettings(core: CoreDeps): StoredSettings {
+    val layout = WindowLayoutStore(core.storage, core.logger)
+    return StoredSettings(
         terminalSettingsModule(core.storage, core.logger),
         notificationSettingsModule(core.storage, core.logger),
         summariesModule(core.storage, oneShotPromptModule(core.process, core.homeDir), core.logger),
         summarySettingsModule(core.storage, core.logger),
+        WindowLayoutDeps(layout, layout.load()),
     )
+}
 
 /**
  * The terminal module on the login shell over the stored settings, with the colours and font of the applied

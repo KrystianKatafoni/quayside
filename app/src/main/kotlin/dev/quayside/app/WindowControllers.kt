@@ -1,5 +1,6 @@
 package dev.quayside.app
 
+import androidx.compose.ui.unit.dp
 import dev.quayside.appearance.ui.AppearanceController
 import dev.quayside.appearance.ui.ThemeFilePicker
 import dev.quayside.commandpalette.api.CommandProvider
@@ -126,6 +127,12 @@ internal class WindowControllers(
     val attacher =
         SessionAttacher(missionControl, terminal, modules.terminal.attachCommand, core.logger) {
             projects.onIntent(ProjectsIntent.Select(it))
+        }
+
+    /** The terminal height of the list mode (AM-819), from what `main` read of `window.json`. */
+    val pane =
+        modules.settings.layout.let {
+            TerminalPaneHeight(it.initial.terminalHeight.dp, it.store, scope, core.logger)
         }
 
     /** Which layout the window shows (AM-809); leaves the terminal mode when the last tab is gone. */

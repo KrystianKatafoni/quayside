@@ -106,7 +106,7 @@ private fun BarTitle(
             Modifier.size(BAR_TILE).testTag(MissionControlTags.SESSION_BAR_TILE),
         )
         Column(modifier = Modifier.clearAndSetSemantics {}) {
-            AmText(details.name, role = TextRole.CODE)
+            AmText(details.name, role = TextRole.NAME)
             AmText(status, role = TextRole.CAPTION, color = mutedColor())
         }
     }

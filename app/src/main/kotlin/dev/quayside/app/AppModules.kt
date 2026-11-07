@@ -1,5 +1,6 @@
 package dev.quayside.app
 
+import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.api.ThemeFiles
 import dev.quayside.commandpalette.api.CommandRegistry
@@ -33,13 +34,15 @@ internal class SettingsDeps(
 
 /**
  * The terminal module with what the window needs around it: the settings and the login shell behind the label and
- * start directory of shell tabs, and the attach command.
+ * start directory of shell tabs, the attach command, and the [runtime] behind it, which also tells the status bar the
+ * version of Claude Code.
  */
 internal class TerminalDeps(
     val api: TerminalApi,
     val repo: TerminalSettingsRepo,
     val loginShell: Path,
     val attachCommand: (SessionId) -> ShellCommand,
+    val runtime: AgentRuntime,
 ) {
     /** The current settings, read from [repo]. */
     val settings: StateFlow<TerminalSettings> get() = repo.settings

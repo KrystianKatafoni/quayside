@@ -182,7 +182,7 @@ private fun terminalDeps(
     val settings = appliedTerminalSettings(stored.settings, looks, scope)
     val api = startTerminals(core, shell, settings, appliedTerminalColors(looks, scope))
     forwardBells(api.bells, stored.settings, notifications.center, scope)
-    return TerminalDeps(api, stored, shell, runtime::attachCommand)
+    return TerminalDeps(api, stored, shell, runtime::attachCommand, runtime)
 }
 
 /**

@@ -10,6 +10,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onFirst
@@ -225,15 +226,33 @@ internal class GlobalViewsScreenTest {
             // Given three waiting, two working and one failed session over two projects and outside
             showScripted(everywhere())
 
-            // Then each entry shows its title and its count over every project
+            // Then each entry shows its title, and its counter is announced with the count over every project
             await(MissionControlTags.view(GlobalView.WAITING))
             textIn(MissionControlTags.view(GlobalView.WAITING), text("view.waiting")).assertIsDisplayed()
-            textIn(MissionControlTags.view(GlobalView.WAITING), "3").assertIsDisplayed()
             textIn(MissionControlTags.view(GlobalView.WORKING), text("view.working")).assertIsDisplayed()
-            textIn(MissionControlTags.view(GlobalView.WORKING), "2").assertIsDisplayed()
             textIn(MissionControlTags.view(GlobalView.FAILED), text("view.failed")).assertIsDisplayed()
-            textIn(MissionControlTags.view(GlobalView.FAILED), "1").assertIsDisplayed()
+            countOf(GlobalView.WAITING, "view.waiting") shouldBe 1
+            countOf(GlobalView.WORKING, "view.working") shouldBe 1
+            countOf(GlobalView.FAILED, "view.failed") shouldBe 1
         }
+
+    /** Nodes of the entry announced as "title: count" with the expected count of `everywhere()`. */
+    private fun ComposeUiTest.countOf(
+        view: GlobalView,
+        titleKey: String,
+    ): Int {
+        val expected = mapOf(GlobalView.WAITING to "3", GlobalView.WORKING to "2", GlobalView.FAILED to "1")
+        val description = text("view.count", text(titleKey), expected.getValue(view))
+        return onAllNodes(
+            hasContentDescription(description) and
+                (
+                    hasTestTag(
+                        MissionControlTags.view(view),
+                    ) or hasAnyAncestor(hasTestTag(MissionControlTags.view(view)))
+                ),
+            useUnmergedTree = true,
+        ).fetchSemanticsNodes().size
+    }
 
     @Test
     fun `FR-S4 stop from the working view`() =

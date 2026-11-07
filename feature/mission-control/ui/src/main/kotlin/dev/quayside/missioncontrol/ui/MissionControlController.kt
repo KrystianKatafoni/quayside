@@ -101,6 +101,14 @@ public class MissionControlController(
         }
     }
 
+    /**
+     * The names the window crumbs need (AM-816): the shown project (none in a global view) and the sessions by id.
+     * Never contains a path or a summary.
+     */
+    public val names: StateFlow<ShownNames> =
+        combine(monitor.snapshot, state.map { it.modeBar.project }.distinctUntilChanged(), ::namesOf)
+            .stateIn(scope, SharingStarted.Eagerly, namesOf(monitor.snapshot.value, state.value.modeBar.project))
+
     /** The shown global view, null on the project page. `app` hides filter commands and clears the sidebar by it. */
     public val view: StateFlow<GlobalView?> =
         selection.map { it.view }.distinctUntilChanged().stateIn(scope, SharingStarted.Eagerly, selection.value.view)
@@ -224,10 +232,15 @@ public class MissionControlController(
             MissionControlEvent.Dismiss -> ui.update { it.copy(dialog = null) }
 
             // Opening a terminal tab is `app`'s job: MissionControl routes these to its callbacks (AM-511).
-            MissionControlEvent.Attach, MissionControlEvent.Reply, MissionControlEvent.NewAgent -> Unit
+            MissionControlEvent.Attach, MissionControlEvent.Reply -> Unit
         }
     }
 }
+
+private fun namesOf(
+    snapshot: SessionsSnapshot,
+    project: String?,
+): ShownNames = ShownNames(project, snapshot.sessions.associate { it.id to it.name })
 
 private fun actionsOf(
     snapshot: SessionsSnapshot,

@@ -7,17 +7,18 @@ public data class SessionKeyCaps(
     val attach: String,
     val reply: String,
     val stop: String,
-    val newAgent: String,
+    val next: String,
+    val previous: String,
+    val preview: String,
 )
 
 /**
- * What `app` does on Attach, Reply and "Nowy agent"; [keyCaps] null hides the shortcut marks. Not a data class
+ * What `app` does on Attach and Reply; [keyCaps] null hides the shortcut marks. Not a data class
  * (lambdas never compare equal).
  */
 public class MissionControlHandlers(
     public val onAttach: () -> Unit = {},
     public val onReply: () -> Unit = {},
-    public val onNewAgent: () -> Unit = {},
     public val keyCaps: SessionKeyCaps? = null,
 )
 

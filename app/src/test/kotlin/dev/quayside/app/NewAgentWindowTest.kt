@@ -27,7 +27,7 @@ class NewAgentWindowTest {
     private val world = AgentWorld()
 
     @Test
-    fun `FR-S3 header button opens the dialog and starts a working agent`() =
+    fun `FR-S3 top bar button opens the dialog and starts a working agent`() =
         runComposeUiTest {
             // Given a selected project and no session
             showWindowOf(world.setup)

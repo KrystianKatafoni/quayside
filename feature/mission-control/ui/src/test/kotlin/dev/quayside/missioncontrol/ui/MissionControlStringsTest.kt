@@ -192,6 +192,7 @@ internal class MissionControlStringsTest {
         fun allKeys(): Set<String> = generated().map { it.key }.toSet() + UI_KEYS
 
         @JvmStatic
+        @Suppress("LongMethod")
         fun fixedTexts(): List<Arguments> =
             listOf(
                 arguments("empty.noProjects", "Brak projektów"),
@@ -206,7 +207,9 @@ internal class MissionControlStringsTest {
                 arguments("action.respawn", "Respawn"),
                 arguments("action.attach", "Attach"),
                 arguments("action.reply", "Odpowiedz"),
-                arguments("shortcuts.toggle", "Skróty"),
+                arguments("shortcuts.toggle", "? skróty klawiszowe"),
+                arguments("modeBar.waiting", "{0} czekają"),
+                arguments("modeBar.working", "{0} pracują"),
                 arguments("action.stop.busy", "Zatrzymywanie…"),
                 arguments("action.respawn.busy", "Respawn…"),
                 arguments("action.remove", "Usuń z listy"),

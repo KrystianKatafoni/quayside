@@ -346,7 +346,7 @@ object AmTheme { val colors: ColorTokens; val shape: AmShape; val typography: Am
 @Composable fun AmTheme(colors: ColorTokens, shape: ShapeTokens, typography: TypographySpec, density: AmDensity = COMFORTABLE, content: @Composable () -> Unit)
 enum class AmDensity { COMPACT, COMFORTABLE }; data class ListMetrics(val tile: Dp, val vertical: Dp, val twoLines: Boolean); fun AmDensity.listMetrics(): ListMetrics   // AM-803
 fun Rgba.toColor(): Color; fun ShapeTokens.toAmShape(): AmShape; fun TypographySpec.toAmTypography(): AmTypography
-enum class TextRole { TITLE, HEADING, BODY, CAPTION, CODE }; object AmFonts { val families: Set<String>; fun family(name: String): FontFamily? }
+enum class TextRole { TITLE, HEADING, BODY, CAPTION, CODE, NAME, LABEL }; object AmFonts { val families: Set<String>; fun family(name: String): FontFamily? }
 @Composable fun AmText(...); AmButton(...); AmListRow(...); AmPanel(...); AmModeBar(...); AmModeBadge(...); fun Modifier.amFocusFrame()
 // AM-808: ikony liniowe (siatka 24, kreska 1,8) i komponenty tonów
 enum class IconKind { FOLDER, WAITING, WORKING, DONE, FAILED, PERMISSION, STOPPED, ATTACH, REPLY, RESPAWN, STOP, REMOVE, SEARCH, NOTIFICATIONS, VOICE, BRANCH, SPLIT, MAXIMIZE, PLUS, CLOSE, MORE, BACK }
@@ -355,6 +355,10 @@ enum class StatusTone { NEUTRAL, ACCENT, WARN, WORK, OK, ERR }
 @Composable fun AmIconTile(icon: IconKind, tone: StatusTone, contentDescription: String?, modifier: Modifier = Modifier)
 @Composable fun AmChip(label: String, modifier: Modifier = Modifier, tone: StatusTone = NEUTRAL, icon: IconKind? = null, description: String? = null)
 @Composable fun AmKeyCap(keys: String, modifier: Modifier = Modifier)
+// AM-816: promienie pochodne od tokenu radius (wiersz r+2, karta r+4, kafelek r+2), licznik i pole szukania
+data class CornerRadii(val row: Dp, val card: Dp, val tile: Dp); fun cornerRadii(radius: Int): CornerRadii   // AmShape: radii, row, card, tile, counter
+@Composable fun AmCounter(count: Int, tone: StatusTone, description: String, modifier: Modifier = Modifier)      // koło >= 22 dp, czyta description
+@Composable fun AmSearchField(placeholder: String, keyCap: String?, onClick: () -> Unit, modifier: Modifier = Modifier)   // przycisk wyglądający jak pole, bez fokusu
 @Composable fun AmIconButton(icon: IconKind, label: String, onClick: () -> Unit, modifier: Modifier = Modifier, options: IconButtonOptions = IconButtonOptions())
 @Composable fun AmStatCard(value: String, label: String, icon: IconKind, modifier: Modifier = Modifier, tone: StatusTone = NEUTRAL)
 data class IconButtonOptions(val enabled: Boolean = true, val focusable: Boolean = true, val tone: StatusTone = NEUTRAL, val size: IconButtonSize = REGULAR, val style: IconButtonStyle = GHOST, val badge: String? = null)
@@ -364,6 +368,9 @@ enum class ButtonKind { PRIMARY, SECONDARY, DANGER }
 data class ButtonOptions(val kind: ButtonKind = SECONDARY, val enabled: Boolean = true, val focusable: Boolean = true, val icon: IconKind? = null, val shortcut: String? = null)
 @Composable fun AmButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, options: ButtonOptions = ButtonOptions())
 @Composable fun StatusTone.markColor(): Color      // kolor ikony tonu, 3:1 na bg, panel, raised, sel
+// AM-816: nowe publiczne elementy modułów ui, używane tylko przez app (okno składa górny pasek i pasek stanu)
+// mission-control:ui: StatusBar(controller, terminal, supervisor, modifier, trailing), AlertsBell(controller, onOpen), ShortcutsHelp(), GlobalView.title(), MissionControlController.names: StateFlow<ShownNames>
+// notifications:ui: VoiceChip(settings, onClick), notificationStatus(settings): String; projects:ui: ProjectsSidebar(controller, modifier, addKeyCap)
 
 // appearance:api (typy z core:design-tokens, bez Compose); AM-803: settings + update, AM-804: theme.json, dzień/noc, pliki motywów
 interface AppearanceApi {

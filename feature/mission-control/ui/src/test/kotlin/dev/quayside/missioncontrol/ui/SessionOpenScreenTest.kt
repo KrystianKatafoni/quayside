@@ -218,22 +218,4 @@ internal class SessionOpenScreenTest {
             select(working)
             has(MissionControlTags.ROW_MENU) shouldBe false
         }
-
-    @Test
-    fun `FR-K3 the cheat sheet is closed at first and the toggle opens and closes it`() =
-        runComposeUiTest {
-            // Given the window
-            show()
-            await(MissionControlTags.MODE_BAR)
-            has(MissionControlTags.SHORTCUTS) shouldBe false
-
-            // When the user clicks "Skróty"
-            await(MissionControlTags.SHORTCUTS_TOGGLE).performClick()
-
-            // Then the list of shortcuts shows, and a second click hides it
-            await(MissionControlTags.SHORTCUTS)
-            onNodeWithTag(MissionControlTags.SHORTCUTS_TOGGLE).assertIsNotFocused()
-            await(MissionControlTags.SHORTCUTS_TOGGLE).performClick()
-            waitUntilDoesNotExist(hasTestTag(MissionControlTags.SHORTCUTS))
-        }
 }

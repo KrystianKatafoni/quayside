@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import dev.quayside.core.designtokens.ShadowSpec
 
 /**
- * Surface with the corner radius, border width and border colour of the theme; [raised] = raised instead of panel.
+ * Surface with the card radius (r+4), border width and border colour of the theme; [raised] = raised instead of panel.
  * Draws the theme shadow (when there is one) with Compose `dropShadow`, i.e. behind the rest of the content; unlike
  * CSS box-shadow it does not cut out the interior, so it shows through a translucent panel. Resets the default text colour of [AmText]
  * to content.text, so a panel inside [AmModeBar] does not inherit muted.
@@ -33,16 +33,16 @@ public fun AmPanel(
             modifier =
                 modifier
                     .shadowOf(shape)
-                    .clip(shape.corner)
+                    .clip(shape.card)
                     .background(fill.toColor())
-                    .border(shape.borderWidth, border.toColor(), shape.corner),
+                    .border(shape.borderWidth, border.toColor(), shape.card),
             content = content,
         )
     }
 }
 
 private fun Modifier.shadowOf(shape: AmShape): Modifier =
-    shape.shadow?.let { dropShadow(shape.corner, it.toShadow()) } ?: this
+    shape.shadow?.let { dropShadow(shape.card, it.toShadow()) } ?: this
 
 /** Maps the shadow token to a Compose [Shadow]: blur is the radius, the offset is vertical only. */
 internal fun ShadowSpec.toShadow(): Shadow =

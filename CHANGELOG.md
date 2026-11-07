@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Dopasowanie wyglądu do mockupów, iteracja 2: górny pasek pod paskiem tytułu z okruszkami „Quayside / projekt”, polem „Szukaj sesji lub wpisz komendę… ⌘K” (otwiera paletę komend), chipem głosu powiadomień, dzwonkiem z liczbą „Czeka na mnie” (klik otwiera ten widok, w trybie terminala wraca do listy) i przyciskiem „Nowy agent”; pasek stanu w obu trybach (tryb, projekt, „N czekają · M pracują”, głos i popupy, wersja Claude Code i świeżość odczytu); pasek podpowiedzi klawiszy pod listą sesji; „Dodaj projekt z dysku…” (⇧⌘O) w pasku bocznym; zaokrąglenia wyprowadzone z promienia motywu (zmienia wygląd wszystkich motywów); liczniki jako koła; role tekstu NAME i LABEL; IBM Plex jako domyślna typografia motywu `plex` (AM-816).
 - Pasek przewijania terminala w kolorach motywu, widoczny także przy krótkiej historii (AM-810).
 - Okno ustawień powiadomień: Nie przeszkadzać w godzinach i wyjątki projektów (AM-706).
 - Wybór głosu powiadomień pokazuje nazwy języków po polsku („Zosia — polski (Polska)”), pod polem „Przykład: …” z próbką głosu i przycisk „Odsłuchaj”/„Zatrzymaj”; gdy system ma najwyżej jeden polski głos, ustawienia podpowiadają, jak doinstalować kolejne (Ustawienia systemowe → Dostępność → Treść mówiona → Głos systemowy → Zarządzaj głosami) (AM-813).

@@ -7,6 +7,7 @@ import dev.quayside.notifications.api.NotificationKind
 /** Semantics tags of the notification settings dialog for UI tests (AM-704). */
 internal object SettingsTags {
     const val DIALOG = "notifications.settings"
+    const val VOICE_CHIP = "notifications.voiceChip"
     const val POPUPS = "notifications.settings.popups"
     const val VOICE = "notifications.settings.voice"
     const val RUNNING_LONG_MINUTES = "notifications.settings.runningLongMinutes"

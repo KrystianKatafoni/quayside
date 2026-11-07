@@ -28,7 +28,7 @@ Pełny zestaw tokenów kolorów w każdym motywie (także w 20 motywach z kszta�
 
 **Semantyka kolorów:** `warn` = agent czeka na Ciebie (najważniejszy sygnał w UI), `work` = pracuje, `ok` = gotowe, `err` = błąd, `accent` = akcje główne i zaznaczenie. W schemacie *Amber CRT* akcent jest bursztynowy, więc `warn` jest turkusowy, żeby oba się nie myliły.
 
-Kształt 9 podstawowych motywów: `radius` z tabeli, `borderWidth` 1 px, brak cienia, panel nieprzezroczysty, bez domyślnej typografii (ustalone w AM-801).
+Kształt 9 podstawowych motywów: `radius` z tabeli, `borderWidth` 1 px, brak cienia, panel nieprzezroczysty. Domyślną typografię (`plex`) ma tylko motyw `plex`, pozostałych ośmiu podstawowych motywów jej nie podpowiada (AM-816; wcześniej żaden nie miał, AM-801).
 
 Korekty względem pierwotnej tabeli (test kontrastu AM-801, odcienie `warn`/`ok`/`err`/`accent` ≥ 30°): `paper` `warn` z `#B45309` na `#A16207`, `phosphor` `ok` z `#39FF88` na `#A3E635`, `synth` `ok` z `#34D399` na `#4ADE80`, `rose` `accent` z `#EBBCBA` na `#C4A7E7`.
 
@@ -207,6 +207,21 @@ Znak (ikona) ma ten sam wybór z progiem 3:1 (WCAG 1.4.11). Plakietka licznika n
 **Przyciski ikonowe.** Style: `GHOST` (przezroczysty, ikona `muted`), `OUTLINED` (`raised` i `border2`), `SELECTED` (`sel` i `border2`), `DANGER` (obrys `tinted(err)` 35 %, ikona `err`). Rozmiary celu: `COMPACT` 28 dp (ikona 16), `REGULAR` 34 dp (ikona 18), `LARGE` 44 dp (ikona 20). Wyłączony przycisk ma ikonę `dim`. Przycisk niefokusowalny nie bierze fokusu i nie rezerwuje miejsca na ramkę. Przycisk ikonowy nie rysuje nakładki najechania ani naciśnięcia: styl (`SELECTED`) mówi, czy jest zaznaczony, a nakładka przyciemniałaby kolory z tokenów.
 
 **Hierarchia przycisków z tekstem (AM-809, arkusz C).** `AmButton` ma trzy rodzaje: `PRIMARY` (`accentInk` na `accent`, jeden na widok), `SECONDARY` (`text` na `raised`, obrys `border2`) i `DANGER` (obrys `tinted(err)` 35 %, etykieta `err`, bez wypełnienia; gdy `err` ma na `panel` mniej niż 4,5:1, etykieta jest w kolorze `text`). Opcjonalnie ma ikonę 16 dp przed tekstem i skrót za tekstem (kolor etykiety, bez ramki; odczytywany razem z etykietą). W panelu szczegółów kolejność jest zawsze taka: główna, zwykłe, groźne osobno. Przyciski na ekranach (poza oknami dialogowymi) są niefokusowalne, żeby Spacja i Enter trafiały do skrótów okna. Kolor znaku stanu (ikona, kafelek) to `StatusTone.markColor()`.
+
+## Promienie pochodne i role tekstu (AM-816)
+
+Źródło: mockupy z 2026-11-04, iteracja 2. Nowe tokeny nie powstają: `core:design-system` wylicza promienie z tokenu `radius` (r). Wiersz = r + 2, karta = r + 4, kafelek ikony = r + 2, licznik = pełne koło (kwadrat przy r = 0). Przy r = 0 wszystkie promienie są 0, więc motywy kwadratowe zostają kwadratowe.
+
+| r | wiersz | karta | kafelek |
+| --- | --- | --- | --- |
+| 0 | 0 | 0 | 0 |
+| 2 | 4 | 6 | 4 |
+| 8 (`plex`) | 10 | 12 | 10 |
+| 16 | 18 | 20 | 18 |
+
+Wiersz: zaznaczony projekt lub widok (tło `sel`, ramka `accent`), wiersz `AmListRow`, segmenty filtra. Karta: `AmPanel`, `AmStatCard`, lista sesji, ramka pól szczegółów, ramka panelu terminala (widżetu Swing nie da się przyciąć do zaokrąglenia, więc ma odstęp co najmniej r·(1 − 1/√2) i 2 dp od ramki). Kafelek: `AmIconTile`. Licznik: `AmCounter`, najmniej 22 dp, czyta się jego opis („2 czekają”), a nie sama liczba.
+
+Dwie nowe role tekstu obok TITLE, HEADING, BODY, CAPTION i CODE: `NAME` (mono, 15 sp, SemiBold: nazwy sesji w wierszach, w panelu szczegółów, na pasku sesji i w okruszkach trybu terminala) oraz `LABEL` (UI, 11 sp, SemiBold, odstęp liter 0,12 em: „PROJEKTY”, „WIDOKI”, „PODSUMOWANIE”; wielkie litery są w tekstach). Kolory zawsze z tokenów: `LABEL` jest w `muted` na `panel` (≥ 4,5:1 w audycie).
 
 ## Pozostałe ustawienia wyglądu
 

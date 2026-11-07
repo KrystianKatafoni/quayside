@@ -6,6 +6,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.window.FrameWindowScope
@@ -65,7 +66,7 @@ private fun FrameWindowScope.WindowContent(
         QuaysideApp(
             controllers = AppControllers(controllers.projects, controllers.missionControl, controllers.palette),
             terminal = remember(controllers) { terminalSlotOf(controllers) },
-            onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
+            chrome = chromeOf(controllers, modules),
             keyCaps = remember { windowKeyCaps() },
         )
         WindowDialogs(controllers, hooks)
@@ -74,6 +75,33 @@ private fun FrameWindowScope.WindowContent(
     AppearanceDialog(controllers.appearance) { AppearancePreviewSlot() }
     PopupAttachHandler(modules, controllers.attacher)
     LaunchedEffect(Unit) { controllers.hookSetup.offerAtStart() }
+}
+
+/**
+ * What the top bar and the status bar need (AM-816): "Nowy agent" enabled as its menu item, the voice chip over the
+ * notification settings, and the version of Claude Code, read once when the window opens. The health check behind
+ * it starts three processes (`claude --version`, `daemon status`, `agents --json`).
+ */
+@Composable
+private fun chromeOf(
+    controllers: WindowControllers,
+    modules: AppModules,
+): WindowChrome {
+    val enabled = menuStateOf(controllers, modules.projects.api).newAgent
+    val supervisor by produceState<String?>(initialValue = null, modules.terminal.runtime) {
+        value =
+            readSupervisor(modules.terminal.runtime)
+    }
+    return WindowChrome(
+        onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
+        newAgentEnabled = enabled,
+        notifications =
+            NotificationChrome(
+                modules.settings.notifications.settings.settings,
+                controllers.notificationSettings::open,
+            ),
+        supervisor = supervisor,
+    )
 }
 
 /** The dialogs drawn over the window content: "Nowy agent", the settings and the hooks. */

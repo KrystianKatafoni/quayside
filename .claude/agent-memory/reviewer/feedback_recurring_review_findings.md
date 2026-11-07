@@ -128,4 +128,7 @@ Sprawdzaj od razu przy każdym review:
   2. review: poprawki zabiły mutacje (fokus: KEYS + jeden Tab + `NOT_FOCUSED`; okruszki z projektem „Harbor”; karta listy, separator, `clip(row)` segmentu, `j k`, liczba pojedyncza). Przeżyły tylko kolor ramki `ListCard` i jednoliniowe `newAgentEnabled = enabled` w `MainWindow` (wspólna `menuStateOf`) — sugestie.
   **How to apply:** przy okruszkach/tytułach porównaj dane fixture ze stałymi tekstami UI; przy „nigdy nie bierze fokusu” sprawdź, czy klik nie otwiera popupu, który sam przenosi i oddaje fokus.
 
+- AM-819 (2026-11-07): znów brak CHANGELOG `[Unreleased]` i ROADMAP `[~]` dla zadania (zmiana ROADMAP w diffie dotyczyła tylko AM-816). Nieużywany import `height` w `QuaysideApp.kt` po usunięciu stałej. Test AWT „punkt uchwytu trafia w canvas” liczył punkt od `panelTop`, a nie od granic uchwytu — mutacje nakładania uchwytu i panelu go nie wywracają (zabijają je testy okna przez hit-test Compose). Pole `available` czytane przez `drag` liczone razem z uchwytem przeżyło (zapamiętana wysokość o 6 dp ponad limit, wyświetlana i tak przycięta). Test okna „przeciąganie od pokazanej wysokości” miał tylko górną granicę. Dobrze: 12 z 13 mutacji zabitych, w tym `canFocus` testem Tab (plan wciąż mówił „przeżywa”).
+  **How to apply:** przy testach AWT „punkt X trafia w Compose” sprawdź, czy punkt pochodzi z granic X, a nie z sąsiada; przy wartości z pomiaru używanej w logice (np. `available`) mutuj ją osobno od wartości rysowanej.
+
 Powiązane: [[reviewer-workflow]]

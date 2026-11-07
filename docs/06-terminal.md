@@ -2,6 +2,10 @@
 
 Terminal jest pełnoprawną częścią aplikacji, nie dodatkiem. Działa w dwóch miejscach: jako panel pod listą sesji w Mission Control i jako pełnoekranowy **tryb terminala** (przycisk pełnego ekranu, bez skrótu klawiszowego). Skrót ⌘⇧↵ maksymalizuje aktywny panel w obrębie panelu terminala, a ten sam skrót przywraca układ.
 
+## Wysokość panelu w trybie listy
+
+Między Mission Control a panelem terminala leży przezroczysty uchwyt (6 dp, kursor zmiany rozmiaru, bez fokusu): przeciągnięcie w górę powiększa terminal, w dół zmniejsza (FR-T2). Terminal ma co najmniej 120 dp, Mission Control co najmniej 160 dp (uchwyt nie wlicza się do żadnego z nich); gdy okno nie mieści obu minimów, wygrywa terminal. Uchwyt jest tylko wtedy, gdy panel coś pokazuje (karty albo błąd). Wysokość (domyślnie 320 dp) zapisuje się po puszczeniu uchwytu w `window.json` ([ADR 0025](adr/0025-format-window-json.md)); zmniejszenie okna jej nie zmienia, więc po powiększeniu okna panel wraca do zapamiętanej wysokości.
+
 ## Tryb terminala
 
 Układ B z mockupów z 2026-11-04. Wejście: przycisk „Tryb terminala” na końcu paska kart albo komenda palety „Tryb terminala” (bez skrótu; Attach **nie** zmienia trybu). Okno pokazuje wtedy tylko: wąski pasek ikon projektów (przycisk „Wróć do listy sesji” u góry, ikona folderu na projekt w tonie projektu, plakietka z liczbą czekających, „+” dodaje projekt), nad terminalem pasek sesji (kafelek stanu, nazwa, stan i wiek sesji aktywnej karty `attach`, przyciski Odpowiedz, Respawn i Zatrzymaj sesję) i terminal na całą resztę wysokości. Wyjście: „Wróć do listy sesji” (przycisk albo komenda palety), kliknięcie projektu w pasku ikon (wybiera projekt) oraz zamknięcie ostatniej karty. Esc nie wychodzi z trybu: należy do Claude Code w terminalu. Pasek sesji pokazuje się tylko dla sesji zaznaczonej na liście (Attach z popupu zaznacza ją).

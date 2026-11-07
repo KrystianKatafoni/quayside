@@ -457,6 +457,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 | `summaries.json` | `summaries:impl` (`{"useModel": false}`: streszczenia modelem Haiku, domyślnie wyłączone; brak lub uszkodzony plik = wyłączone) |
 | `theme.json` | `appearance:impl` |
 | `hook-offer.json` | `app` (`{"dismissed": true}`: użytkownik pominął propozycję instalacji hooków albo je odinstalował; brak lub uszkodzony plik = nie odrzucono; [ADR 0020](adr/0020-format-hook-offer-json.md)) |
+| `window.json` | `app` (`{"terminalHeight": 412.5}`: wysokość panelu terminala w trybie listy w dp; zapisywane tylko odstępstwo od domyślnej 320; brak klucza lub wartość niepoprawna = domyślna; [ADR 0025](adr/0025-format-window-json.md)) |
 | `hooks-backup/*.json` | `agent-runtime:impl` |
 
 - Każdy plik ma **jednego właściciela**. Inne moduły nie czytają cudzych plików.

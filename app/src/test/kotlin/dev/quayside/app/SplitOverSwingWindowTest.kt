@@ -56,8 +56,21 @@ class SplitOverSwingWindowTest {
 
     private fun onEdt(block: () -> Unit) = SwingUtilities.invokeAndWait(block)
 
-    private fun waitFor(condition: () -> Boolean) {
+    private fun waitFor(condition: () -> Boolean): Boolean {
         repeat(times = 100) { if (!condition()) Thread.sleep(50) }
+        return condition()
+    }
+
+    /** Top of the widget in the layered pane of [window] (the coordinates of [deepestAt]); null while hidden. */
+    private fun widgetTop(window: ComposeWindow): Float? {
+        var top: Float? = null
+        onEdt {
+            if (area.isShowing) {
+                top =
+                    SwingUtilities.convertPoint(area.parent, area.location, window.layeredPane).y.toFloat()
+            }
+        }
+        return top
     }
 
     private fun isSkia(component: Component?): Boolean = component?.javaClass?.name?.contains("Skia") == true
@@ -110,7 +123,14 @@ class SplitOverSwingWindowTest {
             window.setContent { AmTestTheme { Content() } }
             window.isVisible = true
         }
-        waitFor { area.isShowing && panelTop > 0f }
+        // The handle is composed a frame after the panel, and the Swing widget follows the layout later still: wait for
+        // a gap between Mission Control and the panel and for the widget to stand at the panel top.
+        val settled =
+            waitFor {
+                val top = widgetTop(window)
+                panelTop - missionBottom >= HANDLE_MIN_DP && top != null && kotlin.math.abs(top - panelTop) < 1f
+            }
+        check(settled) { "the split did not settle: gap ${panelTop - missionBottom} dp" }
         return window
     }
 
@@ -143,7 +163,7 @@ class SplitOverSwingWindowTest {
         withWindow { window ->
             // Given the split with a Swing widget in the panel, the handle is the gap between Mission Control and it
             val x = (panelLeft + panelWidth / 2).toInt()
-            val handleY = ((missionBottom + panelTop) / 2).toInt()
+            val handleY = (panelTop - (panelTop - missionBottom) / 2).toInt()
 
             // Then the middle of the handle is hit by the Compose canvas, not by the widget
             val hit = deepestAt(window, x, handleY)
@@ -159,5 +179,6 @@ class SplitOverSwingWindowTest {
 
     private companion object {
         const val PROBE_INSIDE_DP = 20f
+        const val HANDLE_MIN_DP = 5f
     }
 }

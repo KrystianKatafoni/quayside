@@ -14,6 +14,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-P4 | Jeśli w usuwanym projekcie działają sesje: wybór „zatrzymaj sesje i usuń” albo „usuń z listy, sesje działają dalej” | M |
 | FR-P5 | Import projektów z historii `~/.claude/projects/` | C |
 | FR-P6 | Zmiana nazwy wyświetlanej projektu, licznik sesji czekających i pracujących w sidebarze | S |
+| FR-P7 | Grupa projektu: projekt z podfolderami (np. `plant-puls/` z `soft/`, `marketing/`) pokazany w sidebarze jako grupa z podpozycjami, filtr sesji po podfolderze, liczniki per podfolder | S |
 
 ### Sesje agentów
 

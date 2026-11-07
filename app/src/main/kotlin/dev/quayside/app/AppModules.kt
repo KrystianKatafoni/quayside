@@ -26,10 +26,11 @@ internal class AppModules(
     val appearance: AppearanceDeps,
 )
 
-/** The notification module and the summaries switch: what the settings dialogs besides the terminal's work on. */
+/** The notification module, the summaries switch and the window layout: what the dialogs and the split work on. */
 internal class SettingsDeps(
     val notifications: NotificationDeps,
     val summaries: SummarySettingsRepo,
+    val layout: WindowLayoutDeps,
 )
 
 /**

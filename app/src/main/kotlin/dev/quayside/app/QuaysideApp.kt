@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +47,7 @@ internal data class TerminalSlot(
     val attacher: SessionAttacher? = null,
     val mode: WindowModeState? = null,
     val terminalKey: StateFlow<TabKey?>? = null,
+    val pane: TerminalPaneHeight? = null,
 )
 
 /**
@@ -88,7 +88,7 @@ internal fun QuaysideApp(
                     TerminalModeParts(projects, missionControl, mode, panel, terminal.terminalKey, attacher),
                 )
             } else {
-                ListLayout(projects, missionControl, handlersOf(attacher, keyCaps), panel, mode)
+                ListLayout(projects, missionControl, handlersOf(attacher, keyCaps), panel, terminal)
             }
         }
         WindowStatusBar(controllers, chrome, terminalMode)
@@ -120,21 +120,22 @@ private fun RowScope.ListLayout(
     missionControl: MissionControlController,
     handlers: MissionControlHandlers,
     panel: (@Composable (Modifier, (() -> Unit)?) -> Unit)?,
-    mode: WindowModeState?,
+    terminal: TerminalSlot,
 ) {
     Column {
         ProjectsSidebar(projects, Modifier.weight(weight = 1f), keyCapOf(AppShortcuts.ADD_PROJECT))
         GlobalViews(missionControl)
         ShortcutsHelp(Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
     }
-    Column(modifier = Modifier.weight(weight = 1f)) {
-        MissionControl(missionControl, Modifier.weight(weight = 1f).fillMaxWidth(), handlers = handlers)
-        panel?.invoke(
-            Modifier.fillMaxWidth().height(TERMINAL_HEIGHT),
-            mode?.let { { it.onEvent(WindowModeEvent.FullScreen) } },
-        )
-    }
+    TerminalSplit(
+        missionControl = { MissionControl(missionControl, it, handlers = handlers) },
+        panel = panel?.let { terminalPanel -> { modifier -> terminalPanel(modifier, fullScreenOf(terminal.mode)) } },
+        pane = terminal.pane,
+        modifier = Modifier.weight(weight = 1f),
+    )
 }
 
-/** The height of the terminal panel under Mission Control. */
-private val TERMINAL_HEIGHT = 320.dp
+private fun fullScreenOf(mode: WindowModeState?): (() -> Unit)? =
+    mode?.let {
+        { it.onEvent(WindowModeEvent.FullScreen) }
+    }

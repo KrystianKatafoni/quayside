@@ -132,6 +132,9 @@ internal class WindowSetup(
 
     /** The version of Claude Code the status bar shows, as `readSupervisor` would give it; null = unknown. */
     var supervisor: String? = null
+
+    /** The resizable terminal pane (AM-819): the layout store and the height of the window container. */
+    val panes = PaneSetup()
 }
 
 /** [DirectoryPicker] that counts how many times it was opened and answers like a cancelled dialog. */
@@ -159,7 +162,7 @@ internal fun ComposeUiTest.showWindowOf(setup: WindowSetup): CommandPaletteContr
     val keys = WindowKeys()
     val look = builtInCatalog().lookOf(AppearanceSettings())
     setContent {
-        val content = @Composable { WindowContent(setup, keys) { built += it } }
+        val content = @Composable { WindowFrame(setup.panes) { WindowContent(setup, keys) { built += it } } }
         val appearance = setup.settings.appearance
         if (appearance == null) AppTheme(look, content) else LiveLook(appearance, content)
     }
@@ -202,15 +205,7 @@ private fun WindowContent(
         KeysBox(keys) {
             QuaysideApp(
                 controllers = AppControllers(projects, missionControl, palette),
-                terminal =
-                    remember(terminal.controller) {
-                        TerminalSlot(
-                            panel = terminalPanel(terminal.controller, setup.terminal),
-                            attacher = terminal.wiring.attacher,
-                            mode = mode,
-                            terminalKey = terminal.controller?.activeKey,
-                        )
-                    },
+                terminal = remember(terminal.controller) { slotOf(setup, terminal, mode) },
                 chrome = chromeOf(setup, agent, notifications, this),
             )
             SettingsHosts(setup.settings, registry, parts, notifications)
@@ -273,7 +268,22 @@ private data class WindowCore(
 private class TerminalPart(
     val wiring: TerminalWiring,
     val controller: TerminalController?,
+    val pane: TerminalPaneHeight?,
 )
+
+/** The terminal slot of the window: the panel, the attacher, the mode and the pane height (AM-819). */
+private fun slotOf(
+    setup: WindowSetup,
+    terminal: TerminalPart,
+    mode: WindowModeState?,
+): TerminalSlot =
+    TerminalSlot(
+        panel = terminalPanel(terminal.controller, setup.terminal),
+        attacher = terminal.wiring.attacher,
+        mode = mode,
+        terminalKey = terminal.controller?.activeKey,
+        pane = terminal.pane,
+    )
 
 @Composable
 private fun WindowCore.rememberTerminalPart(
@@ -284,7 +294,7 @@ private fun WindowCore.rememberTerminalPart(
     val wiring = remember { TerminalWiring(setup.projects, setup.sessions, projects, missionControl, scope) }
     val controller =
         rememberTerminal(setup.terminal, scope, shellStart) { wiring.register(registry, it, setup.attachCommand) }
-    return TerminalPart(wiring, controller)
+    return TerminalPart(wiring, controller, rememberPane(setup.panes, scope))
 }
 
 /** Builds the [WindowCore] of [setup] and registers [AppCommands]; [onPalette] gets the palette for the test. */

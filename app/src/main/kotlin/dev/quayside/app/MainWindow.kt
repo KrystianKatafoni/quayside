@@ -126,6 +126,7 @@ private fun terminalSlotOf(controllers: WindowControllers): TerminalSlot =
         attacher = controllers.attacher,
         mode = controllers.mode,
         terminalKey = controllers.terminal.activeKey,
+        pane = controllers.pane,
     )
 
 /**

@@ -53,7 +53,7 @@ internal class WindowControllers(
         MissionControlController(
             modules.sessions,
             modules.projects.api,
-            projects.selection,
+            projects.focus,
             core.clock,
             scope,
             core.logger,

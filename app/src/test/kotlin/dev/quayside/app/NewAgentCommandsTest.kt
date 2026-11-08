@@ -94,7 +94,7 @@ class NewAgentCommandsTest {
             MissionControlController(
                 api,
                 projects,
-                controller.selection,
+                controller.focus,
                 TestClock(),
                 backgroundScope,
                 NoOpLogger,

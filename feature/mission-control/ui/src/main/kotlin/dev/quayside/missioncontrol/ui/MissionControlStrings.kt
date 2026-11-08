@@ -26,4 +26,18 @@ internal object MissionControlStrings {
         key: String,
         arg: Any,
     ): String = format(UiText(key, listOf("$arg")))
+
+    /** Polish plural of [key] for [count]: `.one` (1), `.few` (2-4, not 12-14) or `.many`, e.g. "2 czekają". */
+    fun plural(
+        key: String,
+        count: Int,
+    ): String {
+        val form =
+            when {
+                count == 1 -> "one"
+                count % 10 in 2..4 && count % 100 !in 12..14 -> "few"
+                else -> "many"
+            }
+        return formatted("$key.$form", count)
+    }
 }

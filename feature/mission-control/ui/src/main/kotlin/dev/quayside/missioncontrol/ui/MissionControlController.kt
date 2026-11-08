@@ -238,8 +238,9 @@ public class MissionControlController(
 
             MissionControlEvent.Dismiss -> ui.update { it.copy(dialog = null) }
 
-            // Opening a terminal tab is `app`'s job: MissionControl routes these to its callbacks (AM-511).
-            MissionControlEvent.Attach, MissionControlEvent.Reply -> Unit
+            // `app`'s job, not the controller's: MissionControl routes these to its callbacks (Attach and Reply open
+            // a terminal tab, AM-511; OpenSubfolder selects the subfolder in the sidebar, AM-307).
+            MissionControlEvent.Attach, MissionControlEvent.Reply, is MissionControlEvent.OpenSubfolder -> Unit
         }
     }
 }

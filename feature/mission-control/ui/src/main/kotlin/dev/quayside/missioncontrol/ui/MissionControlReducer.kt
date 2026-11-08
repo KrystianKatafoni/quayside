@@ -76,14 +76,16 @@ internal object MissionControlReducer {
         val mine = snapshot.sessions.filter { it.project == project.id && it.isIn(project, subfolder) }
         val visible = SessionScope.visible(snapshot.sessions, selection, listOf(project))
         val picked = visible.find { it.id == selection.session }
+        val loading = snapshot.status == SnapshotStatus.Loading
         return Screen.Project(
             header = ProjectHeader(shownName(project, subfolder), shownDir(project, subfolder), mine.size),
             filter = selection.filter,
             rows = visible.map { row(it, now, selected = it == picked) },
             details = picked?.let(::details),
             banner = (snapshot.status as? SnapshotStatus.Stale)?.let { Freshness.of(it, zone) },
-            loading = snapshot.status == SnapshotStatus.Loading,
+            loading = loading,
             stats = SessionStats.of(mine.map { it.state }),
+            overview = if (subfolder == null && !loading) GroupOverviews.of(project, snapshot.sessions) else null,
         )
     }
 

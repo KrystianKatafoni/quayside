@@ -23,7 +23,7 @@ import dev.quayside.core.designsystem.TextRole
 /**
  * The centre of the window: header with the filter segments, session list, key hints and details panel; stateless
  * apart from [controller]. The status bar is [StatusBar], drawn by `app` (AM-816). [handlers] say what `app` does on
- * Attach and Reply (AM-511); they do nothing by default.
+ * Attach, Reply (AM-511) and a click on a subfolder row (AM-307); they do nothing by default.
  */
 @Composable
 public fun MissionControl(
@@ -36,6 +36,7 @@ public fun MissionControl(
         when (event) {
             MissionControlEvent.Attach -> handlers.onAttach()
             MissionControlEvent.Reply -> handlers.onReply()
+            is MissionControlEvent.OpenSubfolder -> handlers.onOpenSubfolder(event.focus)
             else -> controller.onEvent(event)
         }
     }
@@ -85,6 +86,7 @@ private fun ProjectPage(
         SessionPage(page.banner, page.loading, page.rows, page.details, preview, onEvent) {
             ProjectHeaderView(page.header, page.filter, onEvent)
             StatCards(page.stats)
+            page.overview?.let { GroupOverviewView(it, onEvent) }
         }
     }
 }

@@ -73,6 +73,11 @@ internal object WindowTags {
 
     fun chevron(projectId: String): String = "projects.row.$projectId.chevron"
 
+    /** The group overview on the project page (AM-307, `internal` in `mission-control:ui`) and its subfolder row. */
+    const val OVERVIEW = "missionControl.overview"
+
+    fun overviewRow(name: String): String = "missionControl.overview.row.$name"
+
     /** The "Nowy agent" button of the top bar (AM-816, `TopBarTags.NEW_AGENT`) and the dialog (AM-608). */
     const val NEW_AGENT_BUTTON = "app.topBar.newAgent"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"

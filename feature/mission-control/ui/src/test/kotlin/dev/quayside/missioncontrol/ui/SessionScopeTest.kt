@@ -41,7 +41,7 @@ internal class SessionScopeTest {
         )
 
     private fun visible(selection: Selection): List<String> =
-        SessionScope.visible(sessions, selection).map { it.id.value }
+        SessionScope.visible(sessions, selection, emptyList()).map { it.id.value }
 
     @Test
     fun `project page shows sessions of the project under the filter`() {
@@ -82,10 +82,10 @@ internal class SessionScopeTest {
         val unsorted = listOf(sessions[3], sessions[0], sessions[6], sessions[2])
 
         SessionScope
-            .visible(unsorted, Selection(view = GlobalView.WORKING))
+            .visible(unsorted, Selection(view = GlobalView.WORKING), emptyList())
             .map { it.id } shouldBe listOf(SessionId("other-working"), SessionId("mine-working"))
         SessionScope
-            .visible(unsorted, Selection(project = mine))
+            .visible(unsorted, Selection(project = mine), emptyList())
             .map { it.id } shouldBe listOf(SessionId("mine-permission"), SessionId("mine-working"))
     }
 }

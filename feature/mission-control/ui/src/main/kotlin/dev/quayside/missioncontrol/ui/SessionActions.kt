@@ -38,7 +38,8 @@ internal object SessionActions {
     fun target(
         sessions: List<Session>,
         selection: Selection,
-    ): Session? = SessionScope.visible(sessions, selection).find { it.id == selection.session }
+        projects: List<Project>,
+    ): Session? = SessionScope.visible(sessions, selection, projects).find { it.id == selection.session }
 
     /** Active sessions can be stopped, the others respawned or removed; nothing while an action or a dialog is open. */
     fun available(
@@ -61,7 +62,7 @@ internal fun MissionControlUiState.withActions(
 ): MissionControlUiState {
     val withDialog = copy(dialog = acting.dialog)
     val details = screen.details()
-    val target = SessionActions.target(snapshot.sessions, selection)
+    val target = SessionActions.target(snapshot.sessions, selection, projects)
     if (details == null || target == null) return withDialog
     val attach = SessionAttach.targetOf(target, projects, acting.dialog != null)
     val shown =

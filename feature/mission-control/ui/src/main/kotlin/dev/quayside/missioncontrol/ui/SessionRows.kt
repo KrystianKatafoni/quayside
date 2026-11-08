@@ -27,6 +27,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmButton
 import dev.quayside.core.designsystem.AmChip
@@ -140,6 +142,7 @@ private fun SessionRowView(
             Modifier
                 .fillMaxWidth()
                 .testTag(MissionControlTags.row(row.id))
+                .semantics { selected = row.selected }
                 .onRowMouse(row.id, onSecondary = { rowMenu.setOpen(true) }, onDouble = attach)
                 .background(color = if (row.selected) selColor() else Color.Transparent),
     ) {

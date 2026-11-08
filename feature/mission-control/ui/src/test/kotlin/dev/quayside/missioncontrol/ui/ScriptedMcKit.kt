@@ -26,6 +26,7 @@ import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.testing.T0
 import dev.quayside.core.testing.TestClock
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.Session
@@ -73,7 +74,7 @@ internal fun ComposeUiTest.showScripted(
                     MissionControlController(
                         SessionsApi(ScriptedSessionMonitor(snapshot), FakeSessions()),
                         FakeProjectsApi(initial = listOf(MC_PROJECT, MC_OTHER)),
-                        MutableStateFlow(MC_PROJECT.id),
+                        MutableStateFlow<ProjectFocus?>(ProjectFocus(MC_PROJECT.id)),
                         TestClock(now),
                         scope,
                         NoOpLogger,

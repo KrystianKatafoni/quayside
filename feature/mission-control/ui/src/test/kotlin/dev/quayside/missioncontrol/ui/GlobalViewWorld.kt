@@ -20,7 +20,6 @@ import dev.quayside.sessions.api.WorldProject
 import dev.quayside.sessions.api.WorldSession
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import java.nio.file.Path
@@ -45,7 +44,7 @@ internal class GlobalViewWorld(
             ),
             clock,
         )
-    val selected = MutableStateFlow(selected)
+    val selected = SelectedProject(selected)
 
     fun TestScope.start(
         tick: Duration = 1.hours,
@@ -55,7 +54,7 @@ internal class GlobalViewWorld(
         MissionControlController(
             SessionsApi(monitor = fake, commands = commands),
             projects,
-            this@GlobalViewWorld.selected,
+            this@GlobalViewWorld.selected.focus,
             clock,
             backgroundScope,
             logger,

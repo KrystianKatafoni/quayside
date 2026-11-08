@@ -1,6 +1,7 @@
 package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.SubfolderName
 
 /** Semantics tags of Mission Control for UI tests. */
 internal object MissionControlTags {
@@ -55,6 +56,8 @@ internal object MissionControlTags {
     const val HEADER_COUNT = "missionControl.header.count"
     const val DETAILS_STATE = "missionControl.details.state"
     const val DETAILS_SUMMARY = "missionControl.details.summary"
+    const val OVERVIEW = "missionControl.overview"
+    const val OVERVIEW_REST = "missionControl.overview.rest"
 
     /** The stat card of [kind]: `waiting`, `working`, `done` or `failed`. */
     fun stat(kind: String): String = "missionControl.stat.$kind"
@@ -82,4 +85,7 @@ internal object MissionControlTags {
 
     /** The row of session [id]; clicking it selects the session. */
     fun row(id: SessionId): String = "missionControl.row.${id.value}"
+
+    /** The row of the subfolder [name] in the group overview; clicking it opens the subfolder. */
+    fun overviewRow(name: SubfolderName): String = "missionControl.overview.row.${name.value}"
 }

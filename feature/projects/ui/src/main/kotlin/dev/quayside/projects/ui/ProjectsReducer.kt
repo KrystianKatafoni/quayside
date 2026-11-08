@@ -71,11 +71,15 @@ private fun ProjectsUiState.reduceSelection(event: SidebarEvent): ProjectsUiStat
 private fun ProjectsUiState.openRename(project: Project?): ProjectsUiState =
     if (dialog == null && project != null) copy(dialog = Dialog.Rename(project, project.displayName)) else this
 
-/** A row click: the project row clears the subfolder; a subfolder row needs a name from the group of its project. */
+/**
+ * A row click: the project row clears the subfolder; a subfolder row needs a name from the group of its project and
+ * expands a collapsed group, so that its row is visible.
+ */
 private fun ProjectsUiState.select(event: SidebarEvent.Select): ProjectsUiState {
     val name = event.subfolder ?: return copy(selected = event.id, subfolder = null)
     val project = projects.find { it.id == event.id }
-    return if (project != null && name in project.subfolders) copy(selected = event.id, subfolder = name) else this
+    val known = project != null && name in project.subfolders
+    return if (known) copy(selected = event.id, subfolder = name, collapsed = collapsed - event.id) else this
 }
 
 /** Hides or shows the subfolder rows; hiding them leaves a selected subfolder of that group on its project. */

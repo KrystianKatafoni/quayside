@@ -4,6 +4,7 @@ import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.SessionState
 import java.nio.file.Path
@@ -54,6 +55,11 @@ internal sealed interface MissionControlEvent {
 
     /** "Odpowiedz" in the details panel or the row menu (AM-511); `app` handles it. */
     data object Reply : MissionControlEvent
+
+    /** A click on a subfolder row of the group overview (AM-307); `app` selects that focus in the sidebar. */
+    data class OpenSubfolder(
+        val focus: ProjectFocus,
+    ) : MissionControlEvent
 }
 
 /**
@@ -103,6 +109,7 @@ internal sealed interface Screen {
         val banner: UiText?,
         val loading: Boolean,
         val stats: SessionStats = SessionStats(),
+        val overview: GroupOverview? = null,
     ) : Screen
 
     /** A global view: sessions of every project, [sessions] of them, without filter tabs. */

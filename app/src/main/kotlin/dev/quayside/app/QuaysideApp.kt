@@ -88,7 +88,7 @@ internal fun QuaysideApp(
                     TerminalModeParts(projects, missionControl, mode, panel, terminal.terminalKey, attacher),
                 )
             } else {
-                ListLayout(projects, missionControl, handlersOf(attacher, keyCaps), panel, terminal)
+                ListLayout(projects, missionControl, handlersOf(attacher, keyCaps, projects), panel, terminal)
             }
         }
         WindowStatusBar(controllers, chrome, terminalMode)
@@ -99,11 +99,13 @@ internal fun QuaysideApp(
 private fun handlersOf(
     attacher: SessionAttacher?,
     keyCaps: SessionKeyCaps?,
+    projects: ProjectsController,
 ): MissionControlHandlers =
     MissionControlHandlers(
         onAttach = { attacher?.attachSelected() },
         onReply = { attacher?.replySelected() },
         keyCaps = keyCaps,
+        onOpenSubfolder = { projects.onIntent(ProjectsIntent.Select(it.project, it.subfolder)) },
     )
 
 private val LIST_ONLY: StateFlow<WindowMode> = MutableStateFlow(WindowMode.LIST)

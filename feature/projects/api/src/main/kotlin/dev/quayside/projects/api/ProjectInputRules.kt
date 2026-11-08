@@ -17,6 +17,9 @@ public object ProjectInputRules {
     /** Longest accepted display name in code points, counted after trimming. */
     public const val MAX_DISPLAY_NAME_LENGTH: Int = 80
 
+    /** Most subfolders one project can have. */
+    public const val MAX_SUBFOLDERS: Int = 64
+
     private const val ELLIPSIS = "…"
     private const val ROOT_NAME = "/"
     private const val SPACE = ' '.code
@@ -53,6 +56,23 @@ public object ProjectInputRules {
         val name = raw.trim()
         val problem = problemWith(name)
         return if (problem == null) Outcome.Ok(name) else Outcome.Err(ProjectError.InvalidDisplayName(problem))
+    }
+
+    /** Rejects blank, `.`, `..`, a `/`, a leading dot, control characters and > MAX_DISPLAY_NAME_LENGTH code points. */
+    public fun subfolderName(text: String): Outcome<SubfolderName, ProjectError> {
+        val problem =
+            when {
+                text.isBlank() || text == "." || text == ".." || '/' in text -> SubfolderProblem.NOT_A_NAME
+                text.codePointLength() > MAX_DISPLAY_NAME_LENGTH -> SubfolderProblem.NOT_A_NAME
+                text.codePoints().anyMatch(::isControl) -> SubfolderProblem.NOT_A_NAME
+                text.startsWith('.') -> SubfolderProblem.HIDDEN
+                else -> null
+            }
+        return if (problem == null) {
+            Outcome.Ok(SubfolderName(text))
+        } else {
+            Outcome.Err(ProjectError.InvalidSubfolder(SubfolderName(text), problem))
+        }
     }
 
     private fun fallbackName(dir: Path): String = fallbackName(dir.fileName?.toString(), dir.toString())

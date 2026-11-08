@@ -18,9 +18,12 @@ import java.nio.file.Path
  * @property dir real path of the project directory, resolved when the project was added.
  * @property displayName name shown in the sidebar, trimmed, not blank, without control characters and
  * at most [ProjectInputRules.MAX_DISPLAY_NAME_LENGTH] code points.
+ * @property subfolders positions of the group in the sidebar (FR-P7): names of direct subdirectories of [dir],
+ * distinct, sorted ignoring case, then by code point; empty = not a group. User data (ENG-C8).
  */
 public data class Project(
     val id: ProjectId,
     val dir: Path,
     val displayName: String,
+    val subfolders: List<SubfolderName> = emptyList(),
 )

@@ -23,12 +23,16 @@ import java.util.concurrent.atomic.AtomicInteger
  * [storageIssue] is reported as [ProjectsApi.storageIssue]. With [StorageIssue.READ_FAILED] or
  * [StorageIssue.NEWER_SCHEMA] every command returns [ProjectError.StorageFailed] with the matching
  * [StorageProblem] and changes nothing, as the real store does.
+ *
+ * [setSubfolders] checks each name with [ProjectInputRules.subfolderName], [pathKind] and [isSymlink] (default: no
+ * symlinks) at `project.dir/name`; contract tests pass [PathKind.onDisk] and `Files::isSymbolicLink`.
  */
 public class FakeProjectsApi(
     initial: List<Project> = emptyList(),
     private val pathKind: (Path) -> PathKind = { PathKind.DIRECTORY },
     private val realPath: (Path) -> Path? = { it },
     storageIssue: StorageIssue? = null,
+    private val isSymlink: (Path) -> Boolean = { false },
 ) : ProjectsApi {
     private val blockedBy: StorageProblem? =
         when (storageIssue) {
@@ -89,6 +93,48 @@ public class FakeProjectsApi(
         if (failure != null) return Outcome.Err(failure)
         val project = state.value.firstOrNull { it.id == id } ?: return Outcome.Err(ProjectError.UnknownProject(id))
         return ProjectInputRules.displayName(displayName, project.dir).flatMap { name -> replaceName(id, name) }
+    }
+
+    override suspend fun setSubfolders(
+        id: ProjectId,
+        subfolders: List<SubfolderName>,
+    ): Outcome<Unit, ProjectError> {
+        val failure = begin("setSubfolders ${id.value}")
+        if (failure != null) return Outcome.Err(failure)
+        val project = state.value.firstOrNull { it.id == id } ?: return Outcome.Err(ProjectError.UnknownProject(id))
+        val problem = subfolderProblem(project, subfolders)
+        if (problem != null) return Outcome.Err(problem)
+        val sorted =
+            subfolders
+                .distinct()
+                .sortedWith(ProjectGroups.order)
+        state.update { current -> current.map { if (it.id == id) it.copy(subfolders = sorted) else it } }
+        return Outcome.Ok(Unit)
+    }
+
+    private fun subfolderProblem(
+        project: Project,
+        names: List<SubfolderName>,
+    ): ProjectError? {
+        names.forEach { name ->
+            val invalid = ProjectInputRules.subfolderName(name.value)
+            if (invalid is Outcome.Err) return invalid.error
+            val dir = ProjectGroups.dirOf(project, name)
+            val reason =
+                when {
+                    isSymlink(dir) -> SubfolderProblem.SYMLINK
+                    pathKind(dir) == PathKind.MISSING -> SubfolderProblem.MISSING
+                    pathKind(dir) == PathKind.FILE -> SubfolderProblem.NOT_A_DIRECTORY
+                    else -> null
+                }
+            if (reason != null) return ProjectError.InvalidSubfolder(name, reason)
+        }
+        val distinct = names.distinct()
+        return if (distinct.size > ProjectInputRules.MAX_SUBFOLDERS) {
+            ProjectError.InvalidSubfolder(distinct[ProjectInputRules.MAX_SUBFOLDERS], SubfolderProblem.TOO_MANY)
+        } else {
+            null
+        }
     }
 
     /** Records [call] and takes the pending failure, if any, else the storage failure, if any. */

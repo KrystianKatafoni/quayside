@@ -24,6 +24,14 @@ public interface ProjectInspector {
      * Problems with git, the runtime or hooks land in the report, not as `Err`.
      */
     public suspend fun inspect(dir: Path): Outcome<DirectoryReport, ProjectError>
+
+    /**
+     * Direct subdirectories of [dir] that can be subfolders: not hidden, not symlinks, readable; sorted like
+     * [Project.subfolders]; at most [ProjectInputRules.MAX_SUBFOLDERS] (the rest is cut). Read-only.
+     *
+     * Errors: [ProjectError.NotAbsolute], [ProjectError.NotFound], [ProjectError.NotADirectory].
+     */
+    public suspend fun subfolders(dir: Path): Outcome<List<SubfolderName>, ProjectError>
 }
 
 /**

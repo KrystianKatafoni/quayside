@@ -56,6 +56,14 @@ public sealed interface ProjectError {
         val problem: StorageProblem,
     ) : ProjectError
 
+    /** [name] was rejected for [reason]; `toString` hides the name. */
+    public data class InvalidSubfolder(
+        val name: SubfolderName,
+        val reason: SubfolderProblem,
+    ) : ProjectError {
+        override fun toString(): String = "InvalidSubfolder(name=$HIDDEN, reason=$reason)"
+    }
+
     private companion object {
         const val HIDDEN = "***"
     }
@@ -91,4 +99,14 @@ public enum class StorageProblem {
 
     /** The list file was written by a newer app version; it is never overwritten. */
     NEWER_SCHEMA,
+}
+
+/** Why a subfolder name was rejected (AM-306). */
+public enum class SubfolderProblem {
+    NOT_A_NAME,
+    HIDDEN,
+    MISSING,
+    NOT_A_DIRECTORY,
+    SYMLINK,
+    TOO_MANY,
 }

@@ -23,10 +23,10 @@ import java.nio.file.Files
 /**
  * Behaviour every [ProjectsApi] must have (ENG-T2). Runs on [FakeProjectsApi] reading the disk and,
  * from AM-302, on `JsonProjectStore`. Extend this class: it also runs the path cases of
- * [ProjectsApiPathContract] (normalization, symlinks, missing paths), with the same temp directory
- * rules.
+ * [ProjectsApiPathContract] (normalization, symlinks, missing paths) and of [ProjectsApiSubfolderContract], with
+ * the same temp directory rules.
  */
-public abstract class ProjectsApiContract : ProjectsApiPathContract() {
+public abstract class ProjectsApiContract : ProjectsApiSubfolderContract() {
     @Test
     public fun `list is empty at start`(): Unit =
         runTest {

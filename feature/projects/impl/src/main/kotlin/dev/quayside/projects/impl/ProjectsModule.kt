@@ -20,7 +20,16 @@ public suspend fun projectsModule(
     logger: Logger,
 ): ProjectsApi =
     JsonProjectStore.open(
-        store = storage.store(StoreSpec(JsonProjectStore.FILE_NAME, ProjectListSerializer, emptyList())),
+        store =
+            storage.store(
+                StoreSpec(
+                    fileName = JsonProjectStore.FILE_NAME,
+                    serializer = ProjectListSerializer,
+                    default = emptyList(),
+                    schemaVersion = ProjectListMigration.SCHEMA_VERSION,
+                    migrations = ProjectListMigration.migrations(),
+                ),
+            ),
         io = io,
         logger = logger,
     )

@@ -94,7 +94,7 @@ class JsonProjectStoreIntegrationTest {
         }
 
     @Test
-    fun `file has schema version 1 and the documented layout`() =
+    fun `file has schema version 2 and the documented layout`() =
         runTest {
             val dir = dir("agent-manager")
             val project = open().added(dir, "Quayside")
@@ -102,7 +102,7 @@ class JsonProjectStoreIntegrationTest {
             val root = Json.parseToJsonElement(Files.readString(file)).jsonObject
 
             root.keys shouldBe setOf("schemaVersion", "data")
-            root.getValue("schemaVersion").jsonPrimitive.int shouldBe 1
+            root.getValue("schemaVersion").jsonPrimitive.int shouldBe 2
             val data = root.getValue("data").jsonObject
             data.keys shouldBe setOf("projects")
             data.getValue("projects").jsonArray.single() shouldBe
@@ -154,7 +154,7 @@ class JsonProjectStoreIntegrationTest {
     @Test
     fun `newer schema file is never overwritten`() =
         runTest {
-            val original = writeFile("""{"schemaVersion": 2, "data": {"projects": [], "groups": []}}""")
+            val original = writeFile("""{"schemaVersion": 3, "data": {"projects": [], "groups": []}}""")
 
             val api = open()
 

@@ -15,6 +15,7 @@ import dev.quayside.projects.api.ProjectError
 import dev.quayside.projects.api.ProjectInputRules
 import dev.quayside.projects.api.ProjectInspector
 import dev.quayside.projects.api.ProjectsApi
+import dev.quayside.projects.api.SubfolderName
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -39,6 +40,12 @@ internal class DirectoryInspector(
             .normalizeDir(dir)
             .flatMap { normalized -> RealPaths.resolve(normalized, io) }
             .map { real -> report(real) }
+
+    override suspend fun subfolders(dir: Path): Outcome<List<SubfolderName>, ProjectError> =
+        ProjectInputRules
+            .normalizeDir(dir)
+            .flatMap { normalized -> RealPaths.resolve(normalized, io) }
+            .map { real -> SubfolderChecks.list(real, io) }
 
     private suspend fun report(real: Path): DirectoryReport =
         coroutineScope {

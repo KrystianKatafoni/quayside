@@ -18,4 +18,4 @@ Podgląd i obsługa sesji agentów zdalnie z telefonu: lista sesji, stan, odpowi
 
 ## 4. Sandbox Docker dla agenta
 
-Uruchamianie agenta Claude Code w kontenerze Docker ze wszystkimi uprawnieniami (bez pytań o zgodę), odizolowanego od hosta, z dostępem do git. Wstępny kierunek i ryzyka: [ADR 0026](adr/0026-sandbox-docker-dla-agenta.md) (proponowana).
+Uruchamianie agenta Claude Code w kontenerze Docker ze wszystkimi uprawnieniami (bez pytań o zgodę), odizolowanego od hosta, z dostępem do git. Wstępny kierunek i ryzyka: [ADR 0028](adr/0028-sandbox-docker-dla-agenta.md) (proponowana).

@@ -1,4 +1,4 @@
-# ADR 0026: Sandbox Docker dla agenta (szkic, spike)
+# ADR 0028: Sandbox Docker dla agenta (szkic, spike)
 
 - **Status:** proponowana (spike; nic nie jest zaimplementowane)
 - **Data:** 2026-11-07

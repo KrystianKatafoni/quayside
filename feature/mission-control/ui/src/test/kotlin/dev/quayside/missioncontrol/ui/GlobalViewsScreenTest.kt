@@ -26,6 +26,7 @@ import dev.quayside.core.testing.T0
 import dev.quayside.core.testing.TestClock
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.Session
@@ -95,7 +96,7 @@ internal class GlobalViewsScreenTest {
                         MissionControlController(
                             sessions,
                             FakeProjectsApi(initial = listOf(project, other)),
-                            MutableStateFlow(project.id),
+                            MutableStateFlow<ProjectFocus?>(ProjectFocus(project.id)),
                             TestClock(T0.plusSeconds(600)),
                             scope,
                             NoOpLogger,

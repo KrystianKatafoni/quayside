@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Grupy projektów z podfolderami: projekt nadrzędny z podpozycjami wybranymi ręcznie w dialogu „Podfoldery projektu…”, zwijanie grupy, filtr sesji Mission Control po podfolderze (nagłówek „projekt / podfolder”), liczniki per podfolder i komenda palety „Przejdź do: projekt / podfolder” (AM-306, ADR 0026).
 - Uchwyt między Mission Control a panelem terminala w trybie listy: przeciąganie w górę i w dół (terminal min. 120 dp, Mission Control min. 160 dp), kursor zmiany rozmiaru; wysokość panelu jest zapamiętana między uruchomieniami w `window.json` (AM-819).
 - Dopasowanie wyglądu do mockupów, iteracja 2: górny pasek pod paskiem tytułu z okruszkami „Quayside / projekt”, polem „Szukaj sesji lub wpisz komendę… ⌘K” (otwiera paletę komend), chipem głosu powiadomień, dzwonkiem z liczbą „Czeka na mnie” (klik otwiera ten widok, w trybie terminala wraca do listy) i przyciskiem „Nowy agent”; pasek stanu w obu trybach (tryb, projekt, „N czekają · M pracują”, głos i popupy, wersja Claude Code i świeżość odczytu); pasek podpowiedzi klawiszy pod listą sesji; „Dodaj projekt z dysku…” (⇧⌘O) w pasku bocznym; zaokrąglenia wyprowadzone z promienia motywu (zmienia wygląd wszystkich motywów); liczniki jako koła; role tekstu NAME i LABEL; IBM Plex jako domyślna typografia motywu `plex` (AM-816).
 - Pasek przewijania terminala w kolorach motywu, widoczny także przy krótkiej historii (AM-810).
@@ -85,6 +86,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Changed
 
+- API (ENG-I6, zmiana łamiąca `projects:api`): nowe pole `Project.subfolders`, nowe metody `ProjectsApi.setSubfolders` i `ProjectInspector.subfolders`, typy `SubfolderName`, `ProjectFocus`, `ProjectGroups` oraz `ProjectError.InvalidSubfolder`; `projects.json` w schemacie 2 (migracja 1→2 bez zmiany danych; starsza wersja aplikacji zgłasza nowszy schemat i nie nadpisuje pliku) (AM-306, ADR 0026).
 - Kolory 23 z 29 motywów poprawione tak, by ekrany spełniały kontrast 4,5:1 (tekst) i 3:1 (znaki): `warn`, `ok`, `err`, `work`, `muted` i w `oatmeal-light` `accent` są minimalnie ściemnione lub rozjaśnione tam, gdzie wcześniej zawodziły; motywy `plex`, `graphite`, `phosphor`, `synth`, `amber` i `contrast` bez zmian (AM-803).
 - Nowa nazwa aplikacji: Quayside (wcześniej Agent Manager). Dane aplikacji leżą w `~/Library/Application Support/Quayside/`; listę projektów ze starego katalogu `AgentManager/` trzeba przenieść ręcznie.
 - API `feature:terminal:api`: `TerminalSession` ma nowe pole `search` (`TerminalSearch`, `SearchQuery`, `ScrollbackMatcher`) — zmiana kontraktu wg ENG-I6.

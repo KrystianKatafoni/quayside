@@ -46,6 +46,7 @@ internal object WindowTags {
     const val CONFIRM_REMOVE_PROJECT = "projects.dialog.remove"
     const val UNINSTALL_PROJECT_HOOKS = "projects.dialog.remove.hooks.uninstall"
     const val RENAME_DIALOG = "projects.dialog.rename"
+    const val SUBFOLDERS_DIALOG = "projects.dialog.subfolders"
     const val RENAME_FIELD = "projects.dialog.rename.field"
     const val RENAME_SAVE = "projects.dialog.rename.save"
 
@@ -63,6 +64,14 @@ internal object WindowTags {
     fun rowMenu(projectId: String): String = "projects.row.$projectId.menu"
 
     fun railButton(projectId: String): String = "projects.rail.$projectId"
+
+    /** A group in the sidebar (AM-306, `projects:ui`, `internal` there): a subfolder row and the chevron. */
+    fun subfolderRow(
+        projectId: String,
+        name: String,
+    ): String = "projects.row.$projectId.sub.$name"
+
+    fun chevron(projectId: String): String = "projects.row.$projectId.chevron"
 
     /** The "Nowy agent" button of the top bar (AM-816, `TopBarTags.NEW_AGENT`) and the dialog (AM-608). */
     const val NEW_AGENT_BUTTON = "app.topBar.newAgent"

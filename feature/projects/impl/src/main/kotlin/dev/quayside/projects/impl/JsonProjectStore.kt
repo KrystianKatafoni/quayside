@@ -10,9 +10,11 @@ import dev.quayside.core.domain.warn
 import dev.quayside.core.storage.JsonStore
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectError
+import dev.quayside.projects.api.ProjectGroups
 import dev.quayside.projects.api.ProjectInputRules
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.api.StorageIssue
+import dev.quayside.projects.api.SubfolderName
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,6 +83,32 @@ internal class JsonProjectStore private constructor(
             }
         }
     }
+
+    override suspend fun setSubfolders(
+        id: ProjectId,
+        subfolders: List<SubfolderName>,
+    ): Outcome<Unit, ProjectError> {
+        if (blockedBy != null) return Outcome.Err(blockedBy)
+        val project = state.value.firstOrNull { it.id == id }
+        return if (project == null) {
+            Outcome.Err(ProjectError.UnknownProject(id))
+        } else {
+            SubfolderChecks.resolve(project, subfolders, io).flatMap { checked -> replaceSubfolders(id, checked) }
+        }
+    }
+
+    /** The project may have been removed while the disk was checked: the lookup is repeated under [mutex]. */
+    private suspend fun replaceSubfolders(
+        id: ProjectId,
+        checked: List<SubfolderName>,
+    ): Outcome<Unit, ProjectError> =
+        mutex.withLock {
+            val current = state.value
+            if (current.none { it.id == id }) return@withLock Outcome.Err(ProjectError.UnknownProject(id))
+            val sorted = checked.sortedWith(ProjectGroups.order)
+            commit(current.map { if (it.id == id) it.copy(subfolders = sorted) else it })
+                .also { logged(it, "project subfolders set", id) }
+        }
 
     /** The duplicate check, the new id and the save are one step under [mutex]. */
     private suspend fun insert(

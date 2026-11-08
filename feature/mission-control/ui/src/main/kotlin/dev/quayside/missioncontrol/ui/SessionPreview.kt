@@ -2,6 +2,7 @@ package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.RecentOutput
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionError
@@ -41,7 +42,8 @@ internal object SessionPreview {
         open: Boolean,
         sessions: List<Session>,
         selection: Selection,
-    ): SessionId? = if (open) SessionActions.target(sessions, selection)?.id else null
+        projects: List<Project>,
+    ): SessionId? = if (open) SessionActions.target(sessions, selection, projects)?.id else null
 
     /** The content for the result of one read. */
     fun content(outcome: Outcome<RecentOutput, SessionError>): PreviewContent =

@@ -3,6 +3,7 @@ package dev.quayside.projects.api
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.getOrNull
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
@@ -12,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Locale
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.readBytes
 import kotlin.io.path.relativeTo
@@ -208,6 +210,83 @@ public abstract class ProjectInspectorContract {
             inspector.report()
 
             snapshot(projectDir) shouldBe before
+        }
+
+    @Test
+    public fun `subfolders lists direct children without hidden ones and symlinks`(): Unit =
+        runTest {
+            val inspector = inspector()
+            Files.createDirectories(projectDir.resolve("soft/api"))
+            Files.createDirectories(projectDir.resolve("docs"))
+            Files.createDirectories(projectDir.resolve(".git"))
+            Files.createDirectories(projectDir.resolve(".cache"))
+            Files.writeString(projectDir.resolve("README.md"), "content")
+            Files.createSymbolicLink(projectDir.resolve("linked"), projectDir.resolve("soft"))
+
+            inspector.subfolders(projectDir) shouldBe Outcome.Ok(subfolderNames("docs", "soft"))
+        }
+
+    @Test
+    public fun `subfolders are sorted ignoring case`(): Unit =
+        runTest {
+            val inspector = inspector()
+            listOf("bob", "Anna", "Carl").forEach { Files.createDirectories(projectDir.resolve(it)) }
+
+            inspector.subfolders(projectDir) shouldBe Outcome.Ok(subfolderNames("Anna", "bob", "Carl"))
+        }
+
+    @Test
+    public fun `subfolders of a directory without children is empty`(): Unit =
+        runTest {
+            inspector().subfolders(projectDir) shouldBe Outcome.Ok(emptyList())
+        }
+
+    @Test
+    public fun `subfolders of a symlinked directory lists the real children`(): Unit =
+        runTest {
+            val inspector = inspector()
+            Files.createDirectories(projectDir.resolve("soft"))
+            val link = Files.createSymbolicLink(base.resolve("link"), projectDir)
+
+            inspector.subfolders(link) shouldBe Outcome.Ok(subfolderNames("soft"))
+        }
+
+    @Test
+    public fun `subfolders of a missing dir is NotFound`(): Unit =
+        runTest {
+            val missing = base.resolve("missing")
+
+            inspector().subfolders(missing) shouldBe Outcome.Err(ProjectError.NotFound(missing))
+        }
+
+    @Test
+    public fun `subfolders of a relative path is NotAbsolute`(): Unit =
+        runTest {
+            val relative = Path.of("projects/a")
+
+            inspector().subfolders(relative) shouldBe Outcome.Err(ProjectError.NotAbsolute(relative))
+        }
+
+    @Test
+    public fun `subfolders of a file is NotADirectory`(): Unit =
+        runTest {
+            val inspector = inspector()
+            val notes = Files.writeString(base.resolve("notes.txt"), "content")
+
+            inspector.subfolders(notes) shouldBe Outcome.Err(ProjectError.NotADirectory(notes))
+        }
+
+    @Test
+    public fun `subfolders are cut at the limit`(): Unit =
+        runTest {
+            val inspector = inspector()
+            val total = ProjectInputRules.MAX_SUBFOLDERS + 6
+            (0 until total).forEach { Files.createDirectories(projectDir.resolve("dir%03d".format(Locale.ROOT, it))) }
+
+            val listed = inspector.subfolders(projectDir).getOrNull().shouldNotBeNull()
+
+            listed shouldHaveSize ProjectInputRules.MAX_SUBFOLDERS
+            listed.map { it.value } shouldBe listed.map { it.value }.sorted()
         }
 
     /** Every entry under [dir] with its last-modified time and, for files, its content. */

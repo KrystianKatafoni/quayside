@@ -1,6 +1,7 @@
 package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.SessionMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -24,6 +25,7 @@ private val PREVIEW_REFRESH = 3.seconds
 internal class PreviewState(
     private val monitor: SessionMonitor,
     private val selection: StateFlow<Selection>,
+    private val projects: StateFlow<List<Project>>,
     scope: CoroutineScope,
 ) {
     private val openFlow = MutableStateFlow(false)
@@ -37,8 +39,8 @@ internal class PreviewState(
 
     init {
         scope.launch {
-            combine(openFlow, selection, monitor.snapshot) { isOpen, picked, snapshot ->
-                SessionPreview.key(isOpen, snapshot.sessions, picked)
+            combine(openFlow, selection, monitor.snapshot, projects) { isOpen, picked, snapshot, list ->
+                SessionPreview.key(isOpen, snapshot.sessions, picked, list)
             }.distinctUntilChanged().collectLatest { id ->
                 if (id == null) close() else follow(id)
             }
@@ -49,7 +51,7 @@ internal class PreviewState(
     fun toggle() {
         if (openFlow.value) {
             openFlow.value = false
-        } else if (SessionActions.target(monitor.snapshot.value.sessions, selection.value) != null) {
+        } else if (SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.value) != null) {
             openFlow.value = true
         }
     }

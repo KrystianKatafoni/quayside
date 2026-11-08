@@ -553,7 +553,7 @@ private fun missionControlController(
     MissionControlController(
         SessionsApi(monitor = sessions, commands = sessions),
         projects,
-        controller.selection,
+        controller.focus,
         TestClock(),
         scope,
         NoOpLogger,

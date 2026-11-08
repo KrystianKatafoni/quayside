@@ -34,7 +34,6 @@ import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.sessions.api.aSession
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
 import kotlin.time.Duration.Companion.hours
@@ -60,7 +59,7 @@ internal class MissionControlTest {
     ): ScriptedSessionMonitor {
         val monitor = ScriptedSessionMonitor(snapshot)
         val api = FakeProjectsApi(initial = projects)
-        val selection = MutableStateFlow(selected)
+        val selection = SelectedProject(selected).focus
         setContent {
             AmTestTheme {
                 val scope = rememberCoroutineScope()

@@ -14,6 +14,7 @@ import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.SessionActionsState
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectsApi
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
 import dev.quayside.projects.ui.ProjectsMenuState
@@ -58,6 +59,7 @@ internal data class AppMenuState(
     val rename: Boolean,
     val palette: Boolean,
     val newAgent: Boolean = false,
+    val subfolders: Boolean = false,
 ) {
     companion object {
         /**
@@ -79,6 +81,7 @@ internal data class AppMenuState(
                 rename = menu.canRename && !blocked,
                 palette = palette,
                 newAgent = palette && hasProjects,
+                subfolders = menu.canEditSubfolders && !blocked,
             )
         }
     }
@@ -110,6 +113,9 @@ private val ENTRIES =
             AppShortcuts.REMOVE_PROJECT,
             listOf("remove"),
         ) { it.canRemove },
+        Entry("projects.subfolders", "menu.subfolders", ProjectsIntent.EditSubfoldersRequested) {
+            it.canEditSubfolders
+        },
     )
 
 /** Project commands of the palette (AM-408, decision 1); none while a dialog is open. */
@@ -125,7 +131,11 @@ internal fun projectCommands(
                 onIntent(it.intent)
             }
         }
-    return fixed + list.map { goTo(it, onIntent) }
+    return fixed +
+        list.flatMap {
+            listOf(goTo(it, onIntent)) +
+                it.subfolders.mapIndexed { index, name -> goTo(it, index, name, onIntent) }
+        }
 }
 
 private fun goTo(
@@ -137,6 +147,20 @@ private fun goTo(
         title = Strings.format("command.goToProject", project.displayName),
         group = CommandGroup.GO_TO_PROJECT,
         run = { onIntent(ProjectsIntent.Select(project.id)) },
+    )
+
+private fun goTo(
+    project: Project,
+    index: Int,
+    subfolder: SubfolderName,
+    onIntent: (ProjectsIntent) -> Unit,
+): Command =
+    Command(
+        // The id is logged by the palette: it holds the position, never the name (ENG-C8).
+        id = CommandId("projects.goto.${project.id.value}.sub$index"),
+        title = Strings.format("command.goToSubfolder", project.displayName, subfolder.value),
+        group = CommandGroup.GO_TO_PROJECT,
+        run = { onIntent(ProjectsIntent.Select(project.id, subfolder)) },
     )
 
 /** Offers [projectCommands] and [sessionCommands] for the live project list and menu state. */

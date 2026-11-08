@@ -73,6 +73,19 @@ public interface ProjectsApi {
         id: ProjectId,
         displayName: String,
     ): Outcome<Unit, ProjectError>
+
+    /**
+     * Replaces the subfolders of [id]; keeps id, dir, name and position. Duplicates are dropped, the list is
+     * sorted (see [Project.subfolders]); empty = no group. Each name must pass [ProjectInputRules.subfolderName]
+     * and be a real directory directly under [Project.dir], not a symlink; at most
+     * [ProjectInputRules.MAX_SUBFOLDERS]. Atomic like the other commands.
+     *
+     * Errors: [ProjectError.UnknownProject], [ProjectError.InvalidSubfolder], [ProjectError.StorageFailed].
+     */
+    public suspend fun setSubfolders(
+        id: ProjectId,
+        subfolders: List<SubfolderName>,
+    ): Outcome<Unit, ProjectError>
 }
 
 /**

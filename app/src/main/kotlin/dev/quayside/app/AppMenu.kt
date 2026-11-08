@@ -124,6 +124,11 @@ private fun MenuScope.ProjectItems(
         onClick = { projects.onIntent(ProjectsIntent.RenameSelectedRequested) },
     )
     Item(
+        text = Strings["menu.subfolders"],
+        enabled = enabled.subfolders,
+        onClick = { projects.onIntent(ProjectsIntent.EditSubfoldersRequested) },
+    )
+    Item(
         text = Strings["menu.removeProject"],
         enabled = enabled.remove,
         shortcut = AppShortcuts.REMOVE_PROJECT.toKeyShortcut(),

@@ -4,6 +4,7 @@ import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.SessionState
 import java.nio.file.Path
 import java.time.Instant
@@ -55,12 +56,16 @@ internal sealed interface MissionControlEvent {
     data object Reply : MissionControlEvent
 }
 
-/** What the user picked: the project (from the sidebar), the filter and the session. */
+/**
+ * What the user picked: the project (from the sidebar), the filter and the session; [subfolder] narrows the project
+ * page to the sessions of one subfolder of the group (FR-P7).
+ */
 internal data class Selection(
     val project: ProjectId? = null,
     val view: GlobalView? = null,
     val filter: SessionFilter = SessionFilter.ALL,
     val session: SessionId? = null,
+    val subfolder: SubfolderName? = null,
 )
 
 internal data class MissionControlUiState(

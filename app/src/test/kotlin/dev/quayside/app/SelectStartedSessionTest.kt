@@ -70,7 +70,7 @@ class SelectStartedSessionTest {
                 NoOpLogger,
             )
         val missionControl =
-            MissionControlController(api, list, projects.selection, TestClock(T0), backgroundScope, NoOpLogger, 1.hours)
+            MissionControlController(api, list, projects.focus, TestClock(T0), backgroundScope, NoOpLogger, 1.hours)
         runCurrent()
         return Parts(projects, missionControl)
     }

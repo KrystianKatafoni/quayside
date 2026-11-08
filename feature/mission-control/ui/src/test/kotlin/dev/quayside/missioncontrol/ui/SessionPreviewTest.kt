@@ -43,37 +43,54 @@ internal class SessionPreviewTest {
 
     @Test
     fun `key is the selected visible session when the preview is open`() {
-        SessionPreview.key(true, sessions, Selection(project = project, session = SessionId("working"))) shouldBe
+        SessionPreview.key(
+            true,
+            sessions,
+            Selection(project = project, session = SessionId("working")),
+            emptyList(),
+        ) shouldBe
             SessionId("working")
     }
 
     @Test
     fun `key is null when the preview is closed`() {
-        SessionPreview.key(false, sessions, Selection(project = project, session = SessionId("working"))) shouldBe null
+        SessionPreview.key(
+            false,
+            sessions,
+            Selection(project = project, session = SessionId("working")),
+            emptyList(),
+        ) shouldBe
+            null
     }
 
     @Test
     fun `key is null without a selected session`() {
-        SessionPreview.key(true, sessions, Selection(project = project)) shouldBe null
+        SessionPreview.key(true, sessions, Selection(project = project), emptyList()) shouldBe null
     }
 
     @Test
     fun `key is null for a session hidden by the filter`() {
         val selection = Selection(project = project, filter = SessionFilter.ACTIVE, session = SessionId("done"))
 
-        SessionPreview.key(true, sessions, selection) shouldBe null
+        SessionPreview.key(true, sessions, selection, emptyList()) shouldBe null
     }
 
     @Test
     fun `key is null for a session of another project`() {
-        SessionPreview.key(true, sessions, Selection(project = project, session = SessionId("elsewhere"))) shouldBe null
+        SessionPreview.key(
+            true,
+            sessions,
+            Selection(project = project, session = SessionId("elsewhere")),
+            emptyList(),
+        ) shouldBe
+            null
     }
 
     @Test
     fun `key follows the selection in a global view`() {
         val selection = Selection(view = GlobalView.WORKING, session = SessionId("elsewhere"))
 
-        SessionPreview.key(true, sessions, selection) shouldBe SessionId("elsewhere")
+        SessionPreview.key(true, sessions, selection, emptyList()) shouldBe SessionId("elsewhere")
     }
 
     companion object {

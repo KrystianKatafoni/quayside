@@ -12,4 +12,8 @@ public fun aProject(
     id: String = "agent-manager",
     dir: Path = A_PROJECT_DIR,
     displayName: String = "agent-manager",
-): Project = Project(ProjectId(id), dir, displayName)
+    subfolders: List<SubfolderName> = emptyList(),
+): Project = Project(ProjectId(id), dir, displayName, subfolders)
+
+/** Subfolder names for tests, in the order given (the caller keeps them sorted when the test needs it). */
+public fun subfolderNames(vararg names: String): List<SubfolderName> = names.map(::SubfolderName)

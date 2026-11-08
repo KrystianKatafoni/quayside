@@ -81,6 +81,8 @@ private fun DialogContent(
 
         is Dialog.Rename -> Rename(dialog, onEvent)
 
+        is Dialog.Subfolders -> SubfoldersDialog(dialog, onEvent)
+
         is Dialog.Message -> Message(dialog.text, cancel)
     }
 }

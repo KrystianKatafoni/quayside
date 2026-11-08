@@ -2,9 +2,9 @@ package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Logger
-import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionsApi
@@ -37,7 +37,7 @@ import kotlin.time.Duration.Companion.seconds
 public class MissionControlController(
     sessions: SessionsApi,
     private val projects: ProjectsApi,
-    selectedProject: StateFlow<ProjectId?>,
+    selected: StateFlow<ProjectFocus?>,
     clock: Clock,
     private val scope: CoroutineScope,
     logger: Logger,
@@ -49,12 +49,13 @@ public class MissionControlController(
 
     /** Times of the stale banner are shown in the zone of the Mac. */
     private val zone: ZoneId = ZoneId.systemDefault()
-    private val selection = MutableStateFlow(Selection(project = selectedProject.value))
+    private val selection =
+        MutableStateFlow(Selection(project = selected.value?.project, subfolder = selected.value?.subfolder))
     private val now = MutableStateFlow(clock.now())
     private val monitor = sessions.monitor
     private val runner = SessionActionRunner(sessions.commands, logger)
     private val ui = MutableStateFlow(ActionUi())
-    private val preview = PreviewState(monitor, selection, scope)
+    private val preview = PreviewState(monitor, selection, projects.projects, scope)
 
     /** Read by the composables only. */
     internal val state: StateFlow<MissionControlUiState> =
@@ -81,7 +82,7 @@ public class MissionControlController(
     init {
         // Another project starts with the whole list and no selected session (plan, decision 1).
         scope.launch {
-            selectedProject.collect { id -> selection.update { it.onProject(id) } }
+            selected.collect { focus -> selection.update { it.onFocus(focus) } }
         }
         // A failure is shown until the next action or until another session is selected (plan, decision 4).
         scope.launch {
@@ -136,7 +137,7 @@ public class MissionControlController(
      */
     public fun attachTarget(): AttachTarget? =
         SessionAttach.targetOf(
-            SessionActions.target(monitor.snapshot.value.sessions, selection.value),
+            SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value),
             projects.projects.value,
             ui.value.dialog != null,
         )
@@ -173,7 +174,7 @@ public class MissionControlController(
 
     /** Opens the confirmation for the selected inactive session; nothing is called until it is confirmed. */
     private fun askToRemove() {
-        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value)
+        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value)
         if (ui.value.busy != null || ui.value.dialog != null || target == null) return
         if (SessionAction.REMOVE !in SessionActions.available(target.state, busy = false)) return
         ui.value = ActionUi(dialog = SessionDialog.ConfirmRemove(target.id, target.name))
@@ -193,7 +194,7 @@ public class MissionControlController(
      * the launch, so a second call before the coroutine starts is ignored.
      */
     private fun run(action: SessionAction) {
-        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value)
+        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value)
         if (ui.value.busy != null || ui.value.dialog != null || target == null) return
         if (action !in SessionActions.available(target.state, busy = false)) return
         launchAction(action, target.id)
@@ -212,7 +213,13 @@ public class MissionControlController(
 
     /** Counts from the current selection, not from [state], so two quick keys move two rows. */
     private fun moveCursor(move: (List<SessionId>, SessionId?) -> SessionId?) {
-        val rows = SessionScope.visible(monitor.snapshot.value.sessions, selection.value).map { it.id }
+        val rows =
+            SessionScope
+                .visible(
+                    monitor.snapshot.value.sessions,
+                    selection.value,
+                    projects.projects.value,
+                ).map { it.id }
         selection.update { current -> current.copy(session = move(rows, current.session) ?: current.session) }
     }
 
@@ -249,7 +256,7 @@ private fun actionsOf(
     previewOpen: Boolean,
     projects: List<Project>,
 ): SessionActionsState {
-    val target = SessionActions.target(snapshot.sessions, picked)
+    val target = SessionActions.target(snapshot.sessions, picked, projects)
     val attach = SessionAttach.targetOf(target, projects, acting.dialog != null)
     val blocked = acting.busy != null || acting.dialog != null
     val available = target?.let { SessionActions.available(it.state, blocked) }.orEmpty()

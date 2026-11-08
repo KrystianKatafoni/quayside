@@ -11,13 +11,15 @@ import java.nio.file.Path
  * [realPath] resolves the normalized path (default: unchanged; null = nothing there) and [pathKind]
  * decides what is at the real path (default [PathKind.DIRECTORY], no disk access), like in
  * [FakeProjectsApi]. [DirectoryReport.alreadyAdded] comes from [projects] when given, else from
- * [InspectionWorld.registered].
+ * [InspectionWorld.registered]. [subfolders] filters what [listing] returns for the real path (default: nothing;
+ * contract tests pass [DirEntry.onDisk]).
  */
 public class FakeProjectInspector(
     private val world: InspectionWorld = InspectionWorld(),
     private val projects: ProjectsApi? = null,
     private val pathKind: (Path) -> PathKind = { PathKind.DIRECTORY },
     private val realPath: (Path) -> Path? = { it },
+    private val listing: (Path) -> List<DirEntry> = { emptyList() },
 ) : ProjectInspector {
     override suspend fun inspect(dir: Path): Outcome<DirectoryReport, ProjectError> =
         ProjectInputRules.normalizeDir(dir).flatMap { normalized ->
@@ -28,6 +30,23 @@ public class FakeProjectInspector(
                 PathKind.MISSING, null -> Outcome.Err(ProjectError.NotFound(normalized))
             }
         }
+
+    override suspend fun subfolders(dir: Path): Outcome<List<SubfolderName>, ProjectError> =
+        ProjectInputRules.normalizeDir(dir).flatMap { normalized ->
+            val real = realPath(normalized)
+            when (real?.let(pathKind)) {
+                PathKind.DIRECTORY -> Outcome.Ok(candidates(listing(real)))
+                PathKind.FILE -> Outcome.Err(ProjectError.NotADirectory(normalized))
+                PathKind.MISSING, null -> Outcome.Err(ProjectError.NotFound(normalized))
+            }
+        }
+
+    private fun candidates(entries: List<DirEntry>): List<SubfolderName> =
+        entries
+            .filter { it.isDirectory && !it.isSymlink && !it.name.startsWith(".") }
+            .map { SubfolderName(it.name) }
+            .sortedWith(ProjectGroups.order)
+            .take(ProjectInputRules.MAX_SUBFOLDERS)
 
     private fun report(dir: Path): DirectoryReport =
         DirectoryReport(

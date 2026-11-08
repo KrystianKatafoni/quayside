@@ -2,10 +2,13 @@ package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.ProjectGroups
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -30,7 +33,7 @@ internal object MissionControlReducer {
             }
         val modeBar =
             ModeBar(
-                project = project?.displayName,
+                project = project?.let { shownName(it, selection.subfolder) },
                 waiting = snapshot.sessions.count { it.state.isWaiting },
                 working = snapshot.sessions.count { it.state == SessionState.Working },
                 freshness = Freshness.of(snapshot.status, zone, short = true),
@@ -49,7 +52,7 @@ internal object MissionControlReducer {
         now: Instant,
         zone: ZoneId,
     ): Screen.Global {
-        val visible = SessionScope.visible(snapshot.sessions, selection)
+        val visible = SessionScope.visible(snapshot.sessions, selection, projects)
         val picked = visible.find { it.id == selection.session }
         val names = projects.associate { it.id to UiText("row.project", listOf(it.displayName)) }
         return Screen.Global(
@@ -69,11 +72,12 @@ internal object MissionControlReducer {
         now: Instant,
         zone: ZoneId,
     ): Screen.Project {
-        val mine = snapshot.sessions.filter { it.project == project.id }
-        val visible = SessionScope.visible(snapshot.sessions, selection)
+        val subfolder = selection.subfolder
+        val mine = snapshot.sessions.filter { it.project == project.id && it.isIn(project, subfolder) }
+        val visible = SessionScope.visible(snapshot.sessions, selection, listOf(project))
         val picked = visible.find { it.id == selection.session }
         return Screen.Project(
-            header = ProjectHeader(project.displayName, project.dir, mine.size),
+            header = ProjectHeader(shownName(project, subfolder), shownDir(project, subfolder), mine.size),
             filter = selection.filter,
             rows = visible.map { row(it, now, selected = it == picked) },
             details = picked?.let(::details),
@@ -82,6 +86,17 @@ internal object MissionControlReducer {
             stats = SessionStats.of(mine.map { it.state }),
         )
     }
+
+    /** "plant-puls / soft" on a subfolder page, else the project name (FR-P7). */
+    private fun shownName(
+        project: Project,
+        subfolder: SubfolderName?,
+    ): String = if (subfolder == null) project.displayName else "${project.displayName} / ${subfolder.value}"
+
+    private fun shownDir(
+        project: Project,
+        subfolder: SubfolderName?,
+    ): Path = if (subfolder == null) project.dir else ProjectGroups.dirOf(project, subfolder)
 
     private fun row(
         session: Session,

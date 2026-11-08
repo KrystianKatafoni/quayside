@@ -28,6 +28,7 @@ import dev.quayside.core.testing.T0
 import dev.quayside.core.testing.TestClock
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.RuntimeProblem
@@ -82,7 +83,7 @@ internal class SessionActionsScreenTest {
                         MissionControlController(
                             SessionsApi(monitor = sessions, commands = commands),
                             FakeProjectsApi(initial = listOf(project)),
-                            MutableStateFlow(project.id),
+                            MutableStateFlow<ProjectFocus?>(ProjectFocus(project.id)),
                             TestClock(T0.plusSeconds(60)),
                             scope,
                             NoOpLogger,

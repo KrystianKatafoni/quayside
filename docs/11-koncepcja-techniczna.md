@@ -179,13 +179,18 @@ interface ProjectsApi {
     suspend fun add(dir: Path, displayName: String? = null): Outcome<Project, ProjectError>
     suspend fun remove(id: ProjectId): Outcome<Unit, ProjectError> // nigdy nie usuwa plików z dysku
     suspend fun rename(id: ProjectId, displayName: String): Outcome<Unit, ProjectError>
+    // grupa (FR-P7, AM-306): zastępuje podfoldery projektu; każdy musi być prawdziwym podkatalogiem Project.dir, nie symlinkiem
+    suspend fun setSubfolders(id: ProjectId, subfolders: List<SubfolderName>): Outcome<Unit, ProjectError>
 }
+// Project(id, dir, displayName, subfolders: List<SubfolderName>); pusta lista = brak grupy; w projects.json klucz tylko dla niepustej (schemat 2, ADR 0026)
+// ProjectFocus(project, subfolder?) = co zaznaczył sidebar; ProjectGroups.subfolderOf(project, cwd) czysta reguła, do której podfolderu należy katalog sesji
 // RECOVERED_FROM_BROKEN_FILE: plik odłożony jako .broken, komendy działają (komunikat w UI, §8);
 // READ_FAILED / NEWER_SCHEMA: komendy zwracają StorageFailed, plik nie jest nadpisywany
 enum class StorageIssue { RECOVERED_FROM_BROKEN_FILE, READ_FAILED, NEWER_SCHEMA }
 // inspekcja przed dodaniem osobno (ENG-I2); nieistniejący katalog to błąd, nie pole raportu
 interface ProjectInspector {
     suspend fun inspect(dir: Path): Outcome<DirectoryReport, ProjectError> // git, CLAUDE.md, liczba sesji, hooki
+    suspend fun subfolders(dir: Path): Outcome<List<SubfolderName>, ProjectError> // bezpośrednie podkatalogi do wyboru (bez ukrytych i symlinków, najwyżej 64)
 }
 // ProjectInputRules: czyste reguły (normalizacja składniowa ścieżki, nazwa ≤ 80 code pointów) wspólne dla impl i fake'ów
 // Project.dir i DirectoryReport.dir to ścieżka rzeczywista (toRealPath()), porównywalna z cwd sesji

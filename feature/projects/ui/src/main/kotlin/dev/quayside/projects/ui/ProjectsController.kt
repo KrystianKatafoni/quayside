@@ -7,13 +7,12 @@ import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
 import dev.quayside.projects.api.DirectoryReport
 import dev.quayside.projects.api.ProjectError
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectInspector
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -54,6 +53,9 @@ public class ProjectsController(
             ),
         )
 
+    private val removal = RemoveFlow(ui, commands, hooks, ::begin)
+    private val subfolders = SubfolderFlow(ui, projects, inspector, logger, ::begin)
+
     /** The running step of a dialog flow, kept only to cancel an inspection or a listing. */
     private var running: Job? = null
 
@@ -63,6 +65,15 @@ public class ProjectsController(
     /** The project selected in the sidebar, null when none; read by `app` for Mission Control (AM-405). */
     public val selection: StateFlow<ProjectId?> =
         ui.map { it.selected }.stateIn(scope, SharingStarted.Eagerly, ui.value.selected)
+
+    /**
+     * What the sidebar has selected: the project and, on a subfolder row, the subfolder (FR-P7); null when none.
+     * [selection] is its project. `app` passes it to Mission Control.
+     */
+    public val focus: StateFlow<ProjectFocus?> =
+        ui
+            .map { state -> state.selected?.let { ProjectFocus(it, state.subfolder) } }
+            .stateIn(scope, SharingStarted.Eagerly, null)
 
     /** Enabled window-menu commands. */
     public val menu: StateFlow<ProjectsMenuState> =
@@ -87,15 +98,7 @@ public class ProjectsController(
             }
 
             ProjectsIntent.RemoveSelectedRequested -> {
-                current.selectedProject()?.let { project ->
-                    // Reads the hooks first; a result that arrives after "Anuluj" opens nothing.
-                    begin(Dialog.Waiting.CHECKING_HOOKS) {
-                        val status = hooks.status(project.dir)
-                        // Defence against an adapter that ignores cancellation (no withContext inside).
-                        currentCoroutineContext().ensureActive()
-                        ui.update { it.copy(dialog = it.confirmRemove(project).copy(hooks = status)) }
-                    }
-                }
+                current.selectedProject()?.let(removal::request)
             }
 
             ProjectsIntent.RenameSelectedRequested -> {
@@ -103,12 +106,25 @@ public class ProjectsController(
             }
 
             is ProjectsIntent.Select -> {
-                if (current.projects.any { it.id == intent.id }) ui.update { it.reduce(SidebarEvent.Select(intent.id)) }
+                select(current, intent)
+            }
+
+            ProjectsIntent.EditSubfoldersRequested -> {
+                current.selected?.let(subfolders::request)
             }
 
             ProjectsIntent.ClearSelection -> {
-                ui.update { it.copy(selected = null) }
+                ui.update { it.copy(selected = null, subfolder = null) }
             }
+        }
+    }
+
+    private fun select(
+        current: ProjectsUiState,
+        intent: ProjectsIntent.Select,
+    ) {
+        if (current.projects.any { it.id == intent.id }) {
+            ui.update { it.reduce(SidebarEvent.Select(intent.id, intent.subfolder)) }
         }
     }
 
@@ -119,9 +135,7 @@ public class ProjectsController(
             event == SidebarEvent.Dismiss -> dismiss(dialog)
             event == SidebarEvent.ConfirmAdd && dialog is Dialog.ConfirmAdd -> confirmAdd(dialog)
             event == SidebarEvent.ConfirmRename && dialog is Dialog.Rename -> confirmRename(dialog)
-            event == SidebarEvent.UninstallHooks -> uninstallHooks(dialog)
-            event == SidebarEvent.StopAndRemove -> confirmRemove(dialog, stop = true)
-            event == SidebarEvent.RemoveKeepSessions -> confirmRemove(dialog, stop = false)
+            removal.handle(event, dialog) || subfolders.handle(event, dialog) -> Unit
             else -> ui.update { it.reduce(event) }
         }
     }
@@ -131,29 +145,6 @@ public class ProjectsController(
         if (dialog == null || dialog == Dialog.Picking || dialog == Dialog.Waiting.BUSY) return
         running?.cancel()
         ui.update { it.copy(dialog = null) }
-    }
-
-    /** Only in the remove dialog that shows our hooks; the project stays listed and the dialog stays open. */
-    private fun uninstallHooks(dialog: Dialog?) {
-        if (dialog !is Dialog.ConfirmRemove || dialog.hooks != ProjectHooksState.PRESENT) return
-        begin(Dialog.Waiting.BUSY) {
-            val notice = commands.uninstallHooks(dialog.project)
-            val status = hooks.status(dialog.project.dir)
-            ui.update { it.copy(dialog = dialog.copy(hooks = status, hooksNotice = notice)) }
-        }
-    }
-
-    /** Stopping needs active sessions in a fresh snapshot: without them only removing is offered. */
-    private fun confirmRemove(
-        dialog: Dialog?,
-        stop: Boolean,
-    ) {
-        if (dialog !is Dialog.ConfirmRemove) return
-        if (stop && (dialog.active?.active ?: 0) == 0) return
-        begin(Dialog.Waiting.BUSY) {
-            val failure = commands.remove(dialog.project, stop)
-            ui.update { it.copy(dialog = failure?.let(Dialog::Message)) }
-        }
     }
 
     /** An unchanged name closes the dialog; otherwise saves, and an error keeps the dialog with its fixed text. */

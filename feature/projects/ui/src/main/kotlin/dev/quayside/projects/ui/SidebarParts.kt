@@ -42,7 +42,6 @@ import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.core.designsystem.markColor
 import dev.quayside.core.designsystem.toColor
 import dev.quayside.projects.api.Project
-import dev.quayside.sessions.api.SessionCounts
 
 /**
  * The row never takes focus: a focused `selectable` would consume `space` and Enter before the window shortcuts. A
@@ -54,10 +53,8 @@ import dev.quayside.sessions.api.SessionCounts
 @Composable
 internal fun ProjectRow(
     project: Project,
-    selected: Boolean,
-    counts: SessionCounts?,
-    onEvent: (SidebarEvent) -> Unit,
-    onRemove: () -> Unit,
+    state: RowState,
+    actions: RowActions,
 ) {
     Box(
         modifier =
@@ -65,23 +62,23 @@ internal fun ProjectRow(
                 .fillMaxWidth()
                 .testTag(ProjectsTags.row(project.id))
                 .semantics {
-                    this.selected = selected
+                    this.selected = state.selected
                     text = AnnotatedString(project.displayName)
-                }.selectedFrame(selected),
+                }.selectedFrame(state.selected),
     ) {
         Box(
             Modifier
                 .matchParentSize()
                 .focusProperties { canFocus = false }
                 .clip(AmTheme.shape.row) // the hover overlay of the click layer must not square the corners
-                .selectable(selected = selected, onClick = { onEvent(SidebarEvent.Select(project.id)) }),
+                .selectable(selected = state.selected, onClick = actions.select),
         )
-        RowCells(project, counts, { onEvent(SidebarEvent.RenameRequested(project.id)) }, onRemove)
+        RowCells(project, state, actions)
     }
 }
 
 @Composable
-private fun Modifier.selectedFrame(selected: Boolean): Modifier {
+internal fun Modifier.selectedFrame(selected: Boolean): Modifier {
     if (!selected) return this
     val shape = AmTheme.shape
     return this
@@ -94,31 +91,31 @@ private fun Modifier.selectedFrame(selected: Boolean): Modifier {
         )
 }
 
-/** Folder in the tone of the project, its name over the counters, and the ⋯ menu. */
+/** Arrow of a group, folder in the tone of the project, its name over the counters, and the ⋯ menu. */
 @Composable
 private fun RowCells(
     project: Project,
-    counts: SessionCounts?,
-    onRename: () -> Unit,
-    onRemove: () -> Unit,
+    state: RowState,
+    actions: RowActions,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
-        AmIcon(IconKind.FOLDER, null, Modifier.size(20.dp), projectTone(counts).markColor())
+        state.collapsed?.let { GroupChevron(project.id, it, actions.toggleGroup) }
+        AmIcon(IconKind.FOLDER, null, Modifier.size(20.dp), projectTone(state.counts).markColor())
         Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
             AmText(project.displayName, Modifier.clearAndSetSemantics {})
-            Counters(CountBadges.of(counts))
+            Counters(CountBadges.of(state.counts))
         }
-        RowMenu(project, onRename, onRemove)
+        RowMenu(project, actions)
     }
 }
 
 /** "waiting: n" (warn, it needs the user) and "working: n" as counter circles; nothing for zeros. */
 @Composable
-private fun Counters(badges: List<UiText>) {
+internal fun Counters(badges: List<UiText>) {
     if (badges.isEmpty()) return
     Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
         badges.forEach { badge ->

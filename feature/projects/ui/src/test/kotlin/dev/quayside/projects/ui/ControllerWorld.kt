@@ -4,6 +4,7 @@ package dev.quayside.projects.ui
 
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.testing.RecordingLogger
+import dev.quayside.projects.api.DirEntry
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.InspectionWorld
@@ -35,6 +36,9 @@ internal class ControllerWorld(
     running: List<WorldSession> = emptyList(),
     extraProjects: List<WorldProject> = emptyList(),
 ) {
+    /** What is inside a directory, for the subfolders dialog; set before the controller starts (default: nothing). */
+    var disk: (Path) -> List<DirEntry> = { emptyList() }
+
     val sessions =
         FakeSessions(
             SessionsWorld(
@@ -44,7 +48,11 @@ internal class ControllerWorld(
         )
     val picker = FakeDirectoryPicker()
     val hooks = FakeProjectHooks()
-    val inspector = RecordingInspector(FakeProjectInspector(inspection, projects, pathKind), gatedInspection)
+    val inspector =
+        RecordingInspector(
+            FakeProjectInspector(inspection, projects, pathKind, listing = { disk(it) }),
+            gatedInspection,
+        )
     val logger = RecordingLogger()
 
     fun controller(scope: CoroutineScope): ProjectsController =

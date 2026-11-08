@@ -40,6 +40,8 @@ import dev.quayside.core.designsystem.IconButtonSize
 import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.ProjectFocus
+import dev.quayside.projects.api.ProjectGroups
 
 /**
  * The sidebar with its dialogs; stateless apart from [controller]. [addKeyCap] is the text of the shortcut shown on
@@ -108,28 +110,64 @@ private fun ColumnScope.ProjectList(
             modifier = list.verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(space = 2.dp),
         ) {
-            state.projects.forEach { project ->
-                ProjectRow(
-                    project = project,
-                    selected = project.id == state.selected,
-                    counts = state.sessions.counts[project.id],
-                    onEvent = controller::onEvent,
-                    onRemove = {
-                        controller.onEvent(SidebarEvent.Select(project.id))
-                        controller.onIntent(ProjectsIntent.RemoveSelectedRequested)
-                    },
-                )
-            }
+            state.projects.forEach { project -> ProjectWithSubfolders(project, state, controller) }
         }
     }
 }
+
+/** The row of [project] and, when it is an expanded group, the rows of its subfolders. */
+@Composable
+private fun ProjectWithSubfolders(
+    project: Project,
+    state: ProjectsUiState,
+    controller: ProjectsController,
+) {
+    val group = project.subfolders.isNotEmpty()
+    val collapsed = project.id in state.collapsed
+    val onProject = state.selected == project.id && state.subfolder == null
+    ProjectRow(
+        project = project,
+        state = RowState(onProject, state.sessions.counts[project.id], collapsed.takeIf { group }),
+        actions = rowActions(project, controller),
+    )
+    if (!collapsed) {
+        project.subfolders.sortedWith(ProjectGroups.order).forEach { name ->
+            val focus = ProjectFocus(project.id, name)
+            SubfolderRow(
+                id = project.id,
+                name = name,
+                state = RowState(state.focusIs(focus), state.sessions.subfolders[focus]),
+                onSelect = { controller.onEvent(SidebarEvent.Select(project.id, name)) },
+            )
+        }
+    }
+}
+
+private fun rowActions(
+    project: Project,
+    controller: ProjectsController,
+): RowActions {
+    val onEvent = controller::onEvent
+    return RowActions(
+        select = { onEvent(SidebarEvent.Select(project.id)) },
+        rename = { onEvent(SidebarEvent.RenameRequested(project.id)) },
+        remove = {
+            onEvent(SidebarEvent.Select(project.id))
+            controller.onIntent(ProjectsIntent.RemoveSelectedRequested)
+        },
+        subfolders = { onEvent(SidebarEvent.EditSubfoldersRequested(project.id)) },
+        toggleGroup = { onEvent(SidebarEvent.ToggleGroup(project.id)) },
+    )
+}
+
+private fun ProjectsUiState.focusIs(focus: ProjectFocus): Boolean =
+    selected == focus.project && subfolder == focus.subfolder
 
 /** The ⋯ button of a row with its menu: rename and remove. */
 @Composable
 internal fun RowMenu(
     project: Project,
-    onRename: () -> Unit,
-    onRemove: () -> Unit,
+    actions: RowActions,
 ) {
     var open by remember { mutableStateOf(false) }
     Box {
@@ -143,11 +181,15 @@ internal fun RowMenu(
                 Column {
                     MenuButton("row.rename", ProjectsTags.ROW_MENU_RENAME) {
                         open = false
-                        onRename()
+                        actions.rename()
+                    }
+                    MenuButton("row.subfolders", ProjectsTags.ROW_MENU_SUBFOLDERS) {
+                        open = false
+                        actions.subfolders()
                     }
                     MenuButton("row.remove", ProjectsTags.ROW_MENU_REMOVE) {
                         open = false
-                        onRemove()
+                        actions.remove()
                     }
                 }
             }

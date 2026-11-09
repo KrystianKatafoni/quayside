@@ -18,12 +18,10 @@ import kotlin.io.path.isRegularFile
 internal fun interface SessionMetaSource {
     /** What is known about [session] now; unknown parts are null. Never throws except cancellation. */
     suspend fun read(session: RuntimeSession): SessionMeta
-
-    internal companion object {
-        /** Knows nothing: every session has an empty [SessionMeta]. */
-        val None: SessionMetaSource = SessionMetaSource { SessionMeta() }
-    }
 }
+
+/** Knows nothing: every session has an empty [SessionMeta]. */
+internal val NoSessionMetas: SessionMetaSource = SessionMetaSource { SessionMeta() }
 
 /** [this] with every part that [fresh] knows replaced; a part [fresh] does not know keeps its last known value. */
 internal fun SessionMeta.updatedBy(fresh: SessionMeta?): SessionMeta =

@@ -119,6 +119,6 @@ class FileSessionMetaSourceTest {
     @Test
     fun `none knows nothing`() =
         runTest {
-            SessionMetaSource.None.read(aRuntimeSession()) shouldBe SessionMeta()
+            NoSessionMetas.read(aRuntimeSession()) shouldBe SessionMeta()
         }
 }

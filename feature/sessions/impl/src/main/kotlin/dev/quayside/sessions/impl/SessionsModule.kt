@@ -72,7 +72,7 @@ public fun sessionsModule(
             clock,
             COMMAND_OVERLAY_TTL,
             summaries = TurnSummaries(summaries?.summarizer, refinement),
-            metas = io?.let { FileSessionMetaSource(claudeHome, it) } ?: SessionMetaSource.None,
+            metas = io?.let { FileSessionMetaSource(claudeHome, it) } ?: NoSessionMetas,
         )
     val monitor =
         PollingSessionMonitor(

@@ -43,7 +43,7 @@ internal class SessionsState(
     private val overlayTtl: Duration,
     private val hookLead: Duration = HOOK_LEAD,
     private val summaries: TurnSummaries = TurnSummaries(null),
-    private val metas: SessionMetaSource = SessionMetaSource.None,
+    private val metas: SessionMetaSource = NoSessionMetas,
 ) {
     private val mutex = Mutex()
     private val current = MutableStateFlow(SessionsSnapshot.Initial)

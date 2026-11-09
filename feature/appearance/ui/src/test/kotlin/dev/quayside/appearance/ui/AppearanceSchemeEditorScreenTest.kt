@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test
 
 /** The scheme editor, removing and exporting custom schemes in the Appearance dialog (FR-A6, plan AM-820). */
 @OptIn(ExperimentalTestApi::class)
+@Suppress("ForbiddenMethodCall") // runBlocking only prepares the fake before the dialog opens (ENG-C3: tests may)
 class AppearanceSchemeEditorScreenTest {
     private val mine = SampleSchemes.mine()
 
@@ -37,7 +38,7 @@ class AppearanceSchemeEditorScreenTest {
 
             await(AppearanceTags.EDITOR_REPORT).assertTextEquals(AppearanceStrings["editor.ready"])
             await(AppearanceTags.EDITOR_PREVIEW)
-            await(AppearanceTags.EDITOR_SAVE).assertIsEnabled().performClick()
+            await(AppearanceTags.EDITOR_SAVE).performScrollTo().assertIsEnabled().performClick()
 
             awaitGone(AppearanceTags.EDITOR)
             await(AppearanceTags.NOTICE).assertTextEquals(AppearanceStrings.of(FileNotice.SCHEME_ADDED))

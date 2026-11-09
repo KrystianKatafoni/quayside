@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package dev.quayside.notifications.impl
 
 import dev.quayside.core.domain.Outcome
@@ -9,6 +11,7 @@ import dev.quayside.notifications.api.SoundLibrary
 import dev.quayside.notifications.api.SoundLibraryContract
 import dev.quayside.notifications.api.SoundLibraryError
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test

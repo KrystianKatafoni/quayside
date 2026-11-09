@@ -79,6 +79,7 @@ internal fun notificationDeps(
             core.process,
             AppForeground().active,
             core.logger,
+            sessions.monitor.snapshot,
         )
     return NotificationDeps(center, PopupController(center, settings, scope), attach, settings, choicesOf(core))
 }

@@ -34,6 +34,8 @@ Globalne przełączniki: popupy, głos, **Nie przeszkadzać** w godzinach (domy�
 | Akcje | Szybka odpowiedź w popupie, Pozwól/Odmów, Attach, Wycisz sesję na 15 min |
 | Monitory | Tylko aktywny (domyślnie) / wszystkie |
 
+**Popup pytania lub zgody znika sam** (#141), gdy sesja przestaje czekać na to, o co pyta: człowiek odpowiedział w terminalu, agent pracuje dalej, skończył turę, został zatrzymany albo zniknął z listy. Sprawdzenie następuje przy każdym odświeżeniu listy sesji (co najwyżej co 3 s). Pozostałe popupy znikają po czasie albo ręcznie.
+
 Wygląd popupu: kolorowy pasek stanu, nazwa projektu i czas, nazwa sesji (mono), treść pytania lub narzędzia, przyciski akcji, a pod spodem podpis, co powiedział głos.
 
 **Implementacja:** osobne okno Compose (`Window(undecorated = true, alwaysOnTop = true, transparent = true)`), pozycjonowane względem `GraphicsEnvironment` aktywnego ekranu. Wersja systemowa przez `UNUserNotificationCenter` wymaga natywnego mostu (JNA/JNI) albo pomocniczego helpera w Swift. Na MVP wystarczy własny popup.

@@ -10,6 +10,7 @@ import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsSnapshot
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -57,6 +59,19 @@ public class MissionControlController(
     private val ui = MutableStateFlow(ActionUi())
     private val preview = PreviewState(monitor, selection, projects.projects, scope)
 
+    private val shownProject = selection.map { if (it.view == null) it.project else null }.distinctUntilChanged()
+
+    /**
+     * The branch of the shown project (FR-A1): read again when another project is shown and on every snapshot, so a
+     * checkout shows up with the next refresh of the sessions.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val branch: StateFlow<String?> =
+        shownProject
+            .combine(monitor.snapshot) { id, _ -> id }
+            .mapLatest { id -> id?.let { projects.branch(it) } }
+            .stateIn(scope, SharingStarted.Eagerly, null)
+
     /** Read by the composables only. */
     internal val state: StateFlow<MissionControlUiState> =
         combine(
@@ -64,12 +79,13 @@ public class MissionControlController(
             projects.projects,
             selection,
             now,
-            combine(ui, preview.shown, ::Pair),
-        ) { snapshot, list, picked, at, (acting, shown) ->
+            combine(ui, preview.shown, branch, ::Triple),
+        ) { snapshot, list, picked, at, (acting, shown, onBranch) ->
             MissionControlReducer
                 .reduce(snapshot, list, picked, at, zone)
                 .withActions(snapshot, picked, acting, list)
                 .copy(preview = shown)
+                .withBranch(onBranch)
         }.stateIn(
             scope,
             SharingStarted.Eagerly,

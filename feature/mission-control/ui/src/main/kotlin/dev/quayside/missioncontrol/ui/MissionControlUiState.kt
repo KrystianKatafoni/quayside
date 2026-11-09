@@ -6,6 +6,7 @@ import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.SubfolderName
+import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionState
 import java.nio.file.Path
 import java.time.Instant
@@ -123,11 +124,15 @@ internal sealed interface Screen {
     ) : Screen
 }
 
-/** @property sessions every session of the project, whatever the filter. */
+/**
+ * @property sessions every session of the project, whatever the filter.
+ * @property branch the git branch of the project directory (FR-A1), null when unknown or not a git work tree.
+ */
 internal data class ProjectHeader(
     val name: String,
     val path: Path,
     val sessions: Int,
+    val branch: String? = null,
 )
 
 /** Visual tone of a state glyph (docs/05 table); colors are internal constants until AM-802. */
@@ -164,6 +169,7 @@ internal data class SessionDetails(
     val worktree: Path,
     val startedAt: Instant,
     val lastActivityAt: Instant,
+    val meta: SessionMeta = SessionMeta(),
     val actions: Set<SessionAction> = emptySet(),
     val busy: SessionAction? = null,
     val failure: Failure? = null,
@@ -179,3 +185,9 @@ internal data class ModeBar(
     val working: Int,
     val freshness: UiText,
 )
+
+/** The project page with [branch] in its header; any other screen stays as it is. */
+internal fun MissionControlUiState.withBranch(branch: String?): MissionControlUiState {
+    val page = screen as? Screen.Project ?: return this
+    return copy(screen = page.copy(header = page.header.copy(branch = branch)))
+}

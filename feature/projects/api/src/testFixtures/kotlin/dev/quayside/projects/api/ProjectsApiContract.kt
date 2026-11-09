@@ -34,6 +34,21 @@ public abstract class ProjectsApiContract : ProjectsApiSubfolderContract() {
         }
 
     @Test
+    public fun `branch of an unknown project is null`(): Unit =
+        runTest {
+            api().branch(ProjectId("unknown")) shouldBe null
+        }
+
+    @Test
+    public fun `branch of a project outside a git work tree is null`(): Unit =
+        runTest {
+            val api = api()
+            val project = api.added(directory("plain"), "Plain")
+
+            api.branch(project.id) shouldBe null
+        }
+
+    @Test
     public fun `fresh store reports no storage issue`(): Unit =
         runTest {
             api().storageIssue.value shouldBe null

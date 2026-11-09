@@ -126,6 +126,7 @@ internal object MissionControlReducer {
             worktree = session.cwd,
             startedAt = session.startedAt,
             lastActivityAt = session.lastActivityAt,
+            meta = session.meta,
         )
 }
 

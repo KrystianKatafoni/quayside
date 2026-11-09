@@ -22,6 +22,7 @@ public data class WorldSession(
     val state: SessionState = SessionState.Working,
     val name: String = "fix-login",
     val startedAt: Instant = T0,
+    val meta: SessionMeta = SessionMeta(),
 )
 
 /**

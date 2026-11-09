@@ -44,23 +44,35 @@ internal fun ProjectHeaderView(
             horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.weight(weight = 1f),
-                horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AmChip(
-                    header.path.toString(),
-                    Modifier.weight(weight = 1f, fill = false).testTag(MissionControlTags.HEADER_PATH).merged(),
-                    icon = IconKind.FOLDER,
-                )
-                AmChip(
-                    MissionControlStrings.formatted("header.sessions", header.sessions),
-                    Modifier.testTag(MissionControlTags.HEADER_COUNT).merged(),
-                )
-            }
+            HeaderChips(header, Modifier.weight(weight = 1f))
             Filters(filter, onEvent)
         }
+    }
+}
+
+/** The path chip, the branch chip when known and the session count. */
+@Composable
+private fun HeaderChips(
+    header: ProjectHeader,
+    modifier: Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AmChip(
+            header.path.toString(),
+            Modifier.weight(weight = 1f, fill = false).testTag(MissionControlTags.HEADER_PATH).merged(),
+            icon = IconKind.FOLDER,
+        )
+        header.branch?.let {
+            AmChip(it, Modifier.testTag(MissionControlTags.HEADER_BRANCH).merged(), icon = IconKind.BRANCH)
+        }
+        AmChip(
+            MissionControlStrings.formatted("header.sessions", header.sessions),
+            Modifier.testTag(MissionControlTags.HEADER_COUNT).merged(),
+        )
     }
 }
 

@@ -92,6 +92,44 @@ internal class MissionControlControllerTest {
         }
 
     @Test
+    fun `header shows the branch of the project and follows it`() =
+        runTest {
+            val world = World(sessions = listOf(session("mine")))
+            world.projects.setBranch(project.id, "main")
+            val controller = with(world) { start() }
+
+            controller.page().header.branch shouldBe "main"
+
+            world.projects.setBranch(project.id, "feat/AM-818")
+            world.sessions.appear(session("second"))
+            runCurrent()
+
+            controller.page().header.branch shouldBe "feat/AM-818"
+        }
+
+    @Test
+    fun `header has no branch outside a git work tree`() =
+        runTest {
+            val controller = with(World()) { start() }
+
+            controller.page().header.branch shouldBe null
+        }
+
+    @Test
+    fun `branch of the project is dropped when another project is shown`() =
+        runTest {
+            val world = World()
+            world.projects.setBranch(project.id, "main")
+            val controller = with(world) { start() }
+            controller.page().header.branch shouldBe "main"
+
+            world.selected.value = other.id
+            runCurrent()
+
+            controller.page().header.branch shouldBe null
+        }
+
+    @Test
     fun `new snapshot updates the rows`() =
         runTest {
             val world = World(sessions = listOf(session("first")))

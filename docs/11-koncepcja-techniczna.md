@@ -181,7 +181,9 @@ interface ProjectsApi {
     suspend fun rename(id: ProjectId, displayName: String): Outcome<Unit, ProjectError>
     // grupa (FR-P7, AM-306): zastępuje podfoldery projektu; każdy musi być prawdziwym podkatalogiem Project.dir, nie symlinkiem
     suspend fun setSubfolders(id: ProjectId, subfolders: List<SubfolderName>): Outcome<Unit, ProjectError>
+    suspend fun branch(id: ProjectId): String?                      // gałąź git katalogu projektu (AM-818); null = nieznana lub nie repozytorium
 }
+// Session.meta = SessionMeta(model?, permissionMode?, branch?) z końcówki transkryptu Claude Code i .git/HEAD (AM-818); null = nieznane
 // Project(id, dir, displayName, subfolders: List<SubfolderName>); pusta lista = brak grupy; w projects.json klucz tylko dla niepustej (schemat 2, ADR 0026)
 // ProjectFocus(project, subfolder?) = co zaznaczył sidebar; ProjectGroups.subfolderOf(project, cwd) czysta reguła, do której podfolderu należy katalog sesji
 // RECOVERED_FROM_BROKEN_FILE: plik odłożony jako .broken, komendy działają (komunikat w UI, §8);

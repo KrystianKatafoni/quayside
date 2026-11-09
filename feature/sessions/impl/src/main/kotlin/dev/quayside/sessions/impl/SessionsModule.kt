@@ -11,7 +11,9 @@ import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.summaries.api.SummariesApi
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import java.nio.file.Path
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -41,6 +43,11 @@ import kotlin.time.Duration.Companion.seconds
  * means no summaries. With a refiner, the model summary replaces the quick one in the background (ADR 0019): one
  * model call at a time, a newer `Stop` of a conversation cancels the older refinement, and the result is published
  * without an event. A refinement error logs one warning with a fixed category.
+ * @param claudeHome the Claude Code data directory (`~/.claude`): the tail of the transcript of each conversation gives
+ * the model and the permission mode shown in the details (FR-S8, AM-818); null = they stay unknown.
+ * @param io dispatcher of the file reads of every listing (the transcripts and the `HEAD` of each session directory,
+ * which gives the branch), usually `AppDispatchers.io`; null = no file is read and model, mode and branch stay
+ * unknown (tests that must not leave the test scheduler). A missing file is an unknown value, never an error.
  * @throws IllegalArgumentException if [pollInterval] is not positive or [maxRetryInterval] is shorter.
  */
 @Suppress("LongParameterList")
@@ -54,6 +61,8 @@ public fun sessionsModule(
     pollInterval: Duration = 2.seconds,
     maxRetryInterval: Duration = 15.seconds,
     summaries: SummariesApi? = null,
+    claudeHome: Path? = null,
+    io: CoroutineDispatcher? = null,
 ): SessionsApi {
     val refinement = summaries?.refiner?.let { SummaryRefinement(it, scope, logger) }
     val state =
@@ -63,6 +72,7 @@ public fun sessionsModule(
             clock,
             COMMAND_OVERLAY_TTL,
             summaries = TurnSummaries(summaries?.summarizer, refinement),
+            metas = io?.let { FileSessionMetaSource(claudeHome, it) } ?: NoSessionMetas,
         )
     val monitor =
         PollingSessionMonitor(

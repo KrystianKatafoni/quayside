@@ -7,6 +7,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.v2.runComposeUiTest
 import dev.quayside.core.designtokens.SampleTokens
 import dev.quayside.core.testing.T0
+import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.aSession
 import io.kotest.matchers.collections.shouldContain
@@ -24,19 +25,25 @@ internal class DetailsFieldsScreenTest {
     private val started = T0
     private val active = T0.plusSeconds(480)
 
-    private fun session(cwd: java.nio.file.Path = MC_PROJECT.dir.resolve("tree")) =
-        aSession(
-            id = "one",
-            project = MC_PROJECT.id,
-            state = SessionState.Working,
-            cwd = cwd,
-            startedAt = started,
-            lastActivityAt = active,
-            summary = "Fixing the login form",
-        )
+    private fun session(
+        cwd: java.nio.file.Path = MC_PROJECT.dir.resolve("tree"),
+        meta: SessionMeta = SessionMeta(),
+    ) = aSession(
+        id = "one",
+        project = MC_PROJECT.id,
+        state = SessionState.Working,
+        cwd = cwd,
+        startedAt = started,
+        lastActivityAt = active,
+        summary = "Fixing the login form",
+        meta = meta,
+    )
 
-    private fun ComposeUiTest.show(cwd: java.nio.file.Path = MC_PROJECT.dir.resolve("tree")) {
-        showScripted(freshSnapshot(session(cwd))).pickSession("one")
+    private fun ComposeUiTest.show(
+        cwd: java.nio.file.Path = MC_PROJECT.dir.resolve("tree"),
+        meta: SessionMeta = SessionMeta(),
+    ) {
+        showScripted(freshSnapshot(session(cwd, meta))).pickSession("one")
         awaitTag(MissionControlTags.DETAILS)
     }
 
@@ -117,5 +124,32 @@ internal class DetailsFieldsScreenTest {
             show()
 
             listOf("Model", "Tryb", "Gałąź", "Branch").forEach { has(it) shouldBe false }
+        }
+
+    @Test
+    fun `details show the model, permission mode and branch after the times`() =
+        runComposeUiTest {
+            show(meta = SessionMeta(model = "claude-opus-5", permissionMode = "plan", branch = "feat/AM-818"))
+
+            val last = bounds(time.format(active))
+            listOf(
+                mcText("details.model") to "claude-opus-5",
+                mcText("details.permissionMode") to "plan",
+                mcText("details.branch") to "feat/AM-818",
+            ).forEach { (label, value) ->
+                bounds(value).left shouldBeGreaterThanOrEqualTo bounds(label).right
+                (bounds(value).center.y in bounds(label).top..bounds(label).bottom) shouldBe true
+                bounds(label).top shouldBeGreaterThanOrEqualTo last.bottom
+            }
+        }
+
+    @Test
+    fun `details show only the parts of the meta that are known`() =
+        runComposeUiTest {
+            show(meta = SessionMeta(model = "claude-opus-5"))
+
+            has("claude-opus-5") shouldBe true
+            has(mcText("details.permissionMode")) shouldBe false
+            has(mcText("details.branch")) shouldBe false
         }
 }

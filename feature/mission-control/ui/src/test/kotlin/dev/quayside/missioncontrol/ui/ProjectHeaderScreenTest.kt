@@ -1,9 +1,12 @@
 package dev.quayside.missioncontrol.ui
 
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
+import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.designtokens.SampleTokens
 import dev.quayside.sessions.api.SessionState
 import io.kotest.matchers.collections.shouldContain
@@ -95,5 +98,35 @@ internal class ProjectHeaderScreenTest {
                         .SessionId("q1"),
                 ),
             ) shouldBe false
+        }
+
+    private fun ComposeUiTest.showHeader(branch: String?) {
+        setContent {
+            AmTestTheme {
+                ProjectHeaderView(ProjectHeader("Quayside", MC_PROJECT.dir, 2, branch), SessionFilter.ALL) {}
+            }
+        }
+    }
+
+    @Test
+    fun `header shows the branch chip between the path and the count`() =
+        runComposeUiTest {
+            showHeader("feat/AM-818")
+
+            val path = awaitTag(MissionControlTags.HEADER_PATH).fetchSemanticsNode().boundsInRoot
+            val branch = awaitTag(MissionControlTags.HEADER_BRANCH).fetchSemanticsNode().boundsInRoot
+            val count = awaitTag(MissionControlTags.HEADER_COUNT).fetchSemanticsNode().boundsInRoot
+            textUnder(MissionControlTags.HEADER_BRANCH, "feat/AM-818").assertExists()
+            branch.left shouldBeGreaterThanOrEqualTo path.right
+            count.left shouldBeGreaterThanOrEqualTo branch.right
+        }
+
+    @Test
+    fun `header without a branch has no branch chip`() =
+        runComposeUiTest {
+            showHeader(null)
+            awaitTag(MissionControlTags.HEADER_COUNT)
+
+            onAllNodesWithTag(MissionControlTags.HEADER_BRANCH).fetchSemanticsNodes().size shouldBe 0
         }
 }

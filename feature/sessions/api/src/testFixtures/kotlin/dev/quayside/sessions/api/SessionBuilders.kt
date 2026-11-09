@@ -20,7 +20,8 @@ public fun aSession(
     startedAt: Instant = T0,
     lastActivityAt: Instant = startedAt,
     summary: String? = null,
-): Session = Session(SessionId(id), project, name, cwd, state, startedAt, lastActivityAt, summary)
+    meta: SessionMeta = SessionMeta(),
+): Session = Session(SessionId(id), project, name, cwd, state, startedAt, lastActivityAt, summary, meta)
 
 public fun aNewSessionSpec(
     prompt: String = "Fix the login bug",

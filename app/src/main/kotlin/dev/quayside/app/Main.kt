@@ -126,7 +126,17 @@ private fun sessionsDeps(
     scope: CoroutineScope,
 ): SessionsApi {
     val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir, port = HOOK_PORT)
-    return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger, summaries = summaries)
+    return sessionsModule(
+        runtime,
+        hooks,
+        projects,
+        scope,
+        core.clock,
+        core.logger,
+        summaries = summaries,
+        claudeHome = core.homeDir.resolve(".claude"),
+        io = core.dispatchers.io,
+    )
 }
 
 /**

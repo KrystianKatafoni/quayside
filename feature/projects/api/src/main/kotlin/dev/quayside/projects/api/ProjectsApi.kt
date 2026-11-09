@@ -86,6 +86,15 @@ public interface ProjectsApi {
         id: ProjectId,
         subfolders: List<SubfolderName>,
     ): Outcome<Unit, ProjectError>
+
+    /**
+     * The git branch checked out in [Project.dir] of [id] (the project page header, FR-S8): the branch name, or the
+     * first 7 characters of the commit when `HEAD` is detached. Read from the files of the repository at every call,
+     * so it follows a `git checkout`; the list file is not touched. Null for an unknown project, a directory outside a
+     * git work tree and a `HEAD` that cannot be read. Never throws except cancellation; safe on any dispatcher.
+     * The branch is user data (ENG-C8): never log it above DEBUG level.
+     */
+    public suspend fun branch(id: ProjectId): String?
 }
 
 /**

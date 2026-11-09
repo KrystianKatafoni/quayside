@@ -19,11 +19,17 @@ public enum class PluralForm(
     ;
 
     public companion object {
+        private const val LAST_DIGIT_MOD = 10
+        private const val LAST_TWO_DIGITS_MOD = 100
+        private const val MAX_FEW_DIGIT = 4
+        private val FEW_DIGITS = 2..MAX_FEW_DIGIT
+        private val TEEN_RANGE = 12..14
+
         /** Polish form for [count]; pure, never throws. Negative counts (not produced by counters) are [MANY]. */
         public fun of(count: Int): PluralForm =
             when {
                 count == 1 -> ONE
-                count % 10 in 2..4 && count % 100 !in 12..14 -> FEW
+                count % LAST_DIGIT_MOD in FEW_DIGITS && count % LAST_TWO_DIGITS_MOD !in TEEN_RANGE -> FEW
                 else -> MANY
             }
     }

@@ -12,6 +12,7 @@ import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.subfolderNames
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionState
@@ -37,18 +38,35 @@ internal class PollingHarness(
     private val fake =
         FakeAgentRuntime(RuntimeWorld(sessions = world.sessions.map { it.toRuntime() }, outputs = world.outputs))
     private val runtime = SwitchableRuntime(fake, now = { scope.testScheduler.currentTime })
-    private val projects = FakeProjectsApi(world.projects.map { Project(it.id, it.dir, it.id.value) })
-
-    private val api: SessionsApi =
-        sessionsModule(
-            runtime = runtime,
-            hooks = FakeAgentEventSource(),
-            projects = projects,
-            scope = scope.backgroundScope,
-            clock = scope.virtualClock(),
-            logger = NoOpLogger,
-            pollInterval = pollInterval,
+    private val projects =
+        FakeProjectsApi(
+            world.projects.map { Project(it.id, it.dir, it.id.value, subfolderNames(*it.subfolders.toTypedArray())) },
         )
+    private val missingDirs =
+        world.projects
+            .flatMap { project ->
+                project.missing.map { project.dir.resolve(it) }
+            }.toSet()
+
+    // Hand-wired like `sessionsModule`, which has no seam for the disk check: `missing` of the world is
+    // what the check reports as not a directory.
+    private val api: SessionsApi = wired()
+
+    private fun wired(): SessionsApi {
+        val clock = scope.virtualClock()
+        val state = SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL)
+        val monitor =
+            PollingSessionMonitor(
+                projects = projects,
+                state = state,
+                schedule = PollSchedule(pollInterval, MAX_RETRY),
+                logger = NoOpLogger,
+                reader = RecentOutputReader(runtime, NoOpLogger),
+                hooks = FakeAgentEventSource(),
+            ).also { it.start(scope.backgroundScope) }
+        val dirs = StartDirs(projects) { it !in missingDirs }
+        return SessionsApi(monitor, RuntimeSessionCommands(runtime, dirs, state, clock, NoOpLogger))
+    }
 
     override val monitor: SessionMonitor = api.monitor
 
@@ -78,6 +96,8 @@ internal class PollingHarness(
         scope.advance(pollInterval)
     }
 }
+
+private val MAX_RETRY = 15.seconds
 
 /** Inverse of [toSessionState] (AM-402 table): the supervisor phase and reason that show [this] state. */
 internal fun SessionState.toRuntimePhase(): Pair<RuntimePhase, WaitingFor?> =

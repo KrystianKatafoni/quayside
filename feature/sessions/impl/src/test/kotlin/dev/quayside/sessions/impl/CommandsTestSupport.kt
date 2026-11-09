@@ -8,11 +8,14 @@ import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.RuntimeWorld
 import dev.quayside.agentruntime.api.StartSpec
+import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Outcome
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.RecordingLogger
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.subfolderNames
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
@@ -153,15 +156,32 @@ internal class DelayedListingRuntime(
     }
 }
 
-/** The commands under test over one [SessionsState], with project P1 at [P1_DIR]; no polling loop. */
+/** Project `group` (FR-P7) of the AM-308 tests: three subfolders, `Marketing` (not `marketing`) among them. */
+internal object GroupFixtures {
+    val GROUP = ProjectId("group")
+    val GROUP_DIR: Path = Path.of("/Users/test/projects/group")
+    const val SOFT = "soft"
+    const val MARKETING = "Marketing"
+    const val SECRET = "secret-folder"
+    val SUBFOLDERS = subfolderNames(MARKETING, SECRET, SOFT)
+}
+
+/**
+ * The commands under test over one [SessionsState], with project P1 at [P1_DIR] and the group
+ * [GroupFixtures.GROUP]; no polling loop. [missingDirs] are the directories the disk check reports as
+ * not being a directory (all others are).
+ */
 internal class CommandsWorld(
-    val fake: FakeAgentRuntime,
     val runtime: LaggingRuntime,
     val projects: FakeProjectsApi,
     val logger: RecordingLogger,
-    val state: SessionsState,
-    val commands: RuntimeSessionCommands,
+    clock: Clock,
 ) {
+    val missingDirs: MutableSet<Path> = mutableSetOf()
+    val fake: FakeAgentRuntime get() = runtime.fake
+    val state = SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL)
+    val commands = RuntimeSessionCommands(runtime, StartDirs(projects) { it !in missingDirs }, state, clock, logger)
+
     val snapshot: SessionsSnapshot get() = state.snapshot.value
 
     /** One listing published through the state, as the polling loop does. */
@@ -179,9 +199,12 @@ internal fun TestScope.commandsWorld(vararg sessions: RuntimeSession): CommandsW
     val clock = virtualClock()
     val fake = FakeAgentRuntime(RuntimeWorld(sessions = sessions.toList()), clock)
     val runtime = LaggingRuntime(fake)
-    val projects = FakeProjectsApi(listOf(Project(P1, P1_DIR, "p1")))
-    val logger = RecordingLogger()
-    val state = SessionsState(runtime, projects, clock, COMMAND_OVERLAY_TTL)
-    val commands = RuntimeSessionCommands(runtime, projects, state, clock, logger)
-    return CommandsWorld(fake, runtime, projects, logger, state, commands)
+    val projects =
+        FakeProjectsApi(
+            listOf(
+                Project(P1, P1_DIR, "p1"),
+                Project(GroupFixtures.GROUP, GroupFixtures.GROUP_DIR, "group", GroupFixtures.SUBFOLDERS),
+            ),
+        )
+    return CommandsWorld(runtime, projects, RecordingLogger(), clock)
 }

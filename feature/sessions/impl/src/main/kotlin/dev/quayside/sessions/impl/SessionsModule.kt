@@ -13,6 +13,9 @@ import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.summaries.api.SummariesApi
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
+import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.Path
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -48,6 +51,8 @@ import kotlin.time.Duration.Companion.seconds
  * @param io dispatcher of the file reads of every listing (the transcripts and the `HEAD` of each session directory,
  * which gives the branch), usually `AppDispatchers.io`; null = no file is read and model, mode and branch stay
  * unknown (tests that must not leave the test scheduler). A missing file is an unknown value, never an error.
+ * It also runs the disk check of a start in a subfolder (`NOFOLLOW_LINKS`, AM-308); with null the check is skipped
+ * and a missing directory is reported by the runtime as `COMMAND_FAILED`.
  * @throws IllegalArgumentException if [pollInterval] is not positive or [maxRetryInterval] is shorter.
  */
 @Suppress("LongParameterList")
@@ -83,6 +88,12 @@ public fun sessionsModule(
             reader = RecentOutputReader(runtime, logger),
             hooks = hooks,
         ).also { it.start(scope) }
-    val commands = RuntimeSessionCommands(runtime, projects, state, clock, logger)
+    val isDirectory: suspend (Path) -> Boolean =
+        if (io == null) {
+            { true }
+        } else {
+            { dir -> withContext(io) { Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS) } }
+        }
+    val commands = RuntimeSessionCommands(runtime, StartDirs(projects, isDirectory), state, clock, logger)
     return SessionsApi(monitor = monitor, commands = commands)
 }

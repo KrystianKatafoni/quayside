@@ -50,6 +50,11 @@ internal val INSTALLED =
         VoiceOption(VoiceId("Alex"), "en_US", "Hi, I am Alex."),
     )
 
+/** Tab order of the sound section: the volume, then the choice and the preview button of every kind (AM-815). */
+internal val SOUND_ORDER =
+    listOf(SettingsTags.SOUND_VOLUME) +
+        NotificationKind.entries.flatMap { listOf(SettingsTags.sound(it), SettingsTags.soundPreview(it)) }
+
 /** Tab order of the dialog from the popup style to the Save button (plan AM-704, part B2b). */
 private val SPEECH_ORDER =
     listOf(
@@ -64,7 +69,9 @@ private val SPEECH_ORDER =
             SettingsTags.READ_QUESTION,
             SettingsTags.ONLY_IN_BACKGROUND,
             SettingsTags.MUTE_MICROPHONE,
-            // the quiet hours section follows the voice section (AM-706)
+        ) + SOUND_ORDER +
+        listOf(
+            // the quiet hours section follows the sound section (AM-706, AM-815)
             SettingsTags.QUIET_ENABLED,
             SettingsTags.QUIET_FROM,
             SettingsTags.QUIET_TO,
@@ -157,7 +164,7 @@ class NotificationSettingsVoiceScreenTest {
                 press(from, Key.Tab)
 
                 // Then the focus moves to the next one: voice, rate, volume, 7 x (template, restore), 3 switches,
-                // quiet section, Save
+                // 15 sound controls, quiet section, Save
                 awaitFocus(to)
             }
         }

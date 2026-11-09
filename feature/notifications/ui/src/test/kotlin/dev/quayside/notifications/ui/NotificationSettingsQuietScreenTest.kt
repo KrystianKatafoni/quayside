@@ -14,6 +14,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.QuietHours
 import io.kotest.matchers.shouldBe
@@ -22,10 +23,12 @@ import java.time.LocalTime
 
 private const val WAIT_MS = 5_000L
 
-/** Tab order from the last speech switch to Save when no project is registered (plan AM-706). */
+private val LAST_SOUND_PREVIEW = SettingsTags.soundPreview(NotificationKind.entries.last())
+
+/** Tab order from the last sound preview to Save when no project is registered (plan AM-706, AM-815). */
 private val QUIET_ORDER =
     listOf(
-        SettingsTags.MUTE_MICROPHONE,
+        LAST_SOUND_PREVIEW,
         SettingsTags.QUIET_ENABLED,
         SettingsTags.QUIET_FROM,
         SettingsTags.QUIET_TO,
@@ -137,10 +140,10 @@ class NotificationSettingsQuietScreenTest {
     @Test
     fun `tab moves through the quiet section in order`() =
         runComposeUiTest {
-            // Given the open dialog and the focus on the last switch of the speech section
+            // Given the open dialog and the focus on the last preview button of the sound section
             showDialog()
-            awaitTag(SettingsTags.MUTE_MICROPHONE).performScrollTo().focus()
-            awaitFocusOn(SettingsTags.MUTE_MICROPHONE)
+            awaitTag(LAST_SOUND_PREVIEW).performScrollTo().focus()
+            awaitFocusOn(LAST_SOUND_PREVIEW)
 
             // When the user presses Tab, once per control
             QUIET_ORDER.zipWithNext().forEach { (from, to) ->

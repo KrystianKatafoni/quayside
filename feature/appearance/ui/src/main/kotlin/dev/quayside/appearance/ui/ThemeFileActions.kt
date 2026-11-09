@@ -59,18 +59,11 @@ internal fun AppearanceDialogState.withResult(result: FileResult): AppearanceDia
         }
 
         is FileResult.SchemesImported -> {
-            copy(
-                draft = draft.copy(settings = draft.settings.copy(customSchemes = result.all)),
-                notice = FileNotice.SCHEMES_IMPORTED,
-            )
+            withSchemes(result.all, FileNotice.SCHEMES_IMPORTED)
         }
 
         is FileResult.SchemeAdded -> {
-            copy(
-                draft = draft.copy(settings = draft.settings.copy(customSchemes = result.all)),
-                editor = null,
-                notice = FileNotice.SCHEME_ADDED,
-            )
+            withSchemes(result.all, FileNotice.SCHEME_ADDED).copy(editor = null)
         }
 
         is FileResult.SchemeRemoved -> {
@@ -85,6 +78,13 @@ internal fun AppearanceDialogState.withResult(result: FileResult): AppearanceDia
             copy(error = result.error)
         }
     }
+
+/** The state with [all] as the custom schemes of the draft and [notice] shown. */
+private fun AppearanceDialogState.withSchemes(
+    all: List<CustomScheme>,
+    notice: FileNotice,
+): AppearanceDialogState =
+    copy(draft = draft.copy(settings = draft.settings.copy(customSchemes = all)), notice = notice)
 
 /** [this] without the removed scheme: the theme it chose is replaced by the saved one (which cannot be removed). */
 private fun AppearanceDraft.withoutScheme(removed: FileResult.SchemeRemoved): AppearanceDraft {

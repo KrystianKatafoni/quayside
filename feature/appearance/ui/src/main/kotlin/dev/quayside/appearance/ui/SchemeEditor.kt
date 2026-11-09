@@ -49,16 +49,21 @@ public data class SchemeEditor(
      * The scheme the fields describe, or null when one is invalid: key `[a-z0-9-]+`, name of 1 to 40 characters after
      * trimming, radius an integer in 0..24, every colour `#RRGGBB`. Never throws.
      */
-    @Suppress("MagicNumber") // the eight colours are indexed in the column order of SchemeColors
     public fun toScheme(): CustomScheme? {
         val key = text(EditorField.KEY).takeIf { KEY_PATTERN.matches(it) }
         val name = text(EditorField.NAME).takeIf { it.isNotEmpty() && it.length <= CustomScheme.MAX_NAME }
         val radius = text(EditorField.RADIUS).toIntOrNull()?.takeIf { it in 0..CustomScheme.MAX_RADIUS }
-        val colors = COLOR_FIELDS.map { Rgba.parse(text(it)) }
-        if (key == null || name == null || radius == null || colors.any { it == null }) return null
-        val c = colors.map { checkNotNull(it) }
-        val palette = SchemeColors(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7])
-        return CustomScheme(SchemeId(key), name, mode, palette, radius)
+        val palette = palette()
+        return key?.let { k ->
+            name?.let { n -> radius?.let { r -> palette?.let { CustomScheme(SchemeId(k), n, mode, it, r) } } }
+        }
+    }
+
+    @Suppress("MagicNumber") // the eight colours are indexed in the column order of SchemeColors
+    private fun palette(): SchemeColors? {
+        val parsed = COLOR_FIELDS.map { Rgba.parse(text(it)) }
+        val c = parsed.filterNotNull()
+        return if (c.size == parsed.size) SchemeColors(c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7]) else null
     }
 
     private fun text(field: EditorField): String = values[field].orEmpty().trim()

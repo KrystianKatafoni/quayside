@@ -1,6 +1,9 @@
 package dev.quayside.appearance.api
 
-/** Why [AppearanceApi.addScheme], [AppearanceApi.previewScheme] or [AppearanceApi.removeScheme] refused; fixed categories. */
+/**
+ * Why [AppearanceApi.addScheme], [AppearanceApi.previewScheme] or [AppearanceApi.removeScheme] refused; fixed
+ * categories, never file contents.
+ */
 public sealed interface SchemeError {
     /** A theme with this id (built-in or custom) is already in the catalog. */
     public data class Taken(

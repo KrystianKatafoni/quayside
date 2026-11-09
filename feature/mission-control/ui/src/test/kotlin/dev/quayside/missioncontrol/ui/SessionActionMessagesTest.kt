@@ -4,6 +4,7 @@ import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionError
+import dev.quayside.sessions.api.SubfolderProblem
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotBeBlank
@@ -38,6 +39,7 @@ internal class SessionActionMessagesTest {
                 SessionError.SessionActive(secret),
                 SessionError.UnknownProject(ProjectId("secret-project")),
                 SessionError.StopIncomplete(stopped = 1, failed = listOf(secret)),
+                SessionError.SubfolderUnavailable(ProjectId("secret-project"), SubfolderProblem.MISSING),
             ) + RuntimeProblem.entries.map { SessionError.Runtime(it) }
         errors.forEach { error ->
             val text = SessionActionMessages.reason(error)
@@ -58,7 +60,7 @@ internal class SessionActionMessagesTest {
 
     companion object {
         @JvmStatic
-        fun cases(): List<Arguments> = fixedCases() + runtimeCases()
+        fun cases(): List<Arguments> = fixedCases() + subfolderCases() + runtimeCases()
 
         private fun fixedCases(): List<Arguments> =
             listOf(
@@ -87,6 +89,16 @@ internal class SessionActionMessagesTest {
                     "stopIncomplete",
                 ),
             )
+
+        private fun subfolderCases(): List<Arguments> =
+            SubfolderProblem.entries.map { problem ->
+                arguments(
+                    "subfolder $problem",
+                    SessionError.SubfolderUnavailable(ProjectId("p"), problem),
+                    "action.reason.other",
+                    "subfolderUnavailable",
+                )
+            }
 
         private fun runtimeCases(): List<Arguments> =
             RuntimeProblem.entries.map { problem ->

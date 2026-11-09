@@ -26,4 +26,5 @@ public fun aSession(
 public fun aNewSessionSpec(
     prompt: String = "Fix the login bug",
     name: String? = "fix-login",
-): NewSessionSpec = NewSessionSpec(prompt = prompt, name = name)
+    subfolder: String? = null,
+): NewSessionSpec = NewSessionSpec(prompt = prompt, name = name, subfolder = subfolder)

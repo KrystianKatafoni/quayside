@@ -11,9 +11,9 @@ import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
+import dev.quayside.core.domain.getOrElse
 import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
-import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionCommands
@@ -33,7 +33,7 @@ import java.time.Instant
  */
 internal class RuntimeSessionCommands(
     private val runtime: AgentRuntime,
-    private val projects: ProjectsApi,
+    private val dirs: StartDirs,
     private val state: SessionsState,
     private val clock: Clock,
     private val logger: Logger,
@@ -42,11 +42,7 @@ internal class RuntimeSessionCommands(
         project: ProjectId,
         spec: NewSessionSpec,
     ): Outcome<SessionId, SessionError> {
-        val dir =
-            projects.projects.value
-                .firstOrNull { it.id == project }
-                ?.dir
-                ?: return Outcome.Err(SessionError.UnknownProject(project))
+        val dir = dirs.resolve(project, spec.subfolder).getOrElse { return Outcome.Err(it) }
         return when (val started = runtime.start(spec.toStartSpec(dir))) {
             is Outcome.Err -> {
                 failed("start", null, started.error)
@@ -90,7 +86,7 @@ internal class RuntimeSessionCommands(
         }
 
     override suspend fun stopAllIn(project: ProjectId): Outcome<Int, SessionError> {
-        if (projects.projects.value.none { it.id == project }) return Outcome.Err(SessionError.UnknownProject(project))
+        if (!dirs.has(project)) return Outcome.Err(SessionError.UnknownProject(project))
         return when (val listed = state.refresh()) {
             is Outcome.Err -> failed("stopAllIn", null, listed.error)
 

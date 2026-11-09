@@ -13,9 +13,13 @@ import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmDropdownItems
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.TextRole
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.SessionPermissionMode
 
-/** The fields of the dialog in the order of Tab: project, prompt, name, subagent, model, permission mode. */
+/**
+ * The fields of the dialog in the order of Tab: project, subfolder (a group only), prompt, name, subagent, model,
+ * permission mode.
+ */
 @Composable
 internal fun NewAgentFields(
     state: NewAgentState,
@@ -26,6 +30,9 @@ internal fun NewAgentFields(
     val on = !state.busy
     val edit = { changed: NewAgentForm -> onEvent(NewAgentEvent.Edit(changed)) }
     Field("newAgent.project") { ProjectChoice(state, edit) }
+    state.projects.firstOrNull { it.id == form.project }?.takeIf { it.subfolders.isNotEmpty() }?.let { group ->
+        Field("newAgent.subfolder") { SubfolderChoice(group.subfolders, form, on, edit) }
+    }
     PromptField(form, on, prompt, edit)
     TextFields(form, on, edit)
     Row(horizontalArrangement = Arrangement.spacedBy(space = 8.dp)) {
@@ -113,7 +120,28 @@ private fun ProjectChoice(
             MissionControlStrings["newAgent.project.none"],
         ),
         !state.busy,
-    ) { index -> edit(form.copy(project = ids[index])) }
+    ) { index -> edit(NewAgentRules.withProject(form, ids[index])) }
+}
+
+/**
+ * The project directory first (index 0, no subfolder), then the subfolders of the group in their order.
+ * A form subfolder outside the list would make `indexOf + 1` show the project directory; that is unreachable
+ * today (`defaultFocus`, `withProject` and `after` keep the subfolder on the list).
+ */
+@Composable
+private fun SubfolderChoice(
+    subfolders: List<SubfolderName>,
+    form: NewAgentForm,
+    enabled: Boolean,
+    edit: (NewAgentForm) -> Unit,
+) {
+    val labels = listOf(MissionControlStrings["newAgent.subfolder.root"]) + subfolders.map { it.value }
+    Dropdown(
+        MissionControlTags.NEW_AGENT_SUBFOLDER,
+        "newAgent.subfolder",
+        AmDropdownItems(labels, subfolders.indexOf(form.subfolder) + 1),
+        enabled,
+    ) { index -> edit(form.copy(subfolder = subfolders.getOrNull(index - 1))) }
 }
 
 @Composable

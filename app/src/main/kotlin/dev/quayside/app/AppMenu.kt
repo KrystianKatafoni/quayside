@@ -138,7 +138,7 @@ private fun MenuScope.ProjectItems(
         text = Strings["menu.newAgent"],
         enabled = enabled.newAgent,
         shortcut = AppShortcuts.NEW_AGENT.toKeyShortcut(),
-        onClick = { newAgent.open(projects.selection.value) },
+        onClick = { openNewAgent(projects, newAgent) },
     )
 }
 

@@ -3,10 +3,13 @@ package dev.quayside.missioncontrol.ui
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.ProjectFocus
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionPermissionMode
+import dev.quayside.sessions.api.SubfolderProblem
 
 /** Model aliases of the CLI; [alias] null = Claude Code default (no flag). */
 internal enum class ModelChoice(
@@ -19,8 +22,9 @@ internal enum class ModelChoice(
 }
 
 /**
- * Form of the "Nowy agent" dialog. [permission] null = Claude Code default (no flag). [toString] hides [prompt],
- * [name] and [agent]: they are user data and never reach a log (ENG-C8).
+ * Form of the "Nowy agent" dialog. [permission] null = Claude Code default (no flag); [subfolder] null = the project
+ * directory (only a group has subfolders). [toString] hides [prompt],
+ * [name], [agent] and [subfolder]: they are user data and never reach a log (ENG-C8).
  */
 internal data class NewAgentForm(
     val project: ProjectId?,
@@ -29,10 +33,11 @@ internal data class NewAgentForm(
     val agent: String = "",
     val model: ModelChoice = ModelChoice.DEFAULT,
     val permission: SessionPermissionMode? = null,
+    val subfolder: SubfolderName? = null,
 ) {
     override fun toString(): String =
         "NewAgentForm(project=$project, prompt=<hidden>, name=<hidden>, agent=<hidden>, " +
-            "model=$model, permission=$permission)"
+            "model=$model, permission=$permission, subfolder=<hidden>)"
 }
 
 /** The open dialog: the [form], the registered [projects] to pick from, a running start ([busy]) and a [problem]. */
@@ -79,11 +84,23 @@ internal object NewAgentRules {
         return if (problem == null) Outcome.Ok(project to specFor(form)) else Outcome.Err(problem)
     }
 
-    /** The selected project when it is on the list, else none (the user picks). */
-    fun defaultProject(
-        selected: ProjectId?,
+    /**
+     * The project and subfolder to preselect for the sidebar [selected] focus: its project when it is on the list,
+     * and its subfolder only when that project still has it; else the project directory.
+     */
+    fun defaultFocus(
+        selected: ProjectFocus?,
         projects: List<Project>,
-    ): ProjectId? = selected?.takeIf { id -> projects.any { it.id == id } }
+    ): Pair<ProjectId?, SubfolderName?> {
+        val project = projects.firstOrNull { it.id == selected?.project } ?: return null to null
+        return project.id to selected?.subfolder?.takeIf { it in project.subfolders }
+    }
+
+    /** [form] for project [id]; another project than the form's clears the subfolder. */
+    fun withProject(
+        form: NewAgentForm,
+        id: ProjectId,
+    ): NewAgentForm = if (id == form.project) form else form.copy(project = id, subfolder = null)
 
     /** Fixed text per error kind; never the id, the prompt or `stderr`. */
     fun failureOf(error: SessionError): UiText =
@@ -91,9 +108,16 @@ internal object NewAgentRules {
             when (error) {
                 is SessionError.UnknownProject -> "newAgent.failure.unknownProject"
                 is SessionError.Runtime -> runtimeKey(error.problem)
+                is SessionError.SubfolderUnavailable -> subfolderKey(error.problem)
                 else -> "newAgent.failure.other"
             },
         )
+
+    private fun subfolderKey(problem: SubfolderProblem): String =
+        when (problem) {
+            SubfolderProblem.NOT_IN_PROJECT -> "newAgent.failure.subfolder.notInProject"
+            SubfolderProblem.MISSING -> "newAgent.failure.subfolder.missing"
+        }
 
     private fun runtimeKey(problem: RuntimeProblem): String =
         when (problem) {
@@ -129,5 +153,6 @@ internal object NewAgentRules {
             agent = form.agent.trim().ifEmpty { null },
             model = form.model.alias,
             permissionMode = form.permission,
+            subfolder = form.subfolder?.value,
         )
 }

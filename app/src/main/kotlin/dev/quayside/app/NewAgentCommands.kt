@@ -4,12 +4,12 @@ import dev.quayside.commandpalette.api.Command
 import dev.quayside.commandpalette.api.CommandGroup
 import dev.quayside.commandpalette.api.CommandId
 import dev.quayside.commandpalette.api.CommandProvider
-import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.MissionControlIntent
 import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
@@ -45,7 +45,8 @@ internal fun newAgentCommands(
 
 /**
  * Offers [newAgentCommands] for the live project list, hidden while a dialog of the projects, Mission Control,
- * the other settings ([otherDialogOpen]) or "Nowy agent" is open; opens the dialog with the selected project.
+ * the other settings ([otherDialogOpen]) or "Nowy agent" is open; opens the dialog with the selected project
+ * and subfolder.
  * The hiding guards against a late `stateIn`; the open dialog's popup already blocks the palette (ADR 0011).
  */
 internal class NewAgentCommands(
@@ -59,7 +60,7 @@ internal class NewAgentCommands(
     private val offered =
         { list: List<Project>, menu: ProjectsMenuState, dialogOpen: Boolean, other: Boolean, actionsDialog: Boolean ->
             newAgentCommands(list.isNotEmpty(), menu.dialogOpen || dialogOpen || other || actionsDialog) {
-                newAgent.open(controller.selection.value)
+                openNewAgent(controller, newAgent)
             }
         }
 
@@ -85,14 +86,26 @@ internal class NewAgentCommands(
 }
 
 /**
- * `onStarted` of the "Nowy agent" dialog: the sidebar selects [project] and Mission Control selects the new session
- * on its page with filter "Wszystkie" (AM-608, rule 6).
+ * Opens "Nowy agent" with what the sidebar has selected: the project and, in a group, its subfolder (FR-S3, FR-P7,
+ * AM-308). The one call of the menu, the shortcut and the palette.
+ */
+internal fun openNewAgent(
+    projects: ProjectsController,
+    newAgent: NewAgentController,
+) {
+    newAgent.open(projects.focus.value)
+}
+
+/**
+ * `onStarted` of the "Nowy agent" dialog: the sidebar selects the project and its subfolder of [focus] (a start in a
+ * subfolder), then Mission Control selects the new session on the page of that subfolder, or of the project with
+ * filter "Wszystkie" (AM-608, rule 6; AM-308).
  */
 internal fun selectStartedSession(
     projects: ProjectsController,
     missionControl: MissionControlController,
-): (ProjectId, SessionId) -> Unit =
-    { project, id ->
-        projects.onIntent(ProjectsIntent.Select(project))
-        missionControl.onIntent(MissionControlIntent.SelectSession(project, id))
+): (ProjectFocus, SessionId) -> Unit =
+    { focus, id ->
+        projects.onIntent(ProjectsIntent.Select(focus.project, focus.subfolder))
+        missionControl.onIntent(MissionControlIntent.SelectSession(focus.project, id, focus.subfolder))
     }

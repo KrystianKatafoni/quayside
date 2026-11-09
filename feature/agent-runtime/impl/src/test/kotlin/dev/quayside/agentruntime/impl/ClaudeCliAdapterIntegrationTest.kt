@@ -16,6 +16,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -96,6 +97,23 @@ class ClaudeCliAdapterIntegrationTest {
                 name shouldBe "fix-login"
                 cwd shouldBe project
             }
+        }
+
+    @Test
+    fun `start in a project subfolder runs claude in that directory`() =
+        runTest {
+            val runtime = runtime()
+            val soft = project.resolve("soft").createDirectories().toRealPath()
+
+            runtime.start(StartSpec(cwd = soft, prompt = "Fix the login bug")).getOrNull().shouldNotBeNull()
+
+            val started =
+                runtime
+                    .listSessions()
+                    .getOrNull()
+                    .shouldNotBeNull()
+                    .single()
+            started.cwd shouldBe soft
         }
 
     @Test

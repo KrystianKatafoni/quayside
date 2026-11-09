@@ -37,6 +37,7 @@ internal object MissionControlTags {
     const val VIEWS_LABEL = "missionControl.views.label"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"
     const val NEW_AGENT_PROJECT = "missionControl.newAgent.project"
+    const val NEW_AGENT_SUBFOLDER = "missionControl.newAgent.subfolder"
     const val NEW_AGENT_PROMPT = "missionControl.newAgent.prompt"
     const val NEW_AGENT_NAME = "missionControl.newAgent.name"
     const val NEW_AGENT_AGENT = "missionControl.newAgent.agent"

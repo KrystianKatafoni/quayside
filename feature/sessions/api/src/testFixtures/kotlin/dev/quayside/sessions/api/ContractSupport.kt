@@ -16,6 +16,11 @@ internal val P1_DIR: Path = Path.of("/Users/test/projects/p1")
 internal val P2_DIR: Path = Path.of("/Users/test/projects/p2")
 internal val NESTED = ProjectId("nested")
 internal val NESTED_DIR: Path = P1_DIR.resolve("modules/nested")
+internal val GROUP = ProjectId("group")
+internal val GROUP_DIR: Path = Path.of("/Users/test/projects/group")
+internal val NESTED_IN_SOFT = ProjectId("nested-in-soft")
+internal const val SOFT = "soft"
+internal const val GONE = "Marketing"
 internal val OUTSIDE_DIR: Path = Path.of("/Users/test/elsewhere")
 
 internal fun sessionIn(

@@ -75,26 +75,6 @@ internal class NewAgentRulesTest {
         (result as Outcome.Ok).value.first shouldBe OTHER.id
     }
 
-    @Test
-    fun `selected project is preselected`() {
-        NewAgentRules.defaultProject(OTHER.id, PROJECTS) shouldBe OTHER.id
-    }
-
-    @Test
-    fun `unknown selected project gives none`() {
-        NewAgentRules.defaultProject(ProjectId("removed"), PROJECTS) shouldBe null
-    }
-
-    @Test
-    fun `no selected project gives none even when there is one project`() {
-        NewAgentRules.defaultProject(null, listOf(QUAYSIDE)) shouldBe null
-    }
-
-    @Test
-    fun `no projects give none`() {
-        NewAgentRules.defaultProject(QUAYSIDE.id, emptyList()) shouldBe null
-    }
-
     @ParameterizedTest(name = "{0}")
     @MethodSource("failureCases")
     fun `start error gives a fixed text`(

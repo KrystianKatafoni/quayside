@@ -12,6 +12,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Nowy agent w podfolderze grupy projektu: okno „Nowy agent” ma listę „Podfolder” (tylko dla grupy; domyślnie podfolder zaznaczony w pasku bocznym lub „Katalog projektu”), agent startuje w katalogu podfolderu i od razu trafia do jego filtra i liczników; podfolder spoza grupy lub brakujący na dysku daje czytelny komunikat zamiast startu (AM-308).
 - Krok „Zaufać katalogowi?” w oknie „Nowy agent”: gdy Claude Code odmawia startu w niezaufanym katalogu, aplikacja po zgodzie (fokus startowy na „Anuluj”) ustawia zaufanie tylko dla tego katalogu w `~/.claude.json` (zaufanie obejmuje też jego podkatalogi, zapis atomowy, reszta pliku bez zmian) i uruchamia agenta; komunikat ogólnego błędu startu nie odsyła już do zaufania (AM-309, ADR 0031, #157).
 - Logo Quayside (latarnia): znak 20 dp przed okruszkami górnego paska, słowo „Quayside” z „side” w kolorze akcentu (korygowanym do 4,5:1), ikona okna i Docka z tego samego rysunku (AM-822, ADR 0030).
 - Panel szczegółów sesji pokazuje model, tryb uprawnień i gałąź git (gdy są znane z transkryptu Claude Code i `.git/HEAD`), a nagłówek projektu — gałąź katalogu projektu (AM-818).

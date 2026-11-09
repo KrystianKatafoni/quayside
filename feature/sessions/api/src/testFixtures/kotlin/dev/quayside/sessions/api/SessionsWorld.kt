@@ -6,10 +6,17 @@ import dev.quayside.core.testing.T0
 import java.nio.file.Path
 import java.time.Instant
 
-/** A registered project of a [SessionsWorld]; its directory does not have to exist on disk. */
+/**
+ * A registered project of a [SessionsWorld]; its directory does not have to exist on disk.
+ *
+ * @property subfolders names of the project's subfolders (FR-P7), as `Project.subfolders` holds them; empty = no group.
+ * @property missing those of [subfolders] that are not a directory on disk (deleted, a file or a symlink).
+ */
 public data class WorldProject(
     val id: ProjectId,
     val dir: Path,
+    val subfolders: List<String> = emptyList(),
+    val missing: Set<String> = emptySet(),
 )
 
 /**

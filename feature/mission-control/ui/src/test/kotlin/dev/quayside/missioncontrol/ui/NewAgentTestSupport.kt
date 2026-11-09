@@ -29,7 +29,10 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.RecordingLogger
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.ProjectFocus
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.projects.api.aProject
+import dev.quayside.projects.api.subfolderNames
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.SessionCommands
@@ -70,9 +73,37 @@ internal object NewAgentWorld {
     val OTHER: Project = aProject(id = "other", dir = Path.of("/Users/test/projects/other"), displayName = "Other")
     val PROJECTS: List<Project> = listOf(QUAYSIDE, OTHER)
 
-    fun sessions(): FakeSessions = FakeSessions(SessionsWorld(projects = PROJECTS.map { WorldProject(it.id, it.dir) }))
+    /** A group (FR-P7): the names differ in case so that the order is not the ASCII one; `Carl` is gone from disk. */
+    val GROUP: Project =
+        aProject(
+            id = "group",
+            dir = Path.of("/Users/test/projects/group"),
+            displayName = "Group",
+            subfolders = subfolderNames("Anna", "bob", "Carl"),
+        )
+    val ANNA = SubfolderName("Anna")
+    val BOB = SubfolderName("bob")
+    val CARL = SubfolderName("Carl")
+
+    /** [PROJECTS] and the [GROUP] known to the fake sessions, so a start in any of them works. */
+    fun sessions(): FakeSessions =
+        FakeSessions(
+            SessionsWorld(
+                projects =
+                    PROJECTS.map { WorldProject(it.id, it.dir) } +
+                        WorldProject(
+                            GROUP.id,
+                            GROUP.dir,
+                            GROUP.subfolders.map { it.value },
+                            missing = setOf(CARL.value),
+                        ),
+            ),
+        )
 
     fun projects(): FakeProjectsApi = FakeProjectsApi(initial = PROJECTS)
+
+    /** The list of [projects] plus the [GROUP] as its third entry. */
+    fun projectsWithGroup(): FakeProjectsApi = FakeProjectsApi(initial = PROJECTS + GROUP)
 
     /** Texts that must never reach a log, a failure text or a `toString`. */
     const val SECRET_PROMPT = "secret-prompt-xyz"
@@ -91,6 +122,9 @@ internal class NewAgentRig(
     val trust: FakeWorkspaceTrust = FakeWorkspaceTrust(),
 ) {
     val started = CopyOnWriteArrayList<Pair<ProjectId, SessionId>>()
+
+    /** The focus `onStarted` was called with, in order (the project of each is in [started]). */
+    val focuses = CopyOnWriteArrayList<ProjectFocus>()
     var controller: NewAgentController? = null
 }
 
@@ -98,6 +132,7 @@ internal class NewAgentRig(
 internal fun ComposeUiTest.showNewAgent(
     rig: NewAgentRig,
     logger: Logger = rig.log,
+    projects: FakeProjectsApi = NewAgentWorld.projects(),
 ) {
     setContent {
         AmTestTheme {
@@ -105,11 +140,12 @@ internal fun ComposeUiTest.showNewAgent(
             val controller =
                 remember {
                     NewAgentController(
-                        NewAgentPorts(rig.commands, NewAgentWorld.projects(), rig.trust),
+                        NewAgentPorts(rig.commands, projects, rig.trust),
                         scope,
                         logger,
-                    ) { project, id ->
-                        rig.started += project to id
+                    ) { focus, id ->
+                        rig.started += focus.project to id
+                        rig.focuses += focus
                     }.also { rig.controller = it }
                 }
             NewAgentDialog(controller)
@@ -118,12 +154,13 @@ internal fun ComposeUiTest.showNewAgent(
     waitUntil { rig.controller != null }
 }
 
-/** Opens the dialog of [rig] with [project] preselected and waits until it is drawn. */
+/** Opens the dialog of [rig] with [project] (and its [subfolder]) preselected and waits until it is drawn. */
 internal fun ComposeUiTest.openNewAgent(
     rig: NewAgentRig,
     project: ProjectId? = NewAgentWorld.QUAYSIDE.id,
+    subfolder: SubfolderName? = null,
 ) {
-    runOnIdle { checkNotNull(rig.controller).open(project) }
+    runOnIdle { checkNotNull(rig.controller).open(project?.let { ProjectFocus(it, subfolder) }) }
     waitUntilExactlyOneExists(hasTestTag(MissionControlTags.NEW_AGENT_DIALOG))
 }
 
@@ -205,3 +242,6 @@ internal const val FOCUS_WAIT_MS = 5_000L
 
 /** The text of the MC bundle for [key]. */
 internal fun text(key: String): String = MissionControlStrings[key]
+
+/** Opens [this] with the project of [project] as a whole (no subfolder); for tests written before groups (AM-308). */
+internal fun NewAgentController.open(project: ProjectId?) = open(project?.let { ProjectFocus(it) })

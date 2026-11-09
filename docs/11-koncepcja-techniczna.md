@@ -233,7 +233,7 @@ sealed interface SessionEvent {
     data class RunningLong(override val session: Session, val duration: Duration) : SessionEvent
 }
 interface SessionCommands {
-    suspend fun start(project: ProjectId, spec: NewSessionSpec): Outcome<SessionId, SessionError>
+    suspend fun start(project: ProjectId, spec: NewSessionSpec): Outcome<SessionId, SessionError>  // spec.subfolder: podfolder grupy (AM-308); SessionError.SubfolderUnavailable
     suspend fun stop(id: SessionId): Outcome<Unit, SessionError>
     suspend fun stopAllIn(project: ProjectId): Outcome<Int, SessionError>
     suspend fun respawn(id: SessionId): Outcome<Unit, SessionError>

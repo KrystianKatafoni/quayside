@@ -31,6 +31,7 @@ public class FakeSessions(
 ) : SessionMonitor,
     SessionCommands {
     private val projectDirs: Map<ProjectId, Path> = world.projects.associate { it.id to it.dir }
+    private val worldProjects: Map<ProjectId, WorldProject> = world.projects.associateBy { it.id }
     private val state =
         MutableStateFlow(SessionsSnapshot(ordered(world.sessions.map(::toSession)), SnapshotStatus.Fresh(clock.now())))
     private val transitions = MutableSharedFlow<SessionEvent>(extraBufferCapacity = EVENT_BUFFER)
@@ -120,10 +121,12 @@ public class FakeSessions(
         spec: NewSessionSpec,
     ): Outcome<SessionId, SessionError> {
         begin("start ${project.value}")?.let { return Outcome.Err(it) }
-        val dir = projectDirs[project] ?: return Outcome.Err(SessionError.UnknownProject(project))
+        val projectDir = projectDirs[project] ?: return Outcome.Err(SessionError.UnknownProject(project))
+        val dir = startDir(project, projectDir, spec.subfolder).getOrElse { return Outcome.Err(it) }
         val id = SessionId(ID_FORMAT.format(lastId.incrementAndGet()))
         val now = clock.now()
-        insert(Session(id, project, spec.name ?: id.value, dir, SessionState.Working, now, now, summary = null))
+        val owner = SessionRules.projectFor(dir, projectDirs) ?: project
+        insert(Session(id, owner, spec.name ?: id.value, dir, SessionState.Working, now, now, summary = null))
         return Outcome.Ok(id)
     }
 
@@ -154,6 +157,23 @@ public class FakeSessions(
         inactive(id).getOrElse { return Outcome.Err(it) }
         state.update { current -> current.copy(sessions = current.sessions.filterNot { it.id == id }) }
         return Outcome.Ok(Unit)
+    }
+
+    /** [projectDir], or its subfolder [name] when it is one of the project's and not [WorldProject.missing]. */
+    private fun startDir(
+        project: ProjectId,
+        projectDir: Path,
+        name: String?,
+    ): Outcome<Path, SessionError> {
+        if (name == null) return Outcome.Ok(projectDir)
+        val registered = worldProjects.getValue(project)
+        val problem =
+            when {
+                name !in registered.subfolders -> SubfolderProblem.NOT_IN_PROJECT
+                name in registered.missing -> SubfolderProblem.MISSING
+                else -> return Outcome.Ok(projectDir.resolve(name))
+            }
+        return Outcome.Err(SessionError.SubfolderUnavailable(project, problem))
     }
 
     /** Records [call] and returns the pending failure, if any, else the runtime failure, if any. */

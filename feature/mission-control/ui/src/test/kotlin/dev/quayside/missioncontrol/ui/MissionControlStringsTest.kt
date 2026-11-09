@@ -7,6 +7,7 @@ import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SnapshotStatus
+import dev.quayside.sessions.api.SubfolderProblem
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldNotContain
@@ -177,7 +178,8 @@ internal class MissionControlStringsTest {
                 SessionError.SessionActive(SessionId("a")),
                 SessionError.UnknownProject(ProjectId("p")),
                 SessionError.StopIncomplete(stopped = 0, failed = listOf(SessionId("a"))),
-            ) + RuntimeProblem.entries.map { SessionError.Runtime(it) }
+            ) + SubfolderProblem.entries.map { SessionError.SubfolderUnavailable(ProjectId("p"), it) } +
+                RuntimeProblem.entries.map { SessionError.Runtime(it) }
 
         private val trustDir = Path.of("/Users/test/projects/quayside")
 

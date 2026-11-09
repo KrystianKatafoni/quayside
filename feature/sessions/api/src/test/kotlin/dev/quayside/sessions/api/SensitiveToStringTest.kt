@@ -37,6 +37,15 @@ class SensitiveToStringTest {
     }
 
     @Test
+    fun `spec hides the subfolder`() {
+        val text = NewSessionSpec(prompt = "go", name = "fix-login", subfolder = "secret-folder").toString()
+
+        text shouldNotContain "secret"
+        text shouldContain "subfolder=***"
+        text shouldContain "fix-login"
+    }
+
+    @Test
     fun `recent output hides its text`() {
         val text = RecentOutput("secret output").toString()
 

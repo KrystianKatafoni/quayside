@@ -20,7 +20,9 @@ public abstract class SessionCommandsContract {
     /** Returns a harness whose supervisor and project catalogue look like [world]. */
     public abstract fun TestScope.create(world: SessionsWorld): SessionsHarness
 
-    private val registered = projects(P1 to P1_DIR, P2 to P2_DIR, NESTED to NESTED_DIR)
+    private val registered =
+        projects(P1 to P1_DIR, P2 to P2_DIR, NESTED to NESTED_DIR) +
+            WorldProject(GROUP, GROUP_DIR, subfolders = listOf(GONE, SOFT), missing = setOf(GONE))
     private val unknownProject = ProjectId("unknown")
     private val unknownSession = SessionId("ffffffff")
 
@@ -51,6 +53,71 @@ public abstract class SessionCommandsContract {
             harness.commands.start(unknownProject, aNewSessionSpec()) shouldBe
                 Outcome.Err(SessionError.UnknownProject(unknownProject))
             harness.listedIds() shouldBe emptyList()
+        }
+
+    @Test
+    public fun `start in a subfolder runs there and the session belongs to the project`(): Unit =
+        runTest {
+            val harness = settled()
+
+            val id =
+                harness.commands
+                    .start(GROUP, aNewSessionSpec(subfolder = SOFT))
+                    .getOrNull()
+                    .shouldNotBeNull()
+
+            val session = harness.session(id)
+            listOf(session.project, session.cwd, session.state) shouldBe
+                listOf(GROUP, GROUP_DIR.resolve(SOFT), SessionState.Working)
+        }
+
+    @Test
+    public fun `start in a subfolder that is a nested project belongs to that project`(): Unit =
+        runTest {
+            val inSoft = WorldProject(NESTED_IN_SOFT, GROUP_DIR.resolve(SOFT))
+            val harness = create(SessionsWorld(projects = registered + inSoft)).also { it.settle() }
+
+            val id =
+                harness.commands
+                    .start(GROUP, aNewSessionSpec(subfolder = SOFT))
+                    .getOrNull()
+                    .shouldNotBeNull()
+
+            val session = harness.session(id)
+            listOf(session.project, session.cwd) shouldBe listOf(NESTED_IN_SOFT, GROUP_DIR.resolve(SOFT))
+        }
+
+    @Test
+    public fun `start in a subfolder the project does not have returns NOT_IN_PROJECT and starts nothing`(): Unit =
+        runTest {
+            val harness = settled()
+            val rejected = SessionError.SubfolderUnavailable(GROUP, SubfolderProblem.NOT_IN_PROJECT)
+
+            // "marketing" differs from the listed "Marketing" by letter case only.
+            listOf("docs", "../x", "soft/x", "marketing", SOFT.uppercase()).forEach { name ->
+                harness.commands.start(GROUP, aNewSessionSpec(subfolder = name)) shouldBe Outcome.Err(rejected)
+            }
+            // The same name in a project that has no subfolders at all.
+            harness.commands.start(P1, aNewSessionSpec(subfolder = SOFT)) shouldBe
+                Outcome.Err(SessionError.SubfolderUnavailable(P1, SubfolderProblem.NOT_IN_PROJECT))
+            harness.listedIds() shouldBe emptyList()
+        }
+
+    @Test
+    public fun `start in a subfolder missing on disk returns MISSING`(): Unit =
+        runTest {
+            val harness = settled()
+
+            harness.commands.start(GROUP, aNewSessionSpec(subfolder = GONE)) shouldBe
+                Outcome.Err(SessionError.SubfolderUnavailable(GROUP, SubfolderProblem.MISSING))
+            harness.listedIds() shouldBe emptyList()
+        }
+
+    @Test
+    public fun `start in a subfolder of an unknown project returns UnknownProject`(): Unit =
+        runTest {
+            settled().commands.start(unknownProject, aNewSessionSpec(subfolder = SOFT)) shouldBe
+                Outcome.Err(SessionError.UnknownProject(unknownProject))
         }
 
     @Test

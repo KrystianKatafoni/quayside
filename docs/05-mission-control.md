@@ -47,7 +47,7 @@ Skróty są przyspieszeniem dla wprawionych; każdy ma odpowiednik w menu albo p
 | Skrót | Akcja |
 | --- | --- |
 | ⌘K | Paleta komend |
-| ⌘N | Nowy agent w bieżącym projekcie |
+| ⌘N | Nowy agent w bieżącym projekcie; gdy w pasku bocznym zaznaczono podfolder grupy, okno startu ma go wybranego (lista „Podfolder”, AM-308) |
 | ⌘⇧O / ⌘⌫ | Dodaj projekt / usuń projekt z narzędzia |
 | g p | Przełącz projekt |
 | j / k | Następna / poprzednia sesja |

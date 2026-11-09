@@ -23,7 +23,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | --- | --- | --- |
 | FR-S1 | Lista sesji projektu ze stanem, nazwą, podsumowaniem, ostatnim zdarzeniem i wiekiem | M |
 | FR-S2 | Stany: *czeka na odpowiedź*, *prosi o zgodę*, *pracuje*, *gotowe*, *błąd*, *zatrzymana* (mapowanie w [05](05-mission-control.md)) | M |
-| FR-S3 | Start nowego agenta: projekt, prompt, opcjonalnie nazwa, subagent, model, tryb uprawnień (`claude --bg`) | M |
+| FR-S3 | Start nowego agenta: projekt (w grupie także podfolder lub katalog projektu), prompt, opcjonalnie nazwa, subagent, model, tryb uprawnień (`claude --bg`) | M |
 | FR-S4 | Stop (`claude stop`), Respawn (`claude respawn`), Usuń z listy (`claude rm`) | M |
 | FR-S5 | Odpowiedź na pytanie agenta z panelu szczegółów lub popupu, bez otwierania terminala | S |
 | FR-S6 | Pozwól/Odmów dla prośby o zgodę z popupu | S |

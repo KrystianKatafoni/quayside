@@ -17,6 +17,8 @@ class NewSessionSpecTest {
         "agent, ' '",
         "model, ''",
         "model, ' '",
+        "subfolder, ''",
+        "subfolder, ' '",
         ignoreLeadingAndTrailingWhitespace = false,
     )
     fun `blank texts are rejected`(
@@ -29,6 +31,7 @@ class NewSessionSpecTest {
                 "name" -> NewSessionSpec(prompt = "go", name = value)
                 "agent" -> NewSessionSpec(prompt = "go", agent = value)
                 "model" -> NewSessionSpec(prompt = "go", model = value)
+                "subfolder" -> NewSessionSpec(prompt = "go", subfolder = value)
                 else -> error("unknown field $field")
             }
         }
@@ -44,6 +47,7 @@ class NewSessionSpecTest {
                 agent = "reviewer",
                 model = "opus",
                 permissionMode = SessionPermissionMode.PLAN,
+                subfolder = "soft",
             )
         }
     }

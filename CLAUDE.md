@@ -155,3 +155,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - `Json.parseToJsonElement` bez `isLenient` przyjmuje nieopakowane literały spoza JSON (`NaN`, `abc`, `01`) — przy przepisywaniu cudzego pliku przez `JsonUnquotedLiteral` waliduj każdy literał gramatyką liczby JSON, inaczej niepoprawny plik zostaje zapisany mimo reguły „nie-JSON → bez zapisu”.
 - Kotest `shouldBe` na `List<Path>` spłaszcza `Path` (jest `Iterable<Path>`), a `list + path` dołącza elementy ścieżki — porównuj `map(Path::toString)`.
 - Przy powtórnym review sprawdzaj wszystkie wcześniejsze uwagi blokujące, nie tylko te wskazane w zleceniu (raport implementera o zmianie KDoc okazał się błędny, bo replace trafił w inny tekst).
+- Gdy zmiana pozwala na `cwd` inny niż `Project.dir`, fake `SessionCommands.start` musi przypisywać projekt przez `SessionRules.projectFor`, jak impl; inaczej kontrakt z projektem zagnieżdżonym rozjeżdża fake i impl.
+- Po wyborze opcji z `AmDropdown` fokus zostaje na liście, więc test okna nie czeka na fokus pola promptu (`awaitFocus` da `ComposeTimeoutException`).
+- Walidacja nazwy podfolderu na ścieżce startu sprawdza dokładną równość z `Project.subfolders` ORAZ że katalog jest bezpośrednim dzieckiem `Project.dir` (`SubfolderName` ma publiczny konstruktor bez walidacji).

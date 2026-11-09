@@ -33,7 +33,8 @@ private const val GROUP_WAIT_MS = 5_000L
 /**
  * A group in the whole window on fakes (FR-P7, FR-S9, FR-K1; AM-306, docs/12 §4): the sidebar, Mission Control and
  * the palette on a project with subfolders. The order `ProjectsIntent.Select` then `SelectSession` of a popup Attach
- * and of "Nowy agent" is tested here because `WindowControllers` wires it (Lessons).
+ * is tested here because `WindowControllers` wires it (Lessons); that of "Nowy agent" is in
+ * [NewAgentSubfolderWindowTest].
  */
 @OptIn(ExperimentalTestApi::class)
 class SubfolderWindowTest {
@@ -186,27 +187,5 @@ class SubfolderWindowTest {
             await(soft).assertIsNotSelected()
             await(WindowTags.missionRow("rooted")).assertIsSelected()
             await(WindowTags.missionRow("in-soft"))
-        }
-
-    @Test
-    fun `new agent from a subfolder page selects the session`() =
-        runComposeUiTest {
-            // Given the page of the subfolder "soft"
-            showWindowOf(WindowSetup(FakeProjectsApi(initial = listOf(plant)), sessions))
-            await(soft).performClick()
-            await(WindowTags.missionRow("in-soft"))
-
-            // When the user starts a new agent in the project
-            await(WindowTags.NEW_AGENT_BUTTON).performClick()
-            await(WindowTags.NEW_AGENT_DIALOG)
-            onNodeWithTag(WindowTags.NEW_AGENT_PROMPT).performTextInput("Fix the login")
-            onNodeWithTag(WindowTags.NEW_AGENT_START).performClick()
-            awaitGone(WindowTags.NEW_AGENT_DIALOG)
-
-            // Then the project page shows the new session selected (it runs in the project directory)
-            header("plant-puls")
-            await(WindowTags.missionRow("00000001")).assertIsSelected()
-            await(WindowTags.projectRow("project0001")).assertIsSelected()
-            await(soft).assertIsNotSelected()
         }
 }

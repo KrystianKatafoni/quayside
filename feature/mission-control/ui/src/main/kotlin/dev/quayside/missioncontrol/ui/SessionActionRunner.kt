@@ -50,9 +50,15 @@ internal object SessionActionMessages {
         UiText(
             when (error) {
                 is SessionError.UnknownSession -> "action.reason.unknownSession"
+
                 is SessionError.SessionActive -> "action.reason.sessionActive"
+
                 is SessionError.Runtime -> "action.reason.runtime.${error.problem.name}"
-                is SessionError.UnknownProject, is SessionError.StopIncomplete -> "action.reason.other"
+
+                is SessionError.UnknownProject,
+                is SessionError.StopIncomplete,
+                is SessionError.SubfolderUnavailable,
+                -> "action.reason.other"
             },
         )
 
@@ -63,5 +69,6 @@ internal object SessionActionMessages {
             is SessionError.Runtime -> "runtime.${error.problem.name}"
             is SessionError.UnknownProject -> "unknownProject"
             is SessionError.StopIncomplete -> "stopIncomplete"
+            is SessionError.SubfolderUnavailable -> "subfolderUnavailable"
         }
 }

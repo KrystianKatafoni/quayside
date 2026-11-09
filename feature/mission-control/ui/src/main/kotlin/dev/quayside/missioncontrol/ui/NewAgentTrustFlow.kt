@@ -4,8 +4,8 @@ import dev.quayside.agentruntime.api.TrustError
 import dev.quayside.agentruntime.api.WorkspaceTrust
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
-import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.warn
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.sessions.api.NewSessionSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +23,7 @@ internal class NewAgentTrustFlow(
     private val trust: WorkspaceTrust,
     private val scope: CoroutineScope,
     private val logger: Logger,
-    private val restart: suspend (ProjectId, NewSessionSpec) -> Unit,
+    private val restart: suspend (ProjectFocus, NewSessionSpec) -> Unit,
 ) {
     /** The user said no. Ignored while the write runs: the answer is then already "yes". */
     fun decline() {
@@ -64,7 +64,7 @@ internal class NewAgentTrustFlow(
 
             is Outcome.Ok -> {
                 current.value = shown.copy(trust = null, trustTried = true, busy = true, problem = null)
-                restart(spec.value.first, spec.value.second)
+                restart(focusOf(shown.form, spec.value.first), spec.value.second)
             }
         }
     }

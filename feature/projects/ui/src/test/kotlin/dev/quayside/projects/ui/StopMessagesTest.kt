@@ -4,6 +4,7 @@ import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionError
+import dev.quayside.sessions.api.SubfolderProblem
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
@@ -36,6 +37,7 @@ class StopMessagesTest {
                 SessionError.UnknownSession(secret),
                 SessionError.SessionActive(secret),
                 SessionError.UnknownProject(ProjectId("secret-project")),
+                SessionError.SubfolderUnavailable(ProjectId("secret-project"), SubfolderProblem.NOT_IN_PROJECT),
             )
         errors.forEach { error ->
             val text = StopMessages.of(error)
@@ -77,6 +79,14 @@ class StopMessagesTest {
                     "sessionActive",
                 ),
             ) +
+                SubfolderProblem.entries.map { problem ->
+                    arguments(
+                        "subfolder $problem",
+                        SessionError.SubfolderUnavailable(ProjectId("p"), problem),
+                        "remove.stopFailed",
+                        "subfolderUnavailable",
+                    )
+                } +
                 RuntimeProblem.entries.map { problem ->
                     arguments(
                         "runtime $problem",

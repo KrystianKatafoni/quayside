@@ -26,6 +26,12 @@ public sealed interface SessionError {
         val failed: List<SessionId>,
     ) : SessionError
 
+    /** The subfolder of a start cannot be used; never carries its name (ENG-C8). */
+    public data class SubfolderUnavailable(
+        val project: ProjectId,
+        val problem: SubfolderProblem,
+    ) : SessionError
+
     /** The Claude Code runtime failed with [problem]. */
     public data class Runtime(
         val problem: RuntimeProblem,
@@ -54,4 +60,13 @@ public enum class RuntimeProblem {
 
     /** Claude Code refused to start in a directory it does not trust. */
     WORKSPACE_NOT_TRUSTED,
+}
+
+/** Why a subfolder of a start cannot be used (AM-308). */
+public enum class SubfolderProblem {
+    /** Not one of the project's subfolders (also a path such as `../x` or a different letter case). */
+    NOT_IN_PROJECT,
+
+    /** One of them, but not a directory on disk (missing, a file or a symlink). */
+    MISSING,
 }

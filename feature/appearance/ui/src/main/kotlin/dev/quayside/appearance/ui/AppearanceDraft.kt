@@ -25,7 +25,7 @@ public data class AppearanceDraft(
 
 /**
  * What failed; no texts from files (ENG-C8). The `IMPORT_*` ones come from reading a theme file, [EXPORT] from
- * writing one, `SCHEME*` from importing custom schemes ([SCHEMES_NONE]: the file has none).
+ * writing one, `SCHEME*` from adding, importing or removing custom schemes ([SCHEMES_NONE]: the file has none).
  */
 public enum class ApplyError {
     APPEARANCE,
@@ -39,6 +39,8 @@ public enum class ApplyError {
     SCHEME_TAKEN,
     SCHEME_CONTRAST,
     SCHEME_SAVE,
+    SCHEME_IN_USE,
+    SCHEME_NOT_FOUND,
 }
 
 /** The theme the preview shows: `scheme` with day/night off, otherwise the theme of the edited [ThemeSlot]. */

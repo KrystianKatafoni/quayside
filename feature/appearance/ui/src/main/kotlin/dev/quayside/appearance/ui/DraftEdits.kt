@@ -47,3 +47,21 @@ private fun useSuggestion(
     suggestedTypography(draft, catalog)
         ?.let { draft.copy(settings = draft.settings.copy(typography = it)) }
         ?: draft
+
+/** The new value of the scheme editor after [intent]; null when [intent] does not edit the editor. */
+internal fun editedEditor(
+    editor: SchemeEditor?,
+    intent: AppearanceIntent,
+): EditorEdit? =
+    when (intent) {
+        AppearanceIntent.OpenSchemeEditor -> EditorEdit(SchemeEditor.blank())
+        AppearanceIntent.CloseSchemeEditor -> EditorEdit(null)
+        is AppearanceIntent.EditSchemeField -> EditorEdit(editor?.with(intent.field, intent.value))
+        is AppearanceIntent.EditSchemeMode -> EditorEdit(editor?.copy(mode = intent.mode))
+        else -> null
+    }
+
+/** [value] is the editor after an edit; a wrapper, so that "no editor" (null) differs from "not an editor edit". */
+internal data class EditorEdit(
+    val value: SchemeEditor?,
+)

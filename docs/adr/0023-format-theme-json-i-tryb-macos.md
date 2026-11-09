@@ -56,4 +56,14 @@ Decyzje:
 - Schemat wchodzi do katalogu tylko po audycie NFR-6 (`ContrastAudit`, przeniesiony z `testFixtures` do `main` w `core:design-tokens`) i gdy jego klucz jest wolny (klucze podstawowe i wcześniejsze własne są zajęte). Zły schemat w pliku przy starcie jest po cichu pomijany (jeden WARN z kluczem `customSchemes`, bez wartości).
 - `AppearanceApi.catalog` jest `StateFlow<ThemeCatalog>` (zmiana łamiąca); rośnie po `addScheme`. `AppearanceSettings.customSchemes` zmienia wyłącznie `addScheme`, a `update` zachowuje zapisane schematy.
 - Import schematu (`ThemeFiles.readSchemes`) czyta `customSchemes` ścisło (zły element = `InvalidValue`) z każdego pliku motywu; eksport zapisuje schematy razem z ustawieniami, więc wyeksportowany plik wraca przez „Importuj schemat…”. Zwykłe „Importuj…” ignoruje `customSchemes`; id schematu spoza katalogu to `InvalidValue`, więc schematy trzeba zaimportować najpierw.
-- Poza zakresem (osobne zadanie): edytor kolorów w aplikacji i usuwanie własnych schematów (ręcznie przez `theme.json`).
+- Poza zakresem (osobne zadanie): edytor kolorów w aplikacji i usuwanie własnych schematów (ręcznie przez `theme.json`); zrobił je AM-820, patrz niżej.
+
+## Uzupełnienie (AM-820): edytor, usuwanie i eksport schematu
+
+Format pliku się nie zmienia. `AppearanceApi` dostaje dwie operacje, a `SchemeError` dwa warianty:
+
+- `previewScheme(scheme)`: czysta odpowiedź, jaką dałby `addScheme`, bez zapisu (`Taken`, `LowContrast` albo gotowy `ThemeSpec`); z niej korzysta raport kontrastu i próbka w edytorze, więc reguły audytu są w jednym miejscu (`impl`).
+- `removeScheme(id)`: usuwa własny schemat, zapisuje `theme.json` i publikuje nowy katalog. `NotFound` dla motywu podstawowego i nieznanego klucza, `InUse` gdy klucz jest zapisanym motywem albo motywem dnia lub nocy (także przy wyłączonym dniu i nocy, bo to zapisane ustawienia), `StorageFailed` gdy pliku nie da się zapisać. Zasada „odmowa, gdy wybrany” chroni przed zapisanymi ustawieniami wskazującymi nieistniejący motyw.
+- Eksport pojedynczego schematu nie ma osobnej operacji: ekran woła `ThemeFiles.write` z domyślnymi ustawieniami i jednym schematem, więc plik wraca przez „Importuj schemat…”.
+
+W dialogu dodanie i usunięcie schematu zapisują się od razu (jak import), a szkic ustawień po usunięciu wraca do zapisanego wyboru tam, gdzie wskazywał usunięty schemat.

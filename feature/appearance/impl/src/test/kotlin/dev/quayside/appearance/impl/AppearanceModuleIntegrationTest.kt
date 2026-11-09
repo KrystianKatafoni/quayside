@@ -251,4 +251,30 @@ class AppearanceModuleIntegrationTest {
 
             files.readSchemes(exported) shouldBe Outcome.Ok(listOf(mine))
         }
+
+    @Test
+    fun `removed scheme stays removed after restart and the file drops the key`() =
+        runTest {
+            val first = open()
+            first.addScheme(mine)
+
+            first.removeScheme(mine.id) shouldBe Outcome.Ok(Unit)
+
+            val second = open()
+            second.catalog.value.theme(mine.id) shouldBe null
+            second.settings.value.customSchemes shouldBe emptyList()
+            file.readText() shouldNotContain "customSchemes"
+        }
+
+    @Test
+    fun `scheme in use is not removed from the file`() =
+        runTest {
+            val api = open()
+            api.addScheme(mine)
+            api.update { it.copy(scheme = mine.id) }
+
+            api.removeScheme(mine.id) shouldBe Outcome.Err(SchemeError.InUse(mine.id))
+
+            file.readText() shouldContain "customSchemes"
+        }
 }

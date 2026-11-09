@@ -34,4 +34,19 @@ public interface AppearanceApi {
      * file could not be written. Never throws; safe on any dispatcher.
      */
     public suspend fun addScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError>
+
+    /**
+     * What [addScheme] would answer for [scheme] without saving anything: the derived theme, or
+     * [SchemeError.Taken] or [SchemeError.LowContrast] (the editor's live preview and contrast report). Never
+     * [SchemeError.StorageFailed]. Pure; never throws; safe on any dispatcher.
+     */
+    public fun previewScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError>
+
+    /**
+     * Removes the custom scheme [id], saves theme.json and publishes the new [catalog]. Err and nothing changed when
+     * [id] is no custom scheme ([SchemeError.NotFound], also for built-in themes), when it is the saved theme or the
+     * day or night theme ([SchemeError.InUse]) or when the file could not be written. Never throws; safe on any
+     * dispatcher.
+     */
+    public suspend fun removeScheme(id: SchemeId): Outcome<Unit, SchemeError>
 }

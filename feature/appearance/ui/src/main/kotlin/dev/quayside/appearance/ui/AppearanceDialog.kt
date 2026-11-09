@@ -94,7 +94,7 @@ private fun DialogPanel(
             Arrangement.spacedBy(space = 10.dp),
         ) {
             AmText(AppearanceStrings["title"], role = TextRole.HEADING)
-            Columns(state.draft, catalog, controller, bypass, preview)
+            Columns(state, catalog, controller, bypass, preview)
             Footer(state, controller)
         }
     }
@@ -103,33 +103,40 @@ private fun DialogPanel(
 /** The settings on the left, the preview and the terminal settings on the right. */
 @Composable
 private fun Columns(
-    draft: AppearanceDraft,
+    state: AppearanceDialogState,
     catalog: ThemeCatalog,
     controller: AppearanceController,
     bypass: PreviewBypass,
     preview: @Composable () -> Unit,
 ) {
+    // Derived here, from the catalog argument, so that a new catalog (a taken key) redraws the report.
+    val report = state.editor?.let { editorReport(it, controller.appearanceApi) }
     Row(horizontalArrangement = Arrangement.spacedBy(space = 16.dp)) {
         Column(Modifier.width(LEFT_WIDTH), Arrangement.spacedBy(space = 8.dp)) {
-            LeftColumn(draft, catalog, controller)
+            LeftColumn(state, catalog, controller, report)
         }
         Column(Modifier.weight(weight = 1f), Arrangement.spacedBy(space = 8.dp)) {
-            RightColumn(draft, catalog, controller, bypass, preview)
+            RightColumn(state.draft, catalog, controller, bypass, preview)
         }
     }
 }
 
-/** Themes, typographies with the suggestion, scale and density. */
+/** Themes with the scheme buttons and editor, typographies with the suggestion, scale and density. */
 @Composable
 private fun LeftColumn(
-    draft: AppearanceDraft,
+    state: AppearanceDialogState,
     catalog: ThemeCatalog,
     controller: AppearanceController,
+    report: EditorReport?,
 ) {
+    val draft = state.draft
     val onIntent = controller::onIntent
     Label("themes.label")
     DayNightControls(draft, onIntent)
     ThemeList(draft, catalog, onIntent)
+    val chosen = previewScheme(draft)
+    SchemeButtons(draft.settings.customSchemes.any { it.id == chosen }, state.busy, chosen, onIntent)
+    if (state.editor != null && report != null) SchemeEditorPanel(state.editor, report, state.busy, onIntent)
     Label("typography.label")
     TypographyList(draft, catalog, onIntent)
     Label("scale.label")

@@ -39,8 +39,8 @@ public fun StatusBar(
     AmModeBar(modifier = modifier.fillMaxWidth().testTag(MissionControlTags.MODE_BAR)) {
         AmModeBadge(if (terminal) TERMINAL_MODE else bar.mode)
         bar.project?.let { AmText(it, role = TextRole.CAPTION, color = textColor()) }
-        Counter(countText("modeBar.waiting", bar.waiting), StatusTone.WARN)
-        Counter(countText("modeBar.working", bar.working), StatusTone.WORK)
+        Counter(MissionControlStrings.plural("modeBar.waiting", bar.waiting), StatusTone.WARN)
+        Counter(MissionControlStrings.plural("modeBar.working", bar.working), StatusTone.WORK)
         Spacer(Modifier.weight(weight = 1f))
         trailing()
         FreshnessDot(Freshness.tone(bar.freshness))
@@ -48,12 +48,6 @@ public fun StatusBar(
         AmText(text ?: MissionControlStrings.format(bar.freshness), role = TextRole.CAPTION)
     }
 }
-
-/** "2 czekają", but "1 czeka" (the `.one` key): the verb agrees with the number. */
-internal fun countText(
-    key: String,
-    count: Int,
-): String = if (count == 1) MissionControlStrings["$key.one"] else MissionControlStrings.formatted(key, count)
 
 private const val TERMINAL_MODE = "TERMINAL"
 

@@ -17,6 +17,7 @@ internal class GroupOverviewMessagesTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource(
+        "0,0 czeka,0 pracuje",
         "1,1 czeka,1 pracuje",
         "2,2 czekają,2 pracują",
         "4,4 czekają,4 pracują",

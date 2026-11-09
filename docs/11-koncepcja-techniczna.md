@@ -20,7 +20,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 
 | Moduł | Zawartość | Zależności |
 | --- | --- | --- |
-| `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`. Czysty Kotlin | brak (tylko coroutines-core) |
+| `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`, `PluralForm` (polska odmiana liczebników). Czysty Kotlin | brak (tylko coroutines-core) |
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
 | `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`, `AnsiColors` — 16 kolorów palety terminala w `TerminalColors.ansi`), bez Compose | brak (dozwolone `core:domain`) |
@@ -91,6 +91,11 @@ sealed interface Outcome<out T, out E> {
 
 fun interface Clock { fun now(): Instant }
 data class ShellCommand(val argv: List<String>, val workDir: Path, val env: Map<String, String> = emptyMap())
+
+enum class PluralForm(val key: String) {                       // ONE ("one"), FEW ("few"), MANY ("many")
+    ONE("one"), FEW("few"), MANY("many");
+    companion object { fun of(count: Int): PluralForm }        // 1 → ONE; końcówka 2–4 poza 12–14 → FEW; reszta → MANY
+}
 ```
 
 ```kotlin

@@ -9,6 +9,7 @@ import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SnapshotStatus
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainAll
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotBeBlank
@@ -26,6 +27,13 @@ internal class MissionControlStringsTest {
     fun `every text key has a text`() {
         MissionControlStrings.keys shouldContainAll allKeys()
         allKeys().forEach { key -> withClue(key) { MissionControlStrings[key].shouldNotBeBlank() } }
+    }
+
+    @Test
+    fun `old mode bar keys are gone`() {
+        MissionControlStrings.keys shouldNotContain "modeBar.waiting"
+        MissionControlStrings.keys shouldNotContain "modeBar.working"
+        MissionControlStrings["modeBar.waiting.one"] shouldContain "{0}"
     }
 
     @Test
@@ -81,8 +89,12 @@ internal class MissionControlStringsTest {
                 "details.id",
                 "details.startedAt",
                 "details.lastActivity",
-                "modeBar.waiting",
-                "modeBar.working",
+                "modeBar.waiting.one",
+                "modeBar.waiting.few",
+                "modeBar.waiting.many",
+                "modeBar.working.one",
+                "modeBar.working.few",
+                "modeBar.working.many",
                 "action.stop",
                 "action.respawn",
                 "action.stop.busy",
@@ -182,8 +194,8 @@ internal class MissionControlStringsTest {
             generated().filter { it.args.isNotEmpty() } +
                 listOf(
                     UiText("header.sessions", listOf("3")),
-                    UiText("modeBar.waiting", listOf("2")),
-                    UiText("modeBar.working", listOf("4")),
+                    UiText("modeBar.waiting.few", listOf("2")),
+                    UiText("modeBar.working.many", listOf("4")),
                     UiText("header.global", listOf("3")),
                     UiText("row.project", listOf("Quayside")),
                     UiText("preview.title", listOf("fix-login")),
@@ -208,8 +220,12 @@ internal class MissionControlStringsTest {
                 arguments("action.attach", "Attach"),
                 arguments("action.reply", "Odpowiedz"),
                 arguments("shortcuts.toggle", "? skróty klawiszowe"),
-                arguments("modeBar.waiting", "{0} czekają"),
-                arguments("modeBar.working", "{0} pracują"),
+                arguments("modeBar.waiting.one", "{0} czeka"),
+                arguments("modeBar.waiting.few", "{0} czekają"),
+                arguments("modeBar.waiting.many", "{0} czeka"),
+                arguments("modeBar.working.one", "{0} pracuje"),
+                arguments("modeBar.working.few", "{0} pracują"),
+                arguments("modeBar.working.many", "{0} pracuje"),
                 arguments("action.stop.busy", "Zatrzymywanie…"),
                 arguments("action.respawn.busy", "Respawn…"),
                 arguments("action.remove", "Usuń z listy"),

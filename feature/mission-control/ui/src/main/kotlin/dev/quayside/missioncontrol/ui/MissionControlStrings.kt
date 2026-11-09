@@ -1,5 +1,6 @@
 package dev.quayside.missioncontrol.ui
 
+import dev.quayside.core.domain.PluralForm
 import java.text.MessageFormat
 import java.util.Locale
 import java.util.ResourceBundle
@@ -31,13 +32,5 @@ internal object MissionControlStrings {
     fun plural(
         key: String,
         count: Int,
-    ): String {
-        val form =
-            when {
-                count == 1 -> "one"
-                count % 10 in 2..4 && count % 100 !in 12..14 -> "few"
-                else -> "many"
-            }
-        return formatted("$key.$form", count)
-    }
+    ): String = formatted("$key.${PluralForm.of(count).key}", count)
 }

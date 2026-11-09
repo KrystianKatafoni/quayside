@@ -19,8 +19,8 @@ import dev.quayside.projects.api.Project
 /**
  * The settings as the dialog edits them (AM-704); numbers stay text until save. [matrix] has every kind.
  * It holds the global switches, the matrix, the threshold of [NotificationKind.RUNNING_LONG], the popup, the
- * speech, the sound, the quiet hours (FR-N6) and the exceptions of the registered projects (FR-N7, sorted by name ignoring
- * case; the exceptions of other projects are kept as stored).
+ * speech, the sound, the quiet hours (FR-N6) and the exceptions of the registered projects (FR-N7, sorted by name
+ * ignoring case; the exceptions of other projects are kept as stored).
  */
 public data class NotificationDraft(
     val popups: Boolean,

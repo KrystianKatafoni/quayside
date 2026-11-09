@@ -24,7 +24,7 @@ Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `p
 | `rose` | Rose Night | ciemny | `#191724` | `#1F1D2E` | `#E0DEF4` | `#C4A7E7` | `#F6C177` | `#9CCFD8` | `#EB6F92` | `#C4A7E7` | 10 px |
 | `contrast` | Wysoki kontrast | ciemny | `#000000` | `#000000` | `#FFFFFF` | `#FFD400` | `#00E5FF` | `#00FF6A` | `#FF5C5C` | `#FFD400` | 2 px |
 
-Pełny zestaw tokenów kolorów w każdym motywie (także w 20 motywach z kształtem, po wyprowadzeniu brakujących): `bg`, `panel`, `raised`, `sel`, `border`, `border2`, `text`, `muted`, `dim`, `accent`, `accentInk`, `warn`, `warnInk`, `warnBg`, `ok`, `err`, `work`, `termBg`, `termText`. Tokeny kształtu: `radius`, `borderWidth`, `shadow`, `backdrop`. Terminal ma kolory motywu w obu trybach (`termBg` = `bg`, `termText` = `text`); paleta ANSI jest w tokenie `ansi` (AM-811).
+Pełny zestaw tokenów kolorów w każdym motywie (także w 20 motywach z kształtem, po wyprowadzeniu brakujących): `bg`, `panel`, `raised`, `sel`, `border`, `border2`, `text`, `muted`, `dim`, `accent`, `accentInk`, `warn`, `warnInk`, `warnBg`, `ok`, `err`, `work`, `termBg`, `termText`. Tokeny kształtu: `radius`, `borderWidth`, `shadow`, `backdrop`. Terminal ma kolory motywu w obu trybach (`termBg` = `bg`, `termText` = `text`); paleta ANSI jest w tokenie `ansi` (AM-811); dotyczy to także własnych schematów (AM-814), które dostają jasny terminal i skorygowaną paletę tą samą regułą.
 
 **Semantyka kolorów:** `warn` = agent czeka na Ciebie (najważniejszy sygnał w UI), `work` = pracuje, `ok` = gotowe, `err` = błąd, `accent` = akcje główne i zaznaczenie. W schemacie *Amber CRT* akcent jest bursztynowy, więc `warn` jest turkusowy, żeby oba się nie myliły.
 

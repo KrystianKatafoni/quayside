@@ -30,5 +30,5 @@ Do AM-811 jasne motywy (12 z 29) dawały terminalowi stałą ciemną parę `#1E2
 - Ciemne motywy też dostają poprawione kolory ANSI tam, gdzie paleta xterm nie spełnia 4,5:1 (np. czerwony, magenta, jasna czerń); widoczna zmiana wyglądu.
 - Programy rysujące kolorami 24-bit dobranymi do ciemnego tła (np. motyw `dark` Claude Code) są w jasnym terminalu słabo czytelne; docs/08 radzi motyw `light` albo `light-ansi` Claude Code. Opcja E zostaje na później, jeśli człowiek oceni to jako problem.
 - Kontrast tekstu terminala (`termText` na kolorach ANSI jako tle, np. `ESC[41m`) nie jest audytowany.
-- AM-814 (własne schematy) musi albo przyjmować paletę ANSI z pliku, albo wyprowadzać ją tą samą regułą.
+- AM-814 (własne schematy) wyprowadza paletę ANSI tą samą regułą (`deriveTerminal`); plik schematu nie niesie własnej palety, a `ContrastAudit` waliduje pary `ansiN/termBg` także importowanych schematów.
 - Zmiana tokenu `ansi` w przyszłości nie wymaga migracji plików: paleta nie jest zapisywana na dysku.

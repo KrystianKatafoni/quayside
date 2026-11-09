@@ -6,6 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Fixed
 
+- Ustawienia powiadomień: sekcja „Wyjątki dla projektów” wyjaśnia, że lista pochodzi z projektów z paska bocznego i że każdy można ustawić osobno.
 - Dialogi i paleta komend nad otwartą kartą terminala: „Anuluj” i inne przyciski reagują na kliknięcie, a Esc zamyka okno; po zamknięciu fokus wraca do terminala tylko, jeśli w nim był (AM-803).
 
 ### Added

@@ -35,7 +35,6 @@ import dev.quayside.terminal.api.TerminalSettingsRepo
 import dev.quayside.terminal.impl.terminalModule
 import dev.quayside.terminal.impl.terminalSettingsModule
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -136,7 +135,7 @@ private fun sessionsDeps(
         core.logger,
         summaries = summaries,
         claudeHome = core.homeDir.resolve(".claude"),
-        io = Dispatchers.IO,
+        io = core.dispatchers.io,
     )
 }
 

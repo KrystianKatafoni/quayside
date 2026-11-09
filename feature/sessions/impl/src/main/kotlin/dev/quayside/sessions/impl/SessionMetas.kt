@@ -19,7 +19,7 @@ internal fun interface SessionMetaSource {
     /** What is known about [session] now; unknown parts are null. Never throws except cancellation. */
     suspend fun read(session: RuntimeSession): SessionMeta
 
-    companion object {
+    internal companion object {
         /** Knows nothing: every session has an empty [SessionMeta]. */
         val None: SessionMetaSource = SessionMetaSource { SessionMeta() }
     }
@@ -74,7 +74,7 @@ internal data class TranscriptTail(
     val model: String?,
     val permissionMode: String?,
 ) {
-    companion object {
+    internal companion object {
         /** Bytes read from the end of the file; older entries are not needed (the newest ones win). */
         const val TAIL_BYTES: Long = 256L * 1024
         private const val MAX_VALUE_CHARS = 80

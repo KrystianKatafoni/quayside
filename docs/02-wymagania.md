@@ -85,7 +85,7 @@ Plan i decyzje: [ADR 0029](adr/0029-wiele-kont-claude.md).
 | FR-L6 | Zużycie limitu 5 h i 7 dni oraz czas odnowienia per konto (paski w widoku „Konta” i na liście pod ikoną), ostrzeżenie przy progu (domyślnie 90%), stan limitu do czasu odnowienia | S |
 | FR-L7 | Widok „Konta”: logowanie i wylogowanie wielu kont, dodawanie, usuwanie (bez kasowania katalogu), kolejność, przełączniki „Aktywne” i „W automacie” per konto, odblokowanie limitu, główny przełącznik automatyki i czas chłodzenia | S |
 | FR-L8 | Ikona bieżącego konta w prawym górnym rogu okna; klik otwiera listę kont pod ikoną z ręcznym przełączeniem bieżącego konta (dla nowych sesji), opcją „Automatycznie” i wejściem do widoku „Konta”; każde przełączenie potwierdzane krótkim oknem; przełączenie nie przenosi sesji | S |
-| FR-L9 | Wspólna historia rozmów i pamięć projektów dla wszystkich kont (rozdzielone per projekt i podprojekt); globalne instrukcje, skille, subagenci i ustawienia osobne per konto | S |
+| FR-L9 | Wspólna historia rozmów i pamięć projektów dla wszystkich kont (rozdzielone per projekt i podprojekt); globalne instrukcje, subagenci, skille, komendy i ustawienia osobne per konto, jednorazowo kopiowane z konta domyślnego przy tworzeniu konta (wybór elementów) | S |
 | FR-L10 | Ustawienie sesji „Przełączaj konto automatycznie” (domyślnie wyłączone): po limicie sesja przenosi się bez pytania na następne dostępne konto, z powiadomieniem | S |
 
 ## Wymagania niefunkcjonalne

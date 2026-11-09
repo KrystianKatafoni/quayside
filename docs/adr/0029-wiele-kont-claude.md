@@ -24,8 +24,12 @@ Stan kodu: `ClaudeCliAdapter` woła `claude` bez `CLAUDE_CONFIG_DIR`. `SettingsF
 2. **Logowanie przez terminal, nie przez Quayside.** „Dodaj konto” otwiera kartę PTY z `claude auth login`, uruchomionym ze środowiskiem `CLAUDE_CONFIG_DIR=<katalog>`. Stan zalogowania sprawdza `claude auth status` (format do nagrania w spike'u). Aplikacja nigdy nie widzi tokenu.
 3. **Jeden `AgentRuntime` na konto, złożone w `app`.** Fabryka `agent-runtime:impl` dostaje `configDir` i dokłada `CLAUDE_CONFIG_DIR` do środowiska każdego wywołania `claude`, w tym `attachCommand` (`ShellCommand.env`). `RuntimeSession` i sesja w `sessions:api` dostają `AccountId`. Klucz sesji w Quayside to para (konto, krótkie ID). Złożenie list z wielu supervisorów robi `sessions:impl`. Polling idzie per konto, a wyniki się scala.
 4. **Hooki per konto.** `HookInstaller` z zakresem globalnym instaluje się w `<configDir>/settings.json` każdego włączonego konta, z osobną zgodą i kopią zapasową (NFR-5). Zakres projektu (`.claude/settings.local.json`) jest wspólny dla wszystkich kont i nie wymaga zmian. Zdarzenie hooka łączymy z kontem przez `ConversationId` z pollingu, więc payload nie musi znać konta.
-5. **Automatyka w wersji 1 dotyczy tylko nowych sesji.** Czysta funkcja `AccountSelector.choose(accounts, statuses, preferred)` wybiera konto dla „Nowego agenta” (gdy w oknie wybrano „Auto”) i dla streszczeń Haiku (`claude -p`). `StopFailure` z `rate_limit` oznacza konto jako `Limited(since)` na stały czas chłodzenia, domyślnie 5 h. Status `authentication_failed` daje `LoggedOut`. Powiadomienie brzmi: „Konto X osiągnęło limit, nowe sesje startują na Y”. Działająca sesja **nie** przeskakuje sama na inne konto.
-6. **Kontynuacja przerwanej sesji na innym koncie to osobny krok, ręczny i opcjonalny.** Akcja „Kontynuuj na koncie Y” przy sesji z błędem `rate_limit` kopiuje transkrypt `projects/<cwd>/<uuid>.jsonl` do katalogu konta Y i robi `claude --bg --resume <uuid>` z `CLAUDE_CONFIG_DIR` Y. Robimy to tylko wtedy, gdy spike potwierdzi, że to działa (worktree, `--resume` między katalogami).
+5. **Automatyka dotyczy nowych i istniejących sesji** (decyzja człowieka 2026-11-09). Czysta funkcja `AccountSelector.choose(accounts, statuses, preferred)` wybiera konto dla „Nowego agenta” (gdy w oknie wybrano „Auto”), dla streszczeń Haiku (`claude -p`) i dla kontynuacji (punkt 6). `StopFailure` z `rate_limit` oznacza konto jako `Limited(since)` na czas chłodzenia, domyślnie 5 h. Status `authentication_failed` daje `LoggedOut`. Powiadomienie brzmi: „Konto X osiągnęło limit, sesja S kontynuuje na Y”.
+6. **Sesja przerwana limitem kontynuuje na innym koncie, już w wersji 1** (decyzja człowieka 2026-11-09). Gdy automatyka jest włączona, a `StopFailure` z `rate_limit` przyjdzie dla sesji na koncie X, Quayside wybiera dostępne konto Y. Następnie kopiuje transkrypt `projects/<cwd>/<uuid>.jsonl` z katalogu X do katalogu Y i uruchamia `claude --bg --resume <uuid>` z `CLAUDE_CONFIG_DIR` Y, w tym samym `cwd` (także worktree) i ze stałym promptem kontynuacji („Kontynuuj przerwaną pracę.”, tekst w zasobach). Przy wyłączonej automatyce to samo robi ręczna akcja „Kontynuuj na koncie…” w panelu szczegółów, w menu wiersza i w palecie. Zasady:
+   - **Stara sesja zostaje na koncie X** w stanie błędu, z dopiskiem „kontynuowana na Y” i powiązaniem z nową sesją. Nigdy nie robimy `claude rm` w X, bo `rm` usuwa worktree, na którym pracuje kontynuacja.
+   - **Bez pętli.** Na jedno zdarzenie limitu przypada najwyżej jedna automatyczna kontynuacja, a konto, na którym sesja już trafiła na limit, nie jest wybierane ponownie w czasie chłodzenia. Gdy wszystkie konta mają limit, nic nie przełączamy, tylko pokazujemy powiadomienie „Wszystkie konta mają limit”.
+   - **Sesja, która czeka na zgodę lub odpowiedź, nie jest przenoszona.** Przenosimy tylko sesje zakończone błędem `rate_limit`, a nie działające.
+   - **Ryzyko spike'u.** Jeśli AM-1001 wykaże, że `--resume` między katalogami nie działa (np. supervisor tworzy nowy worktree albo nie czyta skopiowanego transkryptu), plan wraca do człowieka przed AM-1007. Wariant zapasowy: nowa sesja na Y z promptem zawierającym podsumowanie przerwanej pracy (`last_assistant_message`, ścieżka worktree).
 
 ## Rozważone alternatywy
 
@@ -51,7 +55,7 @@ Stan kodu: `ClaudeCliAdapter` woła `claude` bez `CLAUDE_CONFIG_DIR`. `SettingsF
 2. Wyjście i kod `claude auth status` dla konta zalogowanego, wylogowanego i z wygasłym loginem.
 3. Prawdziwy payload `StopFailure` z `rate_limit` (nazwa pola: `error_type` czy `error`, czy jest tam czas odnowienia).
 4. Co robi sesja w tle po limicie: stan `failed` czy czekanie i wznowienie.
-5. Czy `--resume <uuid>` działa po skopiowaniu transkryptu do innego katalogu konta, także dla sesji w worktree.
+5. Czy `claude --bg --resume <uuid> -- <prompt>` działa po skopiowaniu transkryptu do innego katalogu konta: czy zachowuje `sessionId` czy tworzy nowy, czy w sesji z worktree używa istniejącego worktree (a nie tworzy nowego), czy potrzebne są inne pliki niż `.jsonl` (np. `todos`, `file-history`). Wynik decyduje o AM-1007 (punkt 6).
 6. Czy dwa demony nie kolidują (gniazda, porty, `~/.claude.json` poza katalogiem).
 
 ## Proponowany podział na zadania (do ROADMAP po akceptacji)
@@ -66,7 +70,7 @@ Nowy kamień milowy po M9, np. **M10 · Wiele kont**:
 | AM-1004 | Hooki globalne w katalogu każdego konta, ze zgodą i kopią zapasową | `agent-runtime:impl`, `app` | AM-1003 |
 | AM-1005 | Okno „Konta”: lista ze stanem, dodaj (karta z `claude auth login`), nazwa, wyłącz, kolejność, przełącznik automatyki; wybór konta (Auto/konkretne) w „Nowym agencie”; konto w panelu szczegółów; komendy palety | `accounts:ui`, `mission-control:ui`, `app` | AM-1003 |
 | AM-1006 | Automatyka: `rate_limit` → `Limited`, wybór konta dla nowych sesji i streszczeń, powiadomienie o przełączeniu | `accounts:impl`, `summaries:impl`, `notifications`, `app` | AM-1004, AM-1005 |
-| AM-1007 | (C) „Kontynuuj na innym koncie” dla sesji z `rate_limit` | `agent-runtime:impl`, `mission-control:ui` | AM-1006, wynik AM-1001 |
+| AM-1007 | Kontynuacja sesji przerwanej `rate_limit` na innym koncie: automatycznie (gdy automatyka włączona) i ręcznie („Kontynuuj na koncie…”), kopia transkryptu, `--resume` z promptem kontynuacji, powiązanie starej i nowej sesji, ochrona przed pętlą; port `continueOn(...)` w `agent-runtime:api` po pytaniu do człowieka | `agent-runtime:api/impl`, `sessions:api/impl`, `accounts:impl`, `mission-control:ui`, `app` | AM-1006, wynik AM-1001 |
 | AM-1008 | (C) Dokładne zużycie i `resets_at` przez opcjonalny skrypt `statusLine` | `accounts:impl`, `agent-runtime:impl` | AM-1006 |
 
 Proponowane wymagania do `02-wymagania.md` (sekcja „Konta”):
@@ -76,8 +80,8 @@ Proponowane wymagania do `02-wymagania.md` (sekcja „Konta”):
 | FR-L1 | Lista kont Claude (konto domyślne `~/.claude` + dodatkowe katalogi), dodanie przez logowanie w karcie terminala, zmiana nazwy, wyłączenie, usunięcie z listy bez kasowania katalogu | S |
 | FR-L2 | Stan konta: dostępne, limit (od kiedy), wylogowane, nieznane | S |
 | FR-L3 | Wybór konta przy starcie agenta: „Auto” albo konkretne; konto widoczne w panelu szczegółów | S |
-| FR-L4 | Automatyka (wyłączalna): po `rate_limit` nowe sesje i streszczenia idą na następne dostępne konto, z powiadomieniem | S |
-| FR-L5 | Kontynuacja sesji przerwanej limitem na innym koncie | C |
+| FR-L4 | Automatyka (wyłączalna): po `rate_limit` nowe sesje, streszczenia i przerwane sesje (FR-L5) idą na następne dostępne konto, z powiadomieniem | S |
+| FR-L5 | Kontynuacja sesji przerwanej limitem na innym koncie: automatycznie (gdy automatyka włączona) albo ręcznie; stara sesja zostaje z odnośnikiem do nowej | S |
 | FR-L6 | Zużycie limitu i czas odnowienia per konto | C |
 
 ## Konsekwencje
@@ -86,7 +90,7 @@ Proponowane wymagania do `02-wymagania.md` (sekcja „Konta”):
 - Zmiany `agent-runtime:api` i `sessions:api` (AM-1003) wymagają zgody człowieka i osobnego ADR o formacie `accounts.json`.
 - Sesje bez konta (wszystko sprzed zmiany) należą do konta domyślnego, więc po aktualizacji nic nie znika z listy.
 - Otwarte pytania do człowieka:
-  1. Czy wersja 1 ma przełączać tylko **nowe** sesje (punkt 5), a kontynuacja przerwanej sesji to później (C)?
+  1. ~~Czy wersja 1 ma przełączać tylko nowe sesje?~~ Rozstrzygnięte 2026-11-09: wersja 1 przełącza też istniejące sesje jako kontynuację (punkty 5 i 6, AM-1007, FR-L5 = S).
   2. Gdzie tworzyć katalogi nowych kont: `~/.claude-quayside/<slug>` czy obok (`~/.claude-<slug>`, zgodnie z przykładem z dokumentacji)?
   3. Chłodzenie po limicie: stałe 5 h, do ręcznego odblokowania, czy od razu opcja `statusLine` (AM-1008)?
   4. Czy M10 wchodzi przed wydaniem 1.0, czy po nim?

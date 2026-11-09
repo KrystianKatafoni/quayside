@@ -11,7 +11,7 @@ import dev.quayside.core.designsystem.AmText
 import dev.quayside.notifications.api.ProjectProfile
 import dev.quayside.notifications.api.VoiceOption
 
-/** The "Wyjątki projektów" section (FR-N7): a profile and a voice choice for every registered project. */
+/** The "Wyjątki dla projektów" section (FR-N7): a profile and a voice choice for every registered project. */
 @Composable
 internal fun ProjectsSection(
     state: NotificationDialogState,

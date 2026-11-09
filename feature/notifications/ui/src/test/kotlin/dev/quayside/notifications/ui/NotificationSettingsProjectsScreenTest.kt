@@ -35,7 +35,7 @@ private val PROJECT_ORDER =
         SettingsTags.SAVE,
     )
 
-/** Scenarios of the "Wyjątki projektów" section of the notification settings dialog (FR-N7, NFR-6). */
+/** Scenarios of the "Wyjątki dla projektów" section of the notification settings dialog (FR-N7, NFR-6). */
 @OptIn(ExperimentalTestApi::class)
 class NotificationSettingsProjectsScreenTest {
     private val anna = aProject(id = "project-anna", displayName = "Anna")
@@ -162,7 +162,10 @@ class NotificationSettingsProjectsScreenTest {
 
             // Then the note tells where to add one
             awaitTag(SettingsTags.PROJECTS_EMPTY).performScrollTo()
-            awaitTagText(SettingsTags.PROJECTS_EMPTY, "Brak projektów. Dodaj projekt w pasku bocznym.")
+            awaitTagText(
+                SettingsTags.PROJECTS_EMPTY,
+                "Brak projektów. Dodaj folder projektu w pasku bocznym, a pojawi się tu z możliwością ustawienia wyjątku.",
+            )
         }
 
     @Test

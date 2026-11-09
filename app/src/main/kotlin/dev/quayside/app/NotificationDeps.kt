@@ -80,14 +80,12 @@ internal fun notificationDeps(
             AppForeground().active,
             core.logger,
         )
-    val voices = voiceCatalogModule(core.process, core.homeDir)
-    val preview = voicePreviewModule(core.process, core.homeDir)
-    val sounds = soundLibraryModule(core.process, core.homeDir, core.dispatchers.io)
-    return NotificationDeps(
-        center,
-        PopupController(center, settings, scope),
-        attach,
-        settings,
-        NotificationChoices(voices, preview, sounds),
-    )
+    return NotificationDeps(center, PopupController(center, settings, scope), attach, settings, choicesOf(core))
 }
+
+private fun choicesOf(core: CoreDeps): NotificationChoices =
+    NotificationChoices(
+        voiceCatalogModule(core.process, core.homeDir),
+        voicePreviewModule(core.process, core.homeDir),
+        soundLibraryModule(core.process, core.homeDir, core.dispatchers.io),
+    )

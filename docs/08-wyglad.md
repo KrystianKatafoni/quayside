@@ -225,7 +225,7 @@ Znak (ikona) ma ten sam wybór z progiem 3:1 (WCAG 1.4.11). Plakietka licznika n
 | 8 (`plex`) | 10 | 12 | 10 |
 | 16 | 18 | 20 | 18 |
 
-Wiersz: zaznaczony projekt lub widok (tło `sel`, ramka `accent`), wiersz `AmListRow`, segmenty filtra. Karta: `AmPanel`, `AmStatCard`, lista sesji, ramka pól szczegółów, ramka panelu terminala (widżetu Swing nie da się przyciąć do zaokrąglenia, więc ma odstęp co najmniej r·(1 − 1/√2) i 2 dp od ramki). Kafelek: `AmIconTile`. Licznik: `AmCounter`, najmniej 22 dp, czyta się jego opis („2 czekają”), a nie sama liczba.
+Wiersz: zaznaczony projekt lub widok (tło `sel`, ramka `accent`), wiersz `AmListRow`, segmenty filtra. Karta: `AmPanel`, `AmStatCard`, lista sesji, ramka pól szczegółów, ramka panelu terminala (widżetu Swing nie da się przyciąć do zaokrąglenia, więc ma odstęp co najmniej r·(1 − 1/√2) i 2 dp od ramki). Kafelek: `AmIconTile`. Licznik: `AmCounter`, najmniej 22 dp, czyta się jego opis („2 czekają”), a nie sama liczba. Licznik z zerem (AM-310; panel boczny i przegląd grupy) to ten sam krąg bez wypełnienia tonem: obrys 1 dp w tokenie statusu (`status.warn/work/ok/err`), nieprzezroczyste wypełnienie tłem wiersza (`sel` przy zaznaczonym, inaczej `panel` złożony na `bg`), cyfra `muted`, a gdy ma mniej niż 4,5:1 na wypełnieniu — `text`. Informację niesie cyfra i opis („czeka: 0”), nie obrys.
 
 Dwie nowe role tekstu obok TITLE, HEADING, BODY, CAPTION i CODE: `NAME` (mono, 15 sp, SemiBold: nazwy sesji w wierszach, w panelu szczegółów, na pasku sesji i w okruszkach trybu terminala) oraz `LABEL` (UI, 11 sp, SemiBold, odstęp liter 0,12 em: „PROJEKTY”, „WIDOKI”, „PODSUMOWANIE”; wielkie litery są w tekstach). Kolory zawsze z tokenów: `LABEL` jest w `muted` na `panel` (≥ 4,5:1 w audycie).
 

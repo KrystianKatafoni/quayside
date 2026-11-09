@@ -23,7 +23,7 @@ public class MissionControlHandlers(
     public val keyCaps: SessionKeyCaps? = null,
     /**
      * A click on a subfolder row of the group overview (FR-P8); `app` selects that focus in the sidebar, Mission
-     * Control follows through `selected`. Never called for the "Pozostałe" row.
+     * Control follows through `selected`. Never called for the "folder główny" row.
      */
     public val onOpenSubfolder: (ProjectFocus) -> Unit = {},
 )

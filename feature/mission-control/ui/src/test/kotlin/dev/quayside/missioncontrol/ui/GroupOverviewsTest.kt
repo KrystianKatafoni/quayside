@@ -18,14 +18,15 @@ internal data class OverviewCase(
     val title: String,
     val sessions: List<Session>,
     val rows: List<Pair<String, Counts>>,
-    val rest: Counts?,
+    val rest: Counts,
 ) {
     override fun toString(): String = title
 }
 
 /**
- * The pure overview of a group (FR-P8, AM-307): counters per subfolder, tiers waiting > failed > working > the rest,
- * [dev.quayside.projects.api.ProjectGroups.order] inside a tier, "rest" for sessions outside every subfolder.
+ * The pure overview of a group (FR-P8, AM-307, AM-310): counters per subfolder, tiers waiting > failed > working > the
+ * rest, [dev.quayside.projects.api.ProjectGroups.order] inside a tier. The root row ("folder główny": sessions outside
+ * every subfolder) is always there, with zeros when nothing runs; `done` is counted but does not lift a row's tier.
  */
 internal class GroupOverviewsTest {
     @ParameterizedTest(name = "{0}")
@@ -35,7 +36,17 @@ internal class GroupOverviewsTest {
 
         overview.project shouldBe OVERVIEW_GROUP.id
         overview.rows.map { it.name.value to it.stats.counts() } shouldBe case.rows
-        overview.rest?.counts() shouldBe case.rest
+        overview.rest.counts() shouldBe case.rest
+    }
+
+    @Test
+    fun `root row is always there with zeros`() {
+        // Nothing runs anywhere, or only ended sessions in a subfolder: the root row is still part of the overview
+        val empty = GroupOverviews.of(OVERVIEW_GROUP, emptyList()).shouldNotBeNull()
+        val inFolder = GroupOverviews.of(OVERVIEW_GROUP, listOf(works("a", "bob"))).shouldNotBeNull()
+
+        empty.rest.shouldNotBeNull().counts() shouldBe Counts()
+        inFolder.rest.shouldNotBeNull().counts() shouldBe Counts()
     }
 
     @Test
@@ -55,7 +66,7 @@ internal class GroupOverviewsTest {
             title: String,
             sessions: List<Session>,
             rows: List<Pair<String, Counts>>,
-            rest: Counts? = null,
+            rest: Counts = zero,
         ) = Arguments.of(OverviewCase(title, sessions, rows, rest))
 
         private fun waits(
@@ -82,9 +93,29 @@ internal class GroupOverviewsTest {
             listOf(
                 case("no sessions: all rows at zero, sorted ignoring case", emptyList(), zeros(*sorted.toTypedArray())),
                 case(
+                    "row order by tiers is unchanged: done does not lift a row",
+                    listOf(
+                        groupSession("a", "Anna", SessionState.Done),
+                        groupSession("b", "Anna", SessionState.Done),
+                        works("c", "Carl"),
+                    ),
+                    listOf("Carl" to Counts(working = 1), "Anna" to Counts(done = 2), "bob" to zero),
+                ),
+                case(
                     "waiting first, then failed, then the rest",
                     listOf(waits("a", "Carl"), fails("b", "bob")),
                     listOf("Carl" to Counts(waiting = 1), "bob" to Counts(failed = 1), "Anna" to zero),
+                ),
+                case(
+                    "done is counted per row",
+                    listOf(
+                        groupSession("a", "bob", SessionState.Done),
+                        groupSession("b", "bob/x", SessionState.Done),
+                        groupSession("c", "bob", SessionState.Failed),
+                        groupSession("d", "Carl", SessionState.Done),
+                        groupSession("e", "Carl", SessionState.Stopped),
+                    ),
+                    listOf("bob" to Counts(done = 2, failed = 1), "Anna" to zero, "Carl" to Counts(done = 1)),
                 ),
                 case(
                     "the tier decides, not the number",
@@ -117,32 +148,33 @@ internal class GroupOverviewsTest {
         private fun scopeCases(): List<Arguments> =
             listOf(
                 case(
-                    "root and an unselected folder are the rest",
+                    "root row counts the root and unchecked subdirectories",
                     listOf(waits("a", ""), works("b", "marketing")),
                     zeros(*sorted.toTypedArray()),
                     rest = Counts(waiting = 1, working = 1),
                 ),
                 case(
-                    "a failed session outside the subfolders makes the rest",
+                    "a failed session outside the subfolders is in the root row",
                     listOf(fails("a", "marketing")),
                     zeros(*sorted.toTypedArray()),
                     rest = Counts(failed = 1),
                 ),
                 case(
-                    "a folder named like a subfolder prefix is the rest",
+                    "a folder named like a subfolder prefix is the root row",
                     listOf(waits("a", "bobx")),
                     zeros(*sorted.toTypedArray()),
                     rest = Counts(waiting = 1),
                 ),
                 case(
-                    "done and stopped are not counted and make no rest",
+                    "done is counted in the root row, stopped never",
                     listOf(
-                        groupSession("a", "bob", SessionState.Done),
-                        groupSession("b", "bob", SessionState.Stopped),
-                        groupSession("c", "", SessionState.Done),
-                        groupSession("d", "", SessionState.Stopped),
+                        groupSession("a", "bob", SessionState.Stopped),
+                        groupSession("b", "", SessionState.Done),
+                        groupSession("c", "", SessionState.Stopped),
+                        groupSession("d", "marketing", SessionState.Done),
                     ),
                     zeros(*sorted.toTypedArray()),
+                    rest = Counts(done = 2),
                 ),
                 case(
                     "a session of a nested project is not counted",

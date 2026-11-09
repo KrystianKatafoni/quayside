@@ -158,3 +158,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Gdy zmiana pozwala na `cwd` inny niż `Project.dir`, fake `SessionCommands.start` musi przypisywać projekt przez `SessionRules.projectFor`, jak impl; inaczej kontrakt z projektem zagnieżdżonym rozjeżdża fake i impl.
 - Po wyborze opcji z `AmDropdown` fokus zostaje na liście, więc test okna nie czeka na fokus pola promptu (`awaitFocus` da `ComposeTimeoutException`).
 - Walidacja nazwy podfolderu na ścieżce startu sprawdza dokładną równość z `Project.subfolders` ORAZ że katalog jest bezpośrednim dzieckiem `Project.dir` (`SubfolderName` ma publiczny konstruktor bez walidacji).
+- Po zmianie nazwy elementu UI (np. „Pozostałe” → „folder główny”) zrób grep po starym tekście w całym `src/main` (KDoc publicznych typów), nie tylko w `properties`.
+- Detekt `MatchingDeclarationName` wymaga, by plik z jedną klasą nosił jej nazwę, a Konsist zabrania klas kończących się na `Colors` w `ui`/`app` — paletę kolorów komponentu nazwij np. `…Paint` i trzymaj w pliku o tej nazwie.
+- `filterValues` usuwający wpisy zerowe z mapy nie jest obserwowalny, gdy brak klucza = zero, ale testy porównujące widoki przez `==` z pustym widokiem go wymagają — nie usuwaj bez sprawdzenia tych testów.

@@ -127,7 +127,7 @@ private fun ProjectWithSubfolders(
     val onProject = state.selected == project.id && state.subfolder == null
     ProjectRow(
         project = project,
-        state = RowState(onProject, state.sessions.counts[project.id], collapsed.takeIf { group }),
+        state = RowState(onProject, state.statusesOf(ProjectFocus(project.id)), collapsed.takeIf { group }),
         actions = rowActions(project, controller),
     )
     if (!collapsed) {
@@ -136,7 +136,7 @@ private fun ProjectWithSubfolders(
             SubfolderRow(
                 id = project.id,
                 name = name,
-                state = RowState(state.focusIs(focus), state.sessions.subfolders[focus]),
+                state = RowState(state.focusIs(focus), state.statusesOf(focus)),
                 onSelect = { controller.onEvent(SidebarEvent.Select(project.id, name)) },
             )
         }
@@ -159,6 +159,8 @@ private fun rowActions(
         toggleGroup = { onEvent(SidebarEvent.ToggleGroup(project.id)) },
     )
 }
+
+private fun ProjectsUiState.statusesOf(focus: ProjectFocus): StatusCounts = sessions.statuses[focus] ?: StatusCounts()
 
 private fun ProjectsUiState.focusIs(focus: ProjectFocus): Boolean =
     selected == focus.project && subfolder == focus.subfolder

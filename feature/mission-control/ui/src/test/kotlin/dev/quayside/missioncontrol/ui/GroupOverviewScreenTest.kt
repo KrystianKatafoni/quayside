@@ -11,7 +11,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -32,8 +31,9 @@ import org.junit.jupiter.api.Test
 import java.util.Locale
 
 /**
- * The "Podfoldery" overview on the group page (FR-P8, AM-307): rows, order, counters, the rest row and the way the
- * rows take clicks and keys. Subfolders are `bob`, `Carl`, `Anna`; none is named like a fixed text.
+ * The "Podfoldery" overview on the group page (FR-P8, AM-307, AM-310): rows, order, the four counters, the root row
+ * "folder główny" and the way the rows take clicks and keys. Subfolders are `bob`, `Carl`, `Anna`; none is named
+ * like a fixed text.
  */
 @OptIn(ExperimentalTestApi::class)
 internal class GroupOverviewScreenTest {
@@ -60,10 +60,12 @@ internal class GroupOverviewScreenTest {
             listOf("Anna", "bob", "Carl").forEach { overviewRow(it).assertExists() }
             textUnder(rowsOfCarl, "Carl").assertExists()
 
-            // And each row has only the counters that are not zero
-            counterTexts(rowsOfCarl) shouldBe setOf("2 czekają", "1 pracuje")
-            counterTexts(MissionControlTags.overviewRow(sub("bob"))) shouldBe setOf("1 z błędem")
-            counterTexts(MissionControlTags.overviewRow(sub("Anna"))) shouldBe emptySet()
+            // And each row has all four counters, in the order waiting, working, done, failed (zeros included)
+            counterTexts(rowsOfCarl) shouldBe listOf("czeka: 2", "pracuje: 1", "gotowe: 0", "błąd: 0")
+            counterTexts(MissionControlTags.overviewRow(sub("bob"))) shouldBe
+                listOf("czeka: 0", "pracuje: 0", "gotowe: 0", "błąd: 1")
+            counterTexts(MissionControlTags.overviewRow(sub("Anna"))) shouldBe
+                listOf("czeka: 0", "pracuje: 0", "gotowe: 1", "błąd: 0")
         }
 
     @Test
@@ -72,9 +74,10 @@ internal class GroupOverviewScreenTest {
             showGroup(busy())
             overviewRow("Carl")
 
-            counterNode(rowsOfCarl, "2 czekają").assertExists()
-            counterNode(rowsOfCarl, "1 pracuje").assertExists()
-            counterNode(MissionControlTags.overviewRow(sub("bob")), "1 z błędem").assertExists()
+            counterNode(rowsOfCarl, "czeka: 2").assertExists()
+            counterNode(rowsOfCarl, "pracuje: 1").assertExists()
+            counterNode(MissionControlTags.overviewRow(sub("Anna")), "gotowe: 1").assertExists()
+            counterNode(MissionControlTags.overviewRow(sub("bob")), "błąd: 1").assertExists()
         }
 
     @Test
@@ -100,17 +103,7 @@ internal class GroupOverviewScreenTest {
         }
 
     @Test
-    fun `idle subfolder says no agents`() =
-        runComposeUiTest {
-            showGroup(busy())
-            overviewRow("Anna")
-
-            textUnder(MissionControlTags.overviewRow(sub("Anna")), mcText("overview.idle")).assertExists()
-            onAllNodes(hasText(mcText("overview.idle")) and inTag(rowsOfCarl)).assertCountEquals(0)
-        }
-
-    @Test
-    fun `rest row shows only with sessions outside subfolders and has no click action`() =
+    fun `root row shows the sessions outside the subfolders and has no click action`() =
         runComposeUiTest {
             // Given sessions in the group directory and in a folder that is no subfolder
             val clicks = mutableListOf<ProjectFocus>()
@@ -122,25 +115,27 @@ internal class GroupOverviewScreenTest {
                 MissionControlHandlers(onOpenSubfolder = { clicks += it }),
             )
 
-            // Then the rest row says what is going on there and cannot be clicked
-            val rest = awaitTag(MissionControlTags.OVERVIEW_REST)
-            textUnder(MissionControlTags.OVERVIEW_REST, mcText("overview.rest")).assertExists()
-            counterTexts(MissionControlTags.OVERVIEW_REST) shouldBe setOf("1 czeka", "1 pracuje")
-            rest.assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
-            rest.performClick()
+            // Then the root row says what is going on there and cannot be clicked
+            val root = awaitTag(MissionControlTags.OVERVIEW_ROOT)
+            textUnder(MissionControlTags.OVERVIEW_ROOT, mcText("overview.root")).assertExists()
+            counterTexts(MissionControlTags.OVERVIEW_ROOT) shouldBe
+                listOf("czeka: 1", "pracuje: 1", "gotowe: 0", "błąd: 0")
+            root.assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+            root.performClick()
             waitForIdle()
             clicks shouldBe emptyList()
             // and it is the last one
-            val restTop = rest.fetchSemanticsNode().boundsInRoot.top
+            val rootTop = root.fetchSemanticsNode().boundsInRoot.top
             listOf("Anna", "bob", "Carl").forEach {
-                (overviewRow(it).fetchSemanticsNode().boundsInRoot.top < restTop) shouldBe
+                (overviewRow(it).fetchSemanticsNode().boundsInRoot.top < rootTop) shouldBe
                     true
             }
         }
 
     @Test
-    fun `rest row is absent when nothing outside subfolders waits works or failed`() =
+    fun `root row is there when nothing outside the subfolders waits works or failed`() =
         runComposeUiTest {
+            // Given only a finished and a stopped session outside the subfolders (AM-310: the row is always shown)
             showGroup(
                 listOf(
                     groupSession("r1", "", SessionState.Done, 1),
@@ -150,7 +145,10 @@ internal class GroupOverviewScreenTest {
             )
             overviewRow("Anna")
 
-            exists(MissionControlTags.OVERVIEW_REST) shouldBe false
+            // Then the root row exists, shows the finished session, and ignores the stopped one
+            awaitTag(MissionControlTags.OVERVIEW_ROOT)
+            counterTexts(MissionControlTags.OVERVIEW_ROOT) shouldBe
+                listOf("czeka: 0", "pracuje: 0", "gotowe: 1", "błąd: 0")
         }
 
     @Test

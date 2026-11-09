@@ -1,39 +1,57 @@
 package dev.quayside.missioncontrol.ui
 
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
-/** The texts of the group overview (AM-307); the keys are the tests' choice, the Polish texts come from the plan. */
+/**
+ * The texts of the group overview and of the place badge (AM-307, AM-310); the keys are the tests' choice, the Polish
+ * texts come from the plan. The counters do not inflect: one format for every number.
+ */
 internal class GroupOverviewMessagesTest {
     @Test
     fun `section row and counter texts`() {
         mcText("overview.title") shouldBe "Podfoldery"
-        mcText("overview.rest") shouldBe "Pozostałe"
-        mcText("overview.idle") shouldBe "brak agentów"
-        mcText("overview.failed", "1") shouldBe "1 z błędem"
+        mcText("overview.root") shouldBe "folder główny"
+        mcText("overview.count.waiting", "1") shouldBe "czeka: 1"
+        mcText("overview.count.working", "1") shouldBe "pracuje: 1"
+        mcText("overview.count.done", "1") shouldBe "gotowe: 1"
+        mcText("overview.count.failed", "1") shouldBe "błąd: 1"
+    }
+
+    @Test
+    fun `the place badge and the root row of the overview say the same`() {
+        mcText("row.place.root") shouldBe "folder główny"
+        mcText("row.place.root") shouldBe mcText("overview.root")
+        mcText("row.place.subfolder", "soft") shouldBe "folder: soft"
+    }
+
+    @Test
+    fun `old overview texts are gone`() {
+        val old =
+            listOf(
+                "overview.rest",
+                "overview.idle",
+                "overview.failed",
+                "overview.waiting.one",
+                "overview.waiting.few",
+                "overview.waiting.many",
+                "overview.working.one",
+                "overview.working.few",
+                "overview.working.many",
+            )
+
+        old.forEach { MissionControlStrings.keys shouldNotContain it }
     }
 
     @ParameterizedTest(name = "{0}")
-    @CsvSource(
-        "0,0 czeka,0 pracuje",
-        "1,1 czeka,1 pracuje",
-        "2,2 czekają,2 pracują",
-        "4,4 czekają,4 pracują",
-        "5,5 czeka,5 pracuje",
-        "12,12 czeka,12 pracuje",
-        "14,14 czeka,14 pracuje",
-        "21,21 czeka,21 pracuje",
-        "22,22 czekają,22 pracują",
-        "112,112 czeka,112 pracuje",
-    )
-    fun `verbs agree with the number`(
-        count: Int,
-        waiting: String,
-        working: String,
-    ) {
-        MissionControlStrings.plural("overview.waiting", count) shouldBe waiting
-        MissionControlStrings.plural("overview.working", count) shouldBe working
+    @CsvSource("0", "1", "2", "4", "5", "12", "14", "21", "22", "112")
+    fun `counters do not inflect`(count: Int) {
+        mcText("overview.count.waiting", "$count") shouldBe "czeka: $count"
+        mcText("overview.count.working", "$count") shouldBe "pracuje: $count"
+        mcText("overview.count.done", "$count") shouldBe "gotowe: $count"
+        mcText("overview.count.failed", "$count") shouldBe "błąd: $count"
     }
 }

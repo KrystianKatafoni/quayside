@@ -33,8 +33,9 @@ import dev.quayside.projects.api.ProjectFocus
 
 /**
  * The "Podfoldery" section of a group page (FR-P8): a scrolling card with one row per subfolder, and a last row
- * "Pozostałe" when sessions outside the subfolders need attention. A click on a subfolder row sends
- * [MissionControlEvent.OpenSubfolder]; rows never take the keyboard focus, so Space and Enter stay window shortcuts.
+ * "folder główny" (sessions outside the subfolders, always shown, named like the badge in the list). Every row has
+ * four counters; zeros are rings. A click on a subfolder row sends [MissionControlEvent.OpenSubfolder], the root row
+ * does nothing; rows never take the keyboard focus, so Space and Enter stay window shortcuts.
  */
 @Composable
 internal fun GroupOverviewView(
@@ -56,13 +57,11 @@ internal fun GroupOverviewView(
                             .clickable(role = Role.Button) { onEvent(MissionControlEvent.OpenSubfolder(focus)) },
                 )
             }
-            overview.rest?.let {
-                OverviewRow(
-                    MissionControlStrings["overview.rest"],
-                    it,
-                    Modifier.testTag(MissionControlTags.OVERVIEW_REST),
-                )
-            }
+            OverviewRow(
+                MissionControlStrings["overview.root"],
+                overview.rest,
+                Modifier.testTag(MissionControlTags.OVERVIEW_ROOT),
+            )
         }
     }
 }
@@ -108,18 +107,18 @@ private fun OverviewRow(
 
 @Composable
 private fun OverviewCells(stats: SessionStats) {
-    val counters = counters(stats)
-    if (counters.isEmpty()) {
-        AmText(MissionControlStrings["overview.idle"], color = mutedColor())
+    counters(stats).forEach { (count, tone, description) ->
+        if (count == 0) ZeroCounter(tone, description, selected = false) else AmCounter(count, tone, description)
     }
-    counters.forEach { (count, tone, description) -> AmCounter(count, tone, description) }
 }
 
+/** Waiting, working, done, failed: the order of the sidebar; each described as "czeka: n" and so on. */
 private fun counters(stats: SessionStats): List<Triple<Int, StatusTone, String>> =
     listOf(
-        Triple(stats.waiting, StatusTone.WARN, MissionControlStrings.plural("overview.waiting", stats.waiting)),
-        Triple(stats.failed, StatusTone.ERR, MissionControlStrings.formatted("overview.failed", stats.failed)),
-        Triple(stats.working, StatusTone.WORK, MissionControlStrings.plural("overview.working", stats.working)),
-    ).filter { it.first > 0 }
+        Triple(stats.waiting, StatusTone.WARN, "overview.count.waiting"),
+        Triple(stats.working, StatusTone.WORK, "overview.count.working"),
+        Triple(stats.done, StatusTone.OK, "overview.count.done"),
+        Triple(stats.failed, StatusTone.ERR, "overview.count.failed"),
+    ).map { (count, tone, key) -> Triple(count, tone, MissionControlStrings.formatted(key, count)) }
 
 private val MAX_HEIGHT = 168.dp

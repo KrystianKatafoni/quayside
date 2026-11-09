@@ -3,6 +3,7 @@ package dev.quayside.projects.ui
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -45,6 +46,14 @@ internal class ProjectsSidebarHeaderTest {
             .fetchSemanticsNodes()
             .size
 
+    /** Colours of the strip of the row with the 20 dp folder icon (8 dp padding; the test draws at 4 px per dp). */
+    private fun SemanticsNodeInteraction.iconStripColors(): Set<Int> {
+        val pixels = pixelMap()
+        return (ICON_FROM * SCALE until ICON_TO * SCALE).flatMapTo(HashSet()) { x ->
+            (0 until pixels.height).map { pixels.argbAt(x, it) }
+        }
+    }
+
     @Test
     fun `add button in the header opens the directory picker`() =
         runComposeUiTest {
@@ -85,7 +94,7 @@ internal class ProjectsSidebarHeaderTest {
             val sessions =
                 (1..2).map { WorldSession(aSessionId("w$it"), A_PROJECT_DIR, SessionState.AwaitingInput(null)) } +
                     (1..3).map { WorldSession(aSessionId("p$it"), A_PROJECT_DIR, SessionState.Working) }
-            showProjects(world(*sessions.toTypedArray())) { ProjectsSidebar(it) }
+            showProjects(world(*sessions.toTypedArray())) { Scaled4 { ProjectsSidebar(it) } }
             val row = ProjectsTags.row(busy.id)
             awaitTag(row)
             waitUntil { described(row, "czeka: 2") > 0 }
@@ -96,7 +105,8 @@ internal class ProjectsSidebarHeaderTest {
                 .fetchSemanticsNodes()
                 .size shouldBe 0
 
-            // And the busy row draws the warn tone while the quiet row draws no status tone
+            // And the folder icon of the busy row draws the warn tone while that of the quiet row draws no status tone
+            // (the strip left of the name holds the icon only; the zero counters of AM-310 use the tokens too)
             val warn =
                 colors.status.warn
                     .toColor()
@@ -105,9 +115,14 @@ internal class ProjectsSidebarHeaderTest {
                 colors.status.work
                     .toColor()
                     .toArgb()
-            awaitTag(row).argbColors() shouldContain warn
-            val quietColors = awaitTag(ProjectsTags.row(quiet.id)).argbColors()
-            quietColors shouldNotContain warn
-            quietColors shouldNotContain work
+            awaitTag(row).iconStripColors() shouldContain warn
+            val quietIcon = awaitTag(ProjectsTags.row(quiet.id)).iconStripColors()
+            quietIcon shouldNotContain warn
+            quietIcon shouldNotContain work
         }
+
+    private companion object {
+        const val ICON_FROM = 8
+        const val ICON_TO = 28
+    }
 }

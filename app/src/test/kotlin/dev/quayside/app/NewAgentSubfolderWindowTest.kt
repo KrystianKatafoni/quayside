@@ -4,7 +4,6 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
@@ -97,12 +96,10 @@ class NewAgentSubfolderWindowTest {
             await(WindowTags.projectRow("project0001")).assertIsNotSelected()
             header("plant-puls / soft")
             await(WindowTags.missionRow("00000001")).assertIsSelected()
-            waitUntil(timeoutMillis = AGENT_WAIT_MS) {
-                onAllNodes(
-                    hasContentDescription("pracuje: 1") and hasAnyAncestor(hasTestTag(soft)),
-                    useUnmergedTree = true,
-                ).fetchSemanticsNodes().isNotEmpty()
-            }
+            // and the subfolder row counts it (the other three counters are there at zero, AM-310) while the group row
+            // counts the two sessions it had before as well
+            awaitCounters(soft, waiting = 0, working = 1, done = 0, failed = 0)
+            awaitCounters(WindowTags.projectRow("project0001"), waiting = 0, working = 3, done = 0, failed = 0)
         }
 
     @Test

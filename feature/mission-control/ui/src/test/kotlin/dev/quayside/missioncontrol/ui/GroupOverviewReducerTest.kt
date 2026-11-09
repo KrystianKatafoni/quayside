@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZoneOffset
 
-/** The overview on the group page of the reducer (FR-P8, FR-S9, AM-307). */
+/** The overview on the group page of the reducer (FR-P8, FR-S9, AM-307, AM-310: the root row is always there). */
 internal class GroupOverviewReducerTest {
     private val now: Instant = T0.plusSeconds(600)
 
@@ -52,12 +52,13 @@ internal class GroupOverviewReducerTest {
             listOf(
                 "Carl" to Counts(waiting = 1),
                 "bob" to Counts(failed = 1),
-                "Anna" to Counts(working = 1),
+                "Anna" to Counts(working = 1, done = 1),
             )
         screen.overview
             .shouldNotBeNull()
             .rest
-            ?.counts() shouldBe Counts(working = 1)
+            .shouldNotBeNull()
+            .counts() shouldBe Counts(working = 1)
         screen.overview.shouldNotBeNull().project shouldBe OVERVIEW_GROUP.id
     }
 
@@ -99,6 +100,23 @@ internal class GroupOverviewReducerTest {
         // The failed and the done sessions are not "active", yet every tab counts them the same.
         shown.distinct() shouldBe listOf(page().shown())
         page(selection = Selection(OVERVIEW_GROUP.id, filter = SessionFilter.ACTIVE)).shown() shouldBe
-            listOf("Carl" to Counts(waiting = 1), "bob" to Counts(failed = 1), "Anna" to Counts(working = 1))
+            listOf(
+                "Carl" to Counts(waiting = 1),
+                "bob" to Counts(failed = 1),
+                "Anna" to Counts(working = 1, done = 1),
+            )
+    }
+
+    @Test
+    fun `root row is part of the overview when nothing outside the subfolders runs`() {
+        val quiet = sessions.filter { it.cwd != OVERVIEW_DIR }
+
+        val screen = page(snapshot = fresh(*quiet.toTypedArray()))
+
+        screen.overview
+            .shouldNotBeNull()
+            .rest
+            .shouldNotBeNull()
+            .counts() shouldBe Counts()
     }
 }

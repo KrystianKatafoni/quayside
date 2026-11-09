@@ -2,6 +2,7 @@ package dev.quayside.projects.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.PixelMap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
@@ -10,9 +11,11 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.SkikoComposeUiTest
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.v2.runSkikoComposeUiTest
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
@@ -60,3 +63,11 @@ internal fun SemanticsNodeInteraction.textStyle(): TextStyle {
 
 /** Matches the nodes of the subtree tagged [tag], the tagged node included. */
 internal fun inTag(tag: String) = hasTestTag(tag) or hasAnyAncestor(hasTestTag(tag))
+
+/**
+ * [runComposeUiTest][androidx.compose.ui.test.v2.runComposeUiTest] in a window of 1100 x 1500 px: at 4 px per dp
+ * ([Scaled4]) the default 1024 x 768 px window shows only 256 x 192 dp, too little for a group with its subfolder rows.
+ */
+@OptIn(ExperimentalTestApi::class)
+internal fun runTallTest(block: suspend SkikoComposeUiTest.() -> Unit) =
+    runSkikoComposeUiTest(size = Size(width = 1100f, height = 1500f), block = block)

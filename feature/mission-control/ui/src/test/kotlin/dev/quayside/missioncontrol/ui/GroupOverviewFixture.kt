@@ -13,7 +13,7 @@ import java.nio.file.Path
 /**
  * The group of the AM-307 tests: `/p/plant-puls` with subfolders given in an order that is neither ASCII nor
  * [dev.quayside.projects.api.ProjectGroups.order] (`bob, Carl, Anna`, so that "no sorting" and "ASCII sorting"
- * both fail). No name equals a fixed UI text ("Pozostałe", "Podfoldery", "brak agentów").
+ * both fail). No name equals a fixed UI text ("folder główny", "Podfoldery").
  */
 internal val OVERVIEW_DIR: Path = Path.of("/p/plant-puls")
 internal val OVERVIEW_GROUP =
@@ -27,14 +27,15 @@ internal val OVERVIEW_GROUP =
 /** A nested project inside the subfolder `bob`: its sessions are not those of the group. */
 internal val OVERVIEW_NESTED = aProject(id = "nested", dir = OVERVIEW_DIR.resolve("bob"), displayName = "nested")
 
-/** The three counters of a row, in the order of the tiers; `done` is not shown in the overview and is left out. */
+/** The four counters of a row, in the order of the roadmap (AM-310): waiting, working, done, failed. */
 internal data class Counts(
     val waiting: Int = 0,
-    val failed: Int = 0,
     val working: Int = 0,
+    val done: Int = 0,
+    val failed: Int = 0,
 )
 
-internal fun SessionStats.counts(): Counts = Counts(waiting, failed, working)
+internal fun SessionStats.counts(): Counts = Counts(waiting, working, done, failed)
 
 /** A session of the group in [cwd] (relative to the group directory unless absolute), started at T0 + [index]. */
 internal fun groupSession(

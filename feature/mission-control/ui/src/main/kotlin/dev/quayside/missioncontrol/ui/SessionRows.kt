@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -178,8 +179,27 @@ private fun RowScope.RowCells(row: SessionRow) {
         if (metrics.twoLines) AmText(row.summary.orEmpty(), role = TextRole.CAPTION, color = mutedColor())
     }
     row.project?.let { AmText(MissionControlStrings.format(it), color = mutedColor()) }
+    row.place?.let { PlaceBadge(row.id, it) }
     AmChip(MissionControlStrings.format(row.lastEvent), tone = row.glyph.tone)
     AmText(MissionControlStrings.format(row.age), color = mutedColor())
+}
+
+/**
+ * Where the session runs (AM-310): a neutral chip with the folder icon showing the bare subfolder name or "folder
+ * główny", read as "folder: name" / "folder główny"; at most 120 dp wide, a longer name is cut.
+ */
+@Composable
+private fun PlaceBadge(
+    id: SessionId,
+    place: UiText,
+) {
+    val description = MissionControlStrings.format(place)
+    AmChip(
+        label = if (place.key == SessionPlace.SUBFOLDER_KEY) place.args.first() else description,
+        modifier = Modifier.testTag(MissionControlTags.rowPlace(id)).widthIn(max = 120.dp),
+        icon = IconKind.FOLDER,
+        description = description,
+    )
 }
 
 /** Reply and Attach appear in the selected row only; none of the buttons takes focus. */

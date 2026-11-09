@@ -2,7 +2,7 @@ package dev.quayside.core.domain
 
 /**
  * Grammatical number of a Polish noun or verb after a count, e.g. "1 czeka", "2 czekają", "5 czeka".
- * UI modules pick the text by [key] (e.g. `overview.waiting.few`) and fill in the count themselves.
+ * UI modules pick the text by [key] (e.g. `rail.waiting.few`) and fill in the count themselves.
  */
 public enum class PluralForm(
     /** Suffix of the text key in the i18n properties files: `one`, `few` or `many`. */

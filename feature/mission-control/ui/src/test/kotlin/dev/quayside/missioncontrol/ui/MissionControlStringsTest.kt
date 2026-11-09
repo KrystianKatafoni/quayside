@@ -170,6 +170,14 @@ internal class MissionControlStringsTest {
                 "newAgent.trust.warning",
                 "newAgent.trust.cancel",
                 "newAgent.trust.accept",
+                "row.place.root",
+                "row.place.subfolder",
+                "overview.title",
+                "overview.root",
+                "overview.count.waiting",
+                "overview.count.working",
+                "overview.count.done",
+                "overview.count.failed",
             )
 
         private val errors: List<SessionError> =
@@ -227,6 +235,11 @@ internal class MissionControlStringsTest {
                     UiText("row.project", listOf("Quayside")),
                     UiText("preview.title", listOf("fix-login")),
                     UiText("newAgent.trust.path", listOf("/Users/test/projects/quayside")),
+                    UiText("row.place.subfolder", listOf("soft")),
+                    UiText("overview.count.waiting", listOf("1")),
+                    UiText("overview.count.working", listOf("2")),
+                    UiText("overview.count.done", listOf("3")),
+                    UiText("overview.count.failed", listOf("4")),
                 )
 
         fun allKeys(): Set<String> = generated().map { it.key }.toSet() + UI_KEYS

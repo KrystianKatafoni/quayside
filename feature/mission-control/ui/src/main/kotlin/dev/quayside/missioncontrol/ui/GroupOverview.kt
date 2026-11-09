@@ -13,19 +13,20 @@ internal data class SubfolderStats(
 )
 
 /**
- * The overview of group [project]: [rows] in display order; [rest] = sessions outside every subfolder,
- * null when none of them waits, works or failed.
+ * The overview of group [project]: [rows] in display order; [rest] = sessions outside every subfolder (the project
+ * directory and unchecked subdirectories), the "folder główny" row, always shown.
  */
 internal data class GroupOverview(
     val project: ProjectId,
     val rows: List<SubfolderStats>,
-    val rest: SessionStats?,
+    val rest: SessionStats,
 )
 
 internal object GroupOverviews {
     /**
      * Null when [project] has no subfolders. Counts only sessions with `project == project.id` (a nested project
-     * keeps its own); tiers: waiting > 0, failed > 0, working > 0, the rest; inside a tier [ProjectGroups.order].
+     * keeps its own); tiers: waiting > 0, failed > 0, working > 0, the rest; inside a tier [ProjectGroups.order]. The
+     * root row ([GroupOverview.rest]) is outside the order: always last.
      */
     fun of(
         project: Project,
@@ -43,8 +44,7 @@ internal object GroupOverviews {
             project.subfolders
                 .map { SubfolderStats(it, statsOf(bySubfolder[it])) }
                 .sortedWith(compareBy<SubfolderStats> { tier(it.stats) }.thenBy(ProjectGroups.order) { it.name })
-        val rest = statsOf(bySubfolder[null])
-        return GroupOverview(project.id, rows, rest.takeIf { tier(it) < QUIET })
+        return GroupOverview(project.id, rows, statsOf(bySubfolder[null]))
     }
 
     private fun statsOf(sessions: List<Session>?): SessionStats = SessionStats.of(sessions.orEmpty().map { it.state })

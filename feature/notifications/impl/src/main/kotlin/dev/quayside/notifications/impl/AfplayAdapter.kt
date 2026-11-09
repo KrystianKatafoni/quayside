@@ -14,7 +14,8 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * [SoundPort] on macOS `afplay`, started through [runner] in [workDir] with argv
  * `[program, -v, <volume / 100>, <soundsDir>/<name>.aiff]` and a 10 s timeout. A missing file makes `afplay` exit
- * with a non-zero code; then one more try uses [fallback] (Glass by default), unless the sound already was the fallback or [fallback] is null.
+ * with a non-zero code; then one more try uses [fallback] (Glass by default), unless the sound already was the
+ * fallback or [fallback] is null.
  */
 internal class AfplayAdapter(
     private val runner: ProcessRunner,

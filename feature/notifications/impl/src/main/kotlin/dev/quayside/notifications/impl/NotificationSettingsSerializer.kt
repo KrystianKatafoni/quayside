@@ -19,6 +19,7 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -87,11 +88,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
                     put("style", value.popup.style.name)
                 }
                 put(SPEECH, SpeechSettingsJson.encode(value.speech))
-                SoundSettingsJson.encode(value.sound).takeIf { it.isNotEmpty() }?.let { put(SOUND, it) }
-                if (value.quietHours != QuietHours()) put(QUIET_HOURS, QuietHoursJson.encode(value.quietHours))
-                if (value.projects.any { it.value != ProjectNotifications() }) {
-                    put(PROJECTS, ProjectsJson.encode(value.projects))
-                }
+                putOptionalSections(value)
                 putJsonObject(CHANNELS_KEY) {
                     KINDS
                         .filterKeys { value.channelsFor(it) != NotificationSettings.defaultChannels(it) }
@@ -103,6 +100,15 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
                 }
             },
         )
+    }
+
+    /** The sections written only when they differ from the default: sound, quiet hours and project exceptions. */
+    private fun JsonObjectBuilder.putOptionalSections(value: NotificationSettings) {
+        SoundSettingsJson.encode(value.sound).takeIf { it.isNotEmpty() }?.let { put(SOUND, it) }
+        if (value.quietHours != QuietHours()) put(QUIET_HOURS, QuietHoursJson.encode(value.quietHours))
+        if (value.projects.any { it.value != ProjectNotifications() }) {
+            put(PROJECTS, ProjectsJson.encode(value.projects))
+        }
     }
 
     override fun deserialize(decoder: Decoder): NotificationSettings {

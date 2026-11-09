@@ -5,7 +5,7 @@ package dev.quayside.core.domain
  * UI modules pick the text by [key] (e.g. `overview.waiting.few`) and fill in the count themselves.
  */
 public enum class PluralForm(
-    /** Suffix of the text key in `i18n/*.properties`: `one`, `few` or `many`. */
+    /** Suffix of the text key in the i18n properties files: `one`, `few` or `many`. */
     public val key: String,
 ) {
     /** Exactly 1. */

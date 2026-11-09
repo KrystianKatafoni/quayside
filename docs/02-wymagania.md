@@ -71,6 +71,19 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-K2 | Skróty jako przyspieszenie: j/k, ⏎ attach, r odpowiedz, x stop, space podgląd, g p przełącz projekt ([ADR 0015](adr/0015-skroty-jako-dodatek.md)) | S |
 | FR-K3 | Każda akcja na sesji i projekcie ma widoczną kontrolkę: przycisk w panelu szczegółów albo pozycję menu kontekstowego wiersza (prawy klik, przycisk ⋯); podgląd i attach także kliknięciem | M |
 
+### Konta
+
+Plan i decyzje: [ADR 0029](adr/0029-wiele-kont-claude.md).
+
+| ID | Wymaganie | Prio |
+| --- | --- | --- |
+| FR-L1 | Lista kont Claude (konto domyślne `~/.claude` + dodatkowe katalogi w `~/.claude-quayside/<nazwa>/`), dodanie przez logowanie w karcie terminala, zmiana nazwy, wyłączenie, usunięcie z listy bez kasowania katalogu | S |
+| FR-L2 | Stan konta: dostępne, limit (od kiedy i do kiedy wg czasu chłodzenia, domyślnie 5 h, konfigurowalny; ręczne odblokowanie), wylogowane, nieznane | S |
+| FR-L3 | Wybór konta przy starcie agenta: „Auto” albo konkretne; konto widoczne w panelu szczegółów | S |
+| FR-L4 | Automatyka (wyłączalna): po `rate_limit` nowe sesje, streszczenia i przerwane sesje (FR-L5) idą na następne dostępne konto, z powiadomieniem | S |
+| FR-L5 | Kontynuacja sesji przerwanej limitem na innym koncie: automatycznie (gdy automatyka włączona) albo ręcznie; stara sesja zostaje z odnośnikiem do nowej | S |
+| FR-L6 | Zużycie limitu i czas odnowienia per konto | C |
+
 ## Wymagania niefunkcjonalne
 
 | ID | Wymaganie |

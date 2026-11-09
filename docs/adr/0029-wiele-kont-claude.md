@@ -1,6 +1,6 @@
-# ADR 0029: Wiele kont Claude (szkic, plan)
+# ADR 0029: Wiele kont Claude
 
-- **Status:** proponowana (plan; nic nie jest zaimplementowane)
+- **Status:** przyjęta (kierunek; szczegóły CLI potwierdza spike AM-1001, nic nie jest jeszcze zaimplementowane)
 - **Data:** 2026-11-09
 - **Dotyczy:** nowy feature `accounts` (api/impl/ui), `agent-runtime` (api i impl), `sessions` (api i impl), `summaries:impl`, `terminal` (attach), `mission-control:ui`, `app`; pomysł nr 1 w [IDEAS.md](../IDEAS.md)
 
@@ -58,9 +58,9 @@ Stan kodu: `ClaudeCliAdapter` woła `claude` bez `CLAUDE_CONFIG_DIR`. `SettingsF
 5. Czy `claude --bg --resume <uuid> -- <prompt>` działa po skopiowaniu transkryptu do innego katalogu konta: czy zachowuje `sessionId` czy tworzy nowy, czy w sesji z worktree używa istniejącego worktree (a nie tworzy nowego), czy potrzebne są inne pliki niż `.jsonl` (np. `todos`, `file-history`). Wynik decyduje o AM-1007 (punkt 6).
 6. Czy dwa demony nie kolidują (gniazda, porty, `~/.claude.json` poza katalogiem).
 
-## Proponowany podział na zadania (do ROADMAP po akceptacji)
+## Podział na zadania
 
-Nowy kamień milowy po M9, np. **M10 · Wiele kont**:
+Kamień milowy **M10 · Wiele kont Claude** w [ROADMAP.md](../ROADMAP.md), przed wydaniem 1.0 (decyzja człowieka 2026-11-09; AM-905 zależy od AM-1007, AM-1008 jest po 1.0):
 
 | ID | Zadanie | Moduły | Zależy |
 | --- | --- | --- | --- |
@@ -73,7 +73,7 @@ Nowy kamień milowy po M9, np. **M10 · Wiele kont**:
 | AM-1007 | Kontynuacja sesji przerwanej `rate_limit` na innym koncie: automatycznie (gdy automatyka włączona) i ręcznie („Kontynuuj na koncie…”), kopia transkryptu, `--resume` z promptem kontynuacji, powiązanie starej i nowej sesji, ochrona przed pętlą; port `continueOn(...)` w `agent-runtime:api` po pytaniu do człowieka | `agent-runtime:api/impl`, `sessions:api/impl`, `accounts:impl`, `mission-control:ui`, `app` | AM-1006, wynik AM-1001 |
 | AM-1008 | (C) Dokładne zużycie i `resets_at` przez opcjonalny skrypt `statusLine` | `accounts:impl`, `agent-runtime:impl` | AM-1006 |
 
-Proponowane wymagania do `02-wymagania.md` (sekcja „Konta”):
+Wymagania w `02-wymagania.md`, sekcja „Konta”:
 
 | ID | Wymaganie | Prio |
 | --- | --- | --- |
@@ -86,11 +86,11 @@ Proponowane wymagania do `02-wymagania.md` (sekcja „Konta”):
 
 ## Konsekwencje
 
-- Ten ADR nic nie zmienia w kodzie. Po akceptacji osobny PR przenosi pomysł z `IDEAS.md` do `02-wymagania.md` i `ROADMAP.md` (proces z `IDEAS.md`).
+- Ten ADR nic nie zmienia w kodzie. Pomysł przeniesiono z `IDEAS.md` do `02-wymagania.md` (FR-L1–FR-L6) i `ROADMAP.md` (M10).
 - Zmiany `agent-runtime:api` i `sessions:api` (AM-1003) wymagają zgody człowieka i osobnego ADR o formacie `accounts.json`.
 - Sesje bez konta (wszystko sprzed zmiany) należą do konta domyślnego, więc po aktualizacji nic nie znika z listy.
 - Otwarte pytania do człowieka:
   1. ~~Czy wersja 1 ma przełączać tylko nowe sesje?~~ Rozstrzygnięte 2026-11-09: wersja 1 przełącza też istniejące sesje jako kontynuację (punkty 5 i 6, AM-1007, FR-L5 = S).
   2. ~~Gdzie tworzyć katalogi nowych kont?~~ Rozstrzygnięte 2026-11-09: `~/.claude-quayside/<slug>/` (punkt 1).
   3. ~~Chłodzenie po limicie?~~ Rozstrzygnięte 2026-11-09: domyślnie 5 h, konfigurowalne w oknie „Konta” (punkt 5); dokładny `resets_at` przez `statusLine` zostaje opcją AM-1008 (C).
-  4. Czy M10 wchodzi przed wydaniem 1.0, czy po nim?
+  4. ~~Czy M10 wchodzi przed 1.0?~~ Rozstrzygnięte 2026-11-09: tak, przed 1.0 (poza AM-1008).

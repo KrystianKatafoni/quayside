@@ -6,7 +6,7 @@ Format wpisu: krótki opis, bez rozwiązań.
 
 ## 1. Wiele kont Claude
 
-Obsługa wielu loginów/kont Claude naraz. Gdy limit jednej subskrypcji się wyczerpie, aplikacja automatycznie przełącza się na inne konto. Użytkownik może też zarządzać kontami ręcznie (wybór konta, wyłączenie automatyki). Plan i pytania: [ADR 0029](adr/0029-wiele-kont-claude.md) (proponowana).
+Przeniesione do zakresu (2026-11-09): wymagania FR-L1–FR-L6 w [02-wymagania.md](02-wymagania.md), zadania M10 w [ROADMAP.md](ROADMAP.md), plan w [ADR 0029](adr/0029-wiele-kont-claude.md).
 
 ## 2. Import i eksport konfiguracji
 

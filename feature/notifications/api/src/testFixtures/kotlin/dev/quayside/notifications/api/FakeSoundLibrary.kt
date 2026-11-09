@@ -7,8 +7,8 @@ import kotlinx.coroutines.CompletableDeferred
 /**
  * Scripted [SoundLibrary] for tests of code that lists and previews sounds (ENG-I7). [list] is the answer of
  * [sounds] (sorted by the fake), [result] the answer of every [play] of an installed sound; a sound outside [list]
- * is [SoundLibraryError.FAILED], and a failing [list] fails [play] with its error. [played] lists the plays that started; [cancelled] counts those stopped by
- * cancelling the caller while they waited for [gate].
+ * is [SoundLibraryError.FAILED], and a failing [list] fails [play] with its error. [played] lists the plays that
+ * started; [cancelled] counts those stopped by cancelling the caller while they waited for [gate].
  */
 public class FakeSoundLibrary(
     public var list: Outcome<List<SoundId>, SoundLibraryError> = Outcome.Ok(DEFAULT_SOUNDS),

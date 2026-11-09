@@ -379,16 +379,18 @@ data class ButtonOptions(val kind: ButtonKind = SECONDARY, val enabled: Boolean 
 
 // appearance:api (typy z core:design-tokens, bez Compose); AM-803: settings + update, AM-804: theme.json, dzień/noc, pliki motywów
 interface AppearanceApi {
-    val catalog: ThemeCatalog                     // 29 motywów, 22 typografie, własne (08-wyglad)
+    val catalog: StateFlow<ThemeCatalog>          // 29 motywów, 22 typografie i własne schematy (AM-814); rośnie po addScheme
     val settings: StateFlow<AppearanceSettings>   // zapisany wybór: scheme, typography, uiScale (S/M/L), density, dayNight (enabled, day, night)
     val applied: StateFlow<AppearanceSettings>    // to, co aplikacja rysuje teraz: settings.appliedFor(tryb macOS ciemny?); tryb czytany co 5 s
-    suspend fun update(change: (AppearanceSettings) -> AppearanceSettings): Outcome<AppearanceSettings, AppearanceError>  // zapis theme.json, potem publikacja
+    suspend fun update(change: (AppearanceSettings) -> AppearanceSettings): Outcome<AppearanceSettings, AppearanceError>  // zapis theme.json, potem publikacja; nie zmienia customSchemes
+    suspend fun addScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError>  // AM-814: wyprowadza tokeny, audyt NFR-6, zapis, nowy katalog; Taken/LowContrast/StorageFailed
 }
 interface ThemeFiles {                            // pliki theme.json wybrane przez użytkownika (FR-A6); niczego nie stosuje
     suspend fun read(source: Path): Outcome<AppearanceSettings, ThemeFileError>           // ścisły odczyt, do 64 KiB
-    suspend fun write(settings: AppearanceSettings, target: Path): Outcome<Unit, ThemeFileError>  // atomowo
+    suspend fun readSchemes(source: Path): Outcome<List<CustomScheme>, ThemeFileError>      // AM-814: customSchemes pliku, ścisło
+    suspend fun write(settings: AppearanceSettings, target: Path): Outcome<Unit, ThemeFileError>  // atomowo, razem z customSchemes
 }
-// appearance:impl: appearanceModule(storage, process, home, scope, logger) (suspend: pierwszy odczyt trybu przed oknem), themeFilesModule(catalog, io, logger),
+// appearance:impl: appearanceModule(storage, process, home, scope, logger) (suspend: pierwszy odczyt trybu przed oknem), themeFilesModule(appearance, io, logger),
 // builtInCatalog() (ten sam katalog bez dostępu do plików; używają go testy i testFixtures innych modułów)
 // appearance:ui (AM-803/804, tylko `app` go widzi): AppearanceController(appearance, terminal, files, picker, scope), ThemeFilePicker,
 // AppearanceDialog(controller, preview); podgląd to prawdziwy Mission Control składany w `app` (ADR 0022)

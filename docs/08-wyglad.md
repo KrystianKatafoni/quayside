@@ -251,7 +251,7 @@ Dwie nowe role tekstu obok TITLE, HEADING, BODY, CAPTION i CODE: `NAME` (mono, 1
 }
 ```
 
-Format ustala [ADR 0023](adr/0023-format-theme-json-i-tryb-macos.md). Koperta `schemaVersion` + `data` jest taka sama jak w pozostałych plikach konfiguracji (`JsonStore`). `uiScale` przyjmuje `S`, `M`, `L`, a `density` `COMPACT` lub `COMFORTABLE`. Sekcji `terminal` nie ma: font i rozmiar terminala zostają w `terminal.json` (ADR 0016). Sekcji `customSchemes` też nie ma: własne schematy kolorów to osobne zadanie.
+Format ustala [ADR 0023](adr/0023-format-theme-json-i-tryb-macos.md). Koperta `schemaVersion` + `data` jest taka sama jak w pozostałych plikach konfiguracji (`JsonStore`). `uiScale` przyjmuje `S`, `M`, `L`, a `density` `COMPACT` lub `COMFORTABLE`. Sekcji `terminal` nie ma: font i rozmiar terminala zostają w `terminal.json` (ADR 0016). Pole `customSchemes` (opcjonalna tablica własnych schematów: `key`, `name`, `mode`, `radius` i osiem kolorów `#RRGGBB` z tabeli) pojawia się tylko wtedy, gdy są własne schematy; schemat wchodzi do katalogu po audycie kontrastu NFR-6, a „Importuj schemat…” na ekranie Wygląd dodaje schematy z pliku od razu (zapis bez „Zastosuj”). Szczegóły w uzupełnieniu ADR 0023 (AM-814).
 
 Plik leży w `~/Library/Application Support/Quayside/theme.json`. Pola `scheme`, `dayScheme` i `nightScheme` przyjmują klucz każdego z 29 motywów. Wybór motywu nie zmienia `typography` — ekran Wygląd tylko podpowiada domyślną typografię motywu.
 

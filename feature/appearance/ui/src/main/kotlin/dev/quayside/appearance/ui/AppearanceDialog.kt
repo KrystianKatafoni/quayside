@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import dev.quayside.appearance.api.ThemeCatalog
 import dev.quayside.core.designsystem.AmButton
 import dev.quayside.core.designsystem.AmPanel
 import dev.quayside.core.designsystem.AmText
@@ -74,6 +75,7 @@ private fun DialogPanel(
     preview: @Composable () -> Unit,
 ) {
     val bypass = remember { PreviewBypass() }
+    val catalog by controller.catalog.collectAsState()
     AmPanel(
         modifier =
             Modifier
@@ -92,7 +94,7 @@ private fun DialogPanel(
             Arrangement.spacedBy(space = 10.dp),
         ) {
             AmText(AppearanceStrings["title"], role = TextRole.HEADING)
-            Columns(state.draft, controller, bypass, preview)
+            Columns(state.draft, catalog, controller, bypass, preview)
             Footer(state, controller)
         }
     }
@@ -102,16 +104,17 @@ private fun DialogPanel(
 @Composable
 private fun Columns(
     draft: AppearanceDraft,
+    catalog: ThemeCatalog,
     controller: AppearanceController,
     bypass: PreviewBypass,
     preview: @Composable () -> Unit,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(space = 16.dp)) {
         Column(Modifier.width(LEFT_WIDTH), Arrangement.spacedBy(space = 8.dp)) {
-            LeftColumn(draft, controller)
+            LeftColumn(draft, catalog, controller)
         }
         Column(Modifier.weight(weight = 1f), Arrangement.spacedBy(space = 8.dp)) {
-            RightColumn(draft, controller, bypass, preview)
+            RightColumn(draft, catalog, controller, bypass, preview)
         }
     }
 }
@@ -120,14 +123,15 @@ private fun Columns(
 @Composable
 private fun LeftColumn(
     draft: AppearanceDraft,
+    catalog: ThemeCatalog,
     controller: AppearanceController,
 ) {
     val onIntent = controller::onIntent
     Label("themes.label")
     DayNightControls(draft, onIntent)
-    ThemeList(draft, controller.catalog, onIntent)
+    ThemeList(draft, catalog, onIntent)
     Label("typography.label")
-    TypographyList(draft, controller.catalog, onIntent)
+    TypographyList(draft, catalog, onIntent)
     Label("scale.label")
     ScaleChoice(draft, onIntent)
     Label("density.label")
@@ -138,16 +142,17 @@ private fun LeftColumn(
 @Composable
 private fun RightColumn(
     draft: AppearanceDraft,
+    catalog: ThemeCatalog,
     controller: AppearanceController,
     bypass: PreviewBypass,
     preview: @Composable () -> Unit,
 ) {
     val onIntent = controller::onIntent
     Label("preview.label")
-    PreviewPane(draft, controller.catalog, bypass, preview)
-    TerminalSample(draft, controller.catalog)
+    PreviewPane(draft, catalog, bypass, preview)
+    TerminalSample(draft, catalog)
     Label("terminalFont.label")
-    TerminalFontList(draft, terminalFontChoices(controller.catalog), onIntent, bypass.after)
+    TerminalFontList(draft, terminalFontChoices(catalog), onIntent, bypass.after)
     Label("terminalSize.label")
     TerminalSizeStepper(draft.terminalSize, onIntent)
 }

@@ -13,7 +13,7 @@ import dev.quayside.core.designsystem.AmTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 /** AmTheme over [content] with [look]; wraps both windows inside `application {}` in Main. */
@@ -54,14 +54,16 @@ internal fun Density.scaledBy(scale: UiScale): Density = Density(density * scale
 
 /**
  * The looks of what [appearance] applies now (`applied`: the day or night theme when day/night is on), in [scope]
- * (Eagerly); the value is current before the first read.
+ * (Eagerly); the value is current before the first read. A custom scheme added in the meantime joins the catalog before
+ * the settings that name it, so a look is never made from a theme the catalog does not have.
  */
 internal fun appLooks(
     appearance: AppearanceApi,
     scope: CoroutineScope,
-): StateFlow<AppLook> {
-    val catalog = appearance.catalog
-    return appearance.applied
-        .map(catalog::lookOf)
-        .stateIn(scope, SharingStarted.Eagerly, catalog.lookOf(appearance.applied.value))
-}
+): StateFlow<AppLook> =
+    combine(appearance.catalog, appearance.applied) { catalog, applied -> catalog.lookOf(applied) }
+        .stateIn(
+            scope,
+            SharingStarted.Eagerly,
+            appearance.catalog.value.lookOf(appearance.applied.value),
+        )

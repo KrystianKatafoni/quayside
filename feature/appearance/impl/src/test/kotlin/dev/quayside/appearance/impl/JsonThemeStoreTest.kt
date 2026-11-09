@@ -69,7 +69,7 @@ class JsonThemeStoreTest {
 
             api.settings.value shouldBe AppearanceSettings()
             api.applied.value shouldBe AppearanceSettings()
-            api.catalog shouldBe catalog
+            api.catalog.value shouldBe catalog
         }
 
     @Test

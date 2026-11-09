@@ -60,6 +60,9 @@ public sealed interface AppearanceIntent {
     /** Asks for a theme file and puts its settings into the draft; saves nothing. */
     public data object Import : AppearanceIntent
 
+    /** Asks for a theme file and adds its custom schemes to the catalog at once (they are saved, not drafted). */
+    public data object ImportSchemes : AppearanceIntent
+
     /** Asks where to save and writes the draft (not the saved settings) as a theme file. */
     public data object Export : AppearanceIntent
 
@@ -67,7 +70,7 @@ public sealed interface AppearanceIntent {
 }
 
 /** What a finished import or export tells the user. */
-public enum class FileNotice { IMPORTED, EXPORTED }
+public enum class FileNotice { IMPORTED, EXPORTED, SCHEMES_IMPORTED }
 
 /** Where the file dialogs of the system are shown; null = the user cancelled. */
 public interface ThemeFilePicker {
@@ -97,10 +100,10 @@ public class AppearanceController(
     private val dialog = MutableStateFlow<AppearanceDialogState?>(null)
     private val generation = AtomicInteger()
     private val writing = Mutex()
-    private val actions = ThemeFileActions(files, picker)
+    private val actions = ThemeFileActions(files, picker, appearance)
 
-    /** The catalog the dialog lists (the one of the appearance module). */
-    internal val catalog: ThemeCatalog get() = appearance.catalog
+    /** The catalog the dialog lists (the one of the appearance module); grows when custom schemes are imported. */
+    internal val catalog: StateFlow<ThemeCatalog> get() = appearance.catalog
 
     /** The open dialog; null = closed. */
     public val state: StateFlow<AppearanceDialogState?> = dialog
@@ -121,7 +124,7 @@ public class AppearanceController(
     public fun onIntent(intent: AppearanceIntent) {
         val current = dialog.value ?: return
         if (current.busy) return
-        val edited = editedDraft(current.draft, intent, appearance.catalog)
+        val edited = editedDraft(current.draft, intent, appearance.catalog.value)
         if (edited == null) {
             start(intent, current.draft)
         } else {
@@ -137,6 +140,7 @@ public class AppearanceController(
         when (intent) {
             AppearanceIntent.Apply -> apply(draft)
             AppearanceIntent.Import -> runFileAction { actions.import() }
+            AppearanceIntent.ImportSchemes -> runFileAction { actions.importSchemes() }
             AppearanceIntent.Export -> runFileAction { actions.export(draft.settings) }
             else -> Unit
         }

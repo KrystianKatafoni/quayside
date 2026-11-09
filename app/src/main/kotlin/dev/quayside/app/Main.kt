@@ -58,7 +58,7 @@ fun main() {
     val appearance = runBlocking { appearanceModule(core.storage, core.process, core.homeDir, appScope, core.logger) }
     val looks = appLooks(appearance, appScope)
     // Before the first window (JediTerm reads the installed fonts once, by name): every font the dialog offers.
-    registerTerminalFonts(appearance.catalog, core.logger)
+    registerTerminalFonts(appearance.catalog.value, core.logger)
     val modules = appModules(core, projects, runBlocking { storedSettings(core) }, appearance, looks)
     val hooks = hookDeps(core, projects)
     val keys = WindowKeys()
@@ -113,7 +113,7 @@ private fun appModules(
         registry,
         terminal,
         SettingsDeps(notifications, stored.summarySettings, stored.layout),
-        AppearanceDeps(appearance, looks, themeFilesModule(appearance.catalog, core.dispatchers.io, core.logger)),
+        AppearanceDeps(appearance, looks, themeFilesModule(appearance, core.dispatchers.io, core.logger)),
     )
 }
 

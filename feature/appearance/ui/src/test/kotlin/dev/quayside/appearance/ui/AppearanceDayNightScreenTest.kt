@@ -122,6 +122,7 @@ class AppearanceDayNightScreenTest {
             awaitFocus(AppearanceTags.theme(PAPER))
 
             await(AppearanceTags.IMPORT).assertIsNotFocused()
+            await(AppearanceTags.IMPORT_SCHEMES).assertIsNotFocused()
             await(AppearanceTags.EXPORT).assertIsNotFocused()
         }
 

@@ -36,11 +36,13 @@ internal suspend fun loadStart(
  * ids and reports the keys.
  */
 private fun knownIdsOnly(
-    settings: AppearanceSettings,
-    catalog: ThemeCatalog,
+    loaded: AppearanceSettings,
+    base: ThemeCatalog,
     logger: Logger,
 ): AppearanceSettings {
     val defaults = AppearanceSettings()
+    val settings = loaded.copy(customSchemes = acceptedSchemes(base, loaded.customSchemes))
+    val catalog = catalogWith(base, settings.customSchemes)
     val fixed =
         settings.copy(
             scheme = settings.scheme.takeIf { catalog.theme(it) != null } ?: defaults.scheme,
@@ -51,6 +53,6 @@ private fun knownIdsOnly(
                     night = settings.dayNight.night.takeIf { catalog.theme(it) != null } ?: defaults.dayNight.night,
                 ),
         )
-    if (fixed != settings) logger.warn("theme.json names an id outside the catalog, using the default")
+    if (fixed != loaded) logger.warn("theme.json names an id outside the catalog, using the default")
     return fixed
 }

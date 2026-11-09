@@ -80,11 +80,13 @@ Plan i decyzje: [ADR 0029](adr/0029-wiele-kont-claude.md).
 | FR-L1 | Lista kont Claude (konto domyślne `~/.claude` + dodatkowe katalogi w `~/.claude-quayside/<nazwa>/`), dodanie przez logowanie w karcie terminala, zmiana nazwy, wyłączenie, usunięcie z listy bez kasowania katalogu | S |
 | FR-L2 | Stan konta: dostępne, limit (od kiedy i do kiedy wg czasu chłodzenia, domyślnie 5 h, konfigurowalny; ręczne odblokowanie), wylogowane, nieznane | S |
 | FR-L3 | Wybór konta przy starcie agenta: „Auto” albo konkretne; konto widoczne w panelu szczegółów | S |
-| FR-L4 | Automatyka (wyłączalna): po `rate_limit` nowe sesje, streszczenia i przerwane sesje (FR-L5) idą na następne dostępne konto, z powiadomieniem | S |
-| FR-L5 | Kontynuacja sesji przerwanej limitem na innym koncie: automatycznie (gdy automatyka włączona) albo ręcznie; stara sesja zostaje z odnośnikiem do nowej | S |
+| FR-L4 | Po `rate_limit` konto dostaje stan limitu; Quayside proponuje przełączenie w oknie zgody (lista sesji z tego konta, domyślnie żadna zaznaczona); ustawienie „Proponuj przełączenie po limicie” wyłącza okno (zostaje powiadomienie); nowe sesje i streszczenia w trybie „Automatycznie” omijają konta z limitem | S |
+| FR-L5 | Przeniesienie sesji na inne konto, zawsze po potwierdzeniu: sesje pracujące, czekające i przerwane limitem (nie zakończone); sesja pracująca domyślnie po zakończeniu tury; stara sesja zatrzymana i powiązana z nową | S |
 | FR-L6 | Zużycie limitu i czas odnowienia per konto | C |
 | FR-L7 | Widok „Konta”: logowanie i wylogowanie wielu kont, dodawanie, usuwanie (bez kasowania katalogu), kolejność, przełączniki „Aktywne” i „W automacie” per konto, odblokowanie limitu, główny przełącznik automatyki i czas chłodzenia | S |
-| FR-L8 | Ikona bieżącego konta w prawym górnym rogu okna; klik otwiera listę kont pod ikoną z ręcznym przełączeniem bieżącego konta (dla nowych sesji), opcją „Automatycznie” i wejściem do widoku „Konta” | S |
+| FR-L8 | Ikona bieżącego konta w prawym górnym rogu okna; klik otwiera listę kont pod ikoną z ręcznym przełączeniem bieżącego konta (dla nowych sesji), opcją „Automatycznie” i wejściem do widoku „Konta”; każde przełączenie potwierdzane oknem z listą wszystkich sesji, które można przenieść (domyślnie żadna) | S |
+| FR-L9 | Wspólny profil wszystkich kont: historia rozmów i pamięć wspólne dla całego Quayside, rozdzielone per projekt i podprojekt; wspólne instrukcje, skille, subagenci i ustawienia; osobny tylko login i stan supervisora | S |
+| FR-L10 | Ustawienie sesji „Przełączaj konto automatycznie” (domyślnie wyłączone): po limicie sesja przenosi się bez pytania na następne dostępne konto, z powiadomieniem | S |
 
 ## Wymagania niefunkcjonalne
 

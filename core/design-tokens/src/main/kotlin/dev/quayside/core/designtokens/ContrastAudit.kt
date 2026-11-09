@@ -13,7 +13,7 @@ public object ContrastAudit {
     /** Every violated rule as `label value < limit`; the label is the part before the first space. */
     public fun problems(colors: ColorTokens): List<String> {
         val panel = colors.surfaces.panel.over(colors.surfaces.bg)
-        return textProblems(colors, panel) + statusProblems(colors, panel) + hueProblems(colors)
+        return textProblems(colors, panel) + statusProblems(colors, panel) + hueProblems(colors) + ansiProblems(colors)
     }
 
     private fun textProblems(
@@ -35,6 +35,20 @@ public object ContrastAudit {
                 Triple("termText/termBg", colors.terminal.termText, colors.terminal.termBg),
             )
         return pairs.mapNotNull { (label, fg, bg) -> contrastProblem(label, fg, bg, Wcag.TEXT_MIN) }
+    }
+
+    /**
+     * Every ANSI colour needs 4.5 to 1 on `termBg`, except the background colour of the mode: index 0 when `termBg`
+     * is closer to black (dark mode), index 15 otherwise (AM-811, ADR 0027). The mode is detected by the luminance of
+     * `termBg`, which agrees with `theme.mode` for the 29 catalog themes; it may diverge for user themes (AM-814).
+     */
+    private fun ansiProblems(colors: ColorTokens): List<String> {
+        val termBg = colors.terminal.termBg
+        val dark = Wcag.contrast(termBg, Rgba.BLACK) <= Wcag.contrast(termBg, Rgba.WHITE)
+        val modeBackground = if (dark) 0 else AnsiColors.SIZE - 1
+        return (0 until AnsiColors.SIZE)
+            .filter { it != modeBackground }
+            .mapNotNull { contrastProblem("ansi$it/termBg", colors.terminal.ansi[it], termBg, Wcag.TEXT_MIN) }
     }
 
     private fun statusProblems(

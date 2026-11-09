@@ -75,6 +75,37 @@ class ContrastAuditTest {
     }
 
     @Test
+    fun `reports an ansi colour below 4_5 on termBg`() {
+        val colors = base.copy(terminal = base.terminal.copy(ansi = withAnsi(base.terminal.ansi, 1, rgb(0xCD0000))))
+
+        labels(colors) shouldBe listOf("ansi1/termBg")
+    }
+
+    @Test
+    fun `ignores the background colour of a dark mode`() {
+        // Index 0 is black on the dark termBg (1.07 to 1) and passes; any other index is audited, 15 included.
+        base.terminal.ansi[0] shouldBe rgb(0x000000)
+        ContrastAudit.problems(base).shouldBeEmpty()
+
+        val weakWhite = base.copy(terminal = base.terminal.copy(ansi = withAnsi(base.terminal.ansi, 15, rgb(0x0B0A10))))
+
+        labels(weakWhite) shouldBe listOf("ansi15/termBg")
+    }
+
+    @Test
+    fun `ignores the background colour of a light mode`() {
+        val light = lightScheme()
+        // Index 15 is white on the white termBg (1 to 1) and passes; index 0 is audited on a light mode.
+        light.terminal.ansi[15] shouldBe rgb(0xFFFFFF)
+        ContrastAudit.problems(light).shouldBeEmpty()
+
+        val weakAnsi = withAnsi(light.terminal.ansi, 0, rgb(0xFFFFFF))
+        val weakBlack = light.copy(terminal = light.terminal.copy(ansi = weakAnsi))
+
+        labels(weakBlack) shouldBe listOf("ansi0/termBg")
+    }
+
+    @Test
     fun `grey accent has no hue conflict`() {
         val colors = base.copy(content = base.content.copy(accent = rgb(0xFFFFFF)))
 
@@ -82,6 +113,35 @@ class ContrastAuditTest {
     }
 
     private companion object {
+        fun withAnsi(
+            ansi: AnsiColors,
+            index: Int,
+            color: Rgba,
+        ): AnsiColors = AnsiColors(ansi.colors.toMutableList().also { it[index] = color })
+
+        /** The xterm palette corrected to 4.5 to 1 on white; index 15 is the (uncorrected) mode background. */
+        val LIGHT_ANSI: AnsiColors =
+            AnsiColors(
+                listOf(
+                    0x000000L,
+                    0xCD0000L,
+                    0x008900L,
+                    0x797900L,
+                    0x1976D1L,
+                    0xCD00CDL,
+                    0x008383L,
+                    0x757575L,
+                    0x4C4C4CL,
+                    0xED0000L,
+                    0x008A00L,
+                    0x7A7A00L,
+                    0x427AA9L,
+                    0xD100D1L,
+                    0x008282L,
+                    0xFFFFFFL,
+                ).map { rgb(it) },
+            )
+
         fun lightScheme(): ColorTokens =
             ColorTokens(
                 surfaces =
@@ -110,7 +170,7 @@ class ContrastAuditTest {
                         err = rgb(0xB91C1C),
                         work = rgb(0x4338CA),
                     ),
-                terminal = TerminalColors(termBg = rgb(0x1E242C), termText = rgb(0xE2E8F0)),
+                terminal = TerminalColors(termBg = rgb(0xFFFFFF), termText = rgb(0x202020), ansi = LIGHT_ANSI),
             )
 
         private fun case(
@@ -144,7 +204,7 @@ class ContrastAuditTest {
                 },
                 case("text/sel", listOf("text/sel")) { it.copy(surfaces = it.surfaces.copy(sel = rgb(0xE0E0E8))) },
                 case("termText/termBg", listOf("termText/termBg")) {
-                    it.copy(terminal = it.terminal.copy(termBg = rgb(0xE0E0E8)))
+                    it.copy(terminal = it.terminal.copy(termText = rgb(0x303040)))
                 },
                 case("accentInk/accent", listOf("accentInk/accent")) {
                     it.copy(content = it.content.copy(accent = rgb(0x303030)))

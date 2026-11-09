@@ -74,13 +74,13 @@ internal class WindowControllers(
     val notificationSettings =
         NotificationSettingsController(
             modules.settings.notifications.settings,
-            modules.settings.notifications.voices,
-            modules.settings.notifications.preview,
+            modules.settings.notifications.choices.voices,
+            modules.settings.notifications.choices.preview,
             modules.projects.api.projects,
             scope,
         )
 
-    val soundPreview = SoundPreviewController(modules.settings.notifications.sounds, scope)
+    val soundPreview = SoundPreviewController(modules.settings.notifications.choices.sounds, scope)
 
     private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
 

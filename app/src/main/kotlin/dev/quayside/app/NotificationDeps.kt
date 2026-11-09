@@ -33,13 +33,18 @@ internal class AttachBridge {
 
 /**
  * The notification center with the popup controller of the popup window, the [attach] bridge (AM-702) and the
- * [settings] repo behind the settings dialog (AM-704).
+ * [settings] repo behind the settings dialog (AM-704) and its [choices] (voices and sounds).
  */
 internal class NotificationDeps(
     val center: NotificationCenter,
     val popups: PopupController,
     val attach: AttachBridge,
     val settings: NotificationSettingsRepo,
+    val choices: NotificationChoices,
+)
+
+/** The voices, the voice sample and the sounds the settings dialog lists and previews (AM-704, AM-813, AM-815). */
+internal class NotificationChoices(
     val voices: VoiceCatalog,
     val preview: VoicePreview,
     val sounds: SoundLibrary,
@@ -78,5 +83,11 @@ internal fun notificationDeps(
     val voices = voiceCatalogModule(core.process, core.homeDir)
     val preview = voicePreviewModule(core.process, core.homeDir)
     val sounds = soundLibraryModule(core.process, core.homeDir, core.dispatchers.io)
-    return NotificationDeps(center, PopupController(center, settings, scope), attach, settings, voices, preview, sounds)
+    return NotificationDeps(
+        center,
+        PopupController(center, settings, scope),
+        attach,
+        settings,
+        NotificationChoices(voices, preview, sounds),
+    )
 }

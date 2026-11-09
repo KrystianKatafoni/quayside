@@ -9,7 +9,7 @@ import dev.quayside.notifications.api.SoundLibrary
 import dev.quayside.notifications.api.SoundLibraryContract
 import dev.quayside.notifications.api.SoundLibraryError
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -22,7 +22,7 @@ class AfplaySoundLibraryTest : SoundLibraryContract() {
     @TempDir
     lateinit var dir: Path
 
-    private val dispatcher = Dispatchers.Unconfined
+    private val dispatcher = UnconfinedTestDispatcher()
 
     private fun sounds(vararg files: String): Path {
         val sounds = dir.resolve("sounds").createDirectories()

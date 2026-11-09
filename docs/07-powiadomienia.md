@@ -16,7 +16,7 @@ Powiadomienia mają jeden cel: gdy agent czeka, użytkownik ma się o tym dowied
 
 Globalne przełączniki: popupy, głos, **Nie przeszkadzać** w godzinach (domyślnie 22:00–07:00), respektowanie trybu Skupienia macOS.
 
-**Dźwięk (AM-812):** kanał „Dźwięk” odtwarza krótki dźwięk systemowy przez `/usr/bin/afplay` (`ProcessRunner`, jak `say`). Domyślne mapowanie: czeka na odpowiedź Glass, zgoda Ping, błąd Basso, koniec tury Hero, pull request Pop, praca dłużej niż N min Submarine, dzwonek terminala Tink; brakujący plik zastępuje Glass. Najwyżej jeden dźwięk na 2 s (ważniejszy wypiera czekający), cisza nocna i Skupienie go wyciszają, a gra także przy aktywnym oknie aplikacji i przy mikrofonie. 
+**Dźwięk (AM-812):** kanał „Dźwięk” odtwarza krótki dźwięk systemowy przez `/usr/bin/afplay` (`ProcessRunner`, jak `say`). Domyślne mapowanie: czeka na odpowiedź Glass, zgoda Ping, błąd Basso, koniec tury Hero, pull request Pop, praca dłużej niż N min Submarine, dzwonek terminala Tink; brakujący plik zastępuje Glass. Najwyżej jeden dźwięk na 2 s (ważniejszy wypiera czekający), cisza nocna i Skupienie go wyciszają, a gra także przy aktywnym oknie aplikacji i przy mikrofonie.
 
 **Wybór dźwięku i głośność (AM-815):** okno ustawień ma sekcję „Dźwięk”: osobny dźwięk dla każdego rodzaju zdarzenia (lista plików `*.aiff` z `/System/Library/Sounds`), głośność 0–100% (`afplay -v`, liczona od głośności systemu; domyślnie 100) i przycisk „Odsłuchaj”/„Zatrzymaj” przy każdym wierszu. `notifications.json` zapisuje sekcję `sound` tylko przy odstępstwach od domyślnych (schemat bez zmian, klucz opcjonalny). Zapisany dźwięk, którego nie ma w systemie, zastępuje Glass.
 

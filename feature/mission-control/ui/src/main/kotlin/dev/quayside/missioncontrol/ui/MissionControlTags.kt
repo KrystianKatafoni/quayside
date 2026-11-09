@@ -46,6 +46,11 @@ internal object MissionControlTags {
     const val NEW_AGENT_PROBLEM = "missionControl.newAgent.problem"
     const val NEW_AGENT_CANCEL = "missionControl.newAgent.cancel"
     const val NEW_AGENT_START = "missionControl.newAgent.start"
+    const val NEW_AGENT_TRUST = "missionControl.newAgent.trust"
+    const val NEW_AGENT_TRUST_PATH = "missionControl.newAgent.trust.path"
+    const val NEW_AGENT_TRUST_WARNING = "missionControl.newAgent.trust.warning"
+    const val NEW_AGENT_TRUST_CANCEL = "missionControl.newAgent.trust.cancel"
+    const val NEW_AGENT_TRUST_ACCEPT = "missionControl.newAgent.trust.accept"
 
     const val SESSION_BAR = "missionControl.sessionBar"
     const val SESSION_BAR_TILE = "missionControl.sessionBar.tile"

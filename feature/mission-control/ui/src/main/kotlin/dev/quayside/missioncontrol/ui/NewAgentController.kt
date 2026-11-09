@@ -1,5 +1,6 @@
 package dev.quayside.missioncontrol.ui
 
+import dev.quayside.agentruntime.api.WorkspaceTrust
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
@@ -8,6 +9,7 @@ import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.NewSessionSpec
+import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionError
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +26,20 @@ internal sealed interface NewAgentEvent {
     data object Submit : NewAgentEvent
 
     data object Cancel : NewAgentEvent
+
+    /** The user agreed to trust the directory of the consent step. */
+    data object TrustAccept : NewAgentEvent
+
+    /** The user declined to trust the directory of the consent step. */
+    data object TrustDecline : NewAgentEvent
 }
+
+/** The ports of [NewAgentController] in one type (ENG-C2: at most five parameters). */
+public data class NewAgentPorts(
+    val commands: SessionCommands,
+    val projects: ProjectsApi,
+    val trust: WorkspaceTrust,
+)
 
 /**
  * Logic of the "Nowy agent" dialog (FR-S3). Methods run on Main; [SessionCommands.start] runs in [scope] (the window
@@ -32,14 +47,16 @@ internal sealed interface NewAgentEvent {
  * prompt, the name or the agent (ENG-C8). Never throws.
  */
 public class NewAgentController(
-    private val commands: SessionCommands,
-    private val projects: ProjectsApi,
+    ports: NewAgentPorts,
     private val scope: CoroutineScope,
     private val logger: Logger,
     private val onStarted: (ProjectId, SessionId) -> Unit,
 ) {
+    private val commands = ports.commands
+    private val projects = ports.projects
     private val current = MutableStateFlow<NewAgentState?>(null)
     private val open = MutableStateFlow(false)
+    private val trustFlow = NewAgentTrustFlow(current, ports.trust, scope, logger, ::run)
 
     /** Null = closed. */
     internal val state: StateFlow<NewAgentState?> = current
@@ -58,12 +75,17 @@ public class NewAgentController(
         when (event) {
             is NewAgentEvent.Edit -> edit(event.form)
             NewAgentEvent.Submit -> submit()
-            NewAgentEvent.Cancel -> if (current.value?.busy == false) show(null)
+            NewAgentEvent.Cancel -> cancel()
+            NewAgentEvent.TrustAccept -> trustFlow.accept()
+            NewAgentEvent.TrustDecline -> trustFlow.decline()
         }
     }
 
+    /** The fields are fixed while a start runs and in the consent step (the restart uses the form as it is). */
     private fun edit(form: NewAgentForm) {
-        current.update { shown -> if (shown == null || shown.busy) shown else shown.copy(form = form) }
+        current.update { shown ->
+            if (shown == null || shown.busy || shown.trust != null) shown else shown.copy(form = form)
+        }
     }
 
     private fun show(next: NewAgentState?) {
@@ -71,11 +93,21 @@ public class NewAgentController(
         open.value = next != null
     }
 
+    /** In the consent step Cancel means "no"; otherwise it closes the dialog unless a start runs. */
+    private fun cancel() {
+        if (current.value?.trust != null) {
+            trustFlow.decline()
+        } else if (current.value?.busy == false) {
+            show(null)
+        }
+    }
+
+    /** Every user submit forgets an earlier trust write, so a new refusal asks again. */
     private fun submit() {
-        val shown = current.value?.takeUnless { it.busy } ?: return
+        val shown = current.value?.takeUnless { it.busy || it.trust != null } ?: return
         when (val spec = NewAgentRules.specOf(shown.form)) {
             is Outcome.Err -> current.value = shown.copy(problem = spec.error)
-            is Outcome.Ok -> start(shown, spec.value.first, spec.value.second)
+            is Outcome.Ok -> start(shown.copy(trustTried = false), spec.value.first, spec.value.second)
         }
     }
 
@@ -86,15 +118,20 @@ public class NewAgentController(
         spec: NewSessionSpec,
     ) {
         current.value = shown.copy(busy = true, problem = null)
-        scope.launch {
-            try {
-                when (val result = commands.start(project, spec)) {
-                    is Outcome.Ok -> started(project, result.value)
-                    is Outcome.Err -> failed(result.error)
-                }
-            } finally {
-                current.update { it?.copy(busy = false) }
+        scope.launch { run(project, spec) }
+    }
+
+    private suspend fun run(
+        project: ProjectId,
+        spec: NewSessionSpec,
+    ) {
+        try {
+            when (val result = commands.start(project, spec)) {
+                is Outcome.Ok -> started(project, result.value)
+                is Outcome.Err -> failed(project, result.error)
             }
+        } finally {
+            current.update { it?.copy(busy = false) }
         }
     }
 
@@ -107,14 +144,20 @@ public class NewAgentController(
         onStarted(project, id)
     }
 
-    private fun failed(error: SessionError) {
-        val problem = (error as? SessionError.Runtime)?.problem?.name
-        logger.warn("new agent: start failed", "error" to error::class.simpleName, "problem" to problem)
+    private fun failed(
+        project: ProjectId,
+        error: SessionError,
+    ) {
+        val problem = (error as? SessionError.Runtime)?.problem
+        logger.warn("new agent: start failed", "error" to error::class.simpleName, "problem" to problem?.name)
         val reason = NewAgentProblem.StartFailed(NewAgentRules.failureOf(error))
+        val untrusted = problem == RuntimeProblem.WORKSPACE_NOT_TRUSTED
         current.update { shown ->
-            shown?.let {
-                val form = if (error is SessionError.UnknownProject) it.form.copy(project = null) else it.form
-                it.copy(form = form, problem = reason)
+            val dir = shown?.projects?.firstOrNull { it.id == project }?.dir
+            when {
+                shown == null -> null
+                untrusted && dir != null -> shown.refusedBy(dir)
+                else -> shown.copy(form = shown.form.forgetUnknownProject(error), problem = reason)
             }
         }
     }

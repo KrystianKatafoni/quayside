@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import dev.quayside.agentruntime.api.FakeWorkspaceTrust
 import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.core.domain.Logger
@@ -87,6 +88,7 @@ internal fun RecordingLogger.dump(): String =
 internal class NewAgentRig(
     val commands: RecordingCommands,
     val log: RecordingLogger = RecordingLogger(),
+    val trust: FakeWorkspaceTrust = FakeWorkspaceTrust(),
 ) {
     val started = CopyOnWriteArrayList<Pair<ProjectId, SessionId>>()
     var controller: NewAgentController? = null
@@ -102,7 +104,11 @@ internal fun ComposeUiTest.showNewAgent(
             val scope = rememberCoroutineScope()
             val controller =
                 remember {
-                    NewAgentController(rig.commands, NewAgentWorld.projects(), scope, logger) { project, id ->
+                    NewAgentController(
+                        NewAgentPorts(rig.commands, NewAgentWorld.projects(), rig.trust),
+                        scope,
+                        logger,
+                    ) { project, id ->
                         rig.started += project to id
                     }.also { rig.controller = it }
                 }

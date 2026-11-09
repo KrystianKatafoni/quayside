@@ -19,6 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.Arguments.arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.nio.file.Path
 import java.time.ZoneOffset
 
 /** Texts of `i18n/missioncontrol.properties` (NFR-10): every key Mission Control can show exists and is filled in. */
@@ -41,6 +42,15 @@ internal class MissionControlStringsTest {
         MissionControlStrings["newAgent.button"] shouldBe "Nowy agent" // the key cap comes from SessionKeyCaps
         MissionControlStrings["newAgent.start"] shouldContain "Uruchom"
         MissionControlStrings["newAgent.start"] shouldContain "⌘⏎"
+    }
+
+    @Test
+    fun `the trust step warns about settings, hooks and MCP servers and about the config file`() {
+        val warning = MissionControlStrings["newAgent.trust.warning"]
+
+        warning shouldContain "hooki"
+        warning shouldContain "MCP"
+        warning shouldContain "~/.claude.json"
     }
 
     @Test
@@ -154,6 +164,11 @@ internal class MissionControlStringsTest {
                 "newAgent.problem.promptTooLong",
                 "newAgent.problem.nameInvalid",
                 "newAgent.problem.agentInvalid",
+                "newAgent.trust.title",
+                "newAgent.trust.path",
+                "newAgent.trust.warning",
+                "newAgent.trust.cancel",
+                "newAgent.trust.accept",
             )
 
         private val errors: List<SessionError> =
@@ -163,6 +178,15 @@ internal class MissionControlStringsTest {
                 SessionError.UnknownProject(ProjectId("p")),
                 SessionError.StopIncomplete(stopped = 0, failed = listOf(SessionId("a"))),
             ) + RuntimeProblem.entries.map { SessionError.Runtime(it) }
+
+        private val trustDir = Path.of("/Users/test/projects/quayside")
+
+        private val trustProblems: List<NewAgentProblem> =
+            listOf(
+                NewAgentProblem.NotTrusted(trustDir),
+                NewAgentProblem.TrustFailed(trustDir),
+                NewAgentProblem.TrustIneffective(trustDir),
+            )
 
         private val states =
             listOf(
@@ -188,7 +212,8 @@ internal class MissionControlStringsTest {
                 statuses.map { Freshness.of(it, ZoneOffset.UTC) } +
                 statuses.map { Freshness.of(it, ZoneOffset.UTC, short = true) } +
                 errors.map(SessionActionMessages::reason) +
-                errors.map(NewAgentRules::failureOf)
+                errors.map(NewAgentRules::failureOf) +
+                trustProblems.map(NewAgentProblem::text)
 
         private fun argumentTexts(): List<UiText> =
             generated().filter { it.args.isNotEmpty() } +
@@ -199,6 +224,7 @@ internal class MissionControlStringsTest {
                     UiText("header.global", listOf("3")),
                     UiText("row.project", listOf("Quayside")),
                     UiText("preview.title", listOf("fix-login")),
+                    UiText("newAgent.trust.path", listOf("/Users/test/projects/quayside")),
                 )
 
         fun allKeys(): Set<String> = generated().map { it.key }.toSet() + UI_KEYS
@@ -251,6 +277,9 @@ internal class MissionControlStringsTest {
                 arguments("newAgent.permission.plan", "Tylko plan"),
                 arguments("newAgent.permission.bypass", "Pomiń zgody"),
                 arguments("newAgent.model.default", "Domyślny"),
+                arguments("newAgent.trust.title", "Zaufać katalogowi?"),
+                arguments("newAgent.trust.cancel", "Anuluj"),
+                arguments("newAgent.trust.accept", "Zaufaj i uruchom"),
             )
 
         @JvmStatic

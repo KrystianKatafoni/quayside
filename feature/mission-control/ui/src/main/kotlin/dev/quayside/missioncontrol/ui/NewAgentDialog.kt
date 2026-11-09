@@ -66,6 +66,7 @@ private fun NewAgentPopup(
 /**
  * The focus starts on the prompt, never on a button (NFR-6), and returns there when a start ends or a problem
  * appears. Escape cancels and ⌘⏎ starts from every field; the controller ignores both while a start runs.
+ * In the consent step the focus starts on "Anuluj", Escape declines and ⌘⏎ is ignored.
  */
 @Composable
 private fun Panel(
@@ -73,32 +74,46 @@ private fun Panel(
     onEvent: (NewAgentEvent) -> Unit,
 ) {
     val prompt = remember { FocusRequester() }
-    LaunchedEffect(state.busy, state.problem) { if (!state.busy) prompt.requestFocus() }
+    val asking = state.trust != null
+    LaunchedEffect(state.busy, state.problem, asking) { if (!state.busy && !asking) prompt.requestFocus() }
     AmPanel(
         modifier =
             Modifier
                 .width(width = 520.dp)
-                .onPreviewKeyEvent { windowKey(it, onEvent) }
+                .onPreviewKeyEvent { windowKey(it, asking, onEvent) }
                 .testTag(MissionControlTags.NEW_AGENT_DIALOG),
     ) {
         Column(modifier = Modifier.padding(all = 16.dp), verticalArrangement = Arrangement.spacedBy(space = 8.dp)) {
-            AmText(MissionControlStrings["newAgent.title"], role = TextRole.HEADING)
-            NewAgentFields(state, prompt, onEvent)
-            Messages(state)
-            Buttons(state.busy, onEvent)
+            AmText(
+                MissionControlStrings[if (asking) "newAgent.trust.title" else "newAgent.title"],
+                role = TextRole.HEADING,
+            )
+            state.trust?.let { TrustStepView(it, onEvent) } ?: Form(state, prompt, onEvent)
         }
     }
 }
 
+@Composable
+private fun Form(
+    state: NewAgentState,
+    prompt: FocusRequester,
+    onEvent: (NewAgentEvent) -> Unit,
+) {
+    NewAgentFields(state, prompt, onEvent)
+    Messages(state)
+    Buttons(state.busy, onEvent)
+}
+
 private fun windowKey(
     event: KeyEvent,
+    asking: Boolean,
     onEvent: (NewAgentEvent) -> Unit,
 ): Boolean {
     val enter = event.key == Key.Enter || event.key == Key.NumPadEnter
     val action =
         when {
             event.type != KeyEventType.KeyDown -> null
-            event.key == Key.Escape -> NewAgentEvent.Cancel
+            event.key == Key.Escape -> if (asking) NewAgentEvent.TrustDecline else NewAgentEvent.Cancel
             enter && event.isMetaPressed -> NewAgentEvent.Submit
             else -> null
         }
@@ -119,7 +134,7 @@ private fun Messages(state: NewAgentState) {
 }
 
 @Composable
-private fun Wrapped(
+internal fun Wrapped(
     text: String,
     tone: Tone,
     tag: String,
@@ -134,16 +149,6 @@ private fun Wrapped(
         maxLines = Int.MAX_VALUE,
     )
 }
-
-private fun NewAgentProblem.text(): UiText =
-    when (this) {
-        NewAgentProblem.NoProject -> UiText("newAgent.problem.noProject")
-        NewAgentProblem.EmptyPrompt -> UiText("newAgent.problem.emptyPrompt")
-        NewAgentProblem.PromptTooLong -> UiText("newAgent.problem.promptTooLong")
-        NewAgentProblem.NameInvalid -> UiText("newAgent.problem.nameInvalid")
-        NewAgentProblem.AgentInvalid -> UiText("newAgent.problem.agentInvalid")
-        is NewAgentProblem.StartFailed -> reason
-    }
 
 @Composable
 private fun Buttons(

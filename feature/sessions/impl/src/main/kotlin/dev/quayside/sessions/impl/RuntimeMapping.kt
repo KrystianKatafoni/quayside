@@ -54,6 +54,7 @@ internal fun RuntimeError.toProblem(): RuntimeProblem =
         RuntimeError.Timeout -> RuntimeProblem.TIMEOUT
         is RuntimeError.CommandFailed, is RuntimeError.UnknownSession -> RuntimeProblem.COMMAND_FAILED
         is RuntimeError.Unparseable -> RuntimeProblem.UNPARSEABLE
+        RuntimeError.WorkspaceNotTrusted -> RuntimeProblem.WORKSPACE_NOT_TRUSTED
     }
 
 /** AM-402: an unknown session keeps its id, every other runtime error becomes its fixed problem. */

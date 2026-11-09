@@ -208,4 +208,7 @@ public sealed interface RuntimeError {
 
     /** The CLI did not answer in time. */
     public data object Timeout : RuntimeError
+
+    /** `claude --bg` refused the workspace: it is not trusted in Claude Code (ADR 0031). Carries no path (ENG-C8). */
+    public data object WorkspaceNotTrusted : RuntimeError
 }

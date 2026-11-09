@@ -77,6 +77,7 @@ class RuntimeMappingTest {
                 arguments(RuntimeError.UnsupportedVersion("2.0.0", "2.1.0"), RuntimeProblem.UNSUPPORTED_VERSION),
                 arguments(RuntimeError.AgentViewDisabled, RuntimeProblem.AGENT_VIEW_DISABLED),
                 arguments(RuntimeError.Timeout, RuntimeProblem.TIMEOUT),
+                arguments(RuntimeError.WorkspaceNotTrusted, RuntimeProblem.WORKSPACE_NOT_TRUSTED),
                 arguments(RuntimeError.CommandFailed(1, "tail"), RuntimeProblem.COMMAND_FAILED),
                 arguments(RuntimeError.Unparseable("x"), RuntimeProblem.UNPARSEABLE),
                 arguments(RuntimeError.UnknownSession(aSessionId()), RuntimeProblem.COMMAND_FAILED),

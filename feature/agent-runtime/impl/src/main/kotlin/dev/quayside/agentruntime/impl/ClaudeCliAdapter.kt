@@ -63,6 +63,7 @@ internal class ClaudeCliAdapter(
         return process.exec(argv, spec.cwd, config.startTimeout, env = env).flatMap { result ->
             val id = BgOutput.sessionId(result.stdout)
             when {
+                !result.isSuccess && BgOutput.untrusted(result.stderr) -> Outcome.Err(RuntimeError.WorkspaceNotTrusted)
                 !result.isSuccess -> Outcome.Err(commandFailed(result, secrets = listOf(spec.prompt)))
                 id == null -> Outcome.Err(RuntimeError.Unparseable(NO_ID))
                 else -> Outcome.Ok(id).also { logger.debug("claude started", "sessionId" to id.value) }

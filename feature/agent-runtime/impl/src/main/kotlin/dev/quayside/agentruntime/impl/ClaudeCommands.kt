@@ -108,6 +108,15 @@ internal object BgOutput {
                 ?.get(1)
                 ?.let(::SessionId)
         }
+
+    /**
+     * True when a line of [stderr] (after [TerminalText.clean] and trim) starts with `Workspace not trusted`; the
+     * case matters. Call only for a failed command. The text is never logged (ADR 0031, point 1).
+     */
+    fun untrusted(stderr: String): Boolean =
+        TerminalText.clean(stderr).lineSequence().any { it.trim().startsWith(UNTRUSTED) }
+
+    private const val UNTRUSTED = "Workspace not trusted"
 }
 
 /** Tail of `claude logs` returned by `recentOutput`. */

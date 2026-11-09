@@ -51,4 +51,7 @@ public enum class RuntimeProblem {
 
     /** The CLI did not answer in time. */
     TIMEOUT,
+
+    /** Claude Code refused to start in a directory it does not trust. */
+    WORKSPACE_NOT_TRUSTED,
 }

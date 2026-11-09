@@ -20,7 +20,7 @@ Stan kodu: `ClaudeCliAdapter` woła `claude` bez `CLAUDE_CONFIG_DIR`. `SettingsF
 
 ## Decyzja (kierunek do potwierdzenia przez człowieka)
 
-1. **Konto Quayside = etykieta + katalog konfiguracji.** Konto domyślne to `~/.claude` (zawsze istnieje, nie da się go usunąć). Dodatkowe konta tworzymy w `~/.claude-quayside/<slug>/` (decyzja człowieka 2026-11-09) albo wskazujemy istniejący katalog (np. `~/.claude-work`). Quayside **nie przechowuje sekretów**: login trzyma Claude Code w Keychain per katalog. Plik `accounts.json` zawiera tylko `id`, `label`, `configDir`, `enabled`, kolejność, przełącznik automatyki i czas chłodzenia po limicie. Zapisujemy tylko odstępstwa od domyślnych (ADR 0024).
+1. **Konto Quayside = etykieta + katalog konfiguracji.** Konto domyślne to `~/.claude` (zawsze istnieje, nie da się go usunąć). Dodatkowe konta tworzymy w `~/.claude-quayside/<slug>/` (decyzja człowieka 2026-11-09) albo wskazujemy istniejący katalog (np. `~/.claude-work`). Quayside **nie przechowuje sekretów**: login trzyma Claude Code w Keychain per katalog. Plik `accounts.json` zawiera tylko `id`, `label`, `configDir`, `enabled` („Aktywne”), `inAutomation` („W automacie”), kolejność, przełącznik automatyki i czas chłodzenia po limicie. Zapisujemy tylko odstępstwa od domyślnych (ADR 0024).
 2. **Logowanie przez terminal, nie przez Quayside.** „Dodaj konto” otwiera kartę PTY z `claude auth login`, uruchomionym ze środowiskiem `CLAUDE_CONFIG_DIR=<katalog>`. Stan zalogowania sprawdza `claude auth status` (format do nagrania w spike'u). Aplikacja nigdy nie widzi tokenu.
 3. **Jeden `AgentRuntime` na konto, złożone w `app`.** Fabryka `agent-runtime:impl` dostaje `configDir` i dokłada `CLAUDE_CONFIG_DIR` do środowiska każdego wywołania `claude`, w tym `attachCommand` (`ShellCommand.env`). `RuntimeSession` i sesja w `sessions:api` dostają `AccountId`. Klucz sesji w Quayside to para (konto, krótkie ID). Złożenie list z wielu supervisorów robi `sessions:impl`. Polling idzie per konto, a wyniki się scala.
 4. **Hooki per konto.** `HookInstaller` z zakresem globalnym instaluje się w `<configDir>/settings.json` każdego włączonego konta, z osobną zgodą i kopią zapasową (NFR-5). Zakres projektu (`.claude/settings.local.json`) jest wspólny dla wszystkich kont i nie wymaga zmian. Zdarzenie hooka łączymy z kontem przez `ConversationId` z pollingu, więc payload nie musi znać konta.
@@ -30,6 +30,24 @@ Stan kodu: `ClaudeCliAdapter` woła `claude` bez `CLAUDE_CONFIG_DIR`. `SettingsF
    - **Bez pętli.** Na jedno zdarzenie limitu przypada najwyżej jedna automatyczna kontynuacja, a konto, na którym sesja już trafiła na limit, nie jest wybierane ponownie w czasie chłodzenia. Gdy wszystkie konta mają limit, nic nie przełączamy, tylko pokazujemy powiadomienie „Wszystkie konta mają limit”.
    - **Sesja, która czeka na zgodę lub odpowiedź, nie jest przenoszona.** Przenosimy tylko sesje zakończone błędem `rate_limit`, a nie działające.
    - **Ryzyko spike'u.** Jeśli AM-1001 wykaże, że `--resume` między katalogami nie działa (np. supervisor tworzy nowy worktree albo nie czyta skopiowanego transkryptu), plan wraca do człowieka przed AM-1007. Wariant zapasowy: nowa sesja na Y z promptem zawierającym podsumowanie przerwanej pracy (`last_assistant_message`, ścieżka worktree).
+
+## Widok kont (prośba człowieka 2026-11-09)
+
+Osobne okno „Konta”, otwierane z menu aplikacji, z palety ⌘K („Konta…”) i z plakietki konta w panelu szczegółów sesji. W oknie są:
+
+- **Lista kont** w kolejności używanej przez automatykę (przeciąganie albo przyciski ↑/↓). Każdy wiersz pokazuje:
+  - nazwę i katalog;
+  - stan logowania: zalogowane (e-mail i organizacja z `claude auth status`, jeśli są), wylogowane, wygasłe;
+  - stan limitu: dostępne albo „limit do HH:MM” z przyciskiem „Odblokuj”;
+  - liczbę działających sesji.
+- **Dodaj konto:** pole nazwy, z której powstaje `~/.claude-quayside/<nazwa>/`, albo „Wskaż istniejący katalog…”. Potem od razu otwiera się logowanie.
+- **Zaloguj / Zaloguj ponownie:** otwiera kartę terminala z `claude auth login` dla katalogu konta. Po zamknięciu karty stan konta odświeża się sam. Jest też akcja **Wyloguj** (`claude auth logout` dla tego katalogu), poprzedzona pytaniem.
+- **Aktywne (przełącznik):** konto aktywne można wybrać w „Nowym agencie”. Nieaktywne nie jest używane do niczego nowego, ale jego istniejące sesje są dalej widoczne i odpytywane, dopóki jakieś działają.
+- **W automacie (przełącznik per konto):** czy automatyka może na to konto przełączać nowe i przerwane sesje (FR-L4, FR-L5). Przełącznik jest niedostępny dla konta nieaktywnego albo wylogowanego.
+- **Usuń konto:** usuwa konto z listy Quayside. Katalog i login w Keychain zostają na dysku; w dialogu jest dodatkowy wybór „Wyloguj też z Claude Code”. Gdy na koncie działają sesje, dialog daje wybór „zatrzymaj sesje i usuń” albo „anuluj”, jak FR-P4. Konta domyślnego `~/.claude` nie da się usunąć, można je tylko wyłączyć z automatu.
+- **Ustawienia automatyki** na dole okna: główny przełącznik automatyki i czas chłodzenia po limicie (domyślnie 5 h).
+
+Każda akcja ma widoczną kontrolkę i komendę w palecie (FR-K1, FR-K3). Okno używa `AmTheme` i ma własny test kontrastu (NFR-6, Lekcje). Fokus startowy w dialogach usuwania i wylogowania stoi na „Anuluj” (Lekcje: dialog zgody).
 
 ## Rozważone alternatywy
 
@@ -68,21 +86,13 @@ Kamień milowy **M10 · Wiele kont Claude** w [ROADMAP.md](../ROADMAP.md), przed
 | AM-1002 | `accounts:api/impl`: `Account`, `AccountId`, `AccountStatus`, `accounts.json`, czysty `AccountSelector`, test kontraktowy i fake | `accounts:api`, `accounts:impl`, `app` | AM-1001 |
 | AM-1003 | `agent-runtime` per konto: `CLAUDE_CONFIG_DIR` w środowisku, `AccountId` w `RuntimeSession`, fabryka z `configDir`; `sessions` scala listy wielu kont (klucz konto+ID) | `agent-runtime:api/impl`, `sessions:api/impl`, `app` | AM-1002 |
 | AM-1004 | Hooki globalne w katalogu każdego konta, ze zgodą i kopią zapasową | `agent-runtime:impl`, `app` | AM-1003 |
-| AM-1005 | Okno „Konta”: lista ze stanem, dodaj (karta z `claude auth login`), nazwa, wyłącz, kolejność, przełącznik automatyki, czas chłodzenia po limicie (domyślnie 5 h), ręczne odblokowanie konta z limitem; wybór konta (Auto/konkretne) w „Nowym agencie”; konto w panelu szczegółów; komendy palety | `accounts:ui`, `mission-control:ui`, `app` | AM-1003 |
-| AM-1006 | Automatyka: `rate_limit` → `Limited`, wybór konta dla nowych sesji i streszczeń, powiadomienie o przełączeniu | `accounts:impl`, `summaries:impl`, `notifications`, `app` | AM-1004, AM-1005 |
+| AM-1005 | Okno „Konta” (sekcja „Widok kont”): lista z kolejnością, stanem logowania i limitu, dodaj, zaloguj/wyloguj w karcie terminala, aktywne, w automacie, usuń, odblokuj, główny przełącznik automatyki i czas chłodzenia | `accounts:ui`, `accounts:impl`, `app` | AM-1003 |
+| AM-1009 | Konto w reszcie aplikacji: wybór konta (Auto/aktywne konta) w „Nowym agencie”, plakietka konta w panelu szczegółów i wierszu sesji, komendy palety | `mission-control:ui`, `app` | AM-1005 |
+| AM-1006 | Automatyka: `rate_limit` → `Limited`, wybór konta dla nowych sesji i streszczeń, powiadomienie o przełączeniu | `accounts:impl`, `summaries:impl`, `notifications`, `app` | AM-1004, AM-1009 |
 | AM-1007 | Kontynuacja sesji przerwanej `rate_limit` na innym koncie: automatycznie (gdy automatyka włączona) i ręcznie („Kontynuuj na koncie…”), kopia transkryptu, `--resume` z promptem kontynuacji, powiązanie starej i nowej sesji, ochrona przed pętlą; port `continueOn(...)` w `agent-runtime:api` po pytaniu do człowieka | `agent-runtime:api/impl`, `sessions:api/impl`, `accounts:impl`, `mission-control:ui`, `app` | AM-1006, wynik AM-1001 |
 | AM-1008 | (C) Dokładne zużycie i `resets_at` przez opcjonalny skrypt `statusLine` | `accounts:impl`, `agent-runtime:impl` | AM-1006 |
 
-Wymagania w `02-wymagania.md`, sekcja „Konta”:
-
-| ID | Wymaganie | Prio |
-| --- | --- | --- |
-| FR-L1 | Lista kont Claude (konto domyślne `~/.claude` + dodatkowe katalogi), dodanie przez logowanie w karcie terminala, zmiana nazwy, wyłączenie, usunięcie z listy bez kasowania katalogu | S |
-| FR-L2 | Stan konta: dostępne, limit (od kiedy i do kiedy wg czasu chłodzenia, domyślnie 5 h, konfigurowalny; ręczne odblokowanie), wylogowane, nieznane | S |
-| FR-L3 | Wybór konta przy starcie agenta: „Auto” albo konkretne; konto widoczne w panelu szczegółów | S |
-| FR-L4 | Automatyka (wyłączalna): po `rate_limit` nowe sesje, streszczenia i przerwane sesje (FR-L5) idą na następne dostępne konto, z powiadomieniem | S |
-| FR-L5 | Kontynuacja sesji przerwanej limitem na innym koncie: automatycznie (gdy automatyka włączona) albo ręcznie; stara sesja zostaje z odnośnikiem do nowej | S |
-| FR-L6 | Zużycie limitu i czas odnowienia per konto | C |
+Wymagania: [02-wymagania.md](../02-wymagania.md), sekcja „Konta” (FR-L1–FR-L7).
 
 ## Konsekwencje
 

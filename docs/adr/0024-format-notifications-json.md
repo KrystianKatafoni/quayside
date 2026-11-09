@@ -12,7 +12,8 @@ AM-812 zmienia domyślne kanały zdarzenia „Agent skończył turę” (`TURN_E
 
 1. Schemat pliku rośnie do 2. Migracja 1 do 2 usuwa tylko `channels.turnEnded`, gdy jest zbiorem równym `{popup}` (powtórzenia bez znaczenia). Inne wartości (`[]`, `["popup","voice"]`, `["sound"]`…) i inne rodzaje zostają bez zmian; dane o nieoczekiwanym kształcie migracja zostawia, a serializer odrzuca je jak dotąd (plik trafia do `notifications.json.broken`).
 2. Od schematu 2 `channels` zawiera tylko rodzaje, których kanały różnią się od `NotificationSettings.defaultChannels`. Brak klucza oznacza bieżącą domyślną.
-3. Plik nowszy niż schemat 2 daje `NEWER_SCHEMA` (bez zapisu), jak dotąd.
+3. Sekcja `sound` (AM-815: `volume`, `sounds` per rodzaj) jest opcjonalna, zapisywana tylko przy odstępstwach od domyślnych; nazwa dźwięku niebędąca poprawną nazwą pliku jest pomijana. Schemat zostaje 2.
+4. Plik nowszy niż schemat 2 daje `NEWER_SCHEMA` (bez zapisu), jak dotąd.
 
 ## Rozważone alternatywy
 

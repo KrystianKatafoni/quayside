@@ -27,6 +27,9 @@ internal object SettingsTags {
     const val PREVIEW_FAILED = "notifications.settings.speech.previewFailed"
     const val POLISH_HINT = "notifications.settings.speech.polishHint"
     const val VOICES_FAILED = "notifications.settings.speech.voicesFailed"
+    const val SOUND_VOLUME = "notifications.settings.sound.volume"
+    const val SOUNDS_FAILED = "notifications.settings.sound.listFailed"
+    const val SOUND_PREVIEW_FAILED = "notifications.settings.sound.previewFailed"
     const val QUIET_ENABLED = "notifications.settings.quiet.enabled"
     const val QUIET_FROM = "notifications.settings.quiet.from"
     const val QUIET_TO = "notifications.settings.quiet.to"
@@ -52,6 +55,12 @@ internal object SettingsTags {
 
     /** The "restore default" button of the template of [kind]. */
     fun restore(kind: NotificationKind): String = "notifications.settings.speech.restore.${kind.name}"
+
+    /** The sound choice of [kind]. */
+    fun sound(kind: NotificationKind): String = "notifications.settings.sound.choice.${kind.name}"
+
+    /** The preview button of the sound of [kind]. */
+    fun soundPreview(kind: NotificationKind): String = "notifications.settings.sound.preview.${kind.name}"
 
     /** The message under [field]; absent while the field is valid. */
     fun invalid(field: NotificationField): String = "notifications.settings.invalid.${field.name}"

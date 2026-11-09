@@ -277,6 +277,11 @@ interface VoiceCatalog {                          // AM-704: głosy zainstalowan
 }
 data class VoiceSample(val voice: VoiceId?, val text: String, val rate: Int, val volume: Int)   // AM-813: require na zakresach SpeechSettings; toString ukrywa text
 enum class VoicePreviewError { UNAVAILABLE, FAILED }          // program nie startuje | zawiódł, przekroczył czas, głos nieznany albo `[[`/`]]` w tekście
+data class SoundSettings(val volume: Int = 100, val sounds: Map<NotificationKind, SoundId> = emptyMap())  // AM-815: pole `sound` w NotificationSettings; SoundId = nazwa pliku bez rozszerzenia, bez separatorów
+interface SoundLibrary {                          // AM-815: lista dźwięków systemowych i odsłuch w dialogu; soundLibraryModule(process, workDir, io)
+    suspend fun sounds(): Outcome<List<SoundId>, SoundLibraryError>
+    suspend fun play(sound: SoundId, volume: Int): Outcome<Unit, SoundLibraryError>   // bez dźwięku zastępczego, anulowanie zatrzymuje
+}
 interface VoicePreview {                          // AM-813: odsłuch próbki w dialogu; bez powrotu do głosu systemowego, anulowanie zatrzymuje
     suspend fun play(sample: VoiceSample): Outcome<Unit, VoicePreviewError>
 }
@@ -294,7 +299,7 @@ internal fun decide(event: SessionEvent, settings: NotificationSettings, ctx: De
 // DeliveryContext(appActive, microphoneActive, localTime, focusActive); quietNow(quiet, ctx) = (enabled && covers(localTime)) || (respectFocus && focusActive)
 internal interface FocusMonitor { val active: StateFlow<Boolean> }   // AM-705: tylko port; NoFocus (zawsze false), adapter Skupienia osobno
 internal interface SpeechPort { suspend fun speak(text: String, voice: VoiceId, rate: Int) }  // adapter: MacSayAdapter
-internal interface SoundPort { suspend fun play(sound: SystemSound): Outcome<Unit, SoundError> }  // AM-812, adapter: AfplayAdapter; SoundNotifier + SoundQueue (chłodzenie 2 s)
+internal interface SoundPort { suspend fun play(sound: SoundId, volume: Int): Outcome<Unit, SoundError> }  // AM-812/815, adapter: AfplayAdapter (`afplay -v`); SoundNotifier + SoundQueue (chłodzenie 2 s)
 // Fabryki modułu (public): notificationCenterModule(settings, scope, clock, zone: () -> ZoneId, ...) (strefa czytana przy każdym zdarzeniu) oraz voiceCatalogModule(process, workDir): VoiceCatalog i voicePreviewModule(process, workDir): VoicePreview
 ```
 

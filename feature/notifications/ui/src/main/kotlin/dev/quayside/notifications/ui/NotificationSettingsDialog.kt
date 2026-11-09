@@ -39,12 +39,15 @@ import dev.quayside.core.designsystem.amScrim
 import dev.quayside.notifications.api.NotificationSettingsError
 
 /**
- * The "Ustawienia powiadomień" dialog over the whole window (FR-N1, FR-N2); draws nothing while [controller] has it
+ * The "Ustawienia powiadomień" dialog over the whole window (FR-N1, FR-N2); [sounds] lists and previews the sounds; draws nothing while [controller] has it
  * closed. A focusable popup covering the whole window, so keys reach its controls and not the window behind it;
  * the panel scrolls in the vertical axis; Escape is "Cancel".
  */
 @Composable
-public fun NotificationSettingsDialog(controller: NotificationSettingsController) {
+public fun NotificationSettingsDialog(
+    controller: NotificationSettingsController,
+    sounds: SoundPreviewController,
+) {
     val state by controller.state.collectAsState()
     val shown = state ?: return
     Popup(
@@ -56,7 +59,7 @@ public fun NotificationSettingsDialog(controller: NotificationSettingsController
             modifier = Modifier.fillMaxSize().amScrim(),
             contentAlignment = Alignment.Center,
         ) {
-            SettingsPanel(shown, controller)
+            SettingsPanel(shown, controller, sounds)
         }
     }
 }
@@ -65,6 +68,7 @@ public fun NotificationSettingsDialog(controller: NotificationSettingsController
 private fun SettingsPanel(
     state: NotificationDialogState,
     controller: NotificationSettingsController,
+    sounds: SoundPreviewController,
 ) {
     AmPanel(modifier = Modifier.panel(controller::cancel)) {
         Column(
@@ -81,6 +85,7 @@ private fun SettingsPanel(
             ThresholdRow(state, controller)
             PopupSection(state, controller)
             VoiceSection(state, controller)
+            SoundSection(state, sounds, controller)
             QuietSection(state, controller)
             ProjectsSection(state, controller)
             SettingsFooter(state.saveError, controller)

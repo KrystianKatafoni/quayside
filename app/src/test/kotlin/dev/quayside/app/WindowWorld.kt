@@ -41,12 +41,14 @@ import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.api.FakeSoundLibrary
 import dev.quayside.notifications.api.FakeVoiceCatalog
 import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.VoiceCatalog
 import dev.quayside.notifications.api.VoicePreview
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.notifications.ui.NotificationSettingsDialog
+import dev.quayside.notifications.ui.SoundPreviewController
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.Project
@@ -497,7 +499,9 @@ private fun NotificationDialogHost(
             registry.register(NotificationSettingsCommands(window.projects, window.missionControl, it, window.scope))
         }
     }
-    controller?.let { NotificationSettingsDialog(it) }
+    controller?.let {
+        NotificationSettingsDialog(it, remember { SoundPreviewController(FakeSoundLibrary(), window.scope) })
+    }
 }
 
 /** Routes the palette's keys through [keys] while the window is shown. */

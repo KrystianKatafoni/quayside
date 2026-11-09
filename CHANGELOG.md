@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Wybór dźwięku powiadomień: sekcja „Dźwięk” w ustawieniach powiadomień pozwala wybrać dźwięk systemowy dla każdego rodzaju zdarzenia, ustawić głośność (0–100%) i odsłuchać próbkę przyciskiem „Odsłuchaj” (AM-815).
 - Własne schematy kolorów: przycisk „Importuj schemat…” w oknie Wygląd dodaje z pliku motywu (`customSchemes`: osiem kolorów, promień rogu, tryb) schematy, które po audycie kontrastu 4,5 do 1 trafiają na listę motywów i do `theme.json`; „Eksportuj…” zapisuje je razem z ustawieniami (AM-814, uzupełnienie ADR 0023).
 - Przegląd grupy projektu: sekcja „Podfoldery” na stronie grupy w Mission Control pokazuje, ilu agentów czeka, pracuje i ma błąd w każdym podfolderze; czekający są na górze, „Pozostałe” zbiera sesje spoza podfolderów, a klik w wiersz zaznacza podfolder w pasku bocznym (zwinięta grupa się rozwija) (AM-307).
 - Grupy projektów z podfolderami: projekt nadrzędny z podpozycjami wybranymi ręcznie w dialogu „Podfoldery projektu…”, zwijanie grupy, filtr sesji Mission Control po podfolderze (nagłówek „projekt / podfolder”), liczniki per podfolder i komenda palety „Przejdź do: projekt / podfolder” (AM-306, ADR 0026).

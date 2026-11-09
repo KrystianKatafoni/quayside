@@ -6,29 +6,39 @@ import dev.quayside.core.process.ProcessError
 import dev.quayside.core.process.ProcessResult
 import dev.quayside.core.process.ProcessRunner
 import dev.quayside.core.process.RunOptions
+import dev.quayside.notifications.api.SoundId
 import java.nio.file.Path
+import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * [SoundPort] on macOS `afplay`, started through [runner] in [workDir] with argv `[program, <soundsDir>/<file>.aiff]`
- * and a 10 s timeout. A missing file makes `afplay` exit with a non-zero code; then one more try uses [FALLBACK]
- * (Glass), unless the sound already was the fallback.
+ * [SoundPort] on macOS `afplay`, started through [runner] in [workDir] with argv
+ * `[program, -v, <volume / 100>, <soundsDir>/<name>.aiff]` and a 10 s timeout. A missing file makes `afplay` exit
+ * with a non-zero code; then one more try uses [fallback] (Glass by default), unless the sound already was the fallback or [fallback] is null.
  */
 internal class AfplayAdapter(
     private val runner: ProcessRunner,
     private val workDir: Path,
     private val soundsDir: Path = Path.of("/System/Library/Sounds"),
     private val program: String = "/usr/bin/afplay",
+    private val fallback: SoundId? = FALLBACK,
 ) : SoundPort {
-    override suspend fun play(sound: SystemSound): Outcome<Unit, SoundError> {
-        val first = run(sound)
-        val retry = first is Outcome.Ok && first.value.exitCode != 0 && sound != FALLBACK
-        return toOutcome(if (retry) run(FALLBACK) else first)
+    override suspend fun play(
+        sound: SoundId,
+        volume: Int,
+    ): Outcome<Unit, SoundError> {
+        val first = run(sound, volume)
+        val failed = first is Outcome.Ok && first.value.exitCode != 0
+        return toOutcome(if (failed && fallback != null && sound != fallback) run(fallback, volume) else first)
     }
 
-    private suspend fun run(sound: SystemSound): Outcome<ProcessResult, ProcessError> {
-        val file = soundsDir.resolve("${sound.fileName}.aiff").toString()
-        return runner.run(ShellCommand(listOf(program, file), workDir), RunOptions(timeout = TIMEOUT))
+    private suspend fun run(
+        sound: SoundId,
+        volume: Int,
+    ): Outcome<ProcessResult, ProcessError> {
+        val file = soundsDir.resolve("${sound.name}.aiff").toString()
+        val factor = String.format(Locale.ROOT, "%.2f", volume / PERCENT)
+        return runner.run(ShellCommand(listOf(program, "-v", factor, file), workDir), RunOptions(timeout = TIMEOUT))
     }
 
     private fun toOutcome(result: Outcome<ProcessResult, ProcessError>): Outcome<Unit, SoundError> =
@@ -47,7 +57,8 @@ internal class AfplayAdapter(
         }
 
     internal companion object {
-        val FALLBACK = SystemSound.GLASS
+        val FALLBACK = SoundId("Glass")
         private val TIMEOUT = 10.seconds
+        private const val PERCENT = 100.0
     }
 }

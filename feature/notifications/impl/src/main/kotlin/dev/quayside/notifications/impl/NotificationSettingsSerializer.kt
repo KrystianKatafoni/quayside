@@ -60,6 +60,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
     private val STYLES = PopupStyle.entries.associateWith { it.name }
     private const val POPUP = "popup"
     private const val SPEECH = "speech"
+    private const val SOUND = "sound"
     private const val QUIET_HOURS = "quietHours"
     private const val PROJECTS = "projects"
     private const val POPUPS = "popups"
@@ -86,6 +87,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
                     put("style", value.popup.style.name)
                 }
                 put(SPEECH, SpeechSettingsJson.encode(value.speech))
+                SoundSettingsJson.encode(value.sound).takeIf { it.isNotEmpty() }?.let { put(SOUND, it) }
                 if (value.quietHours != QuietHours()) put(QUIET_HOURS, QuietHoursJson.encode(value.quietHours))
                 if (value.projects.any { it.value != ProjectNotifications() }) {
                     put(PROJECTS, ProjectsJson.encode(value.projects))
@@ -113,6 +115,7 @@ internal object NotificationSettingsSerializer : KSerializer<NotificationSetting
             matrix = matrix(root[CHANNELS_KEY]),
             popup = popup(root[POPUP]),
             speech = SpeechSettingsJson.decode(root[SPEECH]),
+            sound = SoundSettingsJson.decode(root[SOUND]),
             quietHours = QuietHoursJson.decode(root[QUIET_HOURS]),
             projects = ProjectsJson.decode(root[PROJECTS]),
             runningLongMinutes =

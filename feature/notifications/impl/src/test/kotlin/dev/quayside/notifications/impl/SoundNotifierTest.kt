@@ -10,6 +10,8 @@ import dev.quayside.notifications.api.NotificationKind.NEEDS_INPUT
 import dev.quayside.notifications.api.NotificationKind.TURN_ENDED
 import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.QuietHours
+import dev.quayside.notifications.api.SoundId
+import dev.quayside.notifications.api.SoundSettings
 import dev.quayside.sessions.api.aSession
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
@@ -41,12 +43,17 @@ class SoundNotifierTest {
         private val result: Outcome<Unit, SoundError> = Outcome.Ok(Unit),
         private val duration: Duration = Duration.ZERO,
     ) : SoundPort {
-        val played = mutableListOf<SystemSound>()
+        val played = mutableListOf<SoundId>()
+        val volumes = mutableListOf<Int>()
         var running = 0
         var maxRunning = 0
 
-        override suspend fun play(sound: SystemSound): Outcome<Unit, SoundError> {
+        override suspend fun play(
+            sound: SoundId,
+            volume: Int,
+        ): Outcome<Unit, SoundError> {
             played += sound
+            volumes += volume
             running++
             maxRunning = maxOf(maxRunning, running)
             try {
@@ -84,7 +91,37 @@ class SoundNotifierTest {
             notifier.offer(delivery(NEEDS_INPUT))
             runCurrent()
 
-            port.played shouldBe listOf(SystemSound.GLASS)
+            port.played shouldBe listOf(SoundId("Glass"))
+        }
+
+    @Test
+    fun `plays the chosen sound of the kind at the chosen volume`() =
+        runTest {
+            settings.value =
+                NotificationSettings(
+                    sound = SoundSettings(volume = 30, sounds = mapOf(NEEDS_INPUT to SoundId("Funk"))),
+                )
+            val notifier = notifier()
+
+            notifier.offer(delivery(NEEDS_INPUT))
+            runCurrent()
+
+            port.played shouldBe listOf(SoundId("Funk"))
+            port.volumes shouldBe listOf(30)
+        }
+
+    @Test
+    fun `a change of the settings reaches the next sound`() =
+        runTest {
+            val notifier = notifier()
+            notifier.offer(delivery(NEEDS_INPUT))
+            pass(3.seconds)
+
+            settings.value = NotificationSettings(sound = SoundSettings(volume = 10))
+            notifier.offer(delivery(NEEDS_INPUT))
+            runCurrent()
+
+            port.volumes shouldBe listOf(100, 10)
         }
 
     @Test
@@ -97,10 +134,10 @@ class SoundNotifierTest {
             pass(500.milliseconds)
             notifier.offer(delivery(FAILED))
             pass(1.seconds + 499.milliseconds)
-            port.played shouldBe listOf(SystemSound.GLASS)
+            port.played shouldBe listOf(SoundId("Glass"))
             pass(1.milliseconds)
 
-            port.played shouldBe listOf(SystemSound.GLASS, SystemSound.BASSO)
+            port.played shouldBe listOf(SoundId("Glass"), SoundId("Basso"))
         }
 
     @Test
@@ -119,7 +156,7 @@ class SoundNotifierTest {
             port.played.size shouldBe 2
             pass(1.milliseconds)
 
-            port.played.last() shouldBe SystemSound.HERO
+            port.played.last() shouldBe SoundId("Hero")
         }
 
     @Test
@@ -134,7 +171,7 @@ class SoundNotifierTest {
             notifier.offer(delivery(TURN_ENDED))
             pass(2.seconds)
 
-            port.played shouldBe listOf(SystemSound.HERO, SystemSound.BASSO)
+            port.played shouldBe listOf(SoundId("Hero"), SoundId("Basso"))
             pass(10.seconds)
             port.played.size shouldBe 2
         }
@@ -149,7 +186,7 @@ class SoundNotifierTest {
             notifier.offer(delivery(FAILED))
             runCurrent()
 
-            port.played shouldBe listOf(SystemSound.GLASS, SystemSound.BASSO)
+            port.played shouldBe listOf(SoundId("Glass"), SoundId("Basso"))
         }
 
     @Test
@@ -162,7 +199,7 @@ class SoundNotifierTest {
 
             pass(30.seconds)
 
-            port.played shouldBe listOf(SystemSound.GLASS, SystemSound.BASSO)
+            port.played shouldBe listOf(SoundId("Glass"), SoundId("Basso"))
         }
 
     @Test
@@ -178,7 +215,7 @@ class SoundNotifierTest {
             slow.maxRunning shouldBe 1
             pass(10.seconds)
 
-            slow.played shouldBe listOf(SystemSound.GLASS, SystemSound.BASSO)
+            slow.played shouldBe listOf(SoundId("Glass"), SoundId("Basso"))
             slow.maxRunning shouldBe 1
         }
 
@@ -194,7 +231,7 @@ class SoundNotifierTest {
             context = ctx(localTime = LocalTime.of(23, 0))
             pass(5.seconds)
 
-            port.played shouldBe listOf(SystemSound.GLASS)
+            port.played shouldBe listOf(SoundId("Glass"))
         }
 
     @Test
@@ -211,7 +248,7 @@ class SoundNotifierTest {
             context = ctx(localTime = LocalTime.of(23, 0))
             pass(10.seconds)
 
-            slow.played shouldBe listOf(SystemSound.GLASS)
+            slow.played shouldBe listOf(SoundId("Glass"))
         }
 
     @Test
@@ -225,7 +262,7 @@ class SoundNotifierTest {
             context = ctx(focusActive = true)
             pass(5.seconds)
 
-            port.played shouldBe listOf(SystemSound.GLASS)
+            port.played shouldBe listOf(SoundId("Glass"))
         }
 
     @Test
@@ -239,7 +276,7 @@ class SoundNotifierTest {
 
             pass(2.seconds)
 
-            port.played shouldBe listOf(SystemSound.GLASS, SystemSound.BASSO)
+            port.played shouldBe listOf(SoundId("Glass"), SoundId("Basso"))
         }
 
     @Test
@@ -257,7 +294,7 @@ class SoundNotifierTest {
             notifier.offer(delivery(TURN_ENDED))
             runCurrent()
 
-            port.played shouldBe listOf(SystemSound.GLASS, SystemSound.HERO)
+            port.played shouldBe listOf(SoundId("Glass"), SoundId("Hero"))
         }
 
     @Test
@@ -271,7 +308,7 @@ class SoundNotifierTest {
             notifier.offer(delivery(FAILED))
             runCurrent()
 
-            failing.played shouldBe listOf(SystemSound.GLASS, SystemSound.BASSO)
+            failing.played shouldBe listOf(SoundId("Glass"), SoundId("Basso"))
         }
 
     @Test
@@ -285,7 +322,7 @@ class SoundNotifierTest {
 
             pass(2.seconds)
 
-            failing.played shouldBe listOf(SystemSound.GLASS, SystemSound.BASSO)
+            failing.played shouldBe listOf(SoundId("Glass"), SoundId("Basso"))
         }
 
     @ParameterizedTest(name = "{1}")
@@ -340,7 +377,7 @@ class SoundNotifierTest {
             scope.cancel()
             pass(60.seconds)
 
-            port.played shouldBe listOf(SystemSound.GLASS)
+            port.played shouldBe listOf(SoundId("Glass"))
         }
 
     companion object {

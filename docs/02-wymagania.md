@@ -85,7 +85,7 @@ Plan i decyzje: [ADR 0029](adr/0029-wiele-kont-claude.md).
 | FR-L6 | Zużycie limitu i czas odnowienia per konto | C |
 | FR-L7 | Widok „Konta”: logowanie i wylogowanie wielu kont, dodawanie, usuwanie (bez kasowania katalogu), kolejność, przełączniki „Aktywne” i „W automacie” per konto, odblokowanie limitu, główny przełącznik automatyki i czas chłodzenia | S |
 | FR-L8 | Ikona bieżącego konta w prawym górnym rogu okna; klik otwiera listę kont pod ikoną z ręcznym przełączeniem bieżącego konta (dla nowych sesji), opcją „Automatycznie” i wejściem do widoku „Konta”; każde przełączenie potwierdzane oknem z listą wszystkich sesji, które można przenieść (domyślnie żadna) | S |
-| FR-L9 | Wspólny profil wszystkich kont: historia rozmów i pamięć wspólne dla całego Quayside, rozdzielone per projekt i podprojekt; wspólne instrukcje, skille, subagenci i ustawienia; osobny tylko login i stan supervisora | S |
+| FR-L9 | Wspólna historia rozmów i pamięć projektów dla wszystkich kont (rozdzielone per projekt i podprojekt); globalne instrukcje, skille, subagenci i ustawienia osobne per konto | S |
 | FR-L10 | Ustawienie sesji „Przełączaj konto automatycznie” (domyślnie wyłączone): po limicie sesja przenosi się bez pytania na następne dostępne konto, z powiadomieniem | S |
 
 ## Wymagania niefunkcjonalne

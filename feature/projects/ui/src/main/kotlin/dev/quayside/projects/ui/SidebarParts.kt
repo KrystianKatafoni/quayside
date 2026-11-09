@@ -104,26 +104,41 @@ private fun RowCells(
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
         state.collapsed?.let { GroupChevron(project.id, it, actions.toggleGroup) }
-        AmIcon(IconKind.FOLDER, null, Modifier.size(20.dp), projectTone(state.counts).markColor())
+        AmIcon(IconKind.FOLDER, null, Modifier.size(20.dp), projectTone(state.statuses.active).markColor())
         Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
             AmText(project.displayName, Modifier.clearAndSetSemantics {})
-            Counters(CountBadges.of(state.counts))
+            Counters(state.statuses, state.selected)
         }
         RowMenu(project, actions)
     }
 }
 
-/** "waiting: n" (warn, it needs the user) and "working: n" as counter circles; nothing for zeros. */
+/**
+ * The four counters of a row: waiting (warn, it needs the user), working, done, failed. A non-zero one is an
+ * `AmCounter`, a zero one a ring over the background of the row ([selected] picks sel or panel).
+ */
 @Composable
-internal fun Counters(badges: List<UiText>) {
-    if (badges.isEmpty()) return
+internal fun Counters(
+    counts: StatusCounts,
+    selected: Boolean,
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-        badges.forEach { badge ->
-            val tone = if (badge.key == CountBadges.WAITING_KEY) StatusTone.WARN else StatusTone.WORK
-            AmCounter(badge.args.first().toInt(), tone, ProjectsStrings.format(badge))
+        CountBadges.of(counts).forEach { badge ->
+            val number = badge.args.first().toInt()
+            val tone = COUNTER_TONES.getValue(badge.key)
+            val description = ProjectsStrings.format(badge)
+            if (number == 0) ZeroCounter(tone, description, selected) else AmCounter(number, tone, description)
         }
     }
 }
+
+private val COUNTER_TONES =
+    mapOf(
+        CountBadges.WAITING_KEY to StatusTone.WARN,
+        "row.working" to StatusTone.WORK,
+        "row.done" to StatusTone.OK,
+        "row.failed" to StatusTone.ERR,
+    )
 
 /**
  * "Dodaj projekt z dysku…" with its shortcut [keyCap] (none when null): a dashed button under the project list. It

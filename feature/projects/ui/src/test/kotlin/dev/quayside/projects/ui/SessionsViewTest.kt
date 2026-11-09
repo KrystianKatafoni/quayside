@@ -2,6 +2,7 @@ package dev.quayside.projects.ui
 
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.testing.T0
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionCounts
@@ -17,7 +18,10 @@ import org.junit.jupiter.params.provider.Arguments.arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.nio.file.Path
 
-/** Pure projection of a sessions snapshot onto the listed projects (FR-P6; AM-305 plan, decision 1). */
+/**
+ * Pure projection of a sessions snapshot onto the listed projects (FR-P6; AM-305 plan, decision 1). `counts` (active
+ * sessions) and `statuses` (the four counters of AM-310) are both checked where the whole view is compared.
+ */
 class SessionsViewTest {
     private val outer = aProject(id = "outer", dir = Path.of("/p/outer"), displayName = "outer")
     private val inner = aProject(id = "inner", dir = Path.of("/p/outer/inner"), displayName = "inner")
@@ -46,7 +50,11 @@ class SessionsViewTest {
         val snapshot = SessionsSnapshot(listOf(session("a", outer.id)), stale)
 
         SessionsView.of(listOf(outer), snapshot) shouldBe
-            SessionsView(mapOf(outer.id to SessionCounts(working = 1, waiting = 0)), fresh = false)
+            SessionsView(
+                mapOf(outer.id to SessionCounts(working = 1, waiting = 0)),
+                fresh = false,
+                statuses = mapOf(ProjectFocus(outer.id) to StatusCounts(working = 1)),
+            )
     }
 
     @Test
@@ -87,6 +95,11 @@ class SessionsViewTest {
             SessionsView(
                 mapOf(outer.id to SessionCounts(1, 0), inner.id to SessionCounts(0, 1)),
                 fresh = true,
+                statuses =
+                    mapOf(
+                        ProjectFocus(outer.id) to StatusCounts(working = 1),
+                        ProjectFocus(inner.id) to StatusCounts(waiting = 1),
+                    ),
             )
     }
 
@@ -102,7 +115,9 @@ class SessionsViewTest {
                 fresh,
             )
 
-        SessionsView.of(listOf(outer, lone), snapshot) shouldBe SessionsView(emptyMap(), fresh = true)
+        // Finished sessions are not "active" (no entry in counts) but the main row counts them as done
+        SessionsView.of(listOf(outer, lone), snapshot) shouldBe
+            SessionsView(emptyMap(), fresh = true, statuses = mapOf(ProjectFocus(outer.id) to StatusCounts(done = 1)))
     }
 
     companion object {

@@ -11,6 +11,7 @@ import dev.quayside.projects.api.InspectionWorld
 import dev.quayside.projects.api.PathKind
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionCounts
+import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsWorld
 import dev.quayside.sessions.api.WorldProject
@@ -36,6 +37,9 @@ internal class ControllerWorld(
     running: List<WorldSession> = emptyList(),
     extraProjects: List<WorldProject> = emptyList(),
 ) {
+    /** What the sidebar reads the snapshot from; default [sessions]. A monitor that never lists gives `Loading`. */
+    var monitor: SessionMonitor? = null
+
     /** What is inside a directory, for the subfolders dialog; set before the controller starts (default: nothing). */
     var disk: (Path) -> List<DirEntry> = { emptyList() }
 
@@ -59,7 +63,7 @@ internal class ControllerWorld(
         ProjectsController(
             projects,
             inspector,
-            SessionsApi(sessions, sessions),
+            SessionsApi(monitor ?: sessions, sessions),
             ProjectsPorts(picker, hooks),
             scope,
             logger,
@@ -85,3 +89,6 @@ internal val NO_ACTIVE_SESSIONS: SessionsView = SessionsView(counts = emptyMap()
 /** [SessionsView] of a fresh snapshot with these [counts]. */
 internal fun freshView(vararg counts: Pair<ProjectId, SessionCounts>): SessionsView =
     SessionsView(counts = counts.toMap(), fresh = true)
+
+/** Counters the way they are compared where the statuses are not the subject: `counts` and `fresh` only. */
+internal fun SessionsView.withoutStatuses(): SessionsView = copy(statuses = emptyMap())

@@ -304,9 +304,9 @@ class ProjectsSidebarTest {
         }
 
     @Test
-    fun `FR-P6 sidebar shows waiting and working counts per project`() =
+    fun `FR-P6 sidebar shows four counters per project, zeros included`() =
         runComposeUiTest {
-            // Given one working and one waiting session in the project and none in the other
+            // Given one working and one waiting session in the project and none in the other (AM-310: zeros are shown)
             val other = aProject(id = "project0002", dir = A_PROJECT_DIR.resolveSibling("other"), displayName = "other")
             val world =
                 ControllerWorld(
@@ -317,11 +317,15 @@ class ProjectsSidebarTest {
             // When
             showSidebar(world)
 
-            // Then the project shows both counts, the other one none (zeros are not shown)
+            // Then the project shows both counts, the other one shows the same four counters at zero (AM-310)
             awaitChip(ProjectsTags.row(project.id), UiText("row.waiting", listOf("1")))
             awaitChip(ProjectsTags.row(project.id), UiText("row.working", listOf("1")))
-            chips(ProjectsTags.row(other.id), "czeka").assertCountEquals(0)
-            chips(ProjectsTags.row(other.id), "pracuje").assertCountEquals(0)
+            awaitChip(ProjectsTags.row(project.id), UiText("row.done", listOf("0")))
+            awaitChip(ProjectsTags.row(project.id), UiText("row.failed", listOf("0")))
+            listOf("row.waiting", "row.working", "row.done", "row.failed").forEach { key ->
+                awaitChip(ProjectsTags.row(other.id), UiText(key, listOf("0")))
+            }
+            chips(ProjectsTags.row(other.id), ": 1").assertCountEquals(0)
         }
 
     @Test
@@ -336,9 +340,10 @@ class ProjectsSidebarTest {
             // When the session starts waiting for the user
             runBlocking { world.sessions.setState(working.id, SessionState.AwaitingPermission("Bash")) }
 
-            // Then the row shows "waiting: 1" and no "working" count any more
+            // Then the row shows "waiting: 1" and the working counter has dropped to zero
             awaitChip(ProjectsTags.row(project.id), UiText("row.waiting", listOf("1")))
-            chips(ProjectsTags.row(project.id), "pracuje").assertCountEquals(0)
+            awaitChip(ProjectsTags.row(project.id), UiText("row.working", listOf("0")))
+            chips(ProjectsTags.row(project.id), "pracuje: 1").assertCountEquals(0)
         }
 
     @Test

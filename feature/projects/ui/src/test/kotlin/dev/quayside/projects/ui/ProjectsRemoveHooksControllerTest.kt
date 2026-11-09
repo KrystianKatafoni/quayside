@@ -193,7 +193,8 @@ class ProjectsRemoveHooksControllerTest {
             world.sessions.appear(WorldSession(aSessionId("second"), A_PROJECT_DIR))
             act { }
             // The new snapshot reached the state, so a fresh read would show 2 sessions
-            controller.state.value.sessions shouldBe freshView(project.id to SessionCounts(2, 0))
+            controller.state.value.sessions
+                .withoutStatuses() shouldBe freshView(project.id to SessionCounts(2, 0))
             act { controller.onEvent(SidebarEvent.UninstallHooks) }
 
             (controller.state.value.dialog as Dialog.ConfirmRemove).active shouldBe frozen

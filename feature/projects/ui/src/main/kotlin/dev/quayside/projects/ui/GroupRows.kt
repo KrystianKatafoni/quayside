@@ -31,7 +31,6 @@ import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.markColor
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.projects.api.SubfolderName
-import dev.quayside.sessions.api.SessionCounts
 
 /**
  * The arrow of a group row: hides or shows the subfolder rows. Never focusable (a focused clickable would eat Space
@@ -89,24 +88,24 @@ internal fun SubfolderRow(
                 .clip(AmTheme.shape.row)
                 .selectable(selected = state.selected, onClick = onSelect),
         )
-        SubfolderCells(name, state.counts)
+        SubfolderCells(name, state)
     }
 }
 
 @Composable
 private fun SubfolderCells(
     name: SubfolderName,
-    counts: SessionCounts?,
+    state: RowState,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 28.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
-        AmIcon(IconKind.FOLDER, null, Modifier.size(16.dp), projectTone(counts).markColor())
+        AmIcon(IconKind.FOLDER, null, Modifier.size(16.dp), projectTone(state.statuses.active).markColor())
         Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
             AmText(name.value, Modifier.clearAndSetSemantics {})
-            Counters(CountBadges.of(counts))
+            Counters(state.statuses, state.selected)
         }
     }
 }
@@ -120,9 +119,9 @@ internal class RowActions(
     val toggleGroup: () -> Unit,
 )
 
-/** What a row shows besides its name: selection, counters, and for a group row whether it is collapsed. */
+/** What a row shows besides its name: selection, the four counters, and for a group row whether it is collapsed. */
 internal data class RowState(
     val selected: Boolean,
-    val counts: SessionCounts?,
+    val statuses: StatusCounts,
     val collapsed: Boolean? = null,
 )

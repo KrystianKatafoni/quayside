@@ -7,6 +7,7 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.aSessionId
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionCounts
@@ -55,15 +56,20 @@ class ProjectsControllerSessionsTest {
         runTest {
             val world = world(working, blocked, done, sibling)
             val controller = start(world)
-            controller.state.value.sessions shouldBe freshView(project.id to SessionCounts(working = 1, waiting = 1))
+            controller.state.value.sessions
+                .withoutStatuses() shouldBe
+                freshView(project.id to SessionCounts(working = 1, waiting = 1))
 
             world.sessions.setState(working.id, SessionState.AwaitingPermission("Bash"))
             runCurrent()
-            controller.state.value.sessions shouldBe freshView(project.id to SessionCounts(working = 0, waiting = 2))
+            controller.state.value.sessions
+                .withoutStatuses() shouldBe
+                freshView(project.id to SessionCounts(working = 0, waiting = 2))
 
             world.sessions.runtimeAvailable(false)
             runCurrent()
-            controller.state.value.sessions shouldBe
+            controller.state.value.sessions
+                .withoutStatuses() shouldBe
                 SessionsView(mapOf(project.id to SessionCounts(working = 0, waiting = 2)), fresh = false)
 
             world.sessions.runtimeAvailable(true)
@@ -72,22 +78,42 @@ class ProjectsControllerSessionsTest {
         }
 
     @Test
+    fun `statuses follow the snapshot and count finished sessions`() =
+        runTest {
+            val world = world(working, blocked, done, sibling)
+            val controller = start(world)
+            val main = ProjectFocus(project.id)
+            controller.state.value.sessions
+                .at(main) shouldBe StatusCounts(waiting = 1, working = 1, done = 1)
+
+            world.sessions.setState(working.id, SessionState.Failed)
+            runCurrent()
+            controller.state.value.sessions
+                .at(main) shouldBe StatusCounts(waiting = 1, done = 1, failed = 1)
+            // the remove dialog still counts the active sessions only
+            controller.state.value.sessions.counts[project.id] shouldBe SessionCounts(working = 0, waiting = 1)
+        }
+
+    @Test
     fun `counts follow a renamed or removed project`() =
         runTest {
             val inOther = WorldSession(aSessionId("elsewhere"), otherDir)
             val world = world(working, inOther)
             val controller = start(world)
-            controller.state.value.sessions shouldBe
+            controller.state.value.sessions
+                .withoutStatuses() shouldBe
                 freshView(project.id to SessionCounts(1, 0), other.id to SessionCounts(1, 0))
 
             world.projects.rename(project.id, "Renamed")
             runCurrent()
-            controller.state.value.sessions shouldBe
+            controller.state.value.sessions
+                .withoutStatuses() shouldBe
                 freshView(project.id to SessionCounts(1, 0), other.id to SessionCounts(1, 0))
 
             world.projects.remove(project.id)
             runCurrent()
-            controller.state.value.sessions shouldBe freshView(other.id to SessionCounts(1, 0))
+            controller.state.value.sessions
+                .withoutStatuses() shouldBe freshView(other.id to SessionCounts(1, 0))
         }
 
     @Test

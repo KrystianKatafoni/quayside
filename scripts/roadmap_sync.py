@@ -147,13 +147,15 @@ def main() -> None:
         if item.issue == "—" and item.status != "x":
             if issue is None:
                 kind = "type:chore" if item.milestone.startswith("M0") else "type:feat"
-                body = (f"Zadanie z [ROADMAP.md](../blob/main/docs/ROADMAP.md), etap **{item.milestone}**.\n\n"
+                short = item.title if len(item.title) <= 120 else item.title[:120].rsplit(" ", 1)[0] + "…"
+                full = "" if short == item.title else f"{item.title}\n\n"
+                body = (f"{full}Zadanie z [ROADMAP.md](../blob/main/docs/ROADMAP.md), etap **{item.milestone}**.\n\n"
                         f"- **Moduły:** {item.modules}\n- **Zależy od:** {item.deps}\n"
                         f"- **Wymagania:** {item.reqs}\n- **Plan:** `docs/plans/{item.id}.md` (tworzy `/deliver`)\n")
                 report.append(f"{act} create issue for {item.id}")
                 if not args.dry_run:
                     issue = gh(f"repos/{repo}/issues", "POST", {
-                        "title": f"{item.id} · {item.title}", "body": body,
+                        "title": f"{item.id} · {short}", "body": body,
                         "labels": [kind, *item.areas], "milestone": milestones.get(item.milestone),
                     })
             if issue is not None:

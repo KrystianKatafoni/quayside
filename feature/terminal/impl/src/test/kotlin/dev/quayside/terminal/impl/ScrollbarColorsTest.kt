@@ -23,7 +23,7 @@ class ScrollbarColorsTest {
     private fun derive(
         bg: Long,
         text: Long,
-    ) = scrollbarColors(TerminalColors(termBg = Rgba(bg), termText = Rgba(text)))
+    ) = scrollbarColors(TerminalColors(termBg = Rgba(bg), termText = Rgba(text), ansi = TEST_ANSI))
 
     @ParameterizedTest(name = "{0} on {1}")
     @MethodSource("baseRows", "raisedRows")
@@ -81,6 +81,30 @@ class ScrollbarColorsTest {
         minOf(Wcag.contrast(lower, colors.track), Wcag.contrast(lower, colors.background)) shouldBeLessThan 3.0
     }
 
+    @ParameterizedTest(name = "{0} on {1}")
+    @MethodSource("lightRows")
+    fun `thumb meets 3 to 1 on a light terminal`(
+        bg: Long,
+        text: Long,
+    ) {
+        val colors = derive(bg, text)
+
+        Wcag.contrast(colors.thumb, colors.track) shouldBeGreaterThanOrEqualTo Wcag.NON_TEXT_MIN
+        Wcag.contrast(colors.thumb, colors.background) shouldBeGreaterThanOrEqualTo Wcag.NON_TEXT_MIN
+    }
+
+    @ParameterizedTest(name = "{0} on {1}")
+    @MethodSource("lightRows")
+    fun `thumb is darker than the track on a light terminal`(
+        bg: Long,
+        text: Long,
+    ) {
+        val colors = derive(bg, text)
+
+        Wcag.luminance(colors.thumb) shouldBeLessThan Wcag.luminance(colors.track)
+        Wcag.luminance(colors.track) shouldBeLessThan Wcag.luminance(colors.background)
+    }
+
     @Test
     fun `alpha of tokens is dropped`() {
         val translucent = derive(0x80102030L, 0x40E0D0C0L)
@@ -104,7 +128,7 @@ class ScrollbarColorsTest {
         for (bg in backgrounds()) {
             for (text in texts()) {
                 if (Wcag.contrast(text, bg) < Wcag.TEXT_MIN) continue
-                val colors = scrollbarColors(TerminalColors(termBg = bg, termText = text))
+                val colors = scrollbarColors(TerminalColors(termBg = bg, termText = text, ansi = TEST_ANSI))
                 val onTrack = Wcag.contrast(colors.thumb, colors.track)
                 val onBackground = Wcag.contrast(colors.thumb, colors.background)
                 if (onTrack < Wcag.NON_TEXT_MIN || onBackground < Wcag.NON_TEXT_MIN) {
@@ -188,6 +212,15 @@ class ScrollbarColorsTest {
                 Arguments.of(0xFF0B0A10L, 0xFFE8E5F2L),
                 Arguments.of(0xFF000000L, 0xFFFFFFFFL),
                 Arguments.of(0xFF1E242CL, 0xFFE2E8F0L),
+            )
+
+        // Light themes since AM-811: paper, a white theme with black text, a warm paper theme.
+        @JvmStatic
+        fun lightRows(): Stream<Arguments> =
+            Stream.of(
+                Arguments.of(0xFFF4F6F8L, 0xFF2D3748L),
+                Arguments.of(0xFFFFFFFFL, 0xFF000000L),
+                Arguments.of(0xFFFDFBF7L, 0xFF3A3832L),
             )
 
         @JvmStatic

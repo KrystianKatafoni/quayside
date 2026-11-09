@@ -54,6 +54,6 @@ class SearchableWidgetScrollBarTest {
 
     private companion object {
         const val RGB_MASK = 0xFFFFFF
-        val COLORS = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0))
+        val COLORS = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0), ansi = TEST_ANSI)
     }
 }

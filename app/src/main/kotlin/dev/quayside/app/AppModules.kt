@@ -1,5 +1,7 @@
 package dev.quayside.app
 
+import dev.quayside.agentruntime.api.AgentRuntime
+import dev.quayside.agentruntime.api.WorkspaceTrust
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.api.ThemeFiles
 import dev.quayside.commandpalette.api.CommandRegistry
@@ -8,6 +10,7 @@ import dev.quayside.core.domain.ShellCommand
 import dev.quayside.projects.api.ProjectInspector
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
+import dev.quayside.summaries.api.SummarySettingsRepo
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalSettings
 import dev.quayside.terminal.api.TerminalSettingsRepo
@@ -20,19 +23,28 @@ internal class AppModules(
     val sessions: SessionsApi,
     val registry: CommandRegistry,
     val terminal: TerminalDeps,
-    val notifications: NotificationDeps,
+    val settings: SettingsDeps,
     val appearance: AppearanceDeps,
+)
+
+/** The notification module, the summaries switch and the window layout: what the dialogs and the split work on. */
+internal class SettingsDeps(
+    val notifications: NotificationDeps,
+    val summaries: SummarySettingsRepo,
+    val layout: WindowLayoutDeps,
 )
 
 /**
  * The terminal module with what the window needs around it: the settings and the login shell behind the label and
- * start directory of shell tabs, and the attach command.
+ * start directory of shell tabs, the attach command, and the [runtime] behind it, which also tells the status bar the
+ * version of Claude Code.
  */
 internal class TerminalDeps(
     val api: TerminalApi,
     val repo: TerminalSettingsRepo,
     val loginShell: Path,
     val attachCommand: (SessionId) -> ShellCommand,
+    val runtime: AgentRuntime,
 ) {
     /** The current settings, read from [repo]. */
     val settings: StateFlow<TerminalSettings> get() = repo.settings
@@ -45,8 +57,9 @@ internal class AppearanceDeps(
     val files: ThemeFiles,
 )
 
-/** The projects module with the inspector that reads a project's directory. */
+/** The projects module with the inspector that reads a project's directory and the port that trusts it (AM-309). */
 internal class ProjectDeps(
     val api: ProjectsApi,
     val inspector: ProjectInspector,
+    val trust: WorkspaceTrust,
 )

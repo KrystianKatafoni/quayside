@@ -5,6 +5,7 @@ import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.process.FakeProcessRunner
 import dev.quayside.core.process.ProcessError
 import dev.quayside.core.process.ProcessResult
+import dev.quayside.notifications.api.SoundId
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -26,10 +27,11 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner()
 
-            val result = adapter(runner).play(SystemSound.BASSO)
+            val result = adapter(runner).play(SoundId("Basso"), 100)
 
             result shouldBe Outcome.Ok(Unit)
-            runner.commands.single() shouldBe ShellCommand(listOf("/usr/bin/afplay", file("Basso")), workDir)
+            runner.commands.single() shouldBe
+                ShellCommand(listOf("/usr/bin/afplay", "-v", "1.00", file("Basso")), workDir)
         }
 
     @Test
@@ -37,7 +39,7 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner()
 
-            adapter(runner).play(SystemSound.HERO)
+            adapter(runner).play(SoundId("Hero"), 100)
 
             runner.calls
                 .single()
@@ -49,9 +51,9 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner()
 
-            AfplayAdapter(runner, workDir, Path.of("/opt/my sounds"), "/opt/fake/afplay").play(SystemSound.POP)
+            AfplayAdapter(runner, workDir, Path.of("/opt/my sounds"), "/opt/fake/afplay").play(SoundId("Pop"), 100)
 
-            runner.commands.single().argv shouldBe listOf("/opt/fake/afplay", "/opt/my sounds/Pop.aiff")
+            runner.commands.single().argv shouldBe listOf("/opt/fake/afplay", "-v", "1.00", "/opt/my sounds/Pop.aiff")
         }
 
     @Test
@@ -59,13 +61,13 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner { if (file("Basso") in it.argv) ok(1) else ok(0) }
 
-            val result = adapter(runner).play(SystemSound.BASSO)
+            val result = adapter(runner).play(SoundId("Basso"), 100)
 
             result shouldBe Outcome.Ok(Unit)
             runner.commands.map { it.argv } shouldBe
                 listOf(
-                    listOf("/usr/bin/afplay", file("Basso")),
-                    listOf("/usr/bin/afplay", file("Glass")),
+                    listOf("/usr/bin/afplay", "-v", "1.00", file("Basso")),
+                    listOf("/usr/bin/afplay", "-v", "1.00", file("Glass")),
                 )
         }
 
@@ -74,7 +76,7 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner { ok(1) }
 
-            val result = adapter(runner).play(SystemSound.GLASS)
+            val result = adapter(runner).play(SoundId("Glass"), 100)
 
             result shouldBe Outcome.Err(SoundError.Failed(1))
             runner.commands.size shouldBe 1
@@ -85,7 +87,7 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner { if (file("Hero") in it.argv) ok(1) else ok(2) }
 
-            adapter(runner).play(SystemSound.HERO) shouldBe Outcome.Err(SoundError.Failed(2))
+            adapter(runner).play(SoundId("Hero"), 100) shouldBe Outcome.Err(SoundError.Failed(2))
             runner.commands.size shouldBe 2
         }
 
@@ -94,7 +96,7 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner { ok(0) }
 
-            adapter(runner).play(SystemSound.PING)
+            adapter(runner).play(SoundId("Ping"), 100)
 
             runner.commands.size shouldBe 1
         }
@@ -104,7 +106,7 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner { Outcome.Err(ProcessError.NotFound("/usr/bin/afplay")) }
 
-            adapter(runner).play(SystemSound.PING) shouldBe Outcome.Err(SoundError.Unavailable)
+            adapter(runner).play(SoundId("Ping"), 100) shouldBe Outcome.Err(SoundError.Unavailable)
             runner.commands.size shouldBe 1
         }
 
@@ -113,7 +115,7 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner { Outcome.Err(ProcessError.StartFailed("no dir")) }
 
-            adapter(runner).play(SystemSound.PING) shouldBe Outcome.Err(SoundError.Unavailable)
+            adapter(runner).play(SoundId("Ping"), 100) shouldBe Outcome.Err(SoundError.Unavailable)
             runner.commands.size shouldBe 1
         }
 
@@ -122,7 +124,7 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner { Outcome.Err(ProcessError.IoFailed("pipe")) }
 
-            adapter(runner).play(SystemSound.PING) shouldBe Outcome.Err(SoundError.Unavailable)
+            adapter(runner).play(SoundId("Ping"), 100) shouldBe Outcome.Err(SoundError.Unavailable)
             runner.commands.size shouldBe 1
         }
 
@@ -131,7 +133,7 @@ class AfplayAdapterTest {
         runTest {
             val runner = FakeProcessRunner { Outcome.Err(ProcessError.Timeout(10.seconds)) }
 
-            adapter(runner).play(SystemSound.BASSO) shouldBe Outcome.Err(SoundError.TimedOut)
+            adapter(runner).play(SoundId("Basso"), 100) shouldBe Outcome.Err(SoundError.TimedOut)
             runner.commands.size shouldBe 1
         }
 
@@ -143,7 +145,41 @@ class AfplayAdapterTest {
                     if (file("Basso") in it.argv) ok(1) else Outcome.Err(ProcessError.Timeout(10.seconds))
                 }
 
-            adapter(runner).play(SystemSound.BASSO) shouldBe Outcome.Err(SoundError.TimedOut)
+            adapter(runner).play(SoundId("Basso"), 100) shouldBe Outcome.Err(SoundError.TimedOut)
             runner.commands.size shouldBe 2
+        }
+
+    @Test
+    fun `volume is passed as a decimal factor with a dot`() =
+        runTest {
+            val runner = FakeProcessRunner()
+
+            adapter(runner).play(SoundId("Pop"), 35)
+            adapter(runner).play(SoundId("Pop"), 0)
+
+            runner.commands.map { it.argv.subList(1, 3) } shouldBe listOf(listOf("-v", "0.35"), listOf("-v", "0.00"))
+        }
+
+    @Test
+    fun `the fallback keeps the volume`() =
+        runTest {
+            val runner = FakeProcessRunner { if (file("Basso") in it.argv) ok(1) else ok(0) }
+
+            adapter(runner).play(SoundId("Basso"), 40)
+
+            runner.commands
+                .last()
+                .argv
+                .subList(1, 3) shouldBe listOf("-v", "0.40")
+        }
+
+    @Test
+    fun `without a fallback a missing file is Failed after one try`() =
+        runTest {
+            val runner = FakeProcessRunner { ok(1) }
+
+            AfplayAdapter(runner, workDir, fallback = null).play(SoundId("Basso"), 100) shouldBe
+                Outcome.Err(SoundError.Failed(1))
+            runner.commands.size shouldBe 1
         }
 }

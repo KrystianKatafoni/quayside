@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test
 @OptIn(ExperimentalTestApi::class)
 internal class SessionDetailsScreenTest {
     private val colors = SampleTokens.colors()
-    private val caps = SessionKeyCaps(attach = "⏎", reply = "r", stop = "x", newAgent = "⌘N")
+    private val caps = SessionKeyCaps(attach = "⏎", reply = "r", stop = "x", next = "j", previous = "k", preview = "␣")
 
     private fun waiting() = fakeSessions(worldSession("one", SessionState.AwaitingInput("q"), name = "fix-login"))
 

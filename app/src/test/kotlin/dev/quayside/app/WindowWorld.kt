@@ -23,6 +23,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.agentruntime.api.FakeHookInstaller
+import dev.quayside.agentruntime.api.FakeWorkspaceTrust
+import dev.quayside.agentruntime.api.WorkspaceTrust
 import dev.quayside.appearance.api.AppearanceSettings
 import dev.quayside.appearance.api.FakeAppearanceApi
 import dev.quayside.appearance.api.FakeThemeFiles
@@ -33,25 +35,39 @@ import dev.quayside.appearance.ui.ThemeFilePicker
 import dev.quayside.commandpalette.api.FakeCommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.domain.NoOpLogger
+import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.TestClock
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.missioncontrol.ui.NewAgentDialog
+import dev.quayside.missioncontrol.ui.NewAgentPorts
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.api.FakeSoundLibrary
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.VoiceCatalog
+import dev.quayside.notifications.api.VoicePreview
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.notifications.ui.NotificationSettingsDialog
+import dev.quayside.notifications.ui.SoundPreviewController
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.Project
 import dev.quayside.projects.ui.DirectoryPicker
+import dev.quayside.projects.ui.ProjectHooks
+import dev.quayside.projects.ui.ProjectHooksError
+import dev.quayside.projects.ui.ProjectHooksState
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
+import dev.quayside.projects.ui.ProjectsPorts
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionsApi
+import dev.quayside.summaries.api.FakeSummarySettingsRepo
+import dev.quayside.summaries.ui.SummarySettingsController
+import dev.quayside.summaries.ui.SummarySettingsDialog
 import dev.quayside.terminal.api.FakeTerminalSettingsRepo
 import dev.quayside.terminal.ui.ShellStart
 import dev.quayside.terminal.ui.TerminalArea
@@ -76,7 +92,7 @@ import kotlin.time.Duration.Companion.hours
  * their label and directory from [SettingsShellStart]; without, from [PlainShellStart].
  *
  * With a notification repo in [settings] it also gets the notification settings dialog and its palette command
- * (AM-704); its list of voices comes from [SettingsRepos.voices].
+ * (AM-704); its list of voices comes from [SettingsRepos.voices] and its samples go to [SettingsRepos.preview].
  *
  * With [terminal] the window also registers [AttachCommands] (AM-505); [attachCommand] stands for
  * `AgentRuntime.attachCommand`.
@@ -110,8 +126,41 @@ internal class WindowSetup(
 ) {
     var keys: TerminalKeys? = null
 
+    /** What the "Zaufać katalogowi?" step of the "Nowy agent" dialog writes to (AM-309); records `trusted`. */
+    var trust: WorkspaceTrust = FakeWorkspaceTrust()
+
     /** The attacher of the window's terminal (null without one): what the popup Attach and the buttons call. */
     var attacher: SessionAttacher? = null
+
+    /** The hooks of the projects for the remove dialog (AM-610); default: none anywhere. */
+    var projectHooks: ProjectHooks = NoProjectHooks
+
+    /** The folder chooser of the sidebar (AM-816): counts its openings and answers with a cancel. */
+    val picker = CountingPicker()
+
+    /** The version of Claude Code the status bar shows, as `readSupervisor` would give it; null = unknown. */
+    var supervisor: String? = null
+
+    /** The resizable terminal pane (AM-819): the layout store and the height of the window container. */
+    val panes = PaneSetup()
+}
+
+/** [DirectoryPicker] that counts how many times it was opened and answers like a cancelled dialog. */
+internal class CountingPicker : DirectoryPicker {
+    var picks: Int = 0
+        private set
+
+    override suspend fun pick(): Path? {
+        picks++
+        return null
+    }
+}
+
+/** [ProjectHooks] of a window whose projects have no hooks of ours: nothing to warn about, nothing to remove. */
+internal object NoProjectHooks : ProjectHooks {
+    override suspend fun status(dir: Path): ProjectHooksState = ProjectHooksState.ABSENT
+
+    override suspend fun uninstall(dir: Path): Outcome<Unit, ProjectHooksError> = Outcome.Ok(Unit)
 }
 
 /** [showWindow] for a [WindowSetup] with the "Nowy agent" dialog, its command and its button (AM-608). */
@@ -121,7 +170,7 @@ internal fun ComposeUiTest.showWindowOf(setup: WindowSetup): CommandPaletteContr
     val keys = WindowKeys()
     val look = builtInCatalog().lookOf(AppearanceSettings())
     setContent {
-        val content = @Composable { WindowContent(setup, keys) { built += it } }
+        val content = @Composable { WindowFrame(setup.panes) { WindowContent(setup, keys) { built += it } } }
         val appearance = setup.settings.appearance
         if (appearance == null) AppTheme(look, content) else LiveLook(appearance, content)
     }
@@ -159,24 +208,60 @@ private fun WindowContent(
         PaletteKeys(keys, palette)
         SideEffect { setup.attacher = terminal.wiring.attacher }
         val mode = remember { terminal.controller?.let { windowMode(it, registry, scope) } }
+        val parts = WindowParts(projects, missionControl, scope, setup.projects.projects)
+        val notifications = remember { notificationsOf(setup, parts) }
         KeysBox(keys) {
             QuaysideApp(
                 controllers = AppControllers(projects, missionControl, palette),
-                terminal =
-                    remember(terminal.controller) {
-                        TerminalSlot(
-                            panel = terminalPanel(terminal.controller, setup.terminal),
-                            attacher = terminal.wiring.attacher,
-                            mode = mode,
-                            terminalKey = terminal.controller?.activeKey,
-                        )
-                    },
-                onNewAgent = agent::openForSelection,
+                terminal = remember(terminal.controller) { slotOf(setup, terminal, mode) },
+                chrome = chromeOf(setup, agent, notifications, this),
             )
-            SettingsHosts(setup.settings, registry, WindowParts(projects, missionControl, scope))
+            SettingsHosts(setup.settings, registry, parts, notifications)
             NewAgentDialog(agent.newAgent)
         }
     }
+}
+
+/** The notification settings controller of the window; null without a notification repo. */
+private fun notificationsOf(
+    setup: WindowSetup,
+    window: WindowParts,
+): NotificationSettingsController? =
+    setup.settings.notifications?.let {
+        NotificationSettingsController(
+            it,
+            setup.settings.voices,
+            setup.settings.preview,
+            window.projectList,
+            window.scope,
+        )
+    }
+
+/**
+ * What `MainWindow` hands to the top bar (AM-816): "Nowy agent" enabled as the menu item is ([menuStateOf]), the
+ * voice chip over the notification settings, and the version of Claude Code of [setup].
+ */
+@Composable
+private fun chromeOf(
+    setup: WindowSetup,
+    agent: AgentWiring,
+    notifications: NotificationSettingsController?,
+    core: WindowCore,
+): WindowChrome {
+    val agentOpen by agent.newAgent.isOpen.collectAsState()
+    val actions by core.missionControl.actions.collectAsState()
+    val list by setup.projects.projects.collectAsState()
+    val enabled =
+        menuStateOf(core.projects, core.palette, agentOpen || actions.dialogOpen, list.isNotEmpty()).newAgent
+    return WindowChrome(
+        onNewAgent = agent::openForSelection,
+        newAgentEnabled = enabled,
+        notifications =
+            setup.settings.notifications?.let { repo ->
+                notifications?.let { NotificationChrome(repo.settings, it::open) }
+            },
+        supervisor = setup.supervisor,
+    )
 }
 
 /** The controllers every window has, and the registry the palette reads: the sidebar, Mission Control, the palette. */
@@ -191,7 +276,22 @@ private data class WindowCore(
 private class TerminalPart(
     val wiring: TerminalWiring,
     val controller: TerminalController?,
+    val pane: TerminalPaneHeight?,
 )
+
+/** The terminal slot of the window: the panel, the attacher, the mode and the pane height (AM-819). */
+private fun slotOf(
+    setup: WindowSetup,
+    terminal: TerminalPart,
+    mode: WindowModeState?,
+): TerminalSlot =
+    TerminalSlot(
+        panel = terminalPanel(terminal.controller, setup.terminal),
+        attacher = terminal.wiring.attacher,
+        mode = mode,
+        terminalKey = terminal.controller?.activeKey,
+        pane = terminal.pane,
+    )
 
 @Composable
 private fun WindowCore.rememberTerminalPart(
@@ -202,7 +302,7 @@ private fun WindowCore.rememberTerminalPart(
     val wiring = remember { TerminalWiring(setup.projects, setup.sessions, projects, missionControl, scope) }
     val controller =
         rememberTerminal(setup.terminal, scope, shellStart) { wiring.register(registry, it, setup.attachCommand) }
-    return TerminalPart(wiring, controller)
+    return TerminalPart(wiring, controller, rememberPane(setup.panes, scope))
 }
 
 /** Builds the [WindowCore] of [setup] and registers [AppCommands]; [onPalette] gets the palette for the test. */
@@ -211,7 +311,7 @@ private fun windowCore(
     scope: CoroutineScope,
     onPalette: (CommandPaletteController) -> Unit,
 ): WindowCore {
-    val controller = projectsController(setup.projects, setup.sessions, scope)
+    val controller = projectsController(setup.projects, setup.sessions, setup.projectHooks, setup.picker, scope)
     val missionControl = missionControlController(setup.projects, setup.sessions, controller, scope)
     val registry = FakeCommandRegistry(scope)
     val palette = CommandPaletteController(registry, scope, NoOpLogger).also(onPalette)
@@ -231,8 +331,7 @@ private class AgentWiring(
 ) {
     val newAgent =
         NewAgentController(
-            setup.starts ?: setup.sessions,
-            setup.projects,
+            NewAgentPorts(setup.starts ?: setup.sessions, setup.projects, setup.trust),
             scope,
             NoOpLogger,
             selectStartedSession(projects, missionControl),
@@ -247,8 +346,8 @@ private class AgentWiring(
         setup.keys = TerminalKeys(registry, palette, scope)
     }
 
-    /** The button of the project page: opens the dialog on the project selected in the sidebar. */
-    fun openForSelection() = newAgent.open(projects.selection.value)
+    /** The button of the project page: the real `openNewAgent` that the menu, the shortcut and the palette call. */
+    fun openForSelection() = openNewAgent(projects, newAgent)
 }
 
 /**
@@ -268,6 +367,15 @@ internal class SettingsRepos(
 ) {
     /** Set before the window is shown (the constructor is at the limit of parameters). */
     var appearance: FakeAppearanceApi? = null
+
+    /** The targets of the hooks dialog (AM-609): `ProjectHookTargets` over the fake projects; default: global only. */
+    var hookTargets: HookTargetSource? = null
+
+    /** Where the voice samples of the notification settings dialog go (AM-813); a fake that plays at once. */
+    var preview: VoicePreview = FakeVoicePreview()
+
+    /** The summaries settings dialog and its palette command appear with this repo (AM-606). */
+    var summaries: FakeSummarySettingsRepo? = null
 }
 
 /** The backup folder the hooks dialog of the window shows. */
@@ -278,6 +386,7 @@ private class WindowParts(
     val projects: ProjectsController,
     val missionControl: MissionControlController,
     val scope: CoroutineScope,
+    val projectList: StateFlow<List<Project>>,
 )
 
 /** The settings dialogs of [repos] with their palette commands. */
@@ -286,11 +395,11 @@ private fun SettingsHosts(
     repos: SettingsRepos,
     registry: FakeCommandRegistry,
     window: WindowParts,
+    notifications: NotificationSettingsController?,
 ) {
-    val notifications =
-        remember { repos.notifications?.let { NotificationSettingsController(it, repos.voices, window.scope) } }
     SettingsDialogHost(repos.terminal, registry, window, notifications?.dialogOpen(window.scope))
     NotificationDialogHost(notifications, registry, window)
+    SummaryDialogHost(repos.summaries, registry, window)
     HookDialogHost(repos, registry, window)
     AppearanceDialogHost(repos, registry, window)
 }
@@ -321,6 +430,22 @@ private fun AppearanceDialogHost(
     AppearanceDialog(controller) { AppearancePreviewSlot() }
 }
 
+/** The summaries settings dialog over [repo] with its palette command registered; nothing without a repo. */
+@Composable
+private fun SummaryDialogHost(
+    repo: FakeSummarySettingsRepo?,
+    registry: FakeCommandRegistry,
+    window: WindowParts,
+) {
+    val controller =
+        remember {
+            repo?.let { SummarySettingsController(it, window.scope) }?.also {
+                registry.register(SummarySettingsCommands(window.projects, window.missionControl, it, window.scope))
+            }
+        }
+    controller?.let { SummarySettingsDialog(it) }
+}
+
 /** The hooks dialog over [SettingsRepos.hooks] with its palette command registered; nothing without one. */
 @Composable
 private fun HookDialogHost(
@@ -332,7 +457,13 @@ private fun HookDialogHost(
     val offer = checkNotNull(repos.hookOffer) { "SettingsRepos.hooks needs hookOffer on a temp directory" }
     val controller =
         remember {
-            HookSetupController(installer, offer, window.scope, NoOpLogger).also {
+            HookSetupController(
+                installer,
+                offer,
+                repos.hookTargets ?: globalOnlyTargets,
+                window.scope,
+                NoOpLogger,
+            ).also {
                 val others = MutableStateFlow(value = false)
                 registry.register(HookSetupCommands(window.projects, window.missionControl, it, window.scope, others))
             }
@@ -373,7 +504,9 @@ private fun NotificationDialogHost(
             registry.register(NotificationSettingsCommands(window.projects, window.missionControl, it, window.scope))
         }
     }
-    controller?.let { NotificationSettingsDialog(it) }
+    controller?.let {
+        NotificationSettingsDialog(it, remember { SoundPreviewController(FakeSoundLibrary(), window.scope) })
+    }
 }
 
 /** Routes the palette's keys through [keys] while the window is shown. */
@@ -429,7 +562,7 @@ private fun missionControlController(
     MissionControlController(
         SessionsApi(monitor = sessions, commands = sessions),
         projects,
-        controller.selection,
+        controller.focus,
         TestClock(),
         scope,
         NoOpLogger,
@@ -463,13 +596,15 @@ private fun KeysBox(
 private fun projectsController(
     projects: FakeProjectsApi,
     sessions: FakeSessions,
+    hooks: ProjectHooks,
+    picker: DirectoryPicker,
     scope: CoroutineScope,
 ): ProjectsController =
     ProjectsController(
         projects = projects,
         inspector = FakeProjectInspector(projects = projects),
         sessions = SessionsApi(monitor = sessions, commands = sessions),
-        picker = DirectoryPicker { null },
+        ports = ProjectsPorts(picker, hooks),
         scope = scope,
         logger = NoOpLogger,
     )

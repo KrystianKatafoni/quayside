@@ -24,36 +24,58 @@ import androidx.compose.ui.test.withKeyDown
 import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.api.FakeSoundLibrary
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.SpeechSettings
+import dev.quayside.notifications.api.VoiceCatalog
 import dev.quayside.notifications.api.VoiceId
 import dev.quayside.notifications.api.VoiceOption
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.jupiter.api.Test
 
 /** Cold JVM start-up can exceed the default 1 s of `waitUntil` in the first test. */
 private const val WAIT_MS = 5_000L
 
 /** Voices of the fake Mac. With the saved default Zosia the choice is: system, Ewa, Zosia, Alex, Daniel, Zuzana. */
-private val INSTALLED =
+internal val INSTALLED =
     listOf(
-        VoiceOption(VoiceId("Zuzana"), "cs_CZ"),
-        VoiceOption(VoiceId("Zosia"), "pl_PL"),
-        VoiceOption(VoiceId("Ewa"), "pl_PL"),
-        VoiceOption(VoiceId("Daniel"), "en_GB"),
-        VoiceOption(VoiceId("Alex"), "en_US"),
+        VoiceOption(VoiceId("Zuzana"), "cs_CZ", "Dobrý den, jmenuji se Zuzana."),
+        VoiceOption(VoiceId("Zosia"), "pl_PL", "Witaj, nazywam się Zosia."),
+        VoiceOption(VoiceId("Ewa"), "pl_PL", "Cześć, jestem Ewa."),
+        VoiceOption(VoiceId("Daniel"), "en_GB", "Hello, my name is Daniel."),
+        VoiceOption(VoiceId("Alex"), "en_US", "Hi, I am Alex."),
     )
+
+/** Tab order of the sound section: the volume, then the choice and the preview button of every kind (AM-815). */
+internal val SOUND_ORDER =
+    listOf(SettingsTags.SOUND_VOLUME) +
+        NotificationKind.entries.flatMap { listOf(SettingsTags.sound(it), SettingsTags.soundPreview(it)) }
 
 /** Tab order of the dialog from the popup style to the Save button (plan AM-704, part B2b). */
 private val SPEECH_ORDER =
-    listOf(SettingsTags.POPUP_STYLE, SettingsTags.SPEECH_VOICE, SettingsTags.RATE, SettingsTags.VOLUME) +
+    listOf(
+        SettingsTags.POPUP_STYLE,
+        SettingsTags.SPEECH_VOICE,
+        SettingsTags.PREVIEW,
+        SettingsTags.RATE,
+        SettingsTags.VOLUME,
+    ) +
         NotificationKind.entries.flatMap { listOf(SettingsTags.template(it), SettingsTags.restore(it)) } +
         listOf(
             SettingsTags.READ_QUESTION,
             SettingsTags.ONLY_IN_BACKGROUND,
             SettingsTags.MUTE_MICROPHONE,
+        ) + SOUND_ORDER +
+        listOf(
+            // the quiet hours section follows the sound section (AM-706, AM-815)
+            SettingsTags.QUIET_ENABLED,
+            SettingsTags.QUIET_FROM,
+            SettingsTags.QUIET_TO,
+            SettingsTags.RESPECT_FOCUS,
             SettingsTags.SAVE,
         )
 
@@ -68,15 +90,27 @@ class NotificationSettingsVoiceScreenTest {
     /** Shows the dialog over a repo with [saved] settings and a catalog of [INSTALLED] voices, and opens it. */
     private fun ComposeUiTest.showDialog(
         saved: NotificationSettings = NotificationSettings(),
-        voices: FakeVoiceCatalog = FakeVoiceCatalog(INSTALLED),
+        voices: VoiceCatalog = FakeVoiceCatalog(INSTALLED),
     ) {
         repo = FakeNotificationSettingsRepo(saved)
         val built = mutableListOf<NotificationSettingsController>()
         setContent {
             AmTestTheme {
                 val scope = rememberCoroutineScope()
-                val controller = remember { NotificationSettingsController(repo, voices, scope).also { built += it } }
-                NotificationSettingsDialog(controller)
+                val controller =
+                    remember {
+                        NotificationSettingsController(
+                            repo,
+                            voices,
+                            FakeVoicePreview(),
+                            MutableStateFlow(emptyList()),
+                            scope,
+                        ).also {
+                            built +=
+                                it
+                        }
+                    }
+                NotificationSettingsDialog(controller, SoundPreviewController(FakeSoundLibrary(), scope))
             }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }
@@ -129,7 +163,8 @@ class NotificationSettingsVoiceScreenTest {
             SPEECH_ORDER.zipWithNext().forEach { (from, to) ->
                 press(from, Key.Tab)
 
-                // Then the focus moves to the next one: voice, rate, volume, 7 x (template, restore), 3 switches, Save
+                // Then the focus moves to the next one: voice, rate, volume, 7 x (template, restore), 3 switches,
+                // 15 sound controls, quiet section, Save
                 awaitFocus(to)
             }
         }
@@ -139,7 +174,7 @@ class NotificationSettingsVoiceScreenTest {
         runComposeUiTest {
             // Given the open dialog with the saved voice Zosia and the list of voices loaded
             showDialog()
-            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia — polski (Polska)")
             onNodeWithTag(SettingsTags.VOICES_FAILED).assertDoesNotExist()
 
             // When the user opens the list: the system voice, the saved one and the installed ones are there
@@ -147,11 +182,11 @@ class NotificationSettingsVoiceScreenTest {
             val labels =
                 listOf(
                     "Głos systemowy",
-                    "Ewa (pl_PL)",
-                    "Zosia (pl_PL)",
-                    "Alex (en_US)",
-                    "Daniel (en_GB)",
-                    "Zuzana (cs_CZ)",
+                    "Ewa — polski (Polska)",
+                    "Zosia — polski (Polska)",
+                    "Alex — angielski (Stany Zjednoczone)",
+                    "Daniel — angielski (Wielka Brytania)",
+                    "Zuzana — czeski (Czechy)",
                 )
             labels.forEachIndexed { index, label -> optionShows(index, label) }
             onNodeWithTag(AmDropdownTags.option(labels.size)).assertDoesNotExist()
@@ -159,7 +194,7 @@ class NotificationSettingsVoiceScreenTest {
 
             // And picks Daniel and saves
             clickOption(4)
-            awaitText(SettingsTags.SPEECH_VOICE, "Daniel (en_GB)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Daniel — angielski (Wielka Brytania)")
             save()
 
             // Then the repo holds Daniel
@@ -172,7 +207,7 @@ class NotificationSettingsVoiceScreenTest {
         runComposeUiTest {
             // Given the open dialog with the saved voice Zosia
             showDialog()
-            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia — polski (Polska)")
 
             // When the user picks the system voice, the first of the list, and saves
             pickOption(SettingsTags.SPEECH_VOICE, 0)
@@ -189,7 +224,7 @@ class NotificationSettingsVoiceScreenTest {
         runComposeUiTest {
             // Given the open dialog and the focus on the voice field
             showDialog()
-            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia — polski (Polska)")
             await(SettingsTags.SPEECH_VOICE).performScrollTo().focus()
             awaitFocus(SettingsTags.SPEECH_VOICE)
 
@@ -200,7 +235,7 @@ class NotificationSettingsVoiceScreenTest {
             awaitListGone()
 
             // Then the voice stays
-            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia — polski (Polska)")
         }
 
     @Test
@@ -208,20 +243,20 @@ class NotificationSettingsVoiceScreenTest {
         runComposeUiTest {
             // Given the open dialog and the focus on the closed voice field, which shows Zosia
             showDialog()
-            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia — polski (Polska)")
             await(SettingsTags.SPEECH_VOICE).performScrollTo().focus()
             awaitFocus(SettingsTags.SPEECH_VOICE)
 
             // When the user presses D, Z, Z, Q and E, then the choice follows
             val steps =
                 listOf(
-                    Key.D to "Daniel (en_GB)",
-                    Key.Z to "Zuzana (cs_CZ)",
+                    Key.D to "Daniel — angielski (Wielka Brytania)",
+                    Key.Z to "Zuzana — czeski (Czechy)",
                     // wraps round the end of the list to the Polish Zosia
-                    Key.Z to "Zosia (pl_PL)",
+                    Key.Z to "Zosia — polski (Polska)",
                     // no voice starts with Q: the choice stays
-                    Key.Q to "Zosia (pl_PL)",
-                    Key.E to "Ewa (pl_PL)",
+                    Key.Q to "Zosia — polski (Polska)",
+                    Key.E to "Ewa — polski (Polska)",
                 )
             steps.forEach { (key, label) ->
                 press(SettingsTags.SPEECH_VOICE, key)
@@ -234,7 +269,7 @@ class NotificationSettingsVoiceScreenTest {
         runComposeUiTest {
             // Given the open dialog and the focus on the closed voice field, which shows Zosia
             showDialog()
-            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia — polski (Polska)")
             await(SettingsTags.SPEECH_VOICE).performScrollTo().focus()
             awaitFocus(SettingsTags.SPEECH_VOICE)
 
@@ -246,9 +281,9 @@ class NotificationSettingsVoiceScreenTest {
             }
 
             // Then the choice stays on Zosia; a plain D still jumps (the field was listening)
-            awaitText(SettingsTags.SPEECH_VOICE, "Zosia (pl_PL)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Zosia — polski (Polska)")
             press(SettingsTags.SPEECH_VOICE, Key.D)
-            awaitText(SettingsTags.SPEECH_VOICE, "Daniel (en_GB)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Daniel — angielski (Wielka Brytania)")
         }
 
     @Test
@@ -265,7 +300,7 @@ class NotificationSettingsVoiceScreenTest {
 
             // And after another voice is picked, the saved one is still in the list with its label
             clickOption(2)
-            awaitText(SettingsTags.SPEECH_VOICE, "Ewa (pl_PL)")
+            awaitText(SettingsTags.SPEECH_VOICE, "Ewa — polski (Polska)")
             openList(SettingsTags.SPEECH_VOICE)
             optionShows(1, "Ghost (niezainstalowany)")
             clickOption(1)

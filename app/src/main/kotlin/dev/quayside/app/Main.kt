@@ -10,11 +10,15 @@ import dev.quayside.agentruntime.impl.agentRuntimeModule
 import dev.quayside.agentruntime.impl.hookEventSourceModule
 import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.agentruntime.impl.oneShotPromptModule
+import dev.quayside.agentruntime.impl.workspaceTrustModule
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.appearance.impl.themeFilesModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
+import dev.quayside.core.designsystem.amLogoImage
+import dev.quayside.core.designsystem.rememberAmLogoPainter
 import dev.quayside.core.designtokens.TerminalColors
+import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
 import dev.quayside.notifications.api.NotificationSettingsRepo
@@ -26,7 +30,9 @@ import dev.quayside.projects.impl.projectsModule
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.impl.sessionsModule
 import dev.quayside.summaries.api.SummariesApi
+import dev.quayside.summaries.api.SummarySettingsRepo
 import dev.quayside.summaries.impl.summariesModule
+import dev.quayside.summaries.impl.summarySettingsModule
 import dev.quayside.terminal.api.TerminalApi
 import dev.quayside.terminal.api.TerminalSettings
 import dev.quayside.terminal.api.TerminalSettingsRepo
@@ -41,27 +47,26 @@ import java.nio.file.Path
 /** Port of the hook server and of the URLs the installer writes into the settings file (docs/11 §9). */
 internal const val HOOK_PORT = 47321
 
+private const val DOCK_ICON_PX = 256
+private val WINDOW_ICON_SIZE = 32.dp
+
 /**
  * Entry point: builds the dependency graph once, then opens the main window. The project list is read before
  * the window opens: `main` is the one place allowed to block (ENG-C3).
  */
 @Suppress("ForbiddenMethodCall")
 fun main() {
-    // Before the first use of AWT: FileDialog then chooses folders, natively on macOS (AwtDirectoryPicker).
-    System.setProperty("apple.awt.fileDialogForDirectories", "true")
+    enableNativeFolderDialog()
     val core = productionCoreDeps()
     core.logger.info("app start")
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
     val appScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
     val appearance = runBlocking { appearanceModule(core.storage, core.process, core.homeDir, appScope, core.logger) }
     val looks = appLooks(appearance, appScope)
-    // Before the first window (JediTerm reads the installed fonts once, by name): every font the dialog offers.
-    registerTerminalFonts(appearance.catalog, core.logger)
+    prepareWindowing(core.logger, appearance)
     val modules = appModules(core, projects, runBlocking { storedSettings(core) }, appearance, looks)
-    val hooks = hookDeps(core)
+    val hooks = hookDeps(core, projects)
     val keys = WindowKeys()
-    // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
-    System.setProperty("compose.interop.blending", "true")
     application {
         // Window passes the composition locals of its parent composition to its content, so one AppTheme is enough.
         AppTheme(looks) {
@@ -72,13 +77,32 @@ fun main() {
                 },
                 onKeyEvent = keys::onKeyEvent,
                 title = Strings["app.title"],
+                icon = rememberAmLogoPainter(WINDOW_ICON_SIZE),
                 state = rememberWindowState(size = DpSize(width = 1280.dp, height = 800.dp)),
             ) {
                 MainWindow(core, modules, keys, hooks)
             }
-            PopupWindow(modules.notifications.popups)
+            PopupWindow(modules.settings.notifications.popups)
         }
     }
+}
+
+/** Before the first use of AWT: FileDialog then chooses folders, natively on macOS (AwtDirectoryPicker). */
+private fun enableNativeFolderDialog() {
+    System.setProperty("apple.awt.fileDialogForDirectories", "true")
+}
+
+/** Before the first window: terminal fonts, interop blending and the Dock icon. */
+private fun prepareWindowing(
+    logger: Logger,
+    appearance: AppearanceApi,
+) {
+    // JediTerm reads the installed fonts once, by name: register every font the dialog offers.
+    registerTerminalFonts(appearance.catalog.value, logger)
+    // Compose content (the palette) must draw over the Swing terminals (ADR 0012).
+    System.setProperty("compose.interop.blending", "true")
+    // The Dock shows the mark only through Taskbar (macOS ignores Window(icon)); the full drawing, 256 px.
+    installDockIcon(amLogoImage(DOCK_ICON_PX), logger)
 }
 
 /** The module graph of the window over the already read [projects] and [stored] settings. */
@@ -106,12 +130,12 @@ private fun appModules(
     val terminal =
         terminalDeps(core, runtime, stored.terminal, notifications, looks)
     return AppModules(
-        ProjectDeps(projects, inspector),
+        ProjectDeps(projects, inspector, workspaceTrustModule(core.homeDir, core.dispatchers.io, core.logger)),
         sessions,
         registry,
         terminal,
-        notifications,
-        AppearanceDeps(appearance, looks, themeFilesModule(appearance.catalog, core.dispatchers.io, core.logger)),
+        SettingsDeps(notifications, stored.summarySettings, stored.layout),
+        AppearanceDeps(appearance, looks, themeFilesModule(appearance, core.dispatchers.io, core.logger)),
     )
 }
 
@@ -124,18 +148,38 @@ private fun sessionsDeps(
     scope: CoroutineScope,
 ): SessionsApi {
     val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir, port = HOOK_PORT)
-    return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger, summaries = summaries)
+    return sessionsModule(
+        runtime,
+        hooks,
+        projects,
+        scope,
+        core.clock,
+        core.logger,
+        summaries = summaries,
+        claudeHome = core.homeDir.resolve(".claude"),
+        io = core.dispatchers.io,
+    )
 }
 
 /**
  * The hooks setup: the installer writes URLs with the same [HOOK_PORT] the hook server listens on; its backups go
  * to `hooks-backup` in the app support directory, never into the user's files (AM-607).
  */
-private fun hookDeps(core: CoreDeps): HookDeps {
+private fun hookDeps(
+    core: CoreDeps,
+    projects: ProjectsApi,
+): HookDeps {
     val backupDir = appSupportDir(core.homeDir).resolve("hooks-backup")
     val installer =
         hookInstallerModule(core.homeDir, backupDir, core.clock, core.dispatchers.io, core.logger, port = HOOK_PORT)
-    return HookDeps(installer, backupDir, HookOfferStore(core.storage))
+    val targets = ProjectHookTargets(projects.projects, core.dispatchers.io)
+    return HookDeps(
+        installer,
+        backupDir,
+        HookOfferStore(core.storage),
+        targets,
+        InstallerProjectHooks(installer, core.dispatchers.io),
+    )
 }
 
 /** The settings files read in `main` before the window opens, like the project list. */
@@ -143,14 +187,20 @@ private class StoredSettings(
     val terminal: TerminalSettingsRepo,
     val notifications: NotificationSettingsRepo,
     val summaries: SummariesApi,
+    val summarySettings: SummarySettingsRepo,
+    val layout: WindowLayoutDeps,
 )
 
-private suspend fun storedSettings(core: CoreDeps): StoredSettings =
-    StoredSettings(
+private suspend fun storedSettings(core: CoreDeps): StoredSettings {
+    val layout = WindowLayoutStore(core.storage, core.logger)
+    return StoredSettings(
         terminalSettingsModule(core.storage, core.logger),
         notificationSettingsModule(core.storage, core.logger),
         summariesModule(core.storage, oneShotPromptModule(core.process, core.homeDir), core.logger),
+        summarySettingsModule(core.storage, core.logger),
+        WindowLayoutDeps(layout, layout.load()),
     )
+}
 
 /**
  * The terminal module on the login shell over the stored settings, with the colours and font of the applied
@@ -168,7 +218,7 @@ private fun terminalDeps(
     val settings = appliedTerminalSettings(stored.settings, looks, scope)
     val api = startTerminals(core, shell, settings, appliedTerminalColors(looks, scope))
     forwardBells(api.bells, stored.settings, notifications.center, scope)
-    return TerminalDeps(api, stored, shell, runtime::attachCommand)
+    return TerminalDeps(api, stored, shell, runtime::attachCommand, runtime)
 }
 
 /**

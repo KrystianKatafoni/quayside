@@ -248,18 +248,14 @@ class ShapedThemesTest {
     }
 
     @Test
-    fun `terminal colours are bg and text for dark themes and a fixed pair for light ones`() {
+    fun `terminal colours are bg and text in every theme`() {
         ShapedThemeTable.rows.forEach { row ->
             val spec = theme(row.key)
             val terminal = spec.colors.terminal
 
-            if (spec.mode.isDark) {
-                terminal.termBg shouldBe spec.colors.surfaces.bg
-                terminal.termText shouldBe spec.colors.content.text
-            } else {
-                terminal.termBg shouldBe hex("#1E242C")
-                terminal.termText shouldBe hex("#E2E8F0")
-            }
+            terminal.termBg shouldBe spec.colors.surfaces.bg
+            terminal.termText shouldBe spec.colors.content.text
+            terminal.ansi shouldBe deriveTerminal(terminal.termBg, terminal.termText, spec.mode.isDark).ansi
         }
     }
 

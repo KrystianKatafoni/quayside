@@ -3,9 +3,13 @@ package dev.quayside.app
 import dev.quayside.core.domain.SessionId
 import dev.quayside.notifications.api.NotificationCenter
 import dev.quayside.notifications.api.NotificationSettingsRepo
+import dev.quayside.notifications.api.SoundLibrary
 import dev.quayside.notifications.api.VoiceCatalog
+import dev.quayside.notifications.api.VoicePreview
 import dev.quayside.notifications.impl.notificationCenterModule
+import dev.quayside.notifications.impl.soundLibraryModule
 import dev.quayside.notifications.impl.voiceCatalogModule
+import dev.quayside.notifications.impl.voicePreviewModule
 import dev.quayside.notifications.ui.PopupController
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
@@ -29,14 +33,21 @@ internal class AttachBridge {
 
 /**
  * The notification center with the popup controller of the popup window, the [attach] bridge (AM-702) and the
- * [settings] repo behind the settings dialog (AM-704).
+ * [settings] repo behind the settings dialog (AM-704) and its [choices] (voices and sounds).
  */
 internal class NotificationDeps(
     val center: NotificationCenter,
     val popups: PopupController,
     val attach: AttachBridge,
     val settings: NotificationSettingsRepo,
+    val choices: NotificationChoices,
+)
+
+/** The voices, the voice sample and the sounds the settings dialog lists and previews (AM-704, AM-813, AM-815). */
+internal class NotificationChoices(
     val voices: VoiceCatalog,
+    val preview: VoicePreview,
+    val sounds: SoundLibrary,
 )
 
 /**
@@ -68,7 +79,14 @@ internal fun notificationDeps(
             core.process,
             AppForeground().active,
             core.logger,
+            sessions.monitor.snapshot,
         )
-    val voices = voiceCatalogModule(core.process, core.homeDir)
-    return NotificationDeps(center, PopupController(center, settings, scope), attach, settings, voices)
+    return NotificationDeps(center, PopupController(center, settings, scope), attach, settings, choicesOf(core))
 }
+
+private fun choicesOf(core: CoreDeps): NotificationChoices =
+    NotificationChoices(
+        voiceCatalogModule(core.process, core.homeDir),
+        voicePreviewModule(core.process, core.homeDir),
+        soundLibraryModule(core.process, core.homeDir, core.dispatchers.io),
+    )

@@ -18,8 +18,8 @@ import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.TextRole
 
 /**
- * The "Skróty" toggle of the mode bar (AM-511, ADR 0015). Never takes focus, so a click does not turn `space` and
- * `⏎` into a second click.
+ * The "? skróty klawiszowe" toggle of [ShortcutsHelp] (AM-511, ADR 0015). Never takes focus, so a click does not turn
+ * `space` and `⏎` into a second click.
  */
 @Composable
 internal fun ShortcutsToggle(
@@ -40,7 +40,7 @@ internal fun ShortcutsToggle(
     }
 }
 
-/** The cheat sheet of the keyboard shortcuts, drawn above the mode bar while it is open. */
+/** The cheat sheet of the keyboard shortcuts, drawn above the toggle of [ShortcutsHelp] while it is open. */
 @Composable
 internal fun ShortcutsPanel() {
     Column(
@@ -58,6 +58,7 @@ internal fun ShortcutsPanel() {
                 MissionControlStrings["shortcuts.$it"],
                 role = TextRole.CODE,
                 color = mutedColor(),
+                maxLines = 2,
             )
         }
     }

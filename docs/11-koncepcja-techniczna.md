@@ -20,10 +20,10 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 
 | Moduł | Zawartość | Zależności |
 | --- | --- | --- |
-| `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`. Czysty Kotlin | brak (tylko coroutines-core) |
+| `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`, `PluralForm` (polska odmiana liczebników). Czysty Kotlin | brak (tylko coroutines-core) |
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
-| `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`), bez Compose | brak (dozwolone `core:domain`) |
+| `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`, `AnsiColors` — 16 kolorów palety terminala w `TerminalColors.ansi`), bez Compose | brak (dozwolone `core:domain`) |
 | `core:design-system` | Komponenty Compose (przyciski, przyciski ikonowe, ikony, pigułki, kafelki liczników, wiersze listy, lista rozwijana `AmDropdown`, pasek trybu, popup od pierwszego użytkownika), `AmTheme` z `CompositionLocal`; `amScrim()` i otwarta lista `AmDropdown` mają skutek uboczny: zgłaszają warstwę modalną do `AmModalGate` (widgety Swing nie biorą wtedy kliknięć) | `core:design-tokens` |
 | `core:testing` | Wspólne narzędzia testowe: `TestClock`, `TestDispatchers`, buildery danych, asercje | `core:domain` |
 
@@ -31,10 +31,10 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 
 | Feature | `api` (kontrakt) | `impl` (implementacja i adaptery) | `ui` |
 | --- | --- | --- | --- |
-| `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller` | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller` | – |
+| `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller`, `WorkspaceTrust` | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller`, `ClaudeJsonTrust` | – |
 | `projects` | `ProjectsApi` | `JsonProjectStore`, `DirectoryInspector` (git, `CLAUDE.md`, hooki) | sidebar, dialogi dodaj/usuń |
 | `sessions` | `SessionMonitor`, `SessionCommands` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami | – |
-| `summaries` | `Summarizer`, `SummariesApi` | `LastMessageSummary` (czysty) z `last_assistant_message`; model Haiku przez `claude -p` w części B (ADR 0019) | – |
+| `summaries` | `Summarizer`, `SummariesApi`, `SummarySettingsRepo` | `LastMessageSummary` (czysty) z `last_assistant_message`; model Haiku przez `claude -p` w części B (ADR 0019) | okno „Ustawienia podsumowań” |
 | `notifications` | `NotificationCenter`, `NotificationSettingsRepo` | `NotificationPolicy` (czysta), `MacSayAdapter`, `SoundAdapter`, `DockBadgeAdapter` | okna popupów, ekran ustawień |
 | `terminal` | `TerminalApi`, `TerminalSession` | JediTerm + pty4j, profile powłoki, OSC 133 | karty, panele, szukanie |
 | `appearance` | `AppearanceApi`, katalog schematów i typografii | `JsonThemeStore`, wbudowany katalog, przełączanie dzień/noc | ekran Wygląd |
@@ -91,6 +91,11 @@ sealed interface Outcome<out T, out E> {
 
 fun interface Clock { fun now(): Instant }
 data class ShellCommand(val argv: List<String>, val workDir: Path, val env: Map<String, String> = emptyMap())
+
+enum class PluralForm(val key: String) {                       // ONE ("one"), FEW ("few"), MANY ("many")
+    ONE("one"), FEW("few"), MANY("many");
+    companion object { fun of(count: Int): PluralForm }        // 1 → ONE; końcówka 2–4 poza 12–14 → FEW; reszta → MANY
+}
 ```
 
 ```kotlin
@@ -169,6 +174,12 @@ sealed interface HookError {                                     // reason: sta�
     data class WriteFailed(val file: Path, val reason: String) : HookError
     data class BackupNotFound(val ref: BackupRef) : HookError
 }
+
+// Zaufanie katalogu w ~/.claude.json (AM-309, ADR 0031). Wołać tylko po jawnej zgodzie użytkownika.
+fun interface WorkspaceTrust {
+    suspend fun trust(dir: Path): Outcome<Unit, TrustError>      // hasTrustDialogAccepted = true dla toRealPath(dir), nigdy dla rodziców
+}
+enum class TrustError { DIRECTORY_MISSING, CONFIG_MISSING, CONFIG_UNSUPPORTED, CONFIG_UNREADABLE, CONFIG_INVALID, CONCURRENT_CHANGE, WRITE_FAILED }
 ```
 
 ```kotlin
@@ -179,13 +190,20 @@ interface ProjectsApi {
     suspend fun add(dir: Path, displayName: String? = null): Outcome<Project, ProjectError>
     suspend fun remove(id: ProjectId): Outcome<Unit, ProjectError> // nigdy nie usuwa plików z dysku
     suspend fun rename(id: ProjectId, displayName: String): Outcome<Unit, ProjectError>
+    // grupa (FR-P7, AM-306): zastępuje podfoldery projektu; każdy musi być prawdziwym podkatalogiem Project.dir, nie symlinkiem
+    suspend fun setSubfolders(id: ProjectId, subfolders: List<SubfolderName>): Outcome<Unit, ProjectError>
+    suspend fun branch(id: ProjectId): String?                      // gałąź git katalogu projektu (AM-818); null = nieznana lub nie repozytorium
 }
+// Session.meta = SessionMeta(model?, permissionMode?, branch?) z końcówki transkryptu Claude Code i .git/HEAD (AM-818); null = nieznane
+// Project(id, dir, displayName, subfolders: List<SubfolderName>); pusta lista = brak grupy; w projects.json klucz tylko dla niepustej (schemat 2, ADR 0026)
+// ProjectFocus(project, subfolder?) = co zaznaczył sidebar; ProjectGroups.subfolderOf(project, cwd) czysta reguła, do której podfolderu należy katalog sesji
 // RECOVERED_FROM_BROKEN_FILE: plik odłożony jako .broken, komendy działają (komunikat w UI, §8);
 // READ_FAILED / NEWER_SCHEMA: komendy zwracają StorageFailed, plik nie jest nadpisywany
 enum class StorageIssue { RECOVERED_FROM_BROKEN_FILE, READ_FAILED, NEWER_SCHEMA }
 // inspekcja przed dodaniem osobno (ENG-I2); nieistniejący katalog to błąd, nie pole raportu
 interface ProjectInspector {
     suspend fun inspect(dir: Path): Outcome<DirectoryReport, ProjectError> // git, CLAUDE.md, liczba sesji, hooki
+    suspend fun subfolders(dir: Path): Outcome<List<SubfolderName>, ProjectError> // bezpośrednie podkatalogi do wyboru (bez ukrytych i symlinków, najwyżej 64)
 }
 // ProjectInputRules: czyste reguły (normalizacja składniowa ścieżki, nazwa ≤ 80 code pointów) wspólne dla impl i fake'ów
 // Project.dir i DirectoryReport.dir to ścieżka rzeczywista (toRealPath()), porównywalna z cwd sesji
@@ -215,7 +233,7 @@ sealed interface SessionEvent {
     data class RunningLong(override val session: Session, val duration: Duration) : SessionEvent
 }
 interface SessionCommands {
-    suspend fun start(project: ProjectId, spec: NewSessionSpec): Outcome<SessionId, SessionError>
+    suspend fun start(project: ProjectId, spec: NewSessionSpec): Outcome<SessionId, SessionError>  // spec.subfolder: podfolder grupy (AM-308); SessionError.SubfolderUnavailable
     suspend fun stop(id: SessionId): Outcome<Unit, SessionError>
     suspend fun stopAllIn(project: ProjectId): Outcome<Int, SessionError>
     suspend fun respawn(id: SessionId): Outcome<Unit, SessionError>
@@ -239,6 +257,13 @@ sealed interface SummaryError {                                     // błąd zo
 // refiner == null: model wyłączony (domyślnie; włącza go `summaries.json`, §8)
 data class SummariesApi(val summarizer: Summarizer, val refiner: SummaryRefiner? = null)
 // fabryka: summariesModule(storage, prompt, logger) — czyta summaries.json raz
+// przełącznik z ekranu ustawień (AM-606): zapis działa od następnego startu, bo fabryka czyta plik raz
+interface SummarySettingsRepo {
+    val useModel: StateFlow<Boolean>                                // zapisany przełącznik
+    val startedWithModel: Boolean                                   // z czym wystartowała ta instancja aplikacji
+    suspend fun setUseModel(on: Boolean): Outcome<Unit, SummarySettingsError>  // WRITE_FAILED, NEWER_SCHEMA
+}
+// fabryka: summarySettingsModule(storage, logger) — obok summariesModule, ten sam plik
 
 // agent-runtime:api — jedno pytanie do modelu przez `claude -p`, poza sesją i bez hooków (ADR 0019)
 fun interface OneShotPrompt {
@@ -258,10 +283,20 @@ interface NotificationSettingsRepo {
     val settings: StateFlow<NotificationSettings>
     suspend fun update(change: (NotificationSettings) -> NotificationSettings)
 }
-data class VoiceOption(val id: VoiceId, val locale: String)   // np. Zosia / pl_PL
+data class VoiceOption(val id: VoiceId, val locale: String, val sample: String = "")   // np. Zosia / pl_PL / przykład po `#` z `say -v ?`
 enum class VoiceCatalogError { UNAVAILABLE, FAILED }          // program nie startuje | wystartował i zawiódł
 interface VoiceCatalog {                          // AM-704: głosy zainstalowane w systemie (`say -v ?`)
     suspend fun voices(): Outcome<List<VoiceOption>, VoiceCatalogError>   // posortowane po nazwie, bez cache
+}
+data class VoiceSample(val voice: VoiceId?, val text: String, val rate: Int, val volume: Int)   // AM-813: require na zakresach SpeechSettings; toString ukrywa text
+enum class VoicePreviewError { UNAVAILABLE, FAILED }          // program nie startuje | zawiódł, przekroczył czas, głos nieznany albo `[[`/`]]` w tekście
+data class SoundSettings(val volume: Int = 100, val sounds: Map<NotificationKind, SoundId> = emptyMap())  // AM-815: pole `sound` w NotificationSettings; SoundId = nazwa pliku bez rozszerzenia, bez separatorów
+interface SoundLibrary {                          // AM-815: lista dźwięków systemowych i odsłuch w dialogu; soundLibraryModule(process, workDir, io)
+    suspend fun sounds(): Outcome<List<SoundId>, SoundLibraryError>
+    suspend fun play(sound: SoundId, volume: Int): Outcome<Unit, SoundLibraryError>   // bez dźwięku zastępczego, anulowanie zatrzymuje
+}
+interface VoicePreview {                          // AM-813: odsłuch próbki w dialogu; bez powrotu do głosu systemowego, anulowanie zatrzymuje
+    suspend fun play(sample: VoiceSample): Outcome<Unit, VoicePreviewError>
 }
 enum class TemplateProblem { EMBEDDED_COMMAND, TOO_LONG }   // SpeechSettings.templateProblem(text)
 data class QuietHours(val enabled: Boolean = false, val from: LocalTime = 22:00, val to: LocalTime = 07:00,
@@ -277,8 +312,8 @@ internal fun decide(event: SessionEvent, settings: NotificationSettings, ctx: De
 // DeliveryContext(appActive, microphoneActive, localTime, focusActive); quietNow(quiet, ctx) = (enabled && covers(localTime)) || (respectFocus && focusActive)
 internal interface FocusMonitor { val active: StateFlow<Boolean> }   // AM-705: tylko port; NoFocus (zawsze false), adapter Skupienia osobno
 internal interface SpeechPort { suspend fun speak(text: String, voice: VoiceId, rate: Int) }  // adapter: MacSayAdapter
-internal interface SoundPort { suspend fun play(sound: SystemSound): Outcome<Unit, SoundError> }  // AM-812, adapter: AfplayAdapter; SoundNotifier + SoundQueue (chłodzenie 2 s)
-// Fabryki modułu (public): notificationCenterModule(settings, scope, clock, zone: () -> ZoneId, ...) (strefa czytana przy każdym zdarzeniu) oraz voiceCatalogModule(process, workDir): VoiceCatalog
+internal interface SoundPort { suspend fun play(sound: SoundId, volume: Int): Outcome<Unit, SoundError> }  // AM-812/815, adapter: AfplayAdapter (`afplay -v`); SoundNotifier + SoundQueue (chłodzenie 2 s)
+// Fabryki modułu (public): notificationCenterModule(settings, scope, clock, zone: () -> ZoneId, ...) (strefa czytana przy każdym zdarzeniu) oraz voiceCatalogModule(process, workDir): VoiceCatalog i voicePreviewModule(process, workDir): VoicePreview
 ```
 
 ```kotlin
@@ -328,13 +363,14 @@ object Wcag { fun luminance(c: Rgba): Double; fun contrast(fg: Rgba, bg: Rgba): 
 data class ColorTokens(val surfaces: SurfaceColors, val content: ContentColors, val status: StatusColors, val terminal: TerminalColors)
 data class ShapeTokens(val radius: Int, val borderWidth: Int, val shadow: ShadowSpec?, val backdrop: Backdrop)
 data class TypographySpec(val id: TypographyId, val name: String, val uiFont: String, val terminalFont: String)
+class AnsiColors(colors: List<Rgba>)             // 16 kolorów xterm, get(i); TerminalColors(termBg, termText, ansi) — AM-811
 
 // core:design-system (AM-802; Compose, wątek UI, niemutowalne)
 object AmTheme { val colors: ColorTokens; val shape: AmShape; val typography: AmTypography; val density: AmDensity }   // @Composable, CompositionLocal
 @Composable fun AmTheme(colors: ColorTokens, shape: ShapeTokens, typography: TypographySpec, density: AmDensity = COMFORTABLE, content: @Composable () -> Unit)
 enum class AmDensity { COMPACT, COMFORTABLE }; data class ListMetrics(val tile: Dp, val vertical: Dp, val twoLines: Boolean); fun AmDensity.listMetrics(): ListMetrics   // AM-803
 fun Rgba.toColor(): Color; fun ShapeTokens.toAmShape(): AmShape; fun TypographySpec.toAmTypography(): AmTypography
-enum class TextRole { TITLE, HEADING, BODY, CAPTION, CODE }; object AmFonts { val families: Set<String>; fun family(name: String): FontFamily? }
+enum class TextRole { TITLE, HEADING, BODY, CAPTION, CODE, NAME, LABEL }; object AmFonts { val families: Set<String>; fun family(name: String): FontFamily? }
 @Composable fun AmText(...); AmButton(...); AmListRow(...); AmPanel(...); AmModeBar(...); AmModeBadge(...); fun Modifier.amFocusFrame()
 // AM-808: ikony liniowe (siatka 24, kreska 1,8) i komponenty tonów
 enum class IconKind { FOLDER, WAITING, WORKING, DONE, FAILED, PERMISSION, STOPPED, ATTACH, REPLY, RESPAWN, STOP, REMOVE, SEARCH, NOTIFICATIONS, VOICE, BRANCH, SPLIT, MAXIMIZE, PLUS, CLOSE, MORE, BACK }
@@ -343,8 +379,16 @@ enum class StatusTone { NEUTRAL, ACCENT, WARN, WORK, OK, ERR }
 @Composable fun AmIconTile(icon: IconKind, tone: StatusTone, contentDescription: String?, modifier: Modifier = Modifier)
 @Composable fun AmChip(label: String, modifier: Modifier = Modifier, tone: StatusTone = NEUTRAL, icon: IconKind? = null, description: String? = null)
 @Composable fun AmKeyCap(keys: String, modifier: Modifier = Modifier)
+// AM-816: promienie pochodne od tokenu radius (wiersz r+2, karta r+4, kafelek r+2), licznik i pole szukania
+data class CornerRadii(val row: Dp, val card: Dp, val tile: Dp); fun cornerRadii(radius: Int): CornerRadii   // AmShape: radii, row, card, tile, counter
+@Composable fun AmCounter(count: Int, tone: StatusTone, description: String, modifier: Modifier = Modifier)      // koło >= 22 dp, czyta description
+@Composable fun AmSearchField(placeholder: String, keyCap: String?, onClick: () -> Unit, modifier: Modifier = Modifier)   // przycisk wyglądający jak pole, bez fokusu
 @Composable fun AmIconButton(icon: IconKind, label: String, onClick: () -> Unit, modifier: Modifier = Modifier, options: IconButtonOptions = IconButtonOptions())
 @Composable fun AmStatCard(value: String, label: String, icon: IconKind, modifier: Modifier = Modifier, tone: StatusTone = NEUTRAL)
+// AM-822: znak (latarnia, ADR 0030; poniżej 32 dp rysunek uproszczony, stałe kolory, bez fokusu), ikona okna, obraz Docka i słowo
+@Composable fun AmLogo(size: Dp, contentDescription: String?, modifier: Modifier = Modifier)
+@Composable fun rememberAmLogoPainter(size: Dp): Painter; fun amLogoImage(sizePx: Int): BufferedImage
+@Composable fun AmWordmark(modifier: Modifier = Modifier); fun ColorTokens.wordmarkAccent(): Rgba   // "side": akcent lub zmieszany z text do 4,5:1
 data class IconButtonOptions(val enabled: Boolean = true, val focusable: Boolean = true, val tone: StatusTone = NEUTRAL, val size: IconButtonSize = REGULAR, val style: IconButtonStyle = GHOST, val badge: String? = null)
 enum class IconButtonSize { COMPACT, REGULAR, LARGE }; enum class IconButtonStyle { GHOST, OUTLINED, SELECTED, DANGER }
 // AM-809: przycisk z tekstem w trzech rodzajach, opcjonalna ikona i skrót; kolor znaku stanu
@@ -352,19 +396,26 @@ enum class ButtonKind { PRIMARY, SECONDARY, DANGER }
 data class ButtonOptions(val kind: ButtonKind = SECONDARY, val enabled: Boolean = true, val focusable: Boolean = true, val icon: IconKind? = null, val shortcut: String? = null)
 @Composable fun AmButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, options: ButtonOptions = ButtonOptions())
 @Composable fun StatusTone.markColor(): Color      // kolor ikony tonu, 3:1 na bg, panel, raised, sel
+// AM-816: nowe publiczne elementy modułów ui, używane tylko przez app (okno składa górny pasek i pasek stanu)
+// mission-control:ui: StatusBar(controller, terminal, supervisor, modifier, trailing), AlertsBell(controller, onOpen), ShortcutsHelp(), GlobalView.title(), MissionControlController.names: StateFlow<ShownNames>
+// notifications:ui: VoiceChip(settings, onClick), notificationStatus(settings): String; projects:ui: ProjectsSidebar(controller, modifier, addKeyCap)
 
 // appearance:api (typy z core:design-tokens, bez Compose); AM-803: settings + update, AM-804: theme.json, dzień/noc, pliki motywów
 interface AppearanceApi {
-    val catalog: ThemeCatalog                     // 29 motywów, 22 typografie, własne (08-wyglad)
+    val catalog: StateFlow<ThemeCatalog>          // 29 motywów, 22 typografie i własne schematy (AM-814); rośnie po addScheme
     val settings: StateFlow<AppearanceSettings>   // zapisany wybór: scheme, typography, uiScale (S/M/L), density, dayNight (enabled, day, night)
     val applied: StateFlow<AppearanceSettings>    // to, co aplikacja rysuje teraz: settings.appliedFor(tryb macOS ciemny?); tryb czytany co 5 s
-    suspend fun update(change: (AppearanceSettings) -> AppearanceSettings): Outcome<AppearanceSettings, AppearanceError>  // zapis theme.json, potem publikacja
+    suspend fun update(change: (AppearanceSettings) -> AppearanceSettings): Outcome<AppearanceSettings, AppearanceError>  // zapis theme.json, potem publikacja; nie zmienia customSchemes
+    suspend fun addScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError>  // AM-814: wyprowadza tokeny, audyt NFR-6, zapis, nowy katalog; Taken/LowContrast/StorageFailed
+    fun previewScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError>  // AM-820: jak addScheme, ale bez zapisu (raport kontrastu edytora); Taken/LowContrast
+    suspend fun removeScheme(id: SchemeId): Outcome<Unit, SchemeError>  // AM-820: zapis i nowy katalog; NotFound (podstawowy lub nieznany), InUse (zapisany motyw lub dzień/noc), StorageFailed
 }
 interface ThemeFiles {                            // pliki theme.json wybrane przez użytkownika (FR-A6); niczego nie stosuje
     suspend fun read(source: Path): Outcome<AppearanceSettings, ThemeFileError>           // ścisły odczyt, do 64 KiB
-    suspend fun write(settings: AppearanceSettings, target: Path): Outcome<Unit, ThemeFileError>  // atomowo
+    suspend fun readSchemes(source: Path): Outcome<List<CustomScheme>, ThemeFileError>      // AM-814: customSchemes pliku, ścisło
+    suspend fun write(settings: AppearanceSettings, target: Path): Outcome<Unit, ThemeFileError>  // atomowo, razem z customSchemes
 }
-// appearance:impl: appearanceModule(storage, process, home, scope, logger) (suspend: pierwszy odczyt trybu przed oknem), themeFilesModule(catalog, io, logger),
+// appearance:impl: appearanceModule(storage, process, home, scope, logger) (suspend: pierwszy odczyt trybu przed oknem), themeFilesModule(appearance, io, logger),
 // builtInCatalog() (ten sam katalog bez dostępu do plików; używają go testy i testFixtures innych modułów)
 // appearance:ui (AM-803/804, tylko `app` go widzi): AppearanceController(appearance, terminal, files, picker, scope), ThemeFilePicker,
 // AppearanceDialog(controller, preview); podgląd to prawdziwy Mission Control składany w `app` (ADR 0022)
@@ -438,11 +489,13 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 | `summaries.json` | `summaries:impl` (`{"useModel": false}`: streszczenia modelem Haiku, domyślnie wyłączone; brak lub uszkodzony plik = wyłączone) |
 | `theme.json` | `appearance:impl` |
 | `hook-offer.json` | `app` (`{"dismissed": true}`: użytkownik pominął propozycję instalacji hooków albo je odinstalował; brak lub uszkodzony plik = nie odrzucono; [ADR 0020](adr/0020-format-hook-offer-json.md)) |
+| `window.json` | `app` (`{"terminalHeight": 412.5}`: wysokość panelu terminala w trybie listy w dp; zapisywane tylko odstępstwo od domyślnej 320; brak klucza lub wartość niepoprawna = domyślna; [ADR 0025](adr/0025-format-window-json.md)) |
 | `hooks-backup/*.json` | `agent-runtime:impl` |
 
 - Każdy plik ma **jednego właściciela**. Inne moduły nie czytają cudzych plików.
 - `JsonStore<T>` z `core:storage`: zapis do pliku tymczasowego i `ATOMIC_MOVE`, pole `schemaVersion`, lista migracji `vN → vN+1`. Uszkodzony plik jest odkładany jako `*.broken` i zastępowany domyślnymi wartościami z komunikatem w UI.
 - Lista głosów systemowych (`VoiceCatalog`) nie jest zapisywana na dysku: `notifications:ui` wczytuje ją raz na kontroler przy pierwszym otwarciu dialogu (po błędzie: ponownie przy kolejnym otwarciu); do `notifications.json` trafia tylko wybrana nazwa głosu.
+- `~/.claude.json` (plik Claude Code z danymi konta, zapisywany przez każdą działającą sesję) **nie ma właściciela w Quayside**. Jedynym zapisem jest `WorkspaceTrust` (`agent-runtime:impl`) po zgodzie użytkownika: jedno pole `hasTrustDialogAccepted` dla jednego katalogu, plik tymczasowy w tym samym katalogu, ponowny odczyt przed `ATOMIC_MOVE`, bez kopii zapasowej, w logach tylko kategorie ([ADR 0031](adr/0031-zaufanie-katalogu-w-claude-json.md)).
 - Token hooków przechowywany w Keychain macOS (adapter w `agent-runtime:impl`), nie w plikach.
 
 ## 9. Composition root
@@ -467,6 +520,8 @@ fun main() = application {
     QuaysideApp(projects, sessions, notifications, terminal, appearance, palette, hookInstaller)
 }
 ```
+
+Okno „Hooki Claude Code” obejmuje zakres globalny i każdy dodany projekt (`HookScope.Project`, AM-609); cele dostarcza `ProjectHookTargets` nad `ProjectsApi.projects`.
 
 Każda fabryka `xxxModule(…)` zwraca obiekt z interfejsami `api`, np. `SessionsApi(monitor: SessionMonitor, commands: SessionCommands)`. Klasy implementacji pozostają `internal`.
 
@@ -496,7 +551,7 @@ quayside/
 │   ├── agent-runtime/  { api/ impl/ }
 │   ├── projects/       { api/ impl/ ui/ }
 │   ├── sessions/       { api/ impl/ }
-│   ├── summaries/      { api/ impl/ }
+│   ├── summaries/      { api/ impl/ ui/ }
 │   ├── notifications/  { api/ impl/ ui/ }
 │   ├── terminal/       { api/ impl/ ui/ }
 │   ├── appearance/     { api/ impl/ ui/ }

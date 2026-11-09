@@ -49,7 +49,13 @@ class ProjectsControllerTest {
             act { controller.onEvent(SidebarEvent.Select(aProject().id)) }
             controller.state.value.selected shouldBe aProject().id
             controller.menu.value shouldBe
-                ProjectsMenuState(canAdd = true, canRemove = true, canRename = true, dialogOpen = false)
+                ProjectsMenuState(
+                    canAdd = true,
+                    canRemove = true,
+                    canRename = true,
+                    dialogOpen = false,
+                    canEditSubfolders = true,
+                )
 
             act { controller.onIntent(ProjectsIntent.RemoveSelectedRequested) }
             controller.menu.value shouldBe
@@ -57,7 +63,13 @@ class ProjectsControllerTest {
 
             act { controller.onEvent(SidebarEvent.Dismiss) }
             controller.menu.value shouldBe
-                ProjectsMenuState(canAdd = true, canRemove = true, canRename = true, dialogOpen = false)
+                ProjectsMenuState(
+                    canAdd = true,
+                    canRemove = true,
+                    canRename = true,
+                    dialogOpen = false,
+                    canEditSubfolders = true,
+                )
         }
 
     @Test

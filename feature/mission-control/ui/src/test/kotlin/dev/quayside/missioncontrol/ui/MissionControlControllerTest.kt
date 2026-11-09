@@ -22,7 +22,6 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -55,13 +54,13 @@ internal class MissionControlControllerTest {
                 ),
                 clock,
             )
-        val selected = MutableStateFlow(selected)
+        val selected = SelectedProject(selected)
 
         fun TestScope.start(tick: Duration = 1.seconds): MissionControlController =
             MissionControlController(
                 sessions.api(),
                 projects,
-                selected,
+                selected.focus,
                 clock,
                 backgroundScope,
                 NoOpLogger,
@@ -90,6 +89,44 @@ internal class MissionControlControllerTest {
 
             controller.page().rows.map { it.id.value } shouldBe listOf("mine")
             controller.page().header.name shouldBe "Quayside"
+        }
+
+    @Test
+    fun `header shows the branch of the project and follows it`() =
+        runTest {
+            val world = World(sessions = listOf(session("mine")))
+            world.projects.setBranch(project.id, "main")
+            val controller = with(world) { start() }
+
+            controller.page().header.branch shouldBe "main"
+
+            world.projects.setBranch(project.id, "feat/AM-818")
+            world.sessions.appear(session("second"))
+            runCurrent()
+
+            controller.page().header.branch shouldBe "feat/AM-818"
+        }
+
+    @Test
+    fun `header has no branch outside a git work tree`() =
+        runTest {
+            val controller = with(World()) { start() }
+
+            controller.page().header.branch shouldBe null
+        }
+
+    @Test
+    fun `branch of the project is dropped when another project is shown`() =
+        runTest {
+            val world = World()
+            world.projects.setBranch(project.id, "main")
+            val controller = with(world) { start() }
+            controller.page().header.branch shouldBe "main"
+
+            world.selected.value = other.id
+            runCurrent()
+
+            controller.page().header.branch shouldBe null
         }
 
     @Test
@@ -149,7 +186,7 @@ internal class MissionControlControllerTest {
             MissionControlController(
                 world.sessions.api(),
                 world.projects,
-                world.selected,
+                world.selected.focus,
                 counting,
                 backgroundScope,
                 NoOpLogger,

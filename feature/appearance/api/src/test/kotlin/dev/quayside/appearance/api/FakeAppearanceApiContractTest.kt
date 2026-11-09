@@ -38,8 +38,8 @@ class FakeAppearanceApiContractTest : AppearanceApiContract() {
                 typographies = listOf(TypographySpec(TypographyId("plex"), "Only", "Only Sans", "Only Mono")),
             )
 
-        FakeAppearanceApi(catalog).catalog shouldBeSameInstanceAs catalog
-        catalog shouldBe FakeAppearanceApi(catalog).catalog
+        FakeAppearanceApi(catalog).catalog.value shouldBeSameInstanceAs catalog
+        catalog shouldBe FakeAppearanceApi(catalog).catalog.value
     }
 
     @Test

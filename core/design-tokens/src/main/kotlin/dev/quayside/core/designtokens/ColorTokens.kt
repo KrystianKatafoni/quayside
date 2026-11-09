@@ -37,8 +37,9 @@ public data class StatusColors(
     val work: Rgba,
 )
 
-/** Terminal colours. */
+/** Terminal colours: default text on default background, and the ANSI palette drawn on [termBg]. */
 public data class TerminalColors(
     val termBg: Rgba,
     val termText: Rgba,
+    val ansi: AnsiColors,
 )

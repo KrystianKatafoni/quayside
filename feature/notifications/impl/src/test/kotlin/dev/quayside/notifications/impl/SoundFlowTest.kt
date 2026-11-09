@@ -90,7 +90,7 @@ class SoundFlowTest {
             send(waiting())
 
             val command = runner.commands.single { it.argv.first() == "/usr/bin/afplay" }
-            command.argv shouldBe listOf("/usr/bin/afplay", "/System/Library/Sounds/Glass.aiff")
+            command.argv shouldBe listOf("/usr/bin/afplay", "-v", "1.00", "/System/Library/Sounds/Glass.aiff")
         }
 
     @Test

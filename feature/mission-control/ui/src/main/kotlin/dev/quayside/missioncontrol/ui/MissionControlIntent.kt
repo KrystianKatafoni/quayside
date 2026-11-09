@@ -2,6 +2,7 @@ package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.SubfolderName
 
 /** Intents of Mission Control from the palette and window keys (MVI, docs/11 §1; ADR 0011). */
 public sealed interface MissionControlIntent {
@@ -30,10 +31,14 @@ public sealed interface MissionControlIntent {
         val view: GlobalView,
     ) : MissionControlIntent
 
-    /** `app`: selects [id] of [project] on the project page with filter ALL, e.g. a session just started (AM-608). */
+    /**
+     * `app`: selects [id] of [project] on the project page with filter ALL, e.g. a session just started (AM-608);
+     * with [subfolder] on the page of that subfolder of the group (AM-308).
+     */
     public data class SelectSession(
         val project: ProjectId,
         val id: SessionId,
+        val subfolder: SubfolderName? = null,
     ) : MissionControlIntent
 
     /** `space` and the palette: opens the output preview of the selected visible session, or closes it. */

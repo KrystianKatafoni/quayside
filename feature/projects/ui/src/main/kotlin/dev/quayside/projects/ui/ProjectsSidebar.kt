@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,36 +24,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import dev.quayside.core.designsystem.AmButton
-import dev.quayside.core.designsystem.AmChip
-import dev.quayside.core.designsystem.AmIcon
 import dev.quayside.core.designsystem.AmIconButton
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.IconButtonOptions
 import dev.quayside.core.designsystem.IconButtonSize
 import dev.quayside.core.designsystem.IconKind
-import dev.quayside.core.designsystem.StatusTone
-import dev.quayside.core.designsystem.markColor
+import dev.quayside.core.designsystem.TextRole
 import dev.quayside.projects.api.Project
-import dev.quayside.sessions.api.SessionCounts
+import dev.quayside.projects.api.ProjectFocus
+import dev.quayside.projects.api.ProjectGroups
 
-/** The sidebar with its dialogs; stateless apart from [controller]. */
+/**
+ * The sidebar with its dialogs; stateless apart from [controller]. [addKeyCap] is the text of the shortcut shown on
+ * the "Dodaj projekt z dysku…" button; null shows none.
+ */
 @Composable
 public fun ProjectsSidebar(
     controller: ProjectsController,
     modifier: Modifier = Modifier,
+    addKeyCap: String? = null,
 ) {
     val state by controller.state.collectAsState()
     // The dialog popup sits outside the Column, so it takes no slot in its spacing.
@@ -72,17 +69,18 @@ public fun ProjectsSidebar(
             SidebarHeader { controller.onIntent(ProjectsIntent.AddRequested) }
             state.banner?.let { Banner(it) { controller.onEvent(SidebarEvent.DismissBanner) } }
             ProjectList(state, controller)
+            AddFromDiskButton(addKeyCap) { controller.onIntent(ProjectsIntent.AddRequested) }
         }
         state.dialog?.let { ProjectsDialog(it, controller::onEvent) }
     }
 }
 
-/** "PROJEKTY" with the "+" icon button that adds a project; it never takes focus. */
+/** "PROJEKTY" (LABEL role) with the "+" icon button that adds a project; it never takes focus. */
 @Composable
 private fun SidebarHeader(onAdd: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.weight(weight = 1f)) {
-            AmText(ProjectsStrings["sidebar.title"], color = mutedColor())
+            AmText(ProjectsStrings["sidebar.title"], role = TextRole.LABEL, color = mutedColor())
         }
         AmIconButton(
             IconKind.PLUS,
@@ -108,97 +106,68 @@ private fun ColumnScope.ProjectList(
             )
         }
     } else {
-        Column(modifier = list.verticalScroll(rememberScrollState())) {
-            state.projects.forEach { project ->
-                ProjectRow(
-                    project = project,
-                    selected = project.id == state.selected,
-                    counts = state.sessions.counts[project.id],
-                    onEvent = controller::onEvent,
-                    onRemove = {
-                        controller.onEvent(SidebarEvent.Select(project.id))
-                        controller.onIntent(ProjectsIntent.RemoveSelectedRequested)
-                    },
-                )
-            }
+        Column(
+            modifier = list.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(space = 2.dp),
+        ) {
+            state.projects.forEach { project -> ProjectWithSubfolders(project, state, controller) }
         }
     }
 }
 
-/**
- * The row never takes focus: a focused `selectable` would consume `space` and Enter before the window shortcuts. A
- * click requests focus anyway and an unfocusable parent hands it to its first focusable child, so the ⋯ button of the
- * row is unfocusable too. The selection is taken by a layer behind the cells, so the count chips are separate nodes
- * of the semantics tree; the tagged node itself carries the name and says whether the row is selected.
- */
+/** The row of [project] and, when it is an expanded group, the rows of its subfolders. */
 @Composable
-private fun ProjectRow(
+private fun ProjectWithSubfolders(
     project: Project,
-    selected: Boolean,
-    counts: SessionCounts?,
-    onEvent: (SidebarEvent) -> Unit,
-    onRemove: () -> Unit,
+    state: ProjectsUiState,
+    controller: ProjectsController,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .testTag(ProjectsTags.row(project.id))
-                .semantics {
-                    this.selected = selected
-                    text = AnnotatedString(project.displayName)
-                }.background(color = if (selected) selColor() else Color.Transparent),
-    ) {
-        Box(
-            Modifier
-                .matchParentSize()
-                .focusProperties { canFocus = false }
-                .selectable(selected = selected, onClick = { onEvent(SidebarEvent.Select(project.id)) }),
-        )
-        RowCells(project, counts, { onEvent(SidebarEvent.RenameRequested(project.id)) }, onRemove)
+    val group = project.subfolders.isNotEmpty()
+    val collapsed = project.id in state.collapsed
+    val onProject = state.selected == project.id && state.subfolder == null
+    ProjectRow(
+        project = project,
+        state = RowState(onProject, state.sessions.counts[project.id], collapsed.takeIf { group }),
+        actions = rowActions(project, controller),
+    )
+    if (!collapsed) {
+        project.subfolders.sortedWith(ProjectGroups.order).forEach { name ->
+            val focus = ProjectFocus(project.id, name)
+            SubfolderRow(
+                id = project.id,
+                name = name,
+                state = RowState(state.focusIs(focus), state.sessions.subfolders[focus]),
+                onSelect = { controller.onEvent(SidebarEvent.Select(project.id, name)) },
+            )
+        }
     }
 }
 
-/** Folder in the tone of the project, its name over the count chips, and the ⋯ menu. */
-@Composable
-private fun RowCells(
+private fun rowActions(
     project: Project,
-    counts: SessionCounts?,
-    onRename: () -> Unit,
-    onRemove: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
-    ) {
-        AmIcon(IconKind.FOLDER, null, Modifier.size(20.dp), projectTone(counts).markColor())
-        Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
-            AmText(project.displayName, Modifier.clearAndSetSemantics {})
-            Counters(CountBadges.of(counts))
-        }
-        RowMenu(project, onRename, onRemove)
-    }
+    controller: ProjectsController,
+): RowActions {
+    val onEvent = controller::onEvent
+    return RowActions(
+        select = { onEvent(SidebarEvent.Select(project.id)) },
+        rename = { onEvent(SidebarEvent.RenameRequested(project.id)) },
+        remove = {
+            onEvent(SidebarEvent.Select(project.id))
+            controller.onIntent(ProjectsIntent.RemoveSelectedRequested)
+        },
+        subfolders = { onEvent(SidebarEvent.EditSubfoldersRequested(project.id)) },
+        toggleGroup = { onEvent(SidebarEvent.ToggleGroup(project.id)) },
+    )
 }
 
-/** "waiting: n" (warn, it needs the user) and "working: n" as chips with the number; nothing for zeros. */
-@Composable
-private fun Counters(badges: List<UiText>) {
-    if (badges.isEmpty()) return
-    Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-        badges.forEach { badge ->
-            val tone = if (badge.key == CountBadges.WAITING_KEY) StatusTone.WARN else StatusTone.WORK
-            AmChip(badge.args.first(), tone = tone, description = ProjectsStrings.format(badge))
-        }
-    }
-}
+private fun ProjectsUiState.focusIs(focus: ProjectFocus): Boolean =
+    selected == focus.project && subfolder == focus.subfolder
 
 /** The ⋯ button of a row with its menu: rename and remove. */
 @Composable
-private fun RowMenu(
+internal fun RowMenu(
     project: Project,
-    onRename: () -> Unit,
-    onRemove: () -> Unit,
+    actions: RowActions,
 ) {
     var open by remember { mutableStateOf(false) }
     Box {
@@ -212,11 +181,15 @@ private fun RowMenu(
                 Column {
                     MenuButton("row.rename", ProjectsTags.ROW_MENU_RENAME) {
                         open = false
-                        onRename()
+                        actions.rename()
+                    }
+                    MenuButton("row.subfolders", ProjectsTags.ROW_MENU_SUBFOLDERS) {
+                        open = false
+                        actions.subfolders()
                     }
                     MenuButton("row.remove", ProjectsTags.ROW_MENU_REMOVE) {
                         open = false
-                        onRemove()
+                        actions.remove()
                     }
                 }
             }

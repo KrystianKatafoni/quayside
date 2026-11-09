@@ -29,12 +29,9 @@ internal fun FrameWindowScope.AppMenu(
     val palette = controllers.palette
     val terminal = controllers.terminal
     val terminalSettings = controllers.terminalSettings
-    val menu by projects.menu.collectAsState()
     val list by projectsApi.projects.collectAsState()
     val selection by projects.selection.collectAsState()
-    val paletteOpen by palette.isOpen.collectAsState()
-    val dialogOpen = anyDialogOpen(controllers)
-    val enabled = AppMenuState.of(menu, paletteOpen, dialogOpen, list.isNotEmpty())
+    val enabled = menuStateOf(controllers, projectsApi)
     MenuBar {
         Menu(Strings["menu.projects"]) {
             ProjectItems(projects, controllers.newAgent, enabled)
@@ -48,9 +45,32 @@ internal fun FrameWindowScope.AppMenu(
     }
 }
 
+/** Which menu items (and the "Nowy agent" button of the top bar) are enabled now. */
+@Composable
+internal fun menuStateOf(
+    controllers: WindowControllers,
+    projectsApi: ProjectsApi,
+): AppMenuState {
+    val list by projectsApi.projects.collectAsState()
+    return menuStateOf(controllers.projects, controllers.palette, anyDialogOpen(controllers), list.isNotEmpty())
+}
+
+/** [AppMenuState.of] over the live state of [projects] and [palette]; the window of the tests calls it directly. */
+@Composable
+internal fun menuStateOf(
+    projects: ProjectsController,
+    palette: CommandPaletteController,
+    dialogOpen: Boolean,
+    hasProjects: Boolean,
+): AppMenuState {
+    val menu by projects.menu.collectAsState()
+    val paletteOpen by palette.isOpen.collectAsState()
+    return AppMenuState.of(menu, paletteOpen, dialogOpen, hasProjects)
+}
+
 /**
- * The palette, the notification settings (AM-704), the appearance (AM-803) and the hooks (AM-607); all wait for
- * dialogs like the palette.
+ * The palette, the notification settings (AM-704), the summaries settings (AM-606), the appearance (AM-803) and the
+ * hooks (AM-607); all wait for dialogs like the palette.
  */
 @Composable
 private fun MenuScope.ViewItems(
@@ -68,6 +88,11 @@ private fun MenuScope.ViewItems(
         text = Strings["menu.notificationSettings"],
         enabled = enabled.palette,
         onClick = { controllers.notificationSettings.open() },
+    )
+    Item(
+        text = Strings["menu.summarySettings"],
+        enabled = enabled.palette,
+        onClick = { controllers.summarySettings.open() },
     )
     Item(
         text = Strings["menu.appearance"],
@@ -99,6 +124,11 @@ private fun MenuScope.ProjectItems(
         onClick = { projects.onIntent(ProjectsIntent.RenameSelectedRequested) },
     )
     Item(
+        text = Strings["menu.subfolders"],
+        enabled = enabled.subfolders,
+        onClick = { projects.onIntent(ProjectsIntent.EditSubfoldersRequested) },
+    )
+    Item(
         text = Strings["menu.removeProject"],
         enabled = enabled.remove,
         shortcut = AppShortcuts.REMOVE_PROJECT.toKeyShortcut(),
@@ -108,7 +138,7 @@ private fun MenuScope.ProjectItems(
         text = Strings["menu.newAgent"],
         enabled = enabled.newAgent,
         shortcut = AppShortcuts.NEW_AGENT.toKeyShortcut(),
-        onClick = { newAgent.open(projects.selection.value) },
+        onClick = { openNewAgent(projects, newAgent) },
     )
 }
 
@@ -118,6 +148,7 @@ private fun anyDialogOpen(controllers: WindowControllers): Boolean {
     val sessionActions by controllers.missionControl.actions.collectAsState()
     val settingsDialog by controllers.terminalSettings.state.collectAsState()
     val notificationDialog by controllers.notificationSettings.state.collectAsState()
+    val summaryDialog by controllers.summarySettings.state.collectAsState()
     val hookDialog by controllers.hookSetup.state.collectAsState()
     val newAgentOpen by controllers.newAgent.isOpen.collectAsState()
     val appearanceDialog by controllers.appearance.state.collectAsState()
@@ -125,6 +156,7 @@ private fun anyDialogOpen(controllers: WindowControllers): Boolean {
         appearanceDialog != null ||
         settingsDialog != null ||
         notificationDialog != null ||
+        summaryDialog != null ||
         hookDialog != null ||
         newAgentOpen
 }

@@ -2,6 +2,7 @@
 
 package dev.quayside.app
 
+import dev.quayside.agentruntime.api.FakeWorkspaceTrust
 import dev.quayside.commandpalette.api.Command
 import dev.quayside.commandpalette.api.CommandGroup
 import dev.quayside.commandpalette.api.CommandId
@@ -9,18 +10,25 @@ import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.testing.TestClock
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
+import dev.quayside.missioncontrol.ui.NewAgentPorts
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.projects.api.aProject
+import dev.quayside.projects.api.subfolderNames
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
+import dev.quayside.projects.ui.ProjectsIntent
+import dev.quayside.projects.ui.ProjectsPorts
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsWorld
 import dev.quayside.sessions.api.WorldProject
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -76,6 +84,7 @@ class NewAgentCommandsTest {
         val newAgent: NewAgentController,
     )
 
+    @Suppress("LongMethod")
     private fun TestScope.parts(initial: List<dev.quayside.projects.api.Project>): Parts {
         val fake = FakeSessions(SessionsWorld(projects = listOf(WorldProject(project.id, project.dir))))
         val api = SessionsApi(monitor = fake, commands = fake)
@@ -85,9 +94,7 @@ class NewAgentCommandsTest {
                 projects,
                 FakeProjectInspector(projects = projects),
                 api,
-                DirectoryPicker {
-                    null
-                },
+                ProjectsPorts(DirectoryPicker { null }, NoProjectHooks),
                 backgroundScope,
                 NoOpLogger,
             )
@@ -95,13 +102,18 @@ class NewAgentCommandsTest {
             MissionControlController(
                 api,
                 projects,
-                controller.selection,
+                controller.focus,
                 TestClock(),
                 backgroundScope,
                 NoOpLogger,
                 1.hours,
             )
-        val newAgent = NewAgentController(fake, projects, backgroundScope, NoOpLogger) { _, _ -> }
+        val newAgent =
+            NewAgentController(
+                NewAgentPorts(fake, projects, FakeWorkspaceTrust()),
+                backgroundScope,
+                NoOpLogger,
+            ) { _, _ -> }
         return Parts(projects, controller, missionControl, newAgent)
     }
 
@@ -151,7 +163,7 @@ class NewAgentCommandsTest {
         runTest {
             val parts = parts(initial = listOf(project))
             val provider = provider(parts)
-            parts.newAgent.open(project.id)
+            parts.newAgent.open(ProjectFocus(project.id))
             runCurrent()
 
             provider.commands.value.shouldBeEmpty()
@@ -169,5 +181,29 @@ class NewAgentCommandsTest {
             runCurrent()
 
             provider.commands.value.shouldBeEmpty()
+        }
+
+    @Test
+    fun `new agent command id has no user data`() =
+        runTest {
+            val secret = "secret-folder"
+            val group =
+                aProject(
+                    id = "project0002",
+                    dir = A_PROJECT_DIR.resolveSibling("secret-group"),
+                    displayName = "secret-group",
+                    subfolders = subfolderNames(secret),
+                )
+            val parts = parts(initial = listOf(project, group))
+            val provider = provider(parts)
+            parts.controller.onIntent(ProjectsIntent.Select(group.id, SubfolderName(secret)))
+            runCurrent()
+
+            val command = provider.commands.value.single()
+
+            command.id shouldBe CommandId("sessions.new")
+            listOf(command.id.value, command.title, command.keywords.joinToString()).forEach {
+                it shouldNotContain "secret"
+            }
         }
 }

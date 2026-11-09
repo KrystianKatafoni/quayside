@@ -7,8 +7,10 @@ import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SnapshotStatus
+import dev.quayside.sessions.api.SubfolderProblem
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainAll
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotBeBlank
@@ -18,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.Arguments.arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.nio.file.Path
 import java.time.ZoneOffset
 
 /** Texts of `i18n/missioncontrol.properties` (NFR-10): every key Mission Control can show exists and is filled in. */
@@ -29,10 +32,26 @@ internal class MissionControlStringsTest {
     }
 
     @Test
+    fun `old mode bar keys are gone`() {
+        MissionControlStrings.keys shouldNotContain "modeBar.waiting"
+        MissionControlStrings.keys shouldNotContain "modeBar.working"
+        MissionControlStrings["modeBar.waiting.one"] shouldContain "{0}"
+    }
+
+    @Test
     fun `the new agent button and start show their shortcuts`() {
         MissionControlStrings["newAgent.button"] shouldBe "Nowy agent" // the key cap comes from SessionKeyCaps
         MissionControlStrings["newAgent.start"] shouldContain "Uruchom"
         MissionControlStrings["newAgent.start"] shouldContain "⌘⏎"
+    }
+
+    @Test
+    fun `the trust step warns about settings, hooks and MCP servers and about the config file`() {
+        val warning = MissionControlStrings["newAgent.trust.warning"]
+
+        warning shouldContain "hooki"
+        warning shouldContain "MCP"
+        warning shouldContain "~/.claude.json"
     }
 
     @Test
@@ -81,8 +100,12 @@ internal class MissionControlStringsTest {
                 "details.id",
                 "details.startedAt",
                 "details.lastActivity",
-                "modeBar.waiting",
-                "modeBar.working",
+                "modeBar.waiting.one",
+                "modeBar.waiting.few",
+                "modeBar.waiting.many",
+                "modeBar.working.one",
+                "modeBar.working.few",
+                "modeBar.working.many",
                 "action.stop",
                 "action.respawn",
                 "action.stop.busy",
@@ -142,6 +165,11 @@ internal class MissionControlStringsTest {
                 "newAgent.problem.promptTooLong",
                 "newAgent.problem.nameInvalid",
                 "newAgent.problem.agentInvalid",
+                "newAgent.trust.title",
+                "newAgent.trust.path",
+                "newAgent.trust.warning",
+                "newAgent.trust.cancel",
+                "newAgent.trust.accept",
             )
 
         private val errors: List<SessionError> =
@@ -150,7 +178,17 @@ internal class MissionControlStringsTest {
                 SessionError.SessionActive(SessionId("a")),
                 SessionError.UnknownProject(ProjectId("p")),
                 SessionError.StopIncomplete(stopped = 0, failed = listOf(SessionId("a"))),
-            ) + RuntimeProblem.entries.map { SessionError.Runtime(it) }
+            ) + SubfolderProblem.entries.map { SessionError.SubfolderUnavailable(ProjectId("p"), it) } +
+                RuntimeProblem.entries.map { SessionError.Runtime(it) }
+
+        private val trustDir = Path.of("/Users/test/projects/quayside")
+
+        private val trustProblems: List<NewAgentProblem> =
+            listOf(
+                NewAgentProblem.NotTrusted(trustDir),
+                NewAgentProblem.TrustFailed(trustDir),
+                NewAgentProblem.TrustIneffective(trustDir),
+            )
 
         private val states =
             listOf(
@@ -176,22 +214,25 @@ internal class MissionControlStringsTest {
                 statuses.map { Freshness.of(it, ZoneOffset.UTC) } +
                 statuses.map { Freshness.of(it, ZoneOffset.UTC, short = true) } +
                 errors.map(SessionActionMessages::reason) +
-                errors.map(NewAgentRules::failureOf)
+                errors.map(NewAgentRules::failureOf) +
+                trustProblems.map(NewAgentProblem::text)
 
         private fun argumentTexts(): List<UiText> =
             generated().filter { it.args.isNotEmpty() } +
                 listOf(
                     UiText("header.sessions", listOf("3")),
-                    UiText("modeBar.waiting", listOf("2")),
-                    UiText("modeBar.working", listOf("4")),
+                    UiText("modeBar.waiting.few", listOf("2")),
+                    UiText("modeBar.working.many", listOf("4")),
                     UiText("header.global", listOf("3")),
                     UiText("row.project", listOf("Quayside")),
                     UiText("preview.title", listOf("fix-login")),
+                    UiText("newAgent.trust.path", listOf("/Users/test/projects/quayside")),
                 )
 
         fun allKeys(): Set<String> = generated().map { it.key }.toSet() + UI_KEYS
 
         @JvmStatic
+        @Suppress("LongMethod")
         fun fixedTexts(): List<Arguments> =
             listOf(
                 arguments("empty.noProjects", "Brak projektów"),
@@ -206,7 +247,13 @@ internal class MissionControlStringsTest {
                 arguments("action.respawn", "Respawn"),
                 arguments("action.attach", "Attach"),
                 arguments("action.reply", "Odpowiedz"),
-                arguments("shortcuts.toggle", "Skróty"),
+                arguments("shortcuts.toggle", "? skróty klawiszowe"),
+                arguments("modeBar.waiting.one", "{0} czeka"),
+                arguments("modeBar.waiting.few", "{0} czekają"),
+                arguments("modeBar.waiting.many", "{0} czeka"),
+                arguments("modeBar.working.one", "{0} pracuje"),
+                arguments("modeBar.working.few", "{0} pracują"),
+                arguments("modeBar.working.many", "{0} pracuje"),
                 arguments("action.stop.busy", "Zatrzymywanie…"),
                 arguments("action.respawn.busy", "Respawn…"),
                 arguments("action.remove", "Usuń z listy"),
@@ -232,6 +279,9 @@ internal class MissionControlStringsTest {
                 arguments("newAgent.permission.plan", "Tylko plan"),
                 arguments("newAgent.permission.bypass", "Pomiń zgody"),
                 arguments("newAgent.model.default", "Domyślny"),
+                arguments("newAgent.trust.title", "Zaufać katalogowi?"),
+                arguments("newAgent.trust.cancel", "Anuluj"),
+                arguments("newAgent.trust.accept", "Zaufaj i uruchom"),
             )
 
         @JvmStatic

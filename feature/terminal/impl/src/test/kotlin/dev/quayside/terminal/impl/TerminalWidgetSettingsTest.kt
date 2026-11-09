@@ -2,6 +2,7 @@ package dev.quayside.terminal.impl
 
 import com.jediterm.terminal.TerminalColor
 import com.jediterm.terminal.ui.settings.DefaultSettingsProvider
+import dev.quayside.core.designtokens.AnsiColors
 import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.TerminalColors
 import dev.quayside.terminal.api.TerminalSettings
@@ -113,11 +114,49 @@ class TerminalWidgetSettingsTest {
 
     @Test
     fun `colours follow the snapshot given at build`() {
-        val other = TerminalColors(termBg = Rgba(0xFF010203), termText = Rgba(0xFF0A0B0C))
+        val other = TerminalColors(termBg = Rgba(0xFF010203), termText = Rgba(0xFF0A0B0C), ansi = TEST_ANSI)
         val custom = widget(colors = other)
 
         custom.defaultBackground shouldBe TerminalColor.rgb(1, 2, 3)
         custom.defaultForeground shouldBe TerminalColor.rgb(10, 11, 12)
+    }
+
+    @Test
+    fun `scrollbar colours come from termBg and termText`() {
+        settings.scrollbar shouldBe scrollbarColors(COLORS)
+    }
+
+    @Test
+    fun `scrollbar colours follow the snapshot given at build`() {
+        val other = TerminalColors(termBg = Rgba(0xFF010203), termText = Rgba(0xFFF0E0D0), ansi = TEST_ANSI)
+
+        widget(colors = other).scrollbar shouldBe scrollbarColors(other)
+    }
+
+    @Test
+    fun `palette comes from the theme ansi colours`() {
+        val palette = settings.terminalColorPalette
+
+        (0 until AnsiColors.SIZE).forEach { index ->
+            val expected = COLORS.ansi[index].argb.toInt()
+            palette.foregroundRgb(index) shouldBe expected
+            palette.backgroundRgb(index) shouldBe expected
+        }
+    }
+
+    @Test
+    fun `palette follows the snapshot given at build`() {
+        val other = TerminalColors(termBg = Rgba(0xFF010203), termText = Rgba(0xFF0A0B0C), ansi = TEST_ANSI.reversed())
+
+        val palette = widget(colors = other).terminalColorPalette
+
+        palette.foregroundRgb(0) shouldBe other.ansi[0].argb.toInt()
+    }
+
+    @Test
+    fun `selection stays inverted`() {
+        // Selection and cursor are the inverted pair termText/termBg; their contrast depends on this (ADR 0027).
+        settings.useInverseSelectionColor() shouldBe true
     }
 
     @Test
@@ -131,7 +170,9 @@ class TerminalWidgetSettingsTest {
     }
 
     companion object {
-        private val COLORS = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0))
+        private val COLORS = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0), ansi = TEST_ANSI)
+
+        private fun AnsiColors.reversed(): AnsiColors = AnsiColors(colors.reversed())
 
         @JvmStatic
         fun flags(): Stream<Arguments> =

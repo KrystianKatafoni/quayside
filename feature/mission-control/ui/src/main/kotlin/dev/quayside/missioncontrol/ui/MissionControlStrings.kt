@@ -1,5 +1,6 @@
 package dev.quayside.missioncontrol.ui
 
+import dev.quayside.core.domain.PluralForm
 import java.text.MessageFormat
 import java.util.Locale
 import java.util.ResourceBundle
@@ -26,4 +27,10 @@ internal object MissionControlStrings {
         key: String,
         arg: Any,
     ): String = format(UiText(key, listOf("$arg")))
+
+    /** Polish plural of [key] for [count]: `.one` (1), `.few` (2-4, not 12-14) or `.many`, e.g. "2 czekają". */
+    fun plural(
+        key: String,
+        count: Int,
+    ): String = formatted("$key.${PluralForm.of(count).key}", count)
 }

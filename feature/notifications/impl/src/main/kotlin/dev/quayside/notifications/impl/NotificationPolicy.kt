@@ -52,17 +52,21 @@ private fun deliveriesOf(
         .filter { it != NotificationChannel.VOICE || voiceAllowed(settings.speech, context) }
         .map { Delivery(it, kind, session) }
 
+/** The kind of the popup that asks the user about a session in [state]; null when the session does not wait. */
+internal fun questionKindOf(state: SessionState): NotificationKind? =
+    when (state) {
+        is SessionState.AwaitingInput -> NotificationKind.NEEDS_INPUT
+        is SessionState.AwaitingPermission -> NotificationKind.PERMISSION
+        else -> null
+    }
+
 private fun kindOf(
     event: SessionEvent,
     settings: NotificationSettings,
 ): NotificationKind? =
     when (event) {
         is SessionEvent.BecameBlocked -> {
-            when (event.session.state) {
-                is SessionState.AwaitingInput -> NotificationKind.NEEDS_INPUT
-                is SessionState.AwaitingPermission -> NotificationKind.PERMISSION
-                else -> null
-            }
+            questionKindOf(event.session.state)
         }
 
         is SessionEvent.TurnFinished -> {

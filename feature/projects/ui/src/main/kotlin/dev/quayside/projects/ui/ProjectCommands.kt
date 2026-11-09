@@ -18,6 +18,7 @@ import dev.quayside.sessions.api.SessionError
 internal class ProjectCommands(
     private val projects: ProjectsApi,
     private val sessions: SessionCommands,
+    private val hooks: ProjectHooks,
     private val logger: Logger,
 ) {
     /** Renames project [id] to [draft] (validated by `projects`). */
@@ -61,6 +62,29 @@ internal class ProjectCommands(
             }
         }
     }
+
+    /** Removes our hooks from the local settings of [project]; returns the notice text for the dialog. */
+    suspend fun uninstallHooks(project: Project): UiText =
+        when (val result = hooks.uninstall(project.dir)) {
+            is Outcome.Ok -> {
+                logger.info("project hooks uninstalled", "projectId" to project.id.value)
+                UiText("remove.hooks.uninstalled")
+            }
+
+            is Outcome.Err -> {
+                logger.warn(
+                    "project hooks uninstall failed",
+                    "projectId" to project.id.value,
+                    "reason" to result.error.name,
+                )
+                UiText(
+                    when (result.error) {
+                        ProjectHooksError.UNREADABLE -> "remove.hooks.failed.unreadable"
+                        ProjectHooksError.WRITE_FAILED -> "remove.hooks.failed.writeFailed"
+                    },
+                )
+            }
+        }
 
     private fun stopFailed(
         project: Project,

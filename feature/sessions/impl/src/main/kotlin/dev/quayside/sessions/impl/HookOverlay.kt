@@ -6,6 +6,7 @@ import dev.quayside.agentruntime.api.RuntimePhase
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.WaitingFor
 import dev.quayside.core.domain.SessionId
+import dev.quayside.sessions.api.SessionMeta
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -51,8 +52,10 @@ internal data class HookDetail(
 internal data class HookData(
     val details: Map<SessionId, HookDetail> = emptyMap(),
     val summaries: Map<SessionId, String> = emptyMap(),
+    val metas: Map<SessionId, SessionMeta> = emptyMap(),
 ) {
-    override fun toString(): String = "HookData(details=${details.keys}, summaries=${summaries.keys})"
+    override fun toString(): String =
+        "HookData(details=${details.keys}, summaries=${summaries.keys}, metas=${metas.keys})"
 }
 
 /** The note of an event, or null for `SessionEnded`: how a session ended is for polling to decide. */

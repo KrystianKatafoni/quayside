@@ -8,7 +8,10 @@ import dev.quayside.notifications.api.PopupAction
 import dev.quayside.notifications.api.PopupDuration
 import dev.quayside.notifications.api.PopupId
 import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionState
+import dev.quayside.sessions.api.SessionsSnapshot
+import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.sessions.api.aSession
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,6 +20,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -33,6 +37,14 @@ class PopupManagerTest {
         id: String = "7c5dcf5d",
         state: SessionState = SessionState.Done,
     ) = Delivery(NotificationChannel.POPUP, kind, aSession(id = id, state = state))
+
+    private fun snapshotOf(
+        vararg sessions: Session,
+        status: SnapshotStatus = SnapshotStatus.Fresh(Instant.EPOCH),
+    ) = SessionsSnapshot(sessions.toList(), status)
+
+    private val asking = SessionState.AwaitingInput("Which branch?")
+    private val permission = SessionState.AwaitingPermission("Bash")
 
     @Test
     fun `a timed popup leaves after the timeout`() =
@@ -164,5 +176,103 @@ class PopupManagerTest {
 
             manager.isMuted(aSession().id) shouldBe false
             manager.isMuted(null) shouldBe false
+        }
+
+    @Test
+    fun `FR-N3 a question popup leaves when its session works again`() =
+        runTest {
+            val manager = manager()
+            manager.show(delivery(NotificationKind.NEEDS_INPUT, state = asking), "Quayside")
+
+            manager.retireAnswered { snapshotOf(aSession(state = SessionState.Working)) }
+
+            manager.popups.value shouldBe emptyList()
+        }
+
+    @Test
+    fun `FR-N3 a permission popup leaves when its session finished the turn`() =
+        runTest {
+            val manager = manager()
+            manager.show(delivery(NotificationKind.PERMISSION, state = permission), "Quayside")
+
+            manager.retireAnswered { snapshotOf(aSession(state = SessionState.Done)) }
+
+            manager.popups.value shouldBe emptyList()
+        }
+
+    @Test
+    fun `a question popup stays while its session still waits for the same thing`() =
+        runTest {
+            val manager = manager()
+            manager.show(delivery(NotificationKind.NEEDS_INPUT, state = asking), "Quayside")
+            manager.show(delivery(NotificationKind.PERMISSION, id = "b", state = permission), "Quayside")
+
+            manager.retireAnswered {
+                snapshotOf(aSession(state = asking), aSession(id = "b", state = permission))
+            }
+
+            manager.popups.value.size shouldBe 2
+        }
+
+    @Test
+    fun `a permission popup leaves when the session now asks a question instead`() =
+        runTest {
+            val manager = manager()
+            manager.show(delivery(NotificationKind.PERMISSION, state = permission), "Quayside")
+
+            manager.retireAnswered { snapshotOf(aSession(state = asking)) }
+
+            manager.popups.value shouldBe emptyList()
+        }
+
+    @Test
+    fun `a question popup leaves when its session is no longer listed`() =
+        runTest {
+            val manager = manager()
+            manager.show(delivery(NotificationKind.NEEDS_INPUT, state = asking), "Quayside")
+
+            manager.retireAnswered { snapshotOf(aSession(id = "other", state = asking)) }
+
+            manager.popups.value shouldBe emptyList()
+        }
+
+    @Test
+    fun `only the popup of the session that moved on leaves`() =
+        runTest {
+            val manager = manager()
+            manager.show(delivery(NotificationKind.NEEDS_INPUT, id = "a", state = asking), "Quayside")
+            manager.show(delivery(NotificationKind.NEEDS_INPUT, id = "b", state = asking), "Quayside")
+
+            manager.retireAnswered {
+                snapshotOf(aSession(id = "a", state = SessionState.Working), aSession(id = "b", state = asking))
+            }
+
+            manager.popups.value
+                .map { it.session?.value }
+                .shouldBe(listOf("b"))
+        }
+
+    @Test
+    fun `popups that are not questions stay even when the session moved on`() =
+        runTest {
+            settings.value = NotificationSettings(popup = PopupSettings(duration = PopupDuration.ALWAYS_STAY))
+            val manager = manager()
+            manager.show(delivery(NotificationKind.TURN_ENDED), "Quayside")
+            manager.show(delivery(NotificationKind.FAILED, id = "b", state = SessionState.Failed), "Quayside")
+
+            manager.retireAnswered { snapshotOf(aSession(state = SessionState.Working)) }
+
+            manager.popups.value.size shouldBe 2
+        }
+
+    @Test
+    fun `a snapshot that was not listed yet retires nothing`() =
+        runTest {
+            val manager = manager()
+            manager.show(delivery(NotificationKind.NEEDS_INPUT, state = asking), "Quayside")
+
+            manager.retireAnswered { SessionsSnapshot.Initial }
+
+            manager.popups.value.size shouldBe 1
         }
 }

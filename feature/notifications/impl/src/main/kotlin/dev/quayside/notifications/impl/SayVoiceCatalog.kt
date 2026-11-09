@@ -44,7 +44,7 @@ internal class SayVoiceCatalog(
     }
 }
 
-private val SAY_LINE = Regex("""^(.+?)\s+([a-z]{2,3}_[A-Z0-9]{2,3})\s+#""")
+private val SAY_LINE = Regex("""^(.+?)\s+([a-z]{2,3}_[A-Z0-9]{2,3})\s+#(.*)$""")
 
 /**
  * The voices of `say -v ?` output: lines it does not understand are skipped, the result is sorted by name ignoring
@@ -55,7 +55,7 @@ internal fun parseSayVoices(output: String): List<VoiceOption> =
         .lineSequence()
         .mapNotNull { line -> SAY_LINE.find(line)?.destructured }
         .filter { (name) -> name.isNotBlank() }
-        .map { (name, locale) -> VoiceOption(VoiceId(name.trim()), locale) }
+        .map { (name, locale, sample) -> VoiceOption(VoiceId(name.trim()), locale, sample.trim()) }
         .distinctBy { it.id }
         .sortedBy { it.id.name.lowercase() }
         .toList()

@@ -176,7 +176,13 @@ class ProjectsControllerRenameTest {
             val controller = start(world())
             act { controller.onEvent(SidebarEvent.Select(project.id)) }
             controller.menu.value shouldBe
-                ProjectsMenuState(canAdd = true, canRemove = true, canRename = true, dialogOpen = false)
+                ProjectsMenuState(
+                    canAdd = true,
+                    canRemove = true,
+                    canRename = true,
+                    dialogOpen = false,
+                    canEditSubfolders = true,
+                )
 
             act { controller.onEvent(SidebarEvent.RenameRequested(project.id)) }
 

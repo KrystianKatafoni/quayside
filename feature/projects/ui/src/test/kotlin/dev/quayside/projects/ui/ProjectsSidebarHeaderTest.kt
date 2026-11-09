@@ -66,7 +66,7 @@ internal class ProjectsSidebarHeaderTest {
         }
 
     @Test
-    fun `sidebar has no add button at the bottom`() =
+    fun `sidebar has one plus button and no text button named add project`() =
         runComposeUiTest {
             showProjects(world()) { ProjectsSidebar(it) }
             awaitTag(ProjectsTags.row(quiet.id))

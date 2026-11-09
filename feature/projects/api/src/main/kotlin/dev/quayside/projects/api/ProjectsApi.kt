@@ -73,6 +73,28 @@ public interface ProjectsApi {
         id: ProjectId,
         displayName: String,
     ): Outcome<Unit, ProjectError>
+
+    /**
+     * Replaces the subfolders of [id]; keeps id, dir, name and position. Duplicates are dropped, the list is
+     * sorted (see [Project.subfolders]); empty = no group. Each name must pass [ProjectInputRules.subfolderName]
+     * and be a real directory directly under [Project.dir], not a symlink; at most
+     * [ProjectInputRules.MAX_SUBFOLDERS]. Atomic like the other commands.
+     *
+     * Errors: [ProjectError.UnknownProject], [ProjectError.InvalidSubfolder], [ProjectError.StorageFailed].
+     */
+    public suspend fun setSubfolders(
+        id: ProjectId,
+        subfolders: List<SubfolderName>,
+    ): Outcome<Unit, ProjectError>
+
+    /**
+     * The git branch checked out in [Project.dir] of [id] (the project page header, FR-S8): the branch name, or the
+     * first 7 characters of the commit when `HEAD` is detached. Read from the files of the repository at every call,
+     * so it follows a `git checkout`; the list file is not touched. Null for an unknown project, a directory outside a
+     * git work tree and a `HEAD` that cannot be read. Never throws except cancellation; safe on any dispatcher.
+     * The branch is user data (ENG-C8): never log it above DEBUG level.
+     */
+    public suspend fun branch(id: ProjectId): String?
 }
 
 /**

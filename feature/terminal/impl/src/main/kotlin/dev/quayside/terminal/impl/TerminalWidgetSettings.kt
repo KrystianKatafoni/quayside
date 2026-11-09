@@ -1,6 +1,7 @@
 package dev.quayside.terminal.impl
 
 import com.jediterm.terminal.TerminalColor
+import com.jediterm.terminal.emulator.ColorPalette
 import com.jediterm.terminal.ui.TerminalActionPresentation
 import com.jediterm.terminal.ui.settings.DefaultSettingsProvider
 import dev.quayside.core.designtokens.Rgba
@@ -24,6 +25,10 @@ internal class TerminalWidgetSettings(
     private val font: Font = buildFont(fontAvailable)
     private val foreground: TerminalColor = colors.termText.toTerminalColor()
     private val background: TerminalColor = colors.termBg.toTerminalColor()
+    private val palette: ColorPalette = ThemePalette(colors.ansi)
+
+    /** Colours of the scroll bar of this widget, derived from the terminal colours (AM-810). */
+    val scrollbar: ScrollbarColors = scrollbarColors(colors)
 
     override fun altSendsEscape(): Boolean = settings.optionAsMeta
 
@@ -42,6 +47,9 @@ internal class TerminalWidgetSettings(
     override fun getDefaultForeground(): TerminalColor = foreground
 
     override fun getDefaultBackground(): TerminalColor = background
+
+    /** The 16 ANSI colours of the theme (AM-811); selection and cursor stay inverted (the default). */
+    override fun getTerminalColorPalette(): ColorPalette = palette
 
     /** No shortcut, so Cmd-K stays with the app's palette (ADR 0012 decision 3). */
     override fun getClearBufferActionPresentation(): TerminalActionPresentation =
@@ -66,3 +74,6 @@ internal class TerminalWidgetSettings(
 
 /** Opaque JediTerm colour with the red, green and blue of this token; alpha is dropped (termBg is opaque). */
 internal fun Rgba.toTerminalColor(): TerminalColor = TerminalColor.rgb(red, green, blue)
+
+/** Opaque JediTerm colour of this token; alpha is dropped. */
+internal fun Rgba.toJediColor(): com.jediterm.core.Color = com.jediterm.core.Color(red, green, blue)

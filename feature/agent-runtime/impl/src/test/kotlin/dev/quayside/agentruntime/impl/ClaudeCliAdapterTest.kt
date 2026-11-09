@@ -227,6 +227,35 @@ class ClaudeCliAdapterTest {
             runtime.start(aStartSpec(cwd = PROJECT)) shouldBe Outcome.Err(RuntimeError.Unparseable("bg-output:no-id"))
         }
 
+    @Test
+    fun `start in an untrusted workspace gives WorkspaceNotTrusted`() =
+        runTest {
+            val runtime = adapter(FakeProcessRunner { ok(stderr = "$UNTRUSTED_STDERR\n", exit = 1) })
+
+            runtime.start(aStartSpec(cwd = PROJECT)) shouldBe Outcome.Err(RuntimeError.WorkspaceNotTrusted)
+
+            logger.entries.toString() shouldNotContain "Workspace not trusted"
+            logger.entries.toString() shouldNotContain PROJECT.toString()
+        }
+
+    @Test
+    fun `untrusted text with exit 0 and an id still starts`() =
+        runTest {
+            val runtime = adapter(FakeProcessRunner { ok(BACKGROUNDED, stderr = "$UNTRUSTED_STDERR\n", exit = 0) })
+
+            runtime.start(aStartSpec(cwd = PROJECT)) shouldBe Outcome.Ok(id)
+        }
+
+    @Test
+    fun `other start failure stays CommandFailed`() =
+        runTest {
+            val runtime = adapter(FakeProcessRunner { ok(stderr = "Error: not Workspace not trusted\n", exit = 2) })
+
+            val error = runtime.start(aStartSpec(cwd = PROJECT)).errorOrNull()
+
+            error.shouldBeInstanceOf<RuntimeError.CommandFailed>().exitCode shouldBe 2
+        }
+
     // --- commands by id ---
 
     @ParameterizedTest
@@ -471,6 +500,9 @@ class ClaudeCliAdapterTest {
 
     companion object {
         private const val EXE = "claude"
+        private const val UNTRUSTED_STDERR =
+            "Workspace not trusted. Run `claude` in /private/Users/test/projects/agent-manager once and accept the " +
+                "trust prompt, then retry."
         private const val BACKGROUNDED = "backgrounded · $ID · fix-login"
         private val PROJECT: Path = Path.of("/Users/test/projects/agent-manager")
 

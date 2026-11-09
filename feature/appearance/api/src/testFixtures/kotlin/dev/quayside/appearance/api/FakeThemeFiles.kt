@@ -13,6 +13,7 @@ import java.nio.file.Path
 public class FakeThemeFiles : ThemeFiles {
     private val mutex = Mutex()
     private val files = mutableMapOf<Path, Outcome<AppearanceSettings, ThemeFileError>>()
+    private val schemeFiles = mutableMapOf<Path, List<CustomScheme>>()
     private val readPaths = mutableListOf<Path>()
     private val writes = linkedMapOf<Path, AppearanceSettings>()
 
@@ -30,12 +31,23 @@ public class FakeThemeFiles : ThemeFiles {
     /** What [write] stored, by path; a later write to the same path replaces the earlier one. */
     public val written: Map<Path, AppearanceSettings> get() = synchronized(writes) { LinkedHashMap(writes) }
 
-    /** Plants a readable theme file with [settings] at [path]. */
+    /** Plants a readable theme file with [settings] at [path]; [read] returns it without `customSchemes`. */
     public fun put(
         path: Path,
         settings: AppearanceSettings,
     ) {
-        synchronized(files) { files[path] = Outcome.Ok(settings) }
+        synchronized(files) { files[path] = Outcome.Ok(settings.copy(customSchemes = emptyList())) }
+    }
+
+    /** Plants a theme file at [path] whose `customSchemes` are [schemes] (it has the default settings otherwise). */
+    public fun putSchemes(
+        path: Path,
+        schemes: List<CustomScheme>,
+    ) {
+        synchronized(files) {
+            files[path] = Outcome.Ok(AppearanceSettings())
+            schemeFiles[path] = schemes
+        }
     }
 
     /** Plants a file written by a newer app version: reading it returns [ThemeFileError.NewerVersion]. */
@@ -61,6 +73,27 @@ public class FakeThemeFiles : ThemeFiles {
             }
         }
 
+    override suspend fun readSchemes(source: Path): Outcome<List<CustomScheme>, ThemeFileError> =
+        mutex.withLock {
+            synchronized(readPaths) { readPaths.add(source) }
+            val failure = readFailure
+            when {
+                failure != null -> {
+                    Outcome.Err(failure)
+                }
+
+                else -> {
+                    synchronized(files) {
+                        when (val file = files[source]) {
+                            null -> Outcome.Err(ThemeFileError.ReadFailed)
+                            is Outcome.Err -> Outcome.Err(file.error)
+                            is Outcome.Ok -> Outcome.Ok(schemeFiles[source].orEmpty())
+                        }
+                    }
+                }
+            }
+        }
+
     override suspend fun write(
         settings: AppearanceSettings,
         target: Path,
@@ -71,7 +104,10 @@ public class FakeThemeFiles : ThemeFiles {
                 Outcome.Err(failure)
             } else {
                 synchronized(writes) { writes[target] = settings }
-                synchronized(files) { files[target] = Outcome.Ok(settings) }
+                synchronized(files) {
+                    files[target] = Outcome.Ok(settings.copy(customSchemes = emptyList()))
+                    schemeFiles[target] = settings.customSchemes
+                }
                 Outcome.Ok(Unit)
             }
         }

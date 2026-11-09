@@ -1,15 +1,20 @@
 package dev.quayside.app
 
+import androidx.compose.ui.unit.dp
 import dev.quayside.appearance.ui.AppearanceController
 import dev.quayside.appearance.ui.ThemeFilePicker
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
+import dev.quayside.missioncontrol.ui.NewAgentPorts
 import dev.quayside.notifications.ui.NotificationSettingsController
+import dev.quayside.notifications.ui.SoundPreviewController
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
+import dev.quayside.projects.ui.ProjectsPorts
+import dev.quayside.summaries.ui.SummarySettingsController
 import dev.quayside.terminal.ui.TerminalController
 import dev.quayside.terminal.ui.TerminalSettingsController
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +47,7 @@ internal class WindowControllers(
             modules.projects.api,
             modules.projects.inspector,
             modules.sessions,
-            pickers.directory,
+            ProjectsPorts(pickers.directory, hooks.projectHooks),
             scope,
             core.logger,
         )
@@ -50,7 +55,7 @@ internal class WindowControllers(
         MissionControlController(
             modules.sessions,
             modules.projects.api,
-            projects.selection,
+            projects.focus,
             core.clock,
             scope,
             core.logger,
@@ -68,9 +73,19 @@ internal class WindowControllers(
     val terminalSettings = TerminalSettingsController(modules.terminal.repo, scope)
 
     val notificationSettings =
-        NotificationSettingsController(modules.notifications.settings, modules.notifications.voices, scope)
+        NotificationSettingsController(
+            modules.settings.notifications.settings,
+            modules.settings.notifications.choices.voices,
+            modules.settings.notifications.choices.preview,
+            modules.projects.api.projects,
+            scope,
+        )
+
+    val soundPreview = SoundPreviewController(modules.settings.notifications.choices.sounds, scope)
 
     private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
+
+    val summarySettings = SummarySettingsController(modules.settings.summaries, scope)
 
     val appearance =
         AppearanceController(
@@ -81,21 +96,23 @@ internal class WindowControllers(
             scope,
         )
 
-    val hookSetup = HookSetupController(hooks.installer, hooks.offer, scope, core.logger)
+    val hookSetup = HookSetupController(hooks.installer, hooks.offer, hooks.targets, scope, core.logger)
 
     val newAgent =
         NewAgentController(
-            modules.sessions.commands,
-            modules.projects.api,
+            NewAgentPorts(modules.sessions.commands, modules.projects.api, modules.projects.trust),
             scope,
             core.logger,
             selectStartedSession(projects, missionControl),
         )
 
     private val settingsDialogOpen =
-        combine(terminalSettings.state, notificationDialogOpen, appearance.state) { terminal, notification, look ->
-            terminal != null || notification || look != null
-        }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
+        combine(
+            combine(terminalSettings.state, notificationDialogOpen, appearance.state) { terminal, notification, look ->
+                terminal != null || notification || look != null
+            },
+            summarySettings.isOpen,
+        ) { others, summaries -> others || summaries }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
 
     /** What hides the hooks command: the settings dialogs and "Nowy agent" (the hooks dialog hides it itself). */
     private val hooksBlocked =
@@ -115,6 +132,12 @@ internal class WindowControllers(
             projects.onIntent(ProjectsIntent.Select(it))
         }
 
+    /** The terminal height of the list mode (AM-819), from what `main` read of `window.json`. */
+    val pane =
+        modules.settings.layout.let {
+            TerminalPaneHeight(it.initial.terminalHeight.dp, it.store, scope, core.logger)
+        }
+
     /** Which layout the window shows (AM-809); leaves the terminal mode when the last tab is gone. */
     val mode = WindowModeState { terminal.menu.value.hasTabs }
 
@@ -130,6 +153,7 @@ internal class WindowControllers(
             AttachCommands(projects, missionControl, attacher, scope),
             TerminalSettingsCommands(projects, missionControl, terminalSettings, scope, notificationDialogOpen),
             NotificationSettingsCommands(projects, missionControl, notificationSettings, scope),
+            SummarySettingsCommands(projects, missionControl, summarySettings, scope),
             AppearanceCommands(projects, missionControl, appearance, scope),
             HookSetupCommands(projects, missionControl, hookSetup, scope, hooksBlocked),
             NewAgentCommands(projects, missionControl, modules.projects.api, newAgent, scope, newAgentBlocked),

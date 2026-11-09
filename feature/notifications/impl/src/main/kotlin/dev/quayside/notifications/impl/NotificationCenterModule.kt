@@ -9,6 +9,7 @@ import dev.quayside.core.process.ProcessRunner
 import dev.quayside.notifications.api.NotificationCenter
 import dev.quayside.notifications.api.NotificationSettingsRepo
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionsSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,9 @@ import java.time.ZoneId
  * injecting a [FocusMonitor] comes with the Focus adapter (a follow-up task).
  *
  * @param events the session monitor's events; without them only terminal bells notify.
+ * @param snapshot the session monitor's snapshot; a question popup leaves when its session no longer waits for
+ *   what it asks (the user answered in the terminal). It is re-checked at every new snapshot, so a popup that
+ *   arrives late is retired by the next refresh. Without it popups of questions stay until closed by hand.
  * @param projectName display name of a session's project for its popup; null when unknown.
  * @param onAttach opens the terminal of a session (the popup's Attach action); runs on the thread of the caller of
  *   `onAction`.
@@ -48,6 +52,7 @@ public fun notificationCenterModule(
     process: ProcessRunner? = null,
     appActive: StateFlow<Boolean> = MutableStateFlow(false),
     logger: Logger = NoOpLogger,
+    snapshot: StateFlow<SessionsSnapshot> = MutableStateFlow(SessionsSnapshot.Initial),
 ): NotificationCenter {
     val manager = PopupManager(settings.settings, scope, clock, onAttach)
     val context = {
@@ -70,6 +75,7 @@ public fun notificationCenterModule(
             sound = { delivery -> sounds?.offer(delivery) },
         )
     scope.launch(start = CoroutineStart.UNDISPATCHED) { events.collect(center::onSessionEvent) }
+    scope.launch(start = CoroutineStart.UNDISPATCHED) { snapshot.collect { manager.retireAnswered(snapshot::value) } }
     return center
 }
 

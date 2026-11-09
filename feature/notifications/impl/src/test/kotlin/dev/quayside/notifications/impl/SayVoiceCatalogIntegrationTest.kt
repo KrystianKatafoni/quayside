@@ -63,13 +63,37 @@ class SayVoiceCatalogIntegrationTest {
             result shouldBe
                 Outcome.Ok(
                     listOf(
-                        VoiceOption(VoiceId("Bad News"), "en_US"),
-                        VoiceOption(VoiceId("Eddy (polski (Polska))"), "pl_PL"),
-                        VoiceOption(VoiceId("Paulina"), "es_419"),
-                        VoiceOption(VoiceId("Zosia"), "pl_PL"),
+                        VoiceOption(VoiceId("Bad News"), "en_US", "Hello"),
+                        VoiceOption(VoiceId("Eddy (polski (Polska))"), "pl_PL", "Witaj"),
+                        VoiceOption(VoiceId("Paulina"), "es_419", "Hola"),
+                        VoiceOption(VoiceId("Zosia"), "pl_PL", "Witaj, nazywam się Zosia."),
                     ),
                 )
             log.readLines() shouldBe listOf("-v", "?")
+        }
+
+    @Test
+    fun `samples come through the real runner also with a hash and without text`() =
+        runTest {
+            val say =
+                fakeSay(
+                    """
+                    printf '%s\n' 'Bad News            en_US    # Hello #1 here'
+                    printf '%s\n' 'Tingting            zh_CN    #   你好  '
+                    printf '%s\n' 'Ewa                 pl_PL    #'
+                    """.trimIndent(),
+                )
+
+            val result = catalog(say).voices()
+
+            result shouldBe
+                Outcome.Ok(
+                    listOf(
+                        VoiceOption(VoiceId("Bad News"), "en_US", "Hello #1 here"),
+                        VoiceOption(VoiceId("Ewa"), "pl_PL", ""),
+                        VoiceOption(VoiceId("Tingting"), "zh_CN", "你好"),
+                    ),
+                )
         }
 
     @Test

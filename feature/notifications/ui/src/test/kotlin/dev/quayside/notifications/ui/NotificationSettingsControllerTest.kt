@@ -3,6 +3,7 @@ package dev.quayside.notifications.ui
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeVoiceCatalog
+import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.NotificationChannel
 import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
@@ -11,16 +12,15 @@ import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.ProjectNotifications
 import dev.quayside.notifications.api.ProjectProfile
-import dev.quayside.notifications.api.QuietHours
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import java.time.LocalTime
 
 /** The logic of the notification settings dialog over a fake repo (FR-N1, FR-N2, plan AM-704 part A). */
 class NotificationSettingsControllerTest {
@@ -34,7 +34,13 @@ class NotificationSettingsControllerTest {
         ).withChannel(NotificationKind.TURN_ENDED, NotificationChannel.VOICE, true)
 
     private fun TestScope.controllerOver(repo: ScriptedRepo) =
-        NotificationSettingsController(repo, FakeVoiceCatalog(emptyList()), backgroundScope)
+        NotificationSettingsController(
+            repo,
+            FakeVoiceCatalog(emptyList()),
+            FakeVoicePreview(),
+            MutableStateFlow(emptyList()),
+            backgroundScope,
+        )
 
     private fun scripted(
         settings: NotificationSettings = saved,
@@ -103,22 +109,7 @@ class NotificationSettingsControllerTest {
         }
 
     @Test
-    fun `save keeps quiet hours the dialog does not show`() =
-        runTest {
-            val quiet = QuietHours(true, LocalTime.of(21, 30), LocalTime.of(6, 15), respectFocus = false)
-            val repo = scripted(saved.copy(quietHours = quiet))
-            val controller = controllerOver(repo)
-            act { controller.open() }
-            act { controller.edit { it.copy(voice = false) } }
-
-            act { controller.save() }
-
-            repo.settings.value.quietHours shouldBe quiet
-            repo.settings.value shouldBe saved.copy(voice = false, quietHours = quiet)
-        }
-
-    @Test
-    fun `save keeps project exceptions the dialog does not show`() =
+    fun `save keeps exceptions of projects that are not registered`() =
         runTest {
             val projects =
                 mapOf(

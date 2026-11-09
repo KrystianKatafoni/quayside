@@ -8,7 +8,13 @@ public interface ThemeFiles {
     /** Reads [source] strictly: a present but invalid field is Err; a missing one is the default. */
     public suspend fun read(source: Path): Outcome<AppearanceSettings, ThemeFileError>
 
-    /** Writes [settings] to [target] as theme.json v1, replacing an existing file atomically. */
+    /**
+     * Reads the `customSchemes` of [source] (a theme file) strictly: a present but invalid scheme is Err; no
+     * `customSchemes` gives an empty list. Does not check ids against the catalog or the contrast.
+     */
+    public suspend fun readSchemes(source: Path): Outcome<List<CustomScheme>, ThemeFileError>
+
+    /** Writes [settings] (with its `customSchemes`) to [target] as theme.json v1, replacing a file atomically. */
     public suspend fun write(
         settings: AppearanceSettings,
         target: Path,

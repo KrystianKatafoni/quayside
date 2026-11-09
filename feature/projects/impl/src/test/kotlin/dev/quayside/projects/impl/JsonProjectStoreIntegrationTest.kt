@@ -78,6 +78,44 @@ class JsonProjectStoreIntegrationTest {
     }
 
     @Test
+    fun `branch follows the HEAD of the project directory`() =
+        runTest {
+            val dir = dir("repo")
+            val git = Files.createDirectories(dir.resolve(".git"))
+            git.resolve("HEAD").writeText("ref: refs/heads/main\n")
+            val api = open()
+            val project = api.added(dir)
+
+            api.branch(project.id) shouldBe "main"
+
+            git.resolve("HEAD").writeText("ref: refs/heads/feat/AM-818\n")
+            api.branch(project.id) shouldBe "feat/AM-818"
+        }
+
+    @Test
+    fun `branch of a subdirectory project is the branch of the repository above it`() =
+        runTest {
+            val repo = dir("monorepo")
+            Files.createDirectories(repo.resolve(".git")).resolve("HEAD").writeText("ref: refs/heads/dev\n")
+            val sub = Files.createDirectories(repo.resolve("soft"))
+            val api = open()
+
+            api.branch(api.added(sub).id) shouldBe "dev"
+        }
+
+    @Test
+    fun `branch is null after the project is removed`() =
+        runTest {
+            val dir = dir("repo")
+            Files.createDirectories(dir.resolve(".git")).resolve("HEAD").writeText("ref: refs/heads/main\n")
+            val api = open()
+            val project = api.added(dir)
+            api.remove(project.id) shouldBe Outcome.Ok(Unit)
+
+            api.branch(project.id) shouldBe null
+        }
+
+    @Test
     fun `projects survive reopening the store`() =
         runTest {
             val api = open()
@@ -94,7 +132,7 @@ class JsonProjectStoreIntegrationTest {
         }
 
     @Test
-    fun `file has schema version 1 and the documented layout`() =
+    fun `file has schema version 2 and the documented layout`() =
         runTest {
             val dir = dir("agent-manager")
             val project = open().added(dir, "Quayside")
@@ -102,7 +140,7 @@ class JsonProjectStoreIntegrationTest {
             val root = Json.parseToJsonElement(Files.readString(file)).jsonObject
 
             root.keys shouldBe setOf("schemaVersion", "data")
-            root.getValue("schemaVersion").jsonPrimitive.int shouldBe 1
+            root.getValue("schemaVersion").jsonPrimitive.int shouldBe 2
             val data = root.getValue("data").jsonObject
             data.keys shouldBe setOf("projects")
             data.getValue("projects").jsonArray.single() shouldBe
@@ -154,7 +192,7 @@ class JsonProjectStoreIntegrationTest {
     @Test
     fun `newer schema file is never overwritten`() =
         runTest {
-            val original = writeFile("""{"schemaVersion": 2, "data": {"projects": [], "groups": []}}""")
+            val original = writeFile("""{"schemaVersion": 3, "data": {"projects": [], "groups": []}}""")
 
             val api = open()
 

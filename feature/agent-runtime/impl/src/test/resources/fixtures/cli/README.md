@@ -10,7 +10,7 @@ Nagrano 2026-10-18 na macOS 15.7.3 (Darwin 24.6.0), `claude` 2.1.302, w katalogu
 | --- | --- | --- | --- |
 | `2.1.302-bg` | `claude --bg --name <n> -- <prompt>` | 0 | stdout: `backgrounded · <id> · <name>` i cztery linie podpowiedzi; stderr: `Starting background service…` (tylko gdy usługa startuje). |
 | `2.1.302-bg-permission-mode-manual` | `claude --bg --name <n> --permission-mode manual -- <prompt>` | 0 | Jak `bg`. |
-| `2.1.302-bg-untrusted-workspace` | `claude --bg …` w katalogu bez akceptacji zaufania | 1 | stdout pusty; stderr: `Workspace not trusted. Run \`claude\` in <cwd> once and accept the trust prompt, then retry.` Adapter tego jeszcze nie rozpoznaje. |
+| `2.1.302-bg-untrusted-workspace` | `claude --bg …` w katalogu bez akceptacji zaufania | 1 | stdout pusty; stderr: `Workspace not trusted. Run \`claude\` in <cwd> once and accept the trust prompt, then retry.` Adapter zamienia to na `RuntimeError.WorkspaceNotTrusted` (AM-309). |
 | `2.1.302-logs-done` | `claude logs <id>` sesji `done` | 0 | Surowy zrzut TUI z sekwencjami ANSI (czyszczenie ekranu, pozycjonowanie kursora, kolory), nie zwykły tekst. Zawiera też pasek statusu i panel użytkownika. |
 | `2.1.302-stop-done` | `claude stop <id>` sesji `done` | 0 | stdout `stopped <id>`; stan na liście zostaje `done`. |
 | `2.1.302-stop-blocked` | `claude stop <id>` sesji `blocked` | 0 | stdout `stopped <id>`; stan na liście `stopped`. |

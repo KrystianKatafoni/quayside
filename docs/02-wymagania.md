@@ -14,6 +14,8 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-P4 | Jeśli w usuwanym projekcie działają sesje: wybór „zatrzymaj sesje i usuń” albo „usuń z listy, sesje działają dalej” | M |
 | FR-P5 | Import projektów z historii `~/.claude/projects/` | C |
 | FR-P6 | Zmiana nazwy wyświetlanej projektu, licznik sesji czekających i pracujących w sidebarze | S |
+| FR-P7 | Grupa projektu: projekt z podfolderami (np. `plant-puls/` z `soft/`, `marketing/`) pokazany w sidebarze jako grupa z podpozycjami, filtr sesji po podfolderze, liczniki per podfolder | S |
+| FR-P8 | Przegląd grupy projektu: po wybraniu grupy widok z każdym podprojektem i liczbą agentów, którzy na mnie czekają (oraz pracujących i z błędem), klik w podprojekt otwiera jego sesje | S |
 
 ### Sesje agentów
 
@@ -21,7 +23,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | --- | --- | --- |
 | FR-S1 | Lista sesji projektu ze stanem, nazwą, podsumowaniem, ostatnim zdarzeniem i wiekiem | M |
 | FR-S2 | Stany: *czeka na odpowiedź*, *prosi o zgodę*, *pracuje*, *gotowe*, *błąd*, *zatrzymana* (mapowanie w [05](05-mission-control.md)) | M |
-| FR-S3 | Start nowego agenta: projekt, prompt, opcjonalnie nazwa, subagent, model, tryb uprawnień (`claude --bg`) | M |
+| FR-S3 | Start nowego agenta: projekt (w grupie także podfolder lub katalog projektu), prompt, opcjonalnie nazwa, subagent, model, tryb uprawnień (`claude --bg`) | M |
 | FR-S4 | Stop (`claude stop`), Respawn (`claude respawn`), Usuń z listy (`claude rm`) | M |
 | FR-S5 | Odpowiedź na pytanie agenta z panelu szczegółów lub popupu, bez otwierania terminala | S |
 | FR-S6 | Pozwól/Odmów dla prośby o zgodę z popupu | S |
@@ -68,6 +70,23 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-K1 | Paleta komend ⌘K obejmująca wszystkie akcje (sesje, projekty, ustawienia) | M |
 | FR-K2 | Skróty jako przyspieszenie: j/k, ⏎ attach, r odpowiedz, x stop, space podgląd, g p przełącz projekt ([ADR 0015](adr/0015-skroty-jako-dodatek.md)) | S |
 | FR-K3 | Każda akcja na sesji i projekcie ma widoczną kontrolkę: przycisk w panelu szczegółów albo pozycję menu kontekstowego wiersza (prawy klik, przycisk ⋯); podgląd i attach także kliknięciem | M |
+
+### Konta
+
+Plan i decyzje: [ADR 0029](adr/0029-wiele-kont-claude.md).
+
+| ID | Wymaganie | Prio |
+| --- | --- | --- |
+| FR-L1 | Lista kont Claude (konto domyślne `~/.claude` + dodatkowe katalogi w `~/.claude-quayside/<nazwa>/`), dodanie przez logowanie w karcie terminala, zmiana nazwy, wyłączenie, usunięcie z listy bez kasowania katalogu | S |
+| FR-L2 | Stan konta: dostępne, limit (od kiedy i do kiedy wg czasu chłodzenia, domyślnie 5 h, konfigurowalny; ręczne odblokowanie), wylogowane, nieznane | S |
+| FR-L3 | Wybór konta przy starcie agenta: „Auto” albo konkretne; konto widoczne w panelu szczegółów | S |
+| FR-L4 | Po `rate_limit` konto dostaje stan limitu do czasu odnowienia (gdy nieznany: chłodzenie, domyślnie 5 h); Quayside pokazuje jedno okno zgody na konto (nie na sesję; kolejne przerwane sesje dopisują się do otwartego okna) z listą przerwanych sesji (domyślnie żadna zaznaczona); ustawienie „Proponuj przełączenie po limicie” wyłącza okno (zostaje powiadomienie); nowe sesje i streszczenia w trybie „Automatycznie” omijają konta z limitem | S |
+| FR-L5 | Przeniesienie sesji przerwanej limitem na inne konto, zawsze po potwierdzeniu: z okna zgody po limicie albo przyciskiem „Przenieś sesję na to konto” przy sesji z innego konta niż bieżące; sesji pracujących, czekających i zakończonych nie przenosimy; stara sesja zostaje z odnośnikiem do nowej | S |
+| FR-L6 | Zużycie limitu 5 h i 7 dni oraz czas odnowienia per konto (paski w widoku „Konta” i na liście pod ikoną), ostrzeżenie przy progu (domyślnie 90%), stan limitu do czasu odnowienia | S |
+| FR-L7 | Widok „Konta”: logowanie i wylogowanie wielu kont, dodawanie, usuwanie (bez kasowania katalogu), kolejność, przełączniki „Aktywne” i „W automacie” per konto, odblokowanie limitu, główny przełącznik automatyki i czas chłodzenia | S |
+| FR-L8 | Ikona bieżącego konta w prawym górnym rogu okna; klik otwiera listę kont pod ikoną z ręcznym przełączeniem bieżącego konta (dla nowych sesji), opcją „Automatycznie” i wejściem do widoku „Konta”; każde przełączenie potwierdzane krótkim oknem; przełączenie nie przenosi sesji | S |
+| FR-L9 | Wspólna historia rozmów i pamięć projektów dla wszystkich kont (rozdzielone per projekt i podprojekt); globalne instrukcje, subagenci, skille, komendy i ustawienia osobne per konto, jednorazowo kopiowane z konta domyślnego przy tworzeniu konta (wybór elementów) | S |
+| FR-L10 | Ustawienie sesji „Przełączaj konto automatycznie” (domyślnie wyłączone): po limicie sesja przenosi się bez pytania na następne dostępne konto, z powiadomieniem | S |
 
 ## Wymagania niefunkcjonalne
 

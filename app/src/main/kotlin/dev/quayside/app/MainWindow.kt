@@ -6,6 +6,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.window.FrameWindowScope
@@ -17,6 +18,7 @@ import dev.quayside.core.designsystem.AmModalGate
 import dev.quayside.core.designsystem.LocalAmModalGate
 import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.ui.NotificationSettingsDialog
+import dev.quayside.summaries.ui.SummarySettingsDialog
 import dev.quayside.terminal.ui.TerminalArea
 import dev.quayside.terminal.ui.TerminalSettingsDialog
 import kotlinx.coroutines.launch
@@ -64,18 +66,55 @@ private fun FrameWindowScope.WindowContent(
         QuaysideApp(
             controllers = AppControllers(controllers.projects, controllers.missionControl, controllers.palette),
             terminal = remember(controllers) { terminalSlotOf(controllers) },
-            onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
+            chrome = chromeOf(controllers, modules),
             keyCaps = remember { windowKeyCaps() },
         )
-        NewAgentDialog(controllers.newAgent)
-        TerminalSettingsDialog(controllers.terminalSettings)
-        NotificationSettingsDialog(controllers.notificationSettings)
-        HookSetupDialog(controllers.hookSetup, hooks.backupDir)
+        WindowDialogs(controllers, hooks)
     }
     // Outside the scale: the preview of the dialog scales the base density itself (previewDensity).
     AppearanceDialog(controllers.appearance) { AppearancePreviewSlot() }
     PopupAttachHandler(modules, controllers.attacher)
     LaunchedEffect(Unit) { controllers.hookSetup.offerAtStart() }
+}
+
+/**
+ * What the top bar and the status bar need (AM-816): "Nowy agent" enabled as its menu item, the voice chip over the
+ * notification settings, and the version of Claude Code, read once when the window opens. The health check behind
+ * it starts three processes (`claude --version`, `daemon status`, `agents --json`).
+ */
+@Composable
+private fun chromeOf(
+    controllers: WindowControllers,
+    modules: AppModules,
+): WindowChrome {
+    val enabled = menuStateOf(controllers, modules.projects.api).newAgent
+    val supervisor by produceState<String?>(initialValue = null, modules.terminal.runtime) {
+        value =
+            readSupervisor(modules.terminal.runtime)
+    }
+    return WindowChrome(
+        onNewAgent = { openNewAgent(controllers.projects, controllers.newAgent) },
+        newAgentEnabled = enabled,
+        notifications =
+            NotificationChrome(
+                modules.settings.notifications.settings.settings,
+                controllers.notificationSettings::open,
+            ),
+        supervisor = supervisor,
+    )
+}
+
+/** The dialogs drawn over the window content: "Nowy agent", the settings and the hooks. */
+@Composable
+private fun WindowDialogs(
+    controllers: WindowControllers,
+    hooks: HookDeps,
+) {
+    NewAgentDialog(controllers.newAgent)
+    TerminalSettingsDialog(controllers.terminalSettings)
+    NotificationSettingsDialog(controllers.notificationSettings, controllers.soundPreview)
+    SummarySettingsDialog(controllers.summarySettings)
+    HookSetupDialog(controllers.hookSetup, hooks.backupDir)
 }
 
 /** The terminal of the window; remembered, so the movable panel keeps its state across recompositions. */
@@ -87,6 +126,7 @@ private fun terminalSlotOf(controllers: WindowControllers): TerminalSlot =
         attacher = controllers.attacher,
         mode = controllers.mode,
         terminalKey = controllers.terminal.activeKey,
+        pane = controllers.pane,
     )
 
 /**
@@ -100,7 +140,7 @@ private fun FrameWindowScope.PopupAttachHandler(
 ) {
     val scope = rememberCoroutineScope()
     DisposableEffect(Unit) {
-        modules.notifications.attach.handler = { id ->
+        modules.settings.notifications.attach.handler = { id ->
             scope.launch {
                 val sessions = modules.sessions.monitor.snapshot.value.sessions
                 attacher.attachSession(id, sessions, modules.projects.api.projects.value)
@@ -108,7 +148,7 @@ private fun FrameWindowScope.PopupAttachHandler(
                 window.toFront()
             }
         }
-        onDispose { modules.notifications.attach.handler = null }
+        onDispose { modules.settings.notifications.attach.handler = null }
     }
 }
 

@@ -39,37 +39,37 @@ internal class SessionActionsTest {
 
     @Test
     fun `the selected session of the project is the target`() {
-        SessionActions.target(all, selection("working")) shouldBe working
-        SessionActions.target(all, selection("done")) shouldBe done
+        SessionActions.target(all, selection("working"), emptyList()) shouldBe working
+        SessionActions.target(all, selection("done"), emptyList()) shouldBe done
     }
 
     @Test
     fun `a session visible under the filter is the target`() {
-        SessionActions.target(all, selection("working", SessionFilter.ACTIVE)) shouldBe working
-        SessionActions.target(all, selection("done", SessionFilter.FINISHED)) shouldBe done
+        SessionActions.target(all, selection("working", SessionFilter.ACTIVE), emptyList()) shouldBe working
+        SessionActions.target(all, selection("done", SessionFilter.FINISHED), emptyList()) shouldBe done
     }
 
     @Test
     fun `hidden by the filter gives no target`() {
-        SessionActions.target(all, selection("working", SessionFilter.FINISHED)).shouldBeNull()
-        SessionActions.target(all, selection("done", SessionFilter.ACTIVE)).shouldBeNull()
+        SessionActions.target(all, selection("working", SessionFilter.FINISHED), emptyList()).shouldBeNull()
+        SessionActions.target(all, selection("done", SessionFilter.ACTIVE), emptyList()).shouldBeNull()
     }
 
     @Test
     fun `a session of another project gives no target`() {
-        SessionActions.target(all, selection("elsewhere")).shouldBeNull()
+        SessionActions.target(all, selection("elsewhere"), emptyList()).shouldBeNull()
     }
 
     @Test
     fun `no selection gives no target`() {
-        SessionActions.target(all, selection()).shouldBeNull()
-        SessionActions.target(all, selection("working", project = null)).shouldBeNull()
+        SessionActions.target(all, selection(), emptyList()).shouldBeNull()
+        SessionActions.target(all, selection("working", project = null), emptyList()).shouldBeNull()
     }
 
     @Test
     fun `a selected session that is gone gives no target`() {
-        SessionActions.target(all, selection("gone")).shouldBeNull()
-        SessionActions.target(emptyList(), selection("working")).shouldBeNull()
+        SessionActions.target(all, selection("gone"), emptyList()).shouldBeNull()
+        SessionActions.target(emptyList(), selection("working"), emptyList()).shouldBeNull()
     }
 
     companion object {

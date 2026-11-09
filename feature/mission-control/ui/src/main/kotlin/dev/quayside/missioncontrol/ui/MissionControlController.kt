@@ -2,14 +2,15 @@ package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Logger
-import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsSnapshot
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -37,7 +39,7 @@ import kotlin.time.Duration.Companion.seconds
 public class MissionControlController(
     sessions: SessionsApi,
     private val projects: ProjectsApi,
-    selectedProject: StateFlow<ProjectId?>,
+    selected: StateFlow<ProjectFocus?>,
     clock: Clock,
     private val scope: CoroutineScope,
     logger: Logger,
@@ -49,12 +51,26 @@ public class MissionControlController(
 
     /** Times of the stale banner are shown in the zone of the Mac. */
     private val zone: ZoneId = ZoneId.systemDefault()
-    private val selection = MutableStateFlow(Selection(project = selectedProject.value))
+    private val selection =
+        MutableStateFlow(Selection(project = selected.value?.project, subfolder = selected.value?.subfolder))
     private val now = MutableStateFlow(clock.now())
     private val monitor = sessions.monitor
     private val runner = SessionActionRunner(sessions.commands, logger)
     private val ui = MutableStateFlow(ActionUi())
-    private val preview = PreviewState(monitor, selection, scope)
+    private val preview = PreviewState(monitor, selection, projects.projects, scope)
+
+    private val shownProject = selection.map { if (it.view == null) it.project else null }.distinctUntilChanged()
+
+    /**
+     * The branch of the shown project (FR-A1): read again when another project is shown and on every snapshot, so a
+     * checkout shows up with the next refresh of the sessions.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val branch: StateFlow<String?> =
+        shownProject
+            .combine(monitor.snapshot) { id, _ -> id }
+            .mapLatest { id -> id?.let { projects.branch(it) } }
+            .stateIn(scope, SharingStarted.Eagerly, null)
 
     /** Read by the composables only. */
     internal val state: StateFlow<MissionControlUiState> =
@@ -63,12 +79,13 @@ public class MissionControlController(
             projects.projects,
             selection,
             now,
-            combine(ui, preview.shown, ::Pair),
-        ) { snapshot, list, picked, at, (acting, shown) ->
+            combine(ui, preview.shown, branch, ::Triple),
+        ) { snapshot, list, picked, at, (acting, shown, onBranch) ->
             MissionControlReducer
                 .reduce(snapshot, list, picked, at, zone)
                 .withActions(snapshot, picked, acting, list)
                 .copy(preview = shown)
+                .withBranch(onBranch)
         }.stateIn(
             scope,
             SharingStarted.Eagerly,
@@ -81,7 +98,7 @@ public class MissionControlController(
     init {
         // Another project starts with the whole list and no selected session (plan, decision 1).
         scope.launch {
-            selectedProject.collect { id -> selection.update { it.onProject(id) } }
+            selected.collect { focus -> selection.update { it.onFocus(focus) } }
         }
         // A failure is shown until the next action or until another session is selected (plan, decision 4).
         scope.launch {
@@ -100,6 +117,14 @@ public class MissionControlController(
             }
         }
     }
+
+    /**
+     * The names the window crumbs need (AM-816): the shown project (none in a global view) and the sessions by id.
+     * Never contains a path or a summary.
+     */
+    public val names: StateFlow<ShownNames> =
+        combine(monitor.snapshot, state.map { it.modeBar.project }.distinctUntilChanged(), ::namesOf)
+            .stateIn(scope, SharingStarted.Eagerly, namesOf(monitor.snapshot.value, state.value.modeBar.project))
 
     /** The shown global view, null on the project page. `app` hides filter commands and clears the sidebar by it. */
     public val view: StateFlow<GlobalView?> =
@@ -128,7 +153,7 @@ public class MissionControlController(
      */
     public fun attachTarget(): AttachTarget? =
         SessionAttach.targetOf(
-            SessionActions.target(monitor.snapshot.value.sessions, selection.value),
+            SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value),
             projects.projects.value,
             ui.value.dialog != null,
         )
@@ -149,7 +174,7 @@ public class MissionControlController(
             MissionControlIntent.RespawnSelected -> run(SessionAction.RESPAWN)
             MissionControlIntent.RemoveSelected -> askToRemove()
             is MissionControlIntent.SelectFilter -> Unit
-            is MissionControlIntent.SelectSession -> selection.value = Selection(intent.project, session = intent.id)
+            is MissionControlIntent.SelectSession -> selection.value = intent.toSelection()
             MissionControlIntent.TogglePreview -> togglePreview()
             is MissionControlIntent.ShowView -> selection.update { it.copy(view = intent.view, session = null) }
         }
@@ -165,7 +190,7 @@ public class MissionControlController(
 
     /** Opens the confirmation for the selected inactive session; nothing is called until it is confirmed. */
     private fun askToRemove() {
-        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value)
+        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value)
         if (ui.value.busy != null || ui.value.dialog != null || target == null) return
         if (SessionAction.REMOVE !in SessionActions.available(target.state, busy = false)) return
         ui.value = ActionUi(dialog = SessionDialog.ConfirmRemove(target.id, target.name))
@@ -185,7 +210,7 @@ public class MissionControlController(
      * the launch, so a second call before the coroutine starts is ignored.
      */
     private fun run(action: SessionAction) {
-        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value)
+        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value)
         if (ui.value.busy != null || ui.value.dialog != null || target == null) return
         if (action !in SessionActions.available(target.state, busy = false)) return
         launchAction(action, target.id)
@@ -204,7 +229,13 @@ public class MissionControlController(
 
     /** Counts from the current selection, not from [state], so two quick keys move two rows. */
     private fun moveCursor(move: (List<SessionId>, SessionId?) -> SessionId?) {
-        val rows = SessionScope.visible(monitor.snapshot.value.sessions, selection.value).map { it.id }
+        val rows =
+            SessionScope
+                .visible(
+                    monitor.snapshot.value.sessions,
+                    selection.value,
+                    projects.projects.value,
+                ).map { it.id }
         selection.update { current -> current.copy(session = move(rows, current.session) ?: current.session) }
     }
 
@@ -223,11 +254,19 @@ public class MissionControlController(
 
             MissionControlEvent.Dismiss -> ui.update { it.copy(dialog = null) }
 
-            // Opening a terminal tab is `app`'s job: MissionControl routes these to its callbacks (AM-511).
-            MissionControlEvent.Attach, MissionControlEvent.Reply, MissionControlEvent.NewAgent -> Unit
+            // `app`'s job, not the controller's: MissionControl routes these to its callbacks (Attach and Reply open
+            // a terminal tab, AM-511; OpenSubfolder selects the subfolder in the sidebar, AM-307).
+            MissionControlEvent.Attach, MissionControlEvent.Reply, is MissionControlEvent.OpenSubfolder -> Unit
         }
     }
 }
+
+private fun MissionControlIntent.SelectSession.toSelection() = Selection(project, session = id, subfolder = subfolder)
+
+private fun namesOf(
+    snapshot: SessionsSnapshot,
+    project: String?,
+): ShownNames = ShownNames(project, snapshot.sessions.associate { it.id to it.name })
 
 private fun actionsOf(
     snapshot: SessionsSnapshot,
@@ -236,7 +275,7 @@ private fun actionsOf(
     previewOpen: Boolean,
     projects: List<Project>,
 ): SessionActionsState {
-    val target = SessionActions.target(snapshot.sessions, picked)
+    val target = SessionActions.target(snapshot.sessions, picked, projects)
     val attach = SessionAttach.targetOf(target, projects, acting.dialog != null)
     val blocked = acting.busy != null || acting.dialog != null
     val available = target?.let { SessionActions.available(it.state, blocked) }.orEmpty()

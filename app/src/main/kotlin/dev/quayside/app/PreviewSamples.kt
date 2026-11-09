@@ -9,8 +9,10 @@ import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.MissionControlIntent
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectError
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.api.StorageIssue
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.RecentOutput
 import dev.quayside.sessions.api.RuntimeProblem
@@ -119,6 +121,13 @@ private class PreviewProjects : ProjectsApi {
         id: ProjectId,
         displayName: String,
     ): Outcome<Unit, ProjectError> = Outcome.Err(ProjectError.UnknownProject(id))
+
+    override suspend fun setSubfolders(
+        id: ProjectId,
+        subfolders: List<SubfolderName>,
+    ): Outcome<Unit, ProjectError> = Outcome.Err(ProjectError.UnknownProject(id))
+
+    override suspend fun branch(id: ProjectId): String? = null
 }
 
 /** [PREVIEW_PROJECT] only; reading only, adding, renaming and removing are refused. */
@@ -132,7 +141,7 @@ internal fun previewController(scope: CoroutineScope): MissionControlController 
     MissionControlController(
         previewSessions(),
         previewProjects(),
-        MutableStateFlow<ProjectId?>(PREVIEW_PROJECT.id),
+        MutableStateFlow<ProjectFocus?>(ProjectFocus(PREVIEW_PROJECT.id)),
         PREVIEW_CLOCK,
         scope,
         NoOpLogger,

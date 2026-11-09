@@ -23,7 +23,7 @@ class HookSetupCommandsTest {
     lateinit var dir: Path
 
     private fun TestScope.setup() =
-        HookSetupController(FakeHookInstaller(), hookOfferStore(dir), backgroundScope, NoOpLogger)
+        HookSetupController(FakeHookInstaller(), hookOfferStore(dir), globalOnlyTargets, backgroundScope, NoOpLogger)
 
     @Test
     fun `offers hooks setup when no dialog is open`() =
@@ -46,7 +46,14 @@ class HookSetupCommandsTest {
     fun `running the command opens the dialog and reads only the status`() =
         runTest {
             val installer = FakeHookInstaller()
-            val setup = HookSetupController(installer, hookOfferStore(dir), backgroundScope, NoOpLogger)
+            val setup =
+                HookSetupController(
+                    installer,
+                    hookOfferStore(dir),
+                    globalOnlyTargets,
+                    backgroundScope,
+                    NoOpLogger,
+                )
             setup.state.value.shouldBeNull()
 
             hookSetupCommands(dialogOpen = false, setup).single().run()

@@ -15,6 +15,10 @@ dependencies {
     implementation(project(":feature:summaries:api"))
     // Outcome, ProjectId, SessionId, Clock and Logger.
     implementation(project(":core:domain"))
+    // GitBranch: the branch of a session directory (AM-818).
+    implementation(project(":core:process"))
+    // Tree parsing of the transcript tail only (Json.parseToJsonElement); no compiler plugin needed.
+    implementation(libs.kotlinx.serialization.json)
 
     // aSession, the sessions builders and SessionMonitorContract.
     testImplementation(testFixtures(project(":feature:sessions:api")))

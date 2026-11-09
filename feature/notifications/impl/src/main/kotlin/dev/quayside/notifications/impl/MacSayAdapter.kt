@@ -19,10 +19,12 @@ internal class MacSayAdapter(
     private val runner: ProcessRunner,
     private val workDir: Path,
     private val program: String = "/usr/bin/say",
+    private val fallbackToSystemVoice: Boolean = true,
 ) : SpeechPort {
     override suspend fun speak(utterance: Utterance): Outcome<Unit, SpeechError> {
         val first = run(utterance)
-        val retry = first is Outcome.Ok && first.value.exitCode != 0 && utterance.voice != null
+        val retry =
+            fallbackToSystemVoice && first is Outcome.Ok && first.value.exitCode != 0 && utterance.voice != null
         return if (retry) toOutcome(run(utterance.copy(voice = null))) else toOutcome(first)
     }
 

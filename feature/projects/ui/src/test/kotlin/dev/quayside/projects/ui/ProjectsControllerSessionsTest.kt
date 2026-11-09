@@ -97,12 +97,13 @@ class ProjectsControllerSessionsTest {
             val controller = start(world)
             act { controller.onEvent(SidebarEvent.Select(project.id)) }
 
-            // No runCurrent: the dialog is open the moment the intent returns.
+            // No runCurrent: the dialog is open the moment the intent returns, as the panel that reads the hooks.
             controller.onIntent(ProjectsIntent.RemoveSelectedRequested)
+            controller.state.value.dialog shouldBe Dialog.Waiting.CHECKING_HOOKS
 
+            runCurrent()
             controller.state.value.dialog shouldBe
                 Dialog.ConfirmRemove(project, SessionCounts(working = 1, waiting = 1))
-            runCurrent()
             world.sessions.calls.shouldBeEmpty()
         }
 

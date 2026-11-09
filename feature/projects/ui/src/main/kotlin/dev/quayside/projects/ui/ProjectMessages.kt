@@ -5,10 +5,12 @@ import dev.quayside.projects.api.ProjectError
 import dev.quayside.projects.api.ProjectInputRules
 import dev.quayside.projects.api.StorageIssue
 import dev.quayside.projects.api.StorageProblem
+import dev.quayside.projects.api.SubfolderProblem
 
 /** Fixed texts for errors and storage issues; never contain a path or a name (ENG-C8). */
 internal object ProjectMessages {
     private val maxNameLength = ProjectInputRules.MAX_DISPLAY_NAME_LENGTH.toString()
+    private val maxSubfolders = ProjectInputRules.MAX_SUBFOLDERS.toString()
 
     fun of(error: ProjectError): UiText =
         when (error) {
@@ -19,6 +21,7 @@ internal object ProjectMessages {
             is ProjectError.UnknownProject -> UiText("error.unknownProject")
             is ProjectError.InvalidDisplayName -> of(error.reason)
             is ProjectError.StorageFailed -> of(error.problem)
+            is ProjectError.InvalidSubfolder -> of(error.reason)
         }
 
     fun of(issue: StorageIssue): UiText =
@@ -33,6 +36,16 @@ internal object ProjectMessages {
             NameProblem.BLANK -> UiText("error.name.blank")
             NameProblem.TOO_LONG -> UiText("error.name.tooLong", listOf(maxNameLength))
             NameProblem.CONTROL_CHARACTERS -> UiText("error.name.controlCharacters")
+        }
+
+    private fun of(problem: SubfolderProblem): UiText =
+        when (problem) {
+            SubfolderProblem.NOT_A_NAME -> UiText("error.subfolder.notAName")
+            SubfolderProblem.HIDDEN -> UiText("error.subfolder.hidden")
+            SubfolderProblem.MISSING -> UiText("error.subfolder.missing")
+            SubfolderProblem.NOT_A_DIRECTORY -> UiText("error.subfolder.notADirectory")
+            SubfolderProblem.SYMLINK -> UiText("error.subfolder.symlink")
+            SubfolderProblem.TOO_MANY -> UiText("error.subfolder.tooMany", listOf(maxSubfolders))
         }
 
     private fun of(problem: StorageProblem): UiText =
@@ -53,4 +66,5 @@ internal fun ProjectError.category(): String =
         is ProjectError.UnknownProject -> "unknownProject"
         is ProjectError.InvalidDisplayName -> "invalidDisplayName"
         is ProjectError.StorageFailed -> "storageFailed"
+        is ProjectError.InvalidSubfolder -> "invalidSubfolder"
     }

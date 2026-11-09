@@ -38,11 +38,15 @@ class HookSetupControllerTest {
     private fun TestScope.controller(
         installer: HookInstaller = hooks,
         offer: HookOfferStore = hookOfferStore(dir),
-    ) = HookSetupController(installer, offer, backgroundScope, logger)
+        targets: HookTargetSource = globalOnlyTargets,
+    ) = HookSetupController(installer, offer, targets, backgroundScope, logger)
 
     /** The controller after `open()` and the read of the status. */
-    private fun TestScope.opened(installer: HookInstaller = hooks): HookSetupController =
-        controller(installer).also {
+    private fun TestScope.opened(
+        installer: HookInstaller = hooks,
+        targets: HookTargetSource = globalOnlyTargets,
+    ): HookSetupController =
+        controller(installer, targets = targets).also {
             it.open()
             runCurrent()
         }
@@ -56,10 +60,11 @@ class HookSetupControllerTest {
             val controller = controller()
 
             controller.open()
-            controller.shown.status.shouldBeNull()
+            controller.shown.current.status
+                .shouldBeNull()
             runCurrent()
 
-            controller.shown shouldBe HookDialogState(status = partial)
+            controller.shown shouldBe hookState(status = partial)
         }
 
     @Test
@@ -79,7 +84,7 @@ class HookSetupControllerTest {
             runCurrent()
 
             controller.shown shouldBe
-                HookDialogState(status = HookStatus.Installed, busy = false, notice = HookNotice.Installed)
+                hookState(status = HookStatus.Installed, busy = false, notice = HookNotice.Installed)
             hooks.calls shouldBe listOf("status global", "install global", "status global")
         }
 
@@ -108,7 +113,7 @@ class HookSetupControllerTest {
             runCurrent()
 
             hooks.calls shouldBe listOf("status global")
-            controller.shown shouldBe HookDialogState(status = HookStatus.Unreadable("json:invalid"))
+            controller.shown shouldBe hookState(status = HookStatus.Unreadable("json:invalid"))
         }
 
     @Test
@@ -121,7 +126,7 @@ class HookSetupControllerTest {
             runCurrent()
 
             controller.shown shouldBe
-                HookDialogState(status = HookStatus.NotInstalled, busy = false, notice = HookNotice.Failed(failure))
+                hookState(status = HookStatus.NotInstalled, busy = false, notice = HookNotice.Failed(failure))
         }
 
     @Test
@@ -137,7 +142,7 @@ class HookSetupControllerTest {
             runCurrent()
 
             controller.shown shouldBe
-                HookDialogState(status = HookStatus.NotInstalled, busy = false, notice = HookNotice.Uninstalled)
+                hookState(status = HookStatus.NotInstalled, busy = false, notice = HookNotice.Uninstalled)
         }
 
     @Test
@@ -188,7 +193,7 @@ class HookSetupControllerTest {
             gated.release()
             runCurrent()
 
-            controller.shown shouldBe HookDialogState(status = HookStatus.Installed) // no notice of the old action
+            controller.shown shouldBe hookState(status = HookStatus.Installed) // no notice of the old action
         }
 
     @Test
@@ -204,7 +209,7 @@ class HookSetupControllerTest {
             runCurrent()
 
             controller.shown shouldBe
-                HookDialogState(status = HookStatus.Installed, busy = false, notice = HookNotice.Installed)
+                hookState(status = HookStatus.Installed, busy = false, notice = HookNotice.Installed)
         }
 
     @Test
@@ -252,7 +257,7 @@ class HookSetupControllerTest {
             controller.install()
             runCurrent()
 
-            controller.shown.status shouldBe partial
+            controller.shown.current.status shouldBe partial
             controller.shown.notice shouldBe HookNotice.Failed(failure)
             hooks.calls shouldBe listOf("status global", "install global", "status global")
         }
@@ -275,7 +280,7 @@ class HookSetupControllerTest {
             runCurrent()
 
             controller.shown.busy shouldBe false
-            controller.shown.status shouldBe HookStatus.Installed
+            controller.shown.current.status shouldBe HookStatus.Installed
             hooks.calls.count { it == "install global" } shouldBe 1
             hooks.calls.none { it.startsWith("uninstall") }.shouldBeTrue()
         }

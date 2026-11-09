@@ -12,6 +12,7 @@ import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionPermissionMode
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotBeBlank
 import io.kotest.matchers.string.shouldNotContain
@@ -21,6 +22,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.Arguments.arguments
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
+import java.nio.file.Path
 
 /** Pure rules of the "Nowy agent" dialog (FR-S3, AM-608 rules 1, 2 and 5): validation, defaults, failure texts. */
 internal class NewAgentRulesTest {
@@ -73,26 +75,6 @@ internal class NewAgentRulesTest {
         (result as Outcome.Ok).value.first shouldBe OTHER.id
     }
 
-    @Test
-    fun `selected project is preselected`() {
-        NewAgentRules.defaultProject(OTHER.id, PROJECTS) shouldBe OTHER.id
-    }
-
-    @Test
-    fun `unknown selected project gives none`() {
-        NewAgentRules.defaultProject(ProjectId("removed"), PROJECTS) shouldBe null
-    }
-
-    @Test
-    fun `no selected project gives none even when there is one project`() {
-        NewAgentRules.defaultProject(null, listOf(QUAYSIDE)) shouldBe null
-    }
-
-    @Test
-    fun `no projects give none`() {
-        NewAgentRules.defaultProject(QUAYSIDE.id, emptyList()) shouldBe null
-    }
-
     @ParameterizedTest(name = "{0}")
     @MethodSource("failureCases")
     fun `start error gives a fixed text`(
@@ -107,13 +89,46 @@ internal class NewAgentRulesTest {
     }
 
     @Test
-    fun `command failed mentions trust and the terminal`() {
+    fun `command failed no longer mentions trust`() {
         val text = failure(SessionError.Runtime(RuntimeProblem.COMMAND_FAILED))
 
-        text shouldBe
-            "Claude Code odmówił startu. Najczęstsza przyczyna: katalog nie jest zaufany. " +
-            "Otwórz terminal w katalogu projektu (⌘T), uruchom `claude`, zaakceptuj zaufanie i spróbuj ponownie. " +
-            "Sprawdź też nazwę subagenta."
+        text shouldContain "Claude Code odmówił startu"
+        text shouldContain "subagenta"
+        text shouldNotContain "zaufan"
+        text shouldNotContain "⌘T"
+    }
+
+    @Test
+    fun `an untrusted workspace has its own fixed text`() {
+        val reason = NewAgentRules.failureOf(SessionError.Runtime(RuntimeProblem.WORKSPACE_NOT_TRUSTED))
+
+        reason.args shouldBe emptyList()
+        reason shouldNotBe NewAgentRules.failureOf(SessionError.Runtime(RuntimeProblem.COMMAND_FAILED))
+        MissionControlStrings.format(reason) shouldContain "zaufan"
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("trustProblems")
+    fun `trust texts render the path literally`(
+        @Suppress("UNUSED_PARAMETER") name: String,
+        problem: NewAgentProblem,
+    ) {
+        val text = problem.text()
+        val shown = MissionControlStrings.format(text)
+
+        text.args shouldBe listOf(TRICKY_DIR.toString())
+        shown shouldContain TRICKY_DIR.toString()
+        shown shouldContain "⌘T"
+        shown shouldContain "claude"
+    }
+
+    @Test
+    fun `an ineffective trust names CLAUDE_CONFIG_DIR and differs from the plain hint`() {
+        val ineffective = NewAgentProblem.TrustIneffective(TRICKY_DIR).text()
+
+        MissionControlStrings.format(ineffective) shouldContain "CLAUDE_CONFIG_DIR"
+        ineffective shouldNotBe NewAgentProblem.NotTrusted(TRICKY_DIR).text()
+        MissionControlStrings.format(NewAgentProblem.NotTrusted(TRICKY_DIR).text()) shouldNotContain "CLAUDE_CONFIG_DIR"
     }
 
     @Test
@@ -192,6 +207,17 @@ internal class NewAgentRulesTest {
         (this as Outcome.Ok).value.second
 
     companion object {
+        /** A path with a quote and a placeholder, which would break a text that put the path into the pattern. */
+        private val TRICKY_DIR: Path = Path.of("/Users/o'neil/{0}/it's here")
+
+        @JvmStatic
+        fun trustProblems(): List<Arguments> =
+            listOf(
+                arguments("NotTrusted", NewAgentProblem.NotTrusted(TRICKY_DIR)),
+                arguments("TrustFailed", NewAgentProblem.TrustFailed(TRICKY_DIR)),
+                arguments("TrustIneffective", NewAgentProblem.TrustIneffective(TRICKY_DIR)),
+            )
+
         private val P = QUAYSIDE.id
         private const val LOTS = 100_000
         private const val EMOJI = "😀"

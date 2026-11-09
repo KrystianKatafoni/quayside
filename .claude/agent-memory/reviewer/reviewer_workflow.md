@@ -22,5 +22,12 @@ Mutacje rób wyłącznie w kopii: `rsync -a --exclude .git --exclude build --exc
 - Mutacja `as? T` → `as T` daje błąd `-Werror` („Unnecessary safe call”, „Condition is always true”) — użyj `?.let { it as T }`. Fragment do podmiany musi być unikalny (np. `queue = SoundQueue()` trafia najpierw w deklarację pola) — po każdej serii sprawdź `grep -E '^e: |tests completed' m_*.log`, „BUILD FAILED in <1s” bez „tests completed” to kompilacja.
 - Podmiana na `Unit` jako mutacja daje pod -Werror „Expression is unused” — zamiast tego odwróć/wyzeruj warunek (`closes > 0` → `closes < 0`, `if (!enabled)` → `if (label.isEmpty() && !enabled)`). Mutację, która przeżyła w module komponentu, puść też na testach modułów `ui` (tam bywa zabijana).
 - Testy prawdziwego okna AWT (ModalOver/DropdownOver) w tle bez okna na pierwszym planie: jedne padają, inne (z `assumeTrue`) są pomijane — przed wnioskiem o regresji porównaj z bazą w tej samej sesji.
+- Dowód doręczenia klawisza w teście Compose: mutacja „klawisz bez skutku” (Space → ShiftLeft w `press`) musi wywrócić test. Wybór korzenia w `onAllNodes(isRoot()).onLast()`/`onFirst()` nie ma znaczenia (mutacja przeżyła, AM-610): `performKeyInput` trafia do węzła z fokusem.
+- Skrypt mutacji czytający wyniki z `build/test-results/test/*.xml` (regex `<testcase name=… ><failure`) podaje nazwy padniętych testów zamiast samego kodu wyjścia; seria 23 mutacji `terminal:impl` z testami PTY trwa ok. 20 min — uruchamiaj w tle.
+- Sonda katalogu motywów dla reguły `internal` z `impl`: przepisz regułę 1:1 w tymczasowym teście `app` (widzi `builtInCatalog()`), wynik do pliku w scratchpadzie.
+
+- Mutacja „wywołanie bez skutku” przez `call().takeIf { false }` nie jest mutacją — wywołanie i tak się wykonuje; zastąp całą lambdę `{ }`. Mutacje w module `ui` z logiką używaną przez `app` (np. `names` dla okruszków) puszczaj też na `:app:test`.
+- `Modifier.border` rysuje PO treści (`onDrawWithContent { drawContent(); … }`, foundation-desktop 1.12.2), więc przy `compose.interop.blending=true` ramka leży nad `SwingPanel`; wcięcie widżetu wystarcza do łuku zewnętrznego, nie trzeba doliczać grubości ramki.
+- Scratchpad potrafi zniknąć po przerwie sesji (limit użycia, AM-306): wyniki mutacji notuj w odpowiedzi/raporcie na bieżąco, a po wznowieniu odtwórz kopię rsync i puść tylko brakujące mutacje.
 
 Powiązane: [[recurring-review-findings]]

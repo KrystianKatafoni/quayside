@@ -6,8 +6,8 @@ import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
 import dev.quayside.projects.api.DirectoryReport
-import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectError
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectInspector
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionsApi
@@ -30,18 +30,20 @@ import kotlinx.coroutines.launch
  *
  * @param sessions read side for the per-project counts (only `monitor.snapshot` is collected, never `events`),
  *   `commands` for "stop sessions and remove".
- * @param picker the folder chooser; called from [scope].
+ * @param ports the folder chooser (called from [scope]) and the project hooks.
  * @param scope confined to one thread, like the window's Main dispatcher: the controller is not thread-safe.
  */
 public class ProjectsController(
     private val projects: ProjectsApi,
     private val inspector: ProjectInspector,
     private val sessions: SessionsApi,
-    private val picker: DirectoryPicker,
+    ports: ProjectsPorts,
     private val scope: CoroutineScope,
     private val logger: Logger,
 ) {
-    private val commands = ProjectCommands(projects, sessions.commands, logger)
+    private val picker = ports.picker
+    private val hooks = ports.hooks
+    private val commands = ProjectCommands(projects, sessions.commands, hooks, logger)
 
     private val ui =
         MutableStateFlow(
@@ -50,6 +52,9 @@ public class ProjectsController(
                 banner = projects.storageIssue.value?.let(ProjectMessages::of),
             ),
         )
+
+    private val removal = RemoveFlow(ui, commands, hooks, ::begin)
+    private val subfolders = SubfolderFlow(ui, projects, inspector, logger, ::begin)
 
     /** The running step of a dialog flow, kept only to cancel an inspection or a listing. */
     private var running: Job? = null
@@ -60,6 +65,15 @@ public class ProjectsController(
     /** The project selected in the sidebar, null when none; read by `app` for Mission Control (AM-405). */
     public val selection: StateFlow<ProjectId?> =
         ui.map { it.selected }.stateIn(scope, SharingStarted.Eagerly, ui.value.selected)
+
+    /**
+     * What the sidebar has selected: the project and, on a subfolder row, the subfolder (FR-P7); null when none.
+     * [selection] is its project. `app` passes it to Mission Control.
+     */
+    public val focus: StateFlow<ProjectFocus?> =
+        ui
+            .map { state -> state.selected?.let { ProjectFocus(it, state.subfolder) } }
+            .stateIn(scope, SharingStarted.Eagerly, null)
 
     /** Enabled window-menu commands. */
     public val menu: StateFlow<ProjectsMenuState> =
@@ -84,7 +98,7 @@ public class ProjectsController(
             }
 
             ProjectsIntent.RemoveSelectedRequested -> {
-                current.selectedProject()?.let { ui.update { s -> s.copy(dialog = s.confirmRemove(it)) } }
+                current.selectedProject()?.let(removal::request)
             }
 
             ProjectsIntent.RenameSelectedRequested -> {
@@ -92,12 +106,25 @@ public class ProjectsController(
             }
 
             is ProjectsIntent.Select -> {
-                if (current.projects.any { it.id == intent.id }) ui.update { it.reduce(SidebarEvent.Select(intent.id)) }
+                select(current, intent)
+            }
+
+            ProjectsIntent.EditSubfoldersRequested -> {
+                current.selected?.let(subfolders::request)
             }
 
             ProjectsIntent.ClearSelection -> {
-                ui.update { it.copy(selected = null) }
+                ui.update { it.copy(selected = null, subfolder = null) }
             }
+        }
+    }
+
+    private fun select(
+        current: ProjectsUiState,
+        intent: ProjectsIntent.Select,
+    ) {
+        if (current.projects.any { it.id == intent.id }) {
+            ui.update { it.reduce(SidebarEvent.Select(intent.id, intent.subfolder)) }
         }
     }
 
@@ -108,8 +135,7 @@ public class ProjectsController(
             event == SidebarEvent.Dismiss -> dismiss(dialog)
             event == SidebarEvent.ConfirmAdd && dialog is Dialog.ConfirmAdd -> confirmAdd(dialog)
             event == SidebarEvent.ConfirmRename && dialog is Dialog.Rename -> confirmRename(dialog)
-            event == SidebarEvent.StopAndRemove -> confirmRemove(dialog, stop = true)
-            event == SidebarEvent.RemoveKeepSessions -> confirmRemove(dialog, stop = false)
+            removal.handle(event, dialog) || subfolders.handle(event, dialog) -> Unit
             else -> ui.update { it.reduce(event) }
         }
     }
@@ -119,19 +145,6 @@ public class ProjectsController(
         if (dialog == null || dialog == Dialog.Picking || dialog == Dialog.Waiting.BUSY) return
         running?.cancel()
         ui.update { it.copy(dialog = null) }
-    }
-
-    /** Stopping needs active sessions in a fresh snapshot: without them only removing is offered. */
-    private fun confirmRemove(
-        dialog: Dialog?,
-        stop: Boolean,
-    ) {
-        if (dialog !is Dialog.ConfirmRemove) return
-        if (stop && (dialog.active?.active ?: 0) == 0) return
-        begin(Dialog.Waiting.BUSY) {
-            val failure = commands.remove(dialog.project, stop)
-            ui.update { it.copy(dialog = failure?.let(Dialog::Message)) }
-        }
     }
 
     /** An unchanged name closes the dialog; otherwise saves, and an error keeps the dialog with its fixed text. */
@@ -167,8 +180,14 @@ public class ProjectsController(
         }
         ui.update { it.copy(dialog = Dialog.Waiting.INSPECTING) }
         when (val inspected = inspector.inspect(dir)) {
-            is Outcome.Err -> fail("project inspection failed", inspected.error)
-            is Outcome.Ok -> offer(inspected.value)
+            is Outcome.Err -> {
+                logger.warn("project inspection failed", "reason" to inspected.error.category())
+                ui.update { it.copy(dialog = Dialog.Message(ProjectMessages.of(inspected.error))) }
+            }
+
+            is Outcome.Ok -> {
+                offer(inspected.value)
+            }
         }
     }
 
@@ -198,13 +217,5 @@ public class ProjectsController(
             val message = Dialog.Message(ProjectMessages.of(ProjectError.AlreadyAdded(existing)))
             ui.update { it.copy(selected = existing, dialog = message) }
         }
-    }
-
-    private fun fail(
-        message: String,
-        error: ProjectError,
-    ) {
-        logger.warn(message, "reason" to error.category())
-        ui.update { it.copy(dialog = Dialog.Message(ProjectMessages.of(error))) }
     }
 }

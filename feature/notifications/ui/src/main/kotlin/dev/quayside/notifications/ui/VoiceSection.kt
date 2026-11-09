@@ -48,14 +48,14 @@ internal fun VoiceSection(
     }
 }
 
-private fun NotificationDialogState.invalidAt(field: NotificationField): InvalidField? =
+internal fun NotificationDialogState.invalidAt(field: NotificationField): InvalidField? =
     invalid?.takeIf { it.field == field }
 
 private fun NotificationSettingsController.editSpeech(change: (SpeechDraft) -> SpeechDraft) {
     edit { it.copy(speech = change(it.speech)) }
 }
 
-/** The voice choice; the saved voice stays in the list while the user steps through it. */
+/** The voice choice with its sample button; the saved voice stays in the list while the user steps through it. */
 @Composable
 private fun VoiceRow(
     state: NotificationDialogState,
@@ -70,16 +70,12 @@ private fun VoiceRow(
         val names = choices.map { it.id?.name }
         val items = AmDropdownItems(choices.map(SettingsStrings::of), selected)
         Dropdown(SettingsTags.SPEECH_VOICE, label, items, Modifier.letterJump(names, selected, select), select)
+        val key = if (state.previewing) "voice.previewStop" else "voice.preview"
+        DialogButton(SettingsTags.PREVIEW, key, previewLabel(key, choices[selected])) {
+            controller.togglePreview()
+        }
     }
-    if (state.voicesFailed) {
-        val tag = Modifier.testTag(SettingsTags.VOICES_FAILED)
-        AmText(
-            SettingsStrings["voices.failed"],
-            tag,
-            TextRole.CAPTION,
-            errColor(),
-        )
-    }
+    VoiceNotes(state)
 }
 
 /** A letter key selects the next voice (from the current one, wrapping) whose name starts with it. */

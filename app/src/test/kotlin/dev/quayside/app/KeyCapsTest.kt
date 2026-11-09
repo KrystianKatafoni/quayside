@@ -30,7 +30,15 @@ internal class KeyCapsTest {
         caps.attach shouldBe "⏎"
         caps.reply shouldBe "r"
         caps.stop shouldBe "x"
-        caps.newAgent shouldBe "⌘N"
+    }
+
+    @Test
+    fun `key caps include next previous and preview`() {
+        val caps = windowKeyCaps()
+
+        caps.next shouldBe "j"
+        caps.previous shouldBe "k"
+        caps.preview shouldBe "␣"
     }
 
     companion object {

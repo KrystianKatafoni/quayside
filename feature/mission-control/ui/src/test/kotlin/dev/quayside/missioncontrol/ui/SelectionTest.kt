@@ -2,6 +2,7 @@ package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.ProjectFocus
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -18,7 +19,7 @@ internal class SelectionTest {
         id: String?,
         expected: Selection,
     ) {
-        before.onProject(id?.let(::ProjectId)) shouldBe expected
+        before.onFocus(id?.let { ProjectFocus(ProjectId(it)) }) shouldBe expected
     }
 
     companion object {

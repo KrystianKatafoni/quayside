@@ -15,9 +15,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
 /**
- * Selectable row: sel background, a check mark at the end and `selected` semantics when [selected] (not colour only,
- * NFR-6). Focusable; Enter and Space click it. Resets the default text colour of [AmText] to content.text. A list of
- * rows must be wrapped in `Modifier.selectableGroup()` (AM-803) so that the rows are announced as one group.
+ * Selectable row (row radius r+2): sel background, a check mark at the end and `selected` semantics when [selected]
+ * (not colour only, NFR-6). Focusable; Enter and Space click it. Resets the default text colour of [AmText] to
+ * content.text. A list of rows must be wrapped in `Modifier.selectableGroup()` (AM-803) so that the rows are
+ * announced as one group.
  */
 @Composable
 public fun AmListRow(
@@ -32,7 +33,7 @@ public fun AmListRow(
             modifier =
                 modifier
                     .amFocusFrame()
-                    .clip(AmTheme.shape.corner)
+                    .clip(AmTheme.shape.row)
                     .background(background.toColor())
                     .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
                     .padding(horizontal = 10.dp, vertical = 6.dp),

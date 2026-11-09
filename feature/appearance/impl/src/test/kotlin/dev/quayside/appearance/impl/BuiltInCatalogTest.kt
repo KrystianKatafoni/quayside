@@ -144,9 +144,15 @@ class BuiltInCatalogTest {
     }
 
     @Test
-    fun `base schemes have no default typography`() {
+    fun `plex suggests the plex typography`() {
+        scheme("plex").defaultTypography shouldBe TypographyId("plex")
+    }
+
+    @Test
+    fun `other base schemes suggest nothing`() {
         catalog.themes
             .take(BASE_SCHEMES)
+            .filter { it.id.value != "plex" }
             .map { it.defaultTypography }
             .toSet() shouldBe setOf(null)
         catalog.themes.drop(BASE_SCHEMES).all { it.defaultTypography != null } shouldBe true

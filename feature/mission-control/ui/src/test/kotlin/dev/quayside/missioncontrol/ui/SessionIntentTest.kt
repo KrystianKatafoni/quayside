@@ -20,7 +20,6 @@ import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -42,11 +41,18 @@ internal class SessionIntentTest {
         val projects = FakeProjectsApi(initial = listOf(project))
         val sessions =
             FakeSessions(SessionsWorld(listOf(WorldProject(project.id, project.dir)), sessions), clock)
-        val selected = MutableStateFlow(selected)
+        val selected = SelectedProject(selected)
 
         fun TestScope.start(): MissionControlController =
-            MissionControlController(sessions.api(), projects, selected, clock, backgroundScope, NoOpLogger, 1.hours)
-                .also { runCurrent() }
+            MissionControlController(
+                sessions.api(),
+                projects,
+                selected.focus,
+                clock,
+                backgroundScope,
+                NoOpLogger,
+                1.hours,
+            ).also { runCurrent() }
     }
 
     private fun session(

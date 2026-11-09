@@ -43,8 +43,6 @@ internal const val RAISED_DARK = 6
 internal const val SEL_LIGHT = 12
 internal const val SEL_DARK = 18
 internal const val WARN_BG_PERCENT = 15
-internal val LIGHT_TERM_BG = Rgba(0xFF1E242CL)
-internal val LIGHT_TERM_TEXT = Rgba(0xFFE2E8F0L)
 
 private fun SchemeRow.color(column: SchemeRow.Column): Rgba = palette.getValue(column)
 
@@ -122,8 +120,4 @@ private fun status(
 }
 
 private fun terminal(row: SchemeRow): TerminalColors =
-    if (row.mode.isDark) {
-        TerminalColors(row.color(SchemeRow.Column.BG), row.color(SchemeRow.Column.TEXT))
-    } else {
-        TerminalColors(LIGHT_TERM_BG, LIGHT_TERM_TEXT)
-    }
+    deriveTerminal(row.color(SchemeRow.Column.BG), row.color(SchemeRow.Column.TEXT), row.mode.isDark)

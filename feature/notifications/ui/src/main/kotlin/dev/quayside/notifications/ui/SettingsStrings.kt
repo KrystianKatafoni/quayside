@@ -5,6 +5,8 @@ import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.NotificationSettingsError
 import dev.quayside.notifications.api.PopupSettings
+import dev.quayside.notifications.api.ProjectProfile
+import dev.quayside.notifications.api.SoundSettings
 import dev.quayside.notifications.api.SpeechSettings
 import java.util.Locale
 import java.util.ResourceBundle
@@ -66,28 +68,45 @@ internal object SettingsStrings {
                 range("invalid.VOLUME", SpeechSettings.MIN_VOLUME, SpeechSettings.MAX_VOLUME)
             }
 
+            NotificationField.SOUND_VOLUME -> {
+                range("invalid.SOUND_VOLUME", SoundSettings.MIN_VOLUME, SoundSettings.MAX_VOLUME)
+            }
+
+            NotificationField.QUIET_FROM, NotificationField.QUIET_TO -> {
+                get("invalid.${field.field.name}").replace("{min}", CLOCK_MIN).replace("{max}", CLOCK_MAX)
+            }
+
             NotificationField.TEMPLATE -> {
                 get("invalid.TEMPLATE").replace("{max}", SpeechSettings.MAX_TEMPLATE_LENGTH.toString())
             }
         }
 
-    private fun range(
-        key: String,
-        min: Int,
-        max: Int,
-    ): String = get(key).replace("{min}", min.toString()).replace("{max}", max.toString())
-
-    /** The label of a voice choice: system voice, `<name> (<locale>)` or `<name> (niezainstalowany)`. */
+    /** The label of a voice choice: system voice, `<name> — <language>` or `<name> (niezainstalowany)`. */
     fun of(choice: VoiceChoice): String {
         val name = choice.id?.name ?: return get("voice.system")
         val locale = choice.locale
         return when {
             choice.missing -> get("voice.missing").replace("{name}", name)
             locale == null -> name
-            else -> get("voice.installed").replace("{name}", name).replace("{locale}", locale)
+            else -> get("voice.installed").replace("{name}", name).replace("{language}", languageName(locale))
         }
     }
 
     /** The message of a write that changed nothing. */
     fun of(error: NotificationSettingsError): String = get("error.${error.name}")
+
+    /** The label of [profile] in the project choice. */
+    fun profile(profile: ProjectProfile): String = option("profile", profile)
+
+    /** The label of a project voice choice: the global voice for a null id, else as [of] a voice choice. */
+    fun projectVoice(choice: VoiceChoice): String = if (choice.id == null) get("voice.global") else of(choice)
 }
+
+private fun range(
+    key: String,
+    min: Int,
+    max: Int,
+): String = SettingsStrings[key].replace("{min}", min.toString()).replace("{max}", max.toString())
+
+private const val CLOCK_MIN = "00:00"
+private const val CLOCK_MAX = "23:59"

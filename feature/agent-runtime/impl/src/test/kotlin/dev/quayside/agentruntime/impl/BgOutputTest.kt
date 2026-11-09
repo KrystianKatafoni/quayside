@@ -17,7 +17,39 @@ class BgOutputTest {
         BgOutput.sessionId(stdout) shouldBe expected?.let(::SessionId)
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("untrustedOutputs")
+    fun `recognizes the workspace not trusted line of stderr`(
+        @Suppress("UNUSED_PARAMETER") case: String,
+        stderr: String,
+        expected: Boolean,
+    ) {
+        BgOutput.untrusted(stderr) shouldBe expected
+    }
+
     companion object {
+        private const val ESC = "\u001b"
+        private const val REFUSAL = "Workspace not trusted. Run `claude` in /private/p once, then retry."
+
+        private fun recorded(): String =
+            requireNotNull(
+                BgOutputTest::class.java.getResource("/fixtures/cli/recorded/2.1.302-bg-untrusted-workspace.stderr"),
+            ).readText()
+
+        @JvmStatic
+        fun untrustedOutputs(): List<Arguments> =
+            listOf(
+                arguments("recorded 2.1.302 stderr", recorded(), true),
+                arguments("after the service banner", "Starting background service…\n$REFUSAL\n", true),
+                arguments("with ANSI around the line", "$ESC[31m$REFUSAL$ESC[0m\r\n", true),
+                arguments("indented", "  $REFUSAL", true),
+                arguments("lower case", "workspace not trusted. Run claude", false),
+                arguments("behind an Error prefix", "Error: $REFUSAL", false),
+                arguments("the phrase in the middle of a line", "cannot start: $REFUSAL", false),
+                arguments("other failure", "Error: cannot start 'x'", false),
+                arguments("empty", "", false),
+            )
+
         @JvmStatic
         fun outputs(): List<Arguments> =
             listOf(

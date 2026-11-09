@@ -8,7 +8,7 @@ Terminy w tym dokumencie:
 
 Katalog ma **29 motywów**: 9 podstawowych (sekcja „Schematy kolorów”) i 20 motywów z kształtem (sekcja „Motywy z kształtem”). Jasnych jest 12, ciemnych 17, w tym 2 motywy wysokiego kontrastu (`contrast` ciemny, `hc-light` jasny). Motyw i typografia są **niezależne**: każdą z 22 typografii można połączyć z każdym z 29 motywów (638 kombinacji). Wybór odbywa się w *Ustawienia → Wygląd*, z podglądem prawdziwego ekranu Mission Control na żywo.
 
-Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `plex`); terminal JediTerm też od AM-807: domyślny tekst i tło widżetu to `termText` i `termBg`, a font (gdy użytkownik nie wybrał własnego) to font terminala typografii, rejestrowany w AWT przy starcie. Zmiana działa na karty otwierane później (ADR 0016).
+Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `plex`); terminal JediTerm też od AM-807: domyślny tekst i tło widżetu to `termText` i `termBg`, a font (gdy użytkownik nie wybrał własnego) to font terminala typografii, rejestrowany w AWT przy starcie. Zmiana działa na karty otwierane później (ADR 0016). Pasek przewijania terminala (AM-810) rysuje własny UI w kolorach wyprowadzonych z tych dwóch tokenów: tło `termBg` (dziś zakryte przez ścieżkę, zostaje na wypadek mniejszej ścieżki), ścieżka `termBg` z 6 % `termText`, uchwyt `termBg` z najmniejszym udziałem `termText` (45–100 %), przy którym ma ≥ 3:1 względem ścieżki i `termBg` (NFR-6); przy braku historii uchwyt wypełnia ścieżkę.
 
 ## Schematy kolorów (9 podstawowych motywów)
 
@@ -24,17 +24,17 @@ Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `p
 | `rose` | Rose Night | ciemny | `#191724` | `#1F1D2E` | `#E0DEF4` | `#C4A7E7` | `#F6C177` | `#9CCFD8` | `#EB6F92` | `#C4A7E7` | 10 px |
 | `contrast` | Wysoki kontrast | ciemny | `#000000` | `#000000` | `#FFFFFF` | `#FFD400` | `#00E5FF` | `#00FF6A` | `#FF5C5C` | `#FFD400` | 2 px |
 
-Pełny zestaw tokenów kolorów w każdym motywie (także w 20 motywach z kształtem, po wyprowadzeniu brakujących): `bg`, `panel`, `raised`, `sel`, `border`, `border2`, `text`, `muted`, `dim`, `accent`, `accentInk`, `warn`, `warnInk`, `warnBg`, `ok`, `err`, `work`, `termBg`, `termText`. Tokeny kształtu: `radius`, `borderWidth`, `shadow`, `backdrop`. W jasnych motywach terminal zostaje ciemny (`termBg` grafitowy).
+Pełny zestaw tokenów kolorów w każdym motywie (także w 20 motywach z kształtem, po wyprowadzeniu brakujących): `bg`, `panel`, `raised`, `sel`, `border`, `border2`, `text`, `muted`, `dim`, `accent`, `accentInk`, `warn`, `warnInk`, `warnBg`, `ok`, `err`, `work`, `termBg`, `termText`. Tokeny kształtu: `radius`, `borderWidth`, `shadow`, `backdrop`. Terminal ma kolory motywu w obu trybach (`termBg` = `bg`, `termText` = `text`); paleta ANSI jest w tokenie `ansi` (AM-811); dotyczy to także własnych schematów (AM-814), które dostają jasny terminal i skorygowaną paletę tą samą regułą.
 
 **Semantyka kolorów:** `warn` = agent czeka na Ciebie (najważniejszy sygnał w UI), `work` = pracuje, `ok` = gotowe, `err` = błąd, `accent` = akcje główne i zaznaczenie. W schemacie *Amber CRT* akcent jest bursztynowy, więc `warn` jest turkusowy, żeby oba się nie myliły.
 
-Kształt 9 podstawowych motywów: `radius` z tabeli, `borderWidth` 1 px, brak cienia, panel nieprzezroczysty, bez domyślnej typografii (ustalone w AM-801).
+Kształt 9 podstawowych motywów: `radius` z tabeli, `borderWidth` 1 px, brak cienia, panel nieprzezroczysty. Domyślną typografię (`plex`) ma tylko motyw `plex`, pozostałych ośmiu podstawowych motywów jej nie podpowiada (AM-816; wcześniej żaden nie miał, AM-801).
 
 Korekty względem pierwotnej tabeli (test kontrastu AM-801, odcienie `warn`/`ok`/`err`/`accent` ≥ 30°): `paper` `warn` z `#B45309` na `#A16207`, `phosphor` `ok` z `#39FF88` na `#A3E635`, `synth` `ok` z `#34D399` na `#4ADE80`, `rose` `accent` z `#EBBCBA` na `#C4A7E7`.
 
 ### Wyprowadzenie tokenów 9 podstawowych schematów (AM-801)
 
-Tabela wyżej podaje 8 kolorów; pozostałe 11 liczy czysta funkcja `deriveTokens` (mieszanie w kanałach sRGB, zaokrąglone). Reguły oznaczone ★ są nowe: `muted` = `text` zmieszany z `panel` 30 %; `border` = `panel` zmieszany z `text` 12 %. Pozostałe jak w wyprowadzeniu AM-805: `border2` = `border` + `text` 15 %, `dim` = `muted` + `bg` 30 %, `raised` i `sel` z `panel` (`text` 4 %/6 %, `accent` 12 %/18 % w jasnym/ciemnym), `accentInk` i `warnInk` czarne albo białe (większy kontrast), `warnBg` = `panel` + `warn` 15 %, `termBg`/`termText` ciemne (jasne schematy: `#1E242C`, `#E2E8F0`). Reguły dla motywów z kształtem są w „Wyprowadzenie i korekty (AM-805)”.
+Tabela wyżej podaje 8 kolorów; pozostałe 11 liczy czysta funkcja `deriveTokens` (mieszanie w kanałach sRGB, zaokrąglone). Reguły oznaczone ★ są nowe: `muted` = `text` zmieszany z `panel` 30 %; `border` = `panel` zmieszany z `text` 12 %. Pozostałe jak w wyprowadzeniu AM-805: `border2` = `border` + `text` 15 %, `dim` = `muted` + `bg` 30 %, `raised` i `sel` z `panel` (`text` 4 %/6 %, `accent` 12 %/18 % w jasnym/ciemnym), `accentInk` i `warnInk` czarne albo białe (większy kontrast), `warnBg` = `panel` + `warn` 15 %, `termBg` = `bg` i `termText` = `text` w każdym trybie (AM-811), `ansi` jak w „Paleta ANSI terminala (AM-811)”. Reguły dla motywów z kształtem są w „Wyprowadzenie i korekty (AM-805)”.
 
 ## Typografie
 
@@ -93,7 +93,7 @@ Wszystkie dołączane fonty są na licencji SIL Open Font License i można je do
 | --- | --- | --- |
 | `--bg-main` | `bg` | |
 | `--bg-panel` | `panel` | `rgba(…)` → kolor z kanałem alfa, rysowany na `bg` |
-| `--bg-terminal` | `termBg` | podany tylko w `nordic-light`; w pozostałych wyprowadzony (AM-805) |
+| `--bg-terminal` | `termBg` | podany tylko w `nordic-light` (`#1e242c`); od AM-811 ignorowany: `termBg` = `bg` także w `nordic-light` (odstępstwo od pliku źródłowego, decyzja człowieka 2026-11-08); w pozostałych wyprowadzony (AM-805) |
 | `--text-main` | `text` | |
 | `--text-muted` | `muted` | |
 | `--accent` | `accent` | |
@@ -163,7 +163,7 @@ Motywy z kształtem podają 6 kolorów (`bg`, `panel`, `text`, `muted`, `accent`
 | `warnBg` | `warn` z kryciem 15 % na złożonym `panel` |
 | `raised`, `sel` | złożony `panel` zmieszany z `text` (4 % jasny, 6 % ciemny) i z `accent` (12 % jasny, 18 % ciemny) |
 | `border2`, `dim` | `border` zmieszany z `text` (15 %, zachowuje alfę `border`); `muted` zmieszany z `bg` (30 %) |
-| `termBg`, `termText` | ciemny: `bg` i `text`; jasny: `#1E242C` i `#E2E8F0` — terminal zostaje ciemny jak w podstawowych |
+| `termBg`, `termText` | `bg` i `text` w każdym trybie (AM-811); `ansi` wg „Paleta ANSI terminala (AM-811)” |
 
 Kandydaci statusów (kolejność = preferencja; pierwsza trójka bez konfliktu odcieni wygrywa). Jasny motyw: `warn` `#A16207`, `#0F766E`; `ok` `#15803D`, `#4D7C0F`; `err` `#B91C1C`, `#BE185D`. Ciemny motyw: `warn` `#F59E0B`, `#FACC15`, `#5EEAD4`; `ok` `#4ADE80`, `#A3E635`; `err` `#F87171`, `#FF6E40`, `#FB7185`. Brak trójki przerywa budowę katalogu błędem. Odstępstwa od pierwszych kandydatów: `term-light` i `emerald-light` (`ok` `#4D7C0F`), `oatmeal-light` (`warn` `#0F766E`, `err` `#BE185D`), `monokai` (`warn` `#FACC15`, `err` `#FF6E40`), `gruvbox` (`warn` `#5EEAD4`, `ok` `#A3E635`, `err` `#FB7185`), `cyberpunk` (`ok` `#A3E635`), `deep-abyss` (`warn` `#5EEAD4`, `ok` `#A3E635`). Granicznie przechodzą: `dracula` (`err`~`accent` 34,5°), `teal-light` (`ok`~`accent` 32,3°), `oatmeal-light` (`warn`~`ok` 32,9°).
 
@@ -178,6 +178,12 @@ Test kontrastu (doc 12) obejmuje pary `muted/bg` i `muted/panel` (panel półprz
 Bez zmian (już przechodzą): `hc-light`, `teal-light`, `glass-light` (4,51:1 na złożonym `panel`, granicznie), `midnight-pro`, `cyberpunk`, `nord-dark`, `minimal-black`.
 
 Uwagi do oceny wzrokowej w AM-803: w `cyberpunk` `muted` (magenta) przechodzi kontrast, ale jest bardziej jaskrawy niż `text` — przeczy roli „przygaszony”; w `minimal-black` `accent` = `text` (`#FFFFFF`), więc zaznaczenie i akcje główne nie różnią się od tekstu; w `emerald-light` `muted` po korekcie jest ciemniejszy od `accent`.
+
+### Paleta ANSI terminala (AM-811)
+
+Baza to 16 kolorów xterm z JediTerm 3.76 (`ColorPaletteImpl`): `000000 CD0000 00CD00 CDCD00 1E90FF CD00CD 00CDCD E5E5E5 4C4C4C FF0000 00FF00 FFFF00 4682B4 FF00FF 00FFFF FFFFFF`. Funkcja `deriveTerminal(bg, text, dark)` poprawia każdy kolor regułą `readableOn` względem `termBg` (= `bg`): najmniejsze zmieszanie ku bieli (ciemny motyw) albo ku czerni (jasny) dające kontrast ≥ 4,5:1; kolor, który już przechodzi, zostaje. Wyjątek: kolor tła trybu (indeks 0 w ciemnym, 15 w jasnym) zostaje bez zmian. Zmiana dotyczy także ciemnych motywów (np. czerwony `#CD0000` na `#0B0A10` ma 3,4:1 i jaśnieje). Zaznaczenie i kursor to odwrócona para `termText`/`termBg`. Zmiana palety działa na karty otwierane później (ADR 0016). Szczegóły: ADR 0027.
+
+Rada: programy z kolorami 24-bit dobranymi pod ciemne tło (np. motyw `dark` w Claude Code) bywają nieczytelne na jasnym terminalu. W Claude Code ustaw `/theme light` albo `light-ansi` (kolory z palety terminala).
 
 ### Korekta kontrastu ekranów (AM-803)
 
@@ -208,6 +214,27 @@ Znak (ikona) ma ten sam wybór z progiem 3:1 (WCAG 1.4.11). Plakietka licznika n
 
 **Hierarchia przycisków z tekstem (AM-809, arkusz C).** `AmButton` ma trzy rodzaje: `PRIMARY` (`accentInk` na `accent`, jeden na widok), `SECONDARY` (`text` na `raised`, obrys `border2`) i `DANGER` (obrys `tinted(err)` 35 %, etykieta `err`, bez wypełnienia; gdy `err` ma na `panel` mniej niż 4,5:1, etykieta jest w kolorze `text`). Opcjonalnie ma ikonę 16 dp przed tekstem i skrót za tekstem (kolor etykiety, bez ramki; odczytywany razem z etykietą). W panelu szczegółów kolejność jest zawsze taka: główna, zwykłe, groźne osobno. Przyciski na ekranach (poza oknami dialogowymi) są niefokusowalne, żeby Spacja i Enter trafiały do skrótów okna. Kolor znaku stanu (ikona, kafelek) to `StatusTone.markColor()`.
 
+## Promienie pochodne i role tekstu (AM-816)
+
+Źródło: mockupy z 2026-11-04, iteracja 2. Nowe tokeny nie powstają: `core:design-system` wylicza promienie z tokenu `radius` (r). Wiersz = r + 2, karta = r + 4, kafelek ikony = r + 2, licznik = pełne koło (kwadrat przy r = 0). Przy r = 0 wszystkie promienie są 0, więc motywy kwadratowe zostają kwadratowe.
+
+| r | wiersz | karta | kafelek |
+| --- | --- | --- | --- |
+| 0 | 0 | 0 | 0 |
+| 2 | 4 | 6 | 4 |
+| 8 (`plex`) | 10 | 12 | 10 |
+| 16 | 18 | 20 | 18 |
+
+Wiersz: zaznaczony projekt lub widok (tło `sel`, ramka `accent`), wiersz `AmListRow`, segmenty filtra. Karta: `AmPanel`, `AmStatCard`, lista sesji, ramka pól szczegółów, ramka panelu terminala (widżetu Swing nie da się przyciąć do zaokrąglenia, więc ma odstęp co najmniej r·(1 − 1/√2) i 2 dp od ramki). Kafelek: `AmIconTile`. Licznik: `AmCounter`, najmniej 22 dp, czyta się jego opis („2 czekają”), a nie sama liczba.
+
+Dwie nowe role tekstu obok TITLE, HEADING, BODY, CAPTION i CODE: `NAME` (mono, 15 sp, SemiBold: nazwy sesji w wierszach, w panelu szczegółów, na pasku sesji i w okruszkach trybu terminala) oraz `LABEL` (UI, 11 sp, SemiBold, odstęp liter 0,12 em: „PROJEKTY”, „WIDOKI”, „PODSUMOWANIE”; wielkie litery są w tekstach). Kolory zawsze z tokenów: `LABEL` jest w `muted` na `panel` (≥ 4,5:1 w audycie).
+
+## Logo (AM-822)
+
+Znak Quayside to latarnia na ciemnym kaflu ([ADR 0030](adr/0030-logo-svg-w-zasobach-skia-svgdom.md)). Dwa rysunki SVG w zasobach `core/design-system/src/main/resources/logo/`: pełny `quayside-logo.svg` (viewBox 32, od 32 dp) i uproszczony `quayside-logo-16.svg` (viewBox 16, poniżej 32 dp, np. 20 dp w górnym pasku). Kolory są stałe (kafel `#1E1930`, wiązka `#FBBF24`, latarnia `#E8E5F2`, głowica i podstawa `#A78BFA`, czubek latarni w pełnym rysunku `#C4B5FD`), więc znak wygląda tak samo w jasnych i ciemnych motywach i nie zmienia się z `LocalTextColor`. Znak nie jest klikalny ani fokusowalny; ma etykietę dostępności albo jest dekoracją.
+
+Słowo „Quayside” (`AmWordmark`) to jeden węzeł tekstu w IBM Plex Sans SemiBold 15 sp niezależnie od typografii motywu: „Quay” w `text`, „side” w kolorze `wordmarkAccent()`. Akcent zostaje, gdy ma 4,5:1 na `panel` (rysowanym na `bg`); w przeciwnym razie jest mieszany w stronę `text` krokami po 5%, aż kontrast wystarczy (NFR-6). Ikona okna to ten sam rysunek (32 dp), ikona Docka to `amLogoImage(256)` przez `java.awt.Taskbar`; plik `.icns` robi AM-901.
+
 ## Pozostałe ustawienia wyglądu
 
 | Ustawienie | Opcje |
@@ -236,7 +263,7 @@ Znak (ikona) ma ten sam wybór z progiem 3:1 (WCAG 1.4.11). Plakietka licznika n
 }
 ```
 
-Format ustala [ADR 0023](adr/0023-format-theme-json-i-tryb-macos.md). Koperta `schemaVersion` + `data` jest taka sama jak w pozostałych plikach konfiguracji (`JsonStore`). `uiScale` przyjmuje `S`, `M`, `L`, a `density` `COMPACT` lub `COMFORTABLE`. Sekcji `terminal` nie ma: font i rozmiar terminala zostają w `terminal.json` (ADR 0016). Sekcji `customSchemes` też nie ma: własne schematy kolorów to osobne zadanie.
+Format ustala [ADR 0023](adr/0023-format-theme-json-i-tryb-macos.md). Koperta `schemaVersion` + `data` jest taka sama jak w pozostałych plikach konfiguracji (`JsonStore`). `uiScale` przyjmuje `S`, `M`, `L`, a `density` `COMPACT` lub `COMFORTABLE`. Sekcji `terminal` nie ma: font i rozmiar terminala zostają w `terminal.json` (ADR 0016). Pole `customSchemes` (opcjonalna tablica własnych schematów: `key`, `name`, `mode`, `radius` i osiem kolorów `#RRGGBB` z tabeli) pojawia się tylko wtedy, gdy są własne schematy; schemat wchodzi do katalogu po audycie kontrastu NFR-6, a „Importuj schemat…” na ekranie Wygląd dodaje schematy z pliku od razu (zapis bez „Zastosuj”). Okno Wygląd ma też edytor schematu („Nowy schemat…”: klucz, nazwa, promień, tryb i osiem kolorów z raportem kontrastu i próbką), „Usuń schemat” i „Eksportuj schemat…” dla wybranego własnego schematu (AM-820). Szczegóły w uzupełnieniach ADR 0023 (AM-814, AM-820).
 
 Plik leży w `~/Library/Application Support/Quayside/theme.json`. Pola `scheme`, `dayScheme` i `nightScheme` przyjmują klucz każdego z 29 motywów. Wybór motywu nie zmienia `typography` — ekran Wygląd tylko podpowiada domyślną typografię motywu.
 

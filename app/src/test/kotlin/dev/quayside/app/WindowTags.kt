@@ -28,8 +28,25 @@ internal object WindowTags {
     const val SIDEBAR = "projects.sidebar"
     const val ADD_BUTTON = "projects.add"
     const val MODE_BAR = "missionControl.modeBar"
+
+    /** The top bar of the window (AM-816): `TopBarTags` of `app`, the bell of `mission-control:ui`. */
+    const val TOP_BAR = "app.topBar"
+    const val CRUMBS = "app.topBar.crumbs"
+    const val SEARCH = "app.topBar.search"
+    const val VOICE_CHIP = "app.topBar.voice"
+    const val BELL = "missionControl.alertsBell"
+
+    /** The hints under the list, the cheat sheet toggle and "Dodaj projekt z dysku…" (`internal` there). */
+    const val KEY_HINTS = "missionControl.keyHints"
+    const val SHORTCUTS_TOGGLE = "missionControl.shortcuts.toggle"
+    const val SHORTCUTS = "missionControl.shortcuts"
+    const val ADD_FROM_DISK = "projects.addFromDisk"
     const val HEADER = "missionControl.header"
+    const val ROW_MENU_REMOVE = "projects.row.menu.remove"
+    const val CONFIRM_REMOVE_PROJECT = "projects.dialog.remove"
+    const val UNINSTALL_PROJECT_HOOKS = "projects.dialog.remove.hooks.uninstall"
     const val RENAME_DIALOG = "projects.dialog.rename"
+    const val SUBFOLDERS_DIALOG = "projects.dialog.subfolders"
     const val RENAME_FIELD = "projects.dialog.rename.field"
     const val RENAME_SAVE = "projects.dialog.rename.save"
 
@@ -43,12 +60,29 @@ internal object WindowTags {
     const val SESSION_BAR_REPLY = "missionControl.sessionBar.reply"
     const val RAIL = "projects.rail"
 
+    /** The ⋯ button of the sidebar row of a project (`projects:ui`, `internal` there). */
+    fun rowMenu(projectId: String): String = "projects.row.$projectId.menu"
+
     fun railButton(projectId: String): String = "projects.rail.$projectId"
 
-    /** The "Nowy agent" button and dialog (AM-608); tags of `mission-control:ui`, `internal` there. */
-    const val NEW_AGENT_BUTTON = "missionControl.newAgent"
+    /** A group in the sidebar (AM-306, `projects:ui`, `internal` there): a subfolder row and the chevron. */
+    fun subfolderRow(
+        projectId: String,
+        name: String,
+    ): String = "projects.row.$projectId.sub.$name"
+
+    fun chevron(projectId: String): String = "projects.row.$projectId.chevron"
+
+    /** The group overview on the project page (AM-307, `internal` in `mission-control:ui`) and its subfolder row. */
+    const val OVERVIEW = "missionControl.overview"
+
+    fun overviewRow(name: String): String = "missionControl.overview.row.$name"
+
+    /** The "Nowy agent" button of the top bar (AM-816, `TopBarTags.NEW_AGENT`) and the dialog (AM-608). */
+    const val NEW_AGENT_BUTTON = "app.topBar.newAgent"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"
     const val NEW_AGENT_PROJECT = "missionControl.newAgent.project"
+    const val NEW_AGENT_SUBFOLDER = "missionControl.newAgent.subfolder"
     const val NEW_AGENT_PROMPT = "missionControl.newAgent.prompt"
     const val NEW_AGENT_NAME = "missionControl.newAgent.name"
     const val NEW_AGENT_AGENT = "missionControl.newAgent.agent"
@@ -57,6 +91,10 @@ internal object WindowTags {
     const val NEW_AGENT_PROBLEM = "missionControl.newAgent.problem"
     const val NEW_AGENT_CANCEL = "missionControl.newAgent.cancel"
     const val NEW_AGENT_START = "missionControl.newAgent.start"
+    const val NEW_AGENT_TRUST = "missionControl.newAgent.trust"
+    const val NEW_AGENT_TRUST_PATH = "missionControl.newAgent.trust.path"
+    const val NEW_AGENT_TRUST_CANCEL = "missionControl.newAgent.trust.cancel"
+    const val NEW_AGENT_TRUST_ACCEPT = "missionControl.newAgent.trust.accept"
 
     /** The terminal settings dialog (AM-508) and its parts; tags of `terminal:ui`, `internal` there. */
     const val SETTINGS_DIALOG = "terminal.settings"
@@ -66,10 +104,21 @@ internal object WindowTags {
 
     /** The notification settings dialog (AM-704); tags of `notifications:ui`, `internal` there. */
     const val NOTIFICATION_SETTINGS_DIALOG = "notifications.settings"
+    const val SUMMARY_SETTINGS_DIALOG = "summaries.settings"
+    const val SUMMARY_USE_MODEL = "summaries.settings.useModel"
+    const val SUMMARY_SETTINGS_SAVE = "summaries.settings.save"
+    const val SUMMARY_RESTART_NOTE = "summaries.settings.restartNote"
     const val NOTIFICATION_SETTINGS_SAVE = "notifications.settings.save"
+    const val NOTIFICATION_SETTINGS_CANCEL = "notifications.settings.cancel"
     const val NOTIFICATION_POPUP_POSITION = "notifications.settings.popup.position"
     const val NOTIFICATION_SPEECH_VOICE = "notifications.settings.speech.voice"
+    const val NOTIFICATION_PREVIEW = "notifications.settings.speech.preview"
     const val NOTIFICATION_SPEECH_RATE = "notifications.settings.speech.rate"
+    const val NOTIFICATION_QUIET_ENABLED = "notifications.settings.quiet.enabled"
+    const val NOTIFICATION_QUIET_FROM = "notifications.settings.quiet.from"
+    const val NOTIFICATION_QUIET_TO = "notifications.settings.quiet.to"
+
+    fun notificationProjectProfile(id: String): String = "notifications.settings.projects.profile.$id"
 
     fun notificationCell(
         kind: NotificationKind,

@@ -25,6 +25,7 @@ import dev.quayside.core.testing.T0
 import dev.quayside.core.testing.TestClock
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionState
@@ -68,7 +69,7 @@ internal class SessionOpenScreenTest {
                         MissionControlController(
                             SessionsApi(monitor, FakeSessions()),
                             FakeProjectsApi(initial = listOf(project)),
-                            MutableStateFlow(project.id),
+                            MutableStateFlow<ProjectFocus?>(ProjectFocus(project.id)),
                             TestClock(T0.plusSeconds(600)),
                             scope,
                             NoOpLogger,
@@ -217,23 +218,5 @@ internal class SessionOpenScreenTest {
             select(finished)
             select(working)
             has(MissionControlTags.ROW_MENU) shouldBe false
-        }
-
-    @Test
-    fun `FR-K3 the cheat sheet is closed at first and the toggle opens and closes it`() =
-        runComposeUiTest {
-            // Given the window
-            show()
-            await(MissionControlTags.MODE_BAR)
-            has(MissionControlTags.SHORTCUTS) shouldBe false
-
-            // When the user clicks "Skróty"
-            await(MissionControlTags.SHORTCUTS_TOGGLE).performClick()
-
-            // Then the list of shortcuts shows, and a second click hides it
-            await(MissionControlTags.SHORTCUTS)
-            onNodeWithTag(MissionControlTags.SHORTCUTS_TOGGLE).assertIsNotFocused()
-            await(MissionControlTags.SHORTCUTS_TOGGLE).performClick()
-            waitUntilDoesNotExist(hasTestTag(MissionControlTags.SHORTCUTS))
         }
 }

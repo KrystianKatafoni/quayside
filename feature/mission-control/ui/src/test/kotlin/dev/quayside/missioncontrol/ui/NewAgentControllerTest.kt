@@ -207,7 +207,7 @@ internal class NewAgentControllerTest : NewAgentControllerFixture() {
             val controller = opened()
             controller.edit(prompt = "keep me", name = "keep-name")
             val form = controller.shown().form
-            fake.failNext(trusting)
+            fake.failNext(refused)
 
             submit(controller)
 
@@ -216,7 +216,7 @@ internal class NewAgentControllerTest : NewAgentControllerFixture() {
                     form,
                     PROJECTS,
                     busy = false,
-                    problem = NewAgentProblem.StartFailed(NewAgentRules.failureOf(trusting)),
+                    problem = NewAgentProblem.StartFailed(NewAgentRules.failureOf(refused)),
                 )
             started.shouldBeEmpty()
         }
@@ -246,7 +246,7 @@ internal class NewAgentControllerTest : NewAgentControllerFixture() {
             val commands = RecordingCommands(fake)
             val controller = opened(commands)
             controller.edit()
-            fake.failNext(trusting)
+            fake.failNext(refused)
             submit(controller)
             controller.shown().problem.shouldNotBeNull()
 

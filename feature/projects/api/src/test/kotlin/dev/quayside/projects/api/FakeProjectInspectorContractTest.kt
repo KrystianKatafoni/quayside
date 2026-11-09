@@ -7,5 +7,10 @@ class FakeProjectInspectorContractTest : ProjectInspectorContract() {
         tempDir: Path,
         world: InspectionWorld,
     ): ProjectInspector =
-        FakeProjectInspector(world = world, pathKind = PathKind::onDisk, realPath = PathKind::realPathOnDisk)
+        FakeProjectInspector(
+            world = world,
+            pathKind = PathKind::onDisk,
+            realPath = PathKind::realPathOnDisk,
+            listing = DirEntry::onDisk,
+        )
 }

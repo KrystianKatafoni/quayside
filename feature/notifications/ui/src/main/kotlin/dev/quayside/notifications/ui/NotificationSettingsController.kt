@@ -7,7 +7,11 @@ import dev.quayside.notifications.api.NotificationSettingsRepo
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceCatalog
 import dev.quayside.notifications.api.VoiceOption
+import dev.quayside.notifications.api.VoicePreview
+import dev.quayside.projects.api.Project
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -16,6 +20,7 @@ import kotlinx.coroutines.launch
 /**
  * The open dialog. [invalid]: the field the last save refused. [saveError]: why the last write changed nothing.
  * [voices]: the installed voices; null while loading or after a failure, then [voicesFailed] tells which.
+ * [previewing]: a voice sample plays. [previewFailed]: the last sample failed (an edit clears it).
  */
 public data class NotificationDialogState(
     val draft: NotificationDraft,
@@ -23,17 +28,23 @@ public data class NotificationDialogState(
     val saveError: NotificationSettingsError?,
     val voices: List<VoiceOption>? = null,
     val voicesFailed: Boolean = false,
+    val previewing: Boolean = false,
+    val previewFailed: Boolean = false,
 )
 
 /**
- * Logic of the "Ustawienia powiadomień" dialog (FR-N1, FR-N2). Main thread; [save] writes in [scope], one write at
- * a time (`saving` is set by [save], cleared when the write ends or the dialog is opened or cancelled), a result
- * arriving after cancel is dropped. An edit made while a write runs is lost when the write ends Ok, because the dialog
- * closes. Logs nothing (the values are the user's).
+ * Logic of the "Ustawienia powiadomień" dialog (FR-N1, FR-N2, FR-N4 voice sample, FR-N6 quiet hours, FR-N7
+ * project exceptions). Main thread. [projects]: the registered projects, read at every [open]; the exceptions of
+ * other projects are kept as stored. [save] writes in [scope], one write at a time (`saving` is set by [save],
+ * cleared when the write ends or the dialog is opened or cancelled), a result arriving after cancel is dropped.
+ * An edit made while a write runs is lost when the write ends Ok, because the dialog closes. Logs nothing (the
+ * values are the user's).
  */
 public class NotificationSettingsController(
     private val repo: NotificationSettingsRepo,
     private val voices: VoiceCatalog,
+    private val preview: VoicePreview,
+    private val projects: StateFlow<List<Project>>,
     private val scope: CoroutineScope,
 ) {
     private val dialog = MutableStateFlow<NotificationDialogState?>(null)
@@ -45,18 +56,21 @@ public class NotificationSettingsController(
     private var saving = false
     private var voiceList: List<VoiceOption>? = null
     private var loadingVoices = false
+    private var previewGeneration = 0
+    private var previewJob: Job? = null
 
     /** Opens the dialog with a draft of the saved settings; the first open also starts loading the voices. */
     public fun open() {
+        stopPreview()
         generation++
         saving = false
-        dialog.value = NotificationDialogState(draftOf(repo.settings.value), null, null, voiceList)
+        dialog.value = NotificationDialogState(draftOf(repo.settings.value, projects.value), null, null, voiceList)
         loadVoices()
     }
 
-    /** Changes the draft; clears the invalid field and the save error. */
+    /** Changes the draft; clears the invalid field, the save error and the failed sample. */
     public fun edit(change: (NotificationDraft) -> NotificationDraft) {
-        dialog.update { it?.copy(draft = change(it.draft), invalid = null, saveError = null) }
+        dialog.update { it?.copy(draft = change(it.draft), invalid = null, saveError = null, previewFailed = false) }
     }
 
     /** Saves the draft over the current settings; closes on success, else shows the invalid field or the error. */
@@ -83,8 +97,42 @@ public class NotificationSettingsController(
         edit { it.copy(speech = it.speech.copy(templates = it.speech.templates + (kind to default))) }
     }
 
+    /**
+     * Starts the sample of the drafted voice, or stops the one that plays. One sample at a time; open, cancel and
+     * a successful save stop it; a result after a stop is dropped (generation).
+     */
+    public fun togglePreview() {
+        val current = dialog.value ?: return
+        if (previewJob != null) {
+            stopPreview()
+            dialog.update { it?.copy(previewing = false) }
+            return
+        }
+        val sample = previewSample(current.draft.speech, repo.settings.value.speech, current.voices)
+        val mine = ++previewGeneration
+        dialog.update { it?.copy(previewing = true, previewFailed = false) }
+        // Lazy: `previewJob` is set before the body can run, whatever the dispatcher.
+        val job =
+            scope.launch(start = CoroutineStart.LAZY) {
+                val result = preview.play(sample)
+                if (mine == previewGeneration) {
+                    previewJob = null
+                    dialog.update { it?.copy(previewing = false, previewFailed = result is Outcome.Err) }
+                }
+            }
+        previewJob = job
+        job.start()
+    }
+
+    private fun stopPreview() {
+        previewGeneration++
+        previewJob?.cancel()
+        previewJob = null
+    }
+
     /** Closes the dialog and drops the draft. */
     public fun cancel() {
+        stopPreview()
         generation++
         saving = false
         dialog.value = null
@@ -118,8 +166,14 @@ public class NotificationSettingsController(
     private fun finish(result: Outcome<Unit, NotificationSettingsError>) {
         saving = false
         when (result) {
-            is Outcome.Ok -> dialog.value = null
-            is Outcome.Err -> dialog.update { it?.copy(saveError = result.error) }
+            is Outcome.Ok -> {
+                stopPreview()
+                dialog.value = null
+            }
+
+            is Outcome.Err -> {
+                dialog.update { it?.copy(saveError = result.error) }
+            }
         }
     }
 }

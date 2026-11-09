@@ -7,6 +7,7 @@ import dev.quayside.agentruntime.api.HookStatus
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.warn
+import dev.quayside.projects.ui.ProjectHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,24 +22,44 @@ internal class HookDeps(
     val installer: HookInstaller,
     val backupDir: Path,
     val offer: HookOfferStore,
+    val targets: HookTargetSource,
+    val projectHooks: ProjectHooks,
 )
 
-/**
- * The open "Hooki Claude Code" dialog. [status] is null while it is read; [busy] while install or uninstall runs;
- * [firstRun] marks the start offer, where the close button is "Pomiń" and remembers the choice.
- */
-internal data class HookDialogState(
+/** One row of the dialog. [status] is null while it is read or when the project folder is missing. */
+internal data class HookRow(
+    val target: HookTarget,
     val status: HookStatus?,
+)
+
+/** The open dialog; [selected] indexes [rows]. Buttons act on the selected row (AM-609). */
+internal data class HookDialogState(
+    val rows: List<HookRow>,
+    val selected: Int = 0,
     val busy: Boolean = false,
     val notice: HookNotice? = null,
     val firstRun: Boolean = false,
 ) {
+    val current: HookRow get() = rows[selected]
+
+    private val present: Boolean get() = current.target.isPresent()
+
     /** Install adds the missing hooks: possible when some are missing. */
-    val canInstall: Boolean get() = !busy && (status is HookStatus.NotInstalled || status is HookStatus.Partial)
+    val canInstall: Boolean
+        get() = !busy && present && (current.status is HookStatus.NotInstalled || current.status is HookStatus.Partial)
 
     /** Uninstall removes our hooks: possible when some are there. */
-    val canUninstall: Boolean get() = !busy && (status is HookStatus.Installed || status is HookStatus.Partial)
+    val canUninstall: Boolean
+        get() = !busy && present && (current.status is HookStatus.Installed || current.status is HookStatus.Partial)
 }
+
+/** False for a project whose folder is gone. */
+internal fun HookTarget.isPresent(): Boolean = (this as? HookTarget.Project)?.present != false
+
+private fun HookDialogState.withStatus(
+    target: HookTarget,
+    status: HookStatus,
+): HookDialogState = copy(rows = rows.map { if (it.target == target) it.copy(status = status) else it })
 
 /** What the last action did. Shows the file path and a fixed text per error type, never file content (ENG-C8). */
 internal sealed interface HookNotice {
@@ -52,12 +73,14 @@ internal sealed interface HookNotice {
 }
 
 /**
- * Logic of the dialog, scope [HookScope.Global] only. Methods run on Main; IO runs in [scope] (the window scope),
- * one action at a time; a result that arrives after [close] is dropped. Logs only the error type, no paths.
+ * Logic of the dialog: the selected target of [targets] (global or a project). Methods run on Main; IO runs in [scope]
+ * (the window scope), one action at a time; a result that arrives after [close] is dropped. Logs only the error
+ * type and the target kind, no paths.
  */
 internal class HookSetupController(
     private val installer: HookInstaller,
     private val offer: HookOfferStore,
+    private val targets: HookTargetSource,
     private val scope: CoroutineScope,
     private val logger: Logger,
 ) {
@@ -66,22 +89,32 @@ internal class HookSetupController(
 
     // Counts the dialog's lives: a coroutine of an earlier life must not touch the current state.
     private var life = 0
+    private var fetched = false // the targets of the current life are known
     private var reading: Job? = null
     private var acting: Job? = null
 
     /** Opens the dialog and reads the status; the settings file is not changed. */
     fun open() {
         life++
-        mutable.value = HookDialogState(status = null, busy = acting?.isActive == true)
-        readStatus()
+        fetched = false
+        val global = listOf(HookRow(HookTarget.Global, null))
+        mutable.value = HookDialogState(rows = global, busy = acting?.isActive == true)
+        load(fetch = true)
     }
 
     /** Adds the missing hooks, then reads the status again. */
-    fun install() = perform(HookNotice.Installed, { it.canInstall }) { installer.install(HookScope.Global) }
+    fun install() = perform(HookNotice.Installed, { it.canInstall }) { installer.install(it.scope) }
 
     /** Removes only our hooks (no backup restore), then reads the status again and remembers the choice. */
     fun uninstall() =
-        perform(HookNotice.Uninstalled, { it.canUninstall }) { installer.uninstall(HookScope.Global, backup = null) }
+        perform(HookNotice.Uninstalled, { it.canUninstall }) { installer.uninstall(it.scope, backup = null) }
+
+    /** Selects the row [index]; ignored while busy or out of range; clears the notice. */
+    fun select(index: Int) {
+        val current = mutable.value ?: return
+        if (current.busy || index !in current.rows.indices) return
+        mutable.value = current.copy(selected = index, notice = null)
+    }
 
     /** Closes the dialog; in the start offer ("Pomiń") it also remembers the choice. */
     fun close() {
@@ -101,18 +134,32 @@ internal class HookSetupController(
             // The user opened or closed the dialog meanwhile: the offer is late.
             if (mine == life && mutable.value == null && HookOffer.shouldOffer(status, dismissed)) {
                 life++
-                mutable.value = HookDialogState(status, firstRun = true)
+                mutable.value = HookDialogState(listOf(HookRow(HookTarget.Global, status)), firstRun = true)
             }
         }
     }
 
-    private fun readStatus() {
+    /** Reads the targets when [fetch] (once per life), then the status of every present one, one after another. */
+    private fun load(fetch: Boolean) {
         val mine = life
         reading?.cancel()
         reading =
             scope.launch {
-                val status = installer.status(HookScope.Global)
-                change(mine) { it.copy(status = status) }
+                if (fetch) {
+                    val found = targets.targets().map { HookRow(it, null) }
+                    if (mine == life) fetched = true
+                    change(mine) { it.copy(rows = found, selected = it.selected.coerceIn(found.indices)) }
+                }
+                val present =
+                    mutable.value
+                        ?.rows
+                        .orEmpty()
+                        .map { it.target }
+                        .filter { it.isPresent() }
+                for (target in present) {
+                    val status = installer.status(target.scope)
+                    change(mine) { it.withStatus(target, status) }
+                }
             }
     }
 
@@ -123,47 +170,46 @@ internal class HookSetupController(
     private fun perform(
         success: HookNotice,
         allowed: (HookDialogState) -> Boolean,
-        action: suspend () -> Outcome<*, HookError>,
+        action: suspend (HookTarget) -> Outcome<*, HookError>,
     ) {
         val current = mutable.value ?: return
         if (!allowed(current) || acting?.isActive == true) return
         val mine = life
+        val target = current.current.target
         mutable.value = current.copy(busy = true)
         acting =
             scope.launch {
                 try {
-                    finish(mine, success, action())
+                    finish(mine, target, success, action(target))
                 } finally {
-                    release(mine)
+                    // The dialog (of any life) is free again; a dialog opened meanwhile reads the status anew.
+                    mutable.update { it?.copy(busy = false) }
+                    val shown = mutable.value
+                    if (shown != null && mine != life) load(fetch = !fetched && !shown.firstRun)
                 }
             }
     }
 
     private suspend fun finish(
         mine: Int,
+        target: HookTarget,
         success: HookNotice,
         result: Outcome<*, HookError>,
     ) {
         val notice =
             when (result) {
                 is Outcome.Ok -> {
-                    success.also { if (it == HookNotice.Uninstalled) rememberChoice() }
+                    success.also { if (it == HookNotice.Uninstalled && target == HookTarget.Global) rememberChoice() }
                 }
 
                 is Outcome.Err -> {
-                    logger.warn("hooks action failed", "error" to result.error::class.simpleName)
+                    logger.warn("hooks action failed", "error" to result.error::class.simpleName, "kind" to target.kind)
                     HookNotice.Failed(result.error)
                 }
             }
         // Also after a failure: the file may have changed behind the dialog.
-        val status = installer.status(HookScope.Global)
-        change(mine) { it.copy(status = status, notice = notice) }
-    }
-
-    /** The action ended: the dialog (of any life) is free again; a dialog opened meanwhile reads the status anew. */
-    private fun release(mine: Int) {
-        mutable.update { it?.copy(busy = false) }
-        if (mine != life && mutable.value != null) readStatus()
+        val status = installer.status(target.scope)
+        change(mine) { it.withStatus(target, status).copy(notice = notice) }
     }
 
     private fun change(

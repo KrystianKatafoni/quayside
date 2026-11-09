@@ -38,4 +38,32 @@ AM-804 (FR-A5, FR-A6) utrwala ustawienia wyglądu, dodaje przełączanie motywu 
 - Nowe pole w v1: dodać z wartością domyślną, bez migracji. Zmiana znaczenia pola wymaga `schemaVersion = 2`.
 - Gdy tryb „Automatycznie” w macOS nie aktualizuje `AppleInterfaceStyle` albo koszt odpytywania okaże się zauważalny, przechodzimy na opcję B (nowy ADR).
 - Pierwszy odczyt trybu jest w `runBlocking` w `main`, więc przy ciężkim profilu powłoki może opóźnić pierwsze okno do 2 s; przy profilu wolniejszym niż 2 s tryb się nie wczyta (jeden WARN) i obowiązuje zapisany `scheme` do pierwszego udanego odczytu.
-- Własne schematy kolorów (FR-A6, część „własny schemat”) wymagają osobnego zadania: katalog zmienny w czasie i walidacja kontrastu importowanych kolorów.
+- Własne schematy kolorów (FR-A6, część „własny schemat”) wymagają osobnego zadania: katalog zmienny w czasie i walidacja kontrastu importowanych kolorów (zrobione w AM-814, patrz „Uzupełnienie”).
+
+## Uzupełnienie (AM-814): własne schematy kolorów
+
+Format v1 dostaje opcjonalne pole `data.customSchemes` (tablica); zgodnie z ADR 0024 zapisujemy je tylko wtedy, gdy są jakieś schematy, więc bez własnych schematów plik wygląda jak dotąd i nie wymaga migracji.
+
+```json
+"customSchemes": [{"key": "moj", "name": "Mój", "mode": "DARK", "radius": 8,
+  "colors": {"bg": "#111111", "panel": "#161616", "text": "#EDEDED", "accent": "#60A5FA",
+             "warn": "#F59E0B", "ok": "#4ADE80", "err": "#F87171", "work": "#22D3EE"}}]
+```
+
+Decyzje:
+
+- Schemat to osiem kolorów z tabeli docs/08, promień rogu 0–24 i tryb; pozostałe tokeny wyprowadza ta sama reguła co dla motywów podstawowych (`deriveTokens`, z korektą kontrastu statusów i `muted`). Kształt jest płaski (obramowanie 1, bez cienia, panel kryjący), typografia nie jest podpowiadana.
+- Schemat wchodzi do katalogu tylko po audycie NFR-6 (`ContrastAudit`, przeniesiony z `testFixtures` do `main` w `core:design-tokens`) i gdy jego klucz jest wolny (klucze podstawowe i wcześniejsze własne są zajęte). Zły schemat w pliku przy starcie jest po cichu pomijany (jeden WARN z kluczem `customSchemes`, bez wartości).
+- `AppearanceApi.catalog` jest `StateFlow<ThemeCatalog>` (zmiana łamiąca); rośnie po `addScheme`. `AppearanceSettings.customSchemes` zmienia wyłącznie `addScheme`, a `update` zachowuje zapisane schematy.
+- Import schematu (`ThemeFiles.readSchemes`) czyta `customSchemes` ścisło (zły element = `InvalidValue`) z każdego pliku motywu; eksport zapisuje schematy razem z ustawieniami, więc wyeksportowany plik wraca przez „Importuj schemat…”. Zwykłe „Importuj…” ignoruje `customSchemes`; id schematu spoza katalogu to `InvalidValue`, więc schematy trzeba zaimportować najpierw.
+- Poza zakresem (osobne zadanie): edytor kolorów w aplikacji i usuwanie własnych schematów (ręcznie przez `theme.json`); zrobił je AM-820, patrz niżej.
+
+## Uzupełnienie (AM-820): edytor, usuwanie i eksport schematu
+
+Format pliku się nie zmienia. `AppearanceApi` dostaje dwie operacje, a `SchemeError` dwa warianty:
+
+- `previewScheme(scheme)`: czysta odpowiedź, jaką dałby `addScheme`, bez zapisu (`Taken`, `LowContrast` albo gotowy `ThemeSpec`); z niej korzysta raport kontrastu i próbka w edytorze, więc reguły audytu są w jednym miejscu (`impl`).
+- `removeScheme(id)`: usuwa własny schemat, zapisuje `theme.json` i publikuje nowy katalog. `NotFound` dla motywu podstawowego i nieznanego klucza, `InUse` gdy klucz jest zapisanym motywem albo motywem dnia lub nocy (także przy wyłączonym dniu i nocy, bo to zapisane ustawienia), `StorageFailed` gdy pliku nie da się zapisać. Zasada „odmowa, gdy wybrany” chroni przed zapisanymi ustawieniami wskazującymi nieistniejący motyw.
+- Eksport pojedynczego schematu nie ma osobnej operacji: ekran woła `ThemeFiles.write` z domyślnymi ustawieniami i jednym schematem, więc plik wraca przez „Importuj schemat…”.
+
+W dialogu dodanie i usunięcie schematu zapisują się od razu (jak import), a szkic ustawień po usunięciu wraca do zapisanego wyboru tam, gdzie wskazywał usunięty schemat.

@@ -16,6 +16,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -99,6 +100,23 @@ class ClaudeCliAdapterIntegrationTest {
         }
 
     @Test
+    fun `start in a project subfolder runs claude in that directory`() =
+        runTest {
+            val runtime = runtime()
+            val soft = project.resolve("soft").createDirectories().toRealPath()
+
+            runtime.start(StartSpec(cwd = soft, prompt = "Fix the login bug")).getOrNull().shouldNotBeNull()
+
+            val started =
+                runtime
+                    .listSessions()
+                    .getOrNull()
+                    .shouldNotBeNull()
+                    .single()
+            started.cwd shouldBe soft
+        }
+
+    @Test
     fun `garbage from agents returns Unparseable`() =
         runTest {
             val runtime = runtime()
@@ -139,6 +157,18 @@ class ClaudeCliAdapterIntegrationTest {
                 stderrTail shouldContain "***"
             }
             logger.entries.toString() shouldNotContain prompt
+        }
+
+    @Test
+    fun `fake claude in untrusted mode gives WorkspaceNotTrusted`() =
+        runTest {
+            val runtime = runtime()
+            claude.setMode("untrusted")
+
+            val result = runtime.start(StartSpec(cwd = project, prompt = "Fix it"))
+
+            result shouldBe Outcome.Err(RuntimeError.WorkspaceNotTrusted)
+            logger.entries.toString() shouldNotContain project.toString()
         }
 
     @Test

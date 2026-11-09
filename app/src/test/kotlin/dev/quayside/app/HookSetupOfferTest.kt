@@ -35,7 +35,7 @@ class HookSetupOfferTest {
     private fun TestScope.controller(
         installer: HookInstaller = hooks,
         offer: HookOfferStore = hookOfferStore(dir),
-    ) = HookSetupController(installer, offer, backgroundScope, logger)
+    ) = HookSetupController(installer, offer, globalOnlyTargets, backgroundScope, logger)
 
     private val HookSetupController.shown: HookDialogState get() = state.value.shouldNotBeNull()
 
@@ -47,7 +47,7 @@ class HookSetupOfferTest {
             controller.offerAtStart()
             runCurrent()
 
-            controller.shown shouldBe HookDialogState(status = HookStatus.NotInstalled, firstRun = true)
+            controller.shown shouldBe hookState(status = HookStatus.NotInstalled, firstRun = true)
             hooks.calls shouldBe listOf("status global")
         }
 

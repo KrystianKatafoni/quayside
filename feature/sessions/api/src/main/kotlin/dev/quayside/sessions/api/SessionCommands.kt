@@ -13,9 +13,16 @@ import dev.quayside.core.domain.SessionId
  */
 public interface SessionCommands {
     /**
-     * Starts a background agent in the directory of [project] (FR-S3). The new session is in
-     * [SessionMonitor.snapshot] before `start` returns and is [SessionState.Working] until the
-     * supervisor reports another state. Errors: [SessionError.UnknownProject], [SessionError.Runtime].
+     * Starts a background agent in the directory of [project], or in its [NewSessionSpec.subfolder] (FR-S3,
+     * FR-P7). The new session is in [SessionMonitor.snapshot] before `start` returns and is
+     * [SessionState.Working] until the supervisor reports another state. Errors: [SessionError.UnknownProject],
+     * [SessionError.SubfolderUnavailable], [SessionError.Runtime].
+     *
+     * The session belongs to the deepest registered project that contains its `cwd`: a subfolder that is also
+     * registered as a separate project puts the session in that project, not in the group.
+     *
+     * @throws IllegalArgumentException never from `start` itself; it comes from building [NewSessionSpec]
+     *   when [NewSessionSpec.subfolder] is empty or blank.
      */
     public suspend fun start(
         project: ProjectId,
@@ -54,14 +61,16 @@ public interface SessionCommands {
 
 /**
  * What to start (FR-S3). Optional texts are either absent or not blank; a blank [prompt] or a blank
- * optional text is rejected with [IllegalArgumentException]. [toString] shows [prompt] as `***`,
- * because it may hold sensitive content (ENG-C8).
+ * optional text (also [subfolder]) is rejected with [IllegalArgumentException]. [toString] shows [prompt]
+ * and [subfolder] as `***`, because they may hold sensitive content (ENG-C8).
  *
  * @property prompt first prompt of the conversation.
  * @property name display name; the supervisor picks one when null.
  * @property agent name of a custom agent.
  * @property model model alias or name.
  * @property permissionMode permission mode; the Claude Code default when null.
+ * @property subfolder name of one of the project's subfolders (`Project.subfolders`, FR-P7) to start in;
+ *  null = the project directory. Not blank. User data: [toString] shows it as `***` (ENG-C8).
  */
 public data class NewSessionSpec(
     val prompt: String,
@@ -69,16 +78,19 @@ public data class NewSessionSpec(
     val agent: String? = null,
     val model: String? = null,
     val permissionMode: SessionPermissionMode? = null,
+    val subfolder: String? = null,
 ) {
     init {
         require(prompt.isNotBlank()) { "NewSessionSpec prompt must not be blank" }
         require(name?.isNotBlank() ?: true) { "NewSessionSpec name must not be blank" }
         require(agent?.isNotBlank() ?: true) { "NewSessionSpec agent must not be blank" }
         require(model?.isNotBlank() ?: true) { "NewSessionSpec model must not be blank" }
+        require(subfolder?.isNotBlank() ?: true) { "NewSessionSpec subfolder must not be blank" }
     }
 
     override fun toString(): String =
-        "NewSessionSpec(prompt=$HIDDEN, name=$name, agent=$agent, model=$model, permissionMode=$permissionMode)"
+        "NewSessionSpec(prompt=$HIDDEN, name=$name, agent=$agent, model=$model, permissionMode=$permissionMode, " +
+            "subfolder=${subfolder?.let { HIDDEN }})"
 }
 
 /** Claude Code permission mode a session starts with. */

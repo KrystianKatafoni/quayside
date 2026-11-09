@@ -1,6 +1,7 @@
 package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.SubfolderName
 
 /** Semantics tags of Mission Control for UI tests. */
 internal object MissionControlTags {
@@ -29,9 +30,14 @@ internal object MissionControlTags {
     const val ROW_MENU = "missionControl.rowMenu"
     const val SHORTCUTS_TOGGLE = "missionControl.shortcuts.toggle"
     const val SHORTCUTS = "missionControl.shortcuts"
-    const val NEW_AGENT = "missionControl.newAgent"
+    const val LIST_CARD = "missionControl.listCard"
+    const val KEY_HINTS = "missionControl.keyHints"
+    const val ALERTS_BELL = "missionControl.alertsBell"
+    const val STATUS_DOT = "missionControl.statusBar.dot"
+    const val VIEWS_LABEL = "missionControl.views.label"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"
     const val NEW_AGENT_PROJECT = "missionControl.newAgent.project"
+    const val NEW_AGENT_SUBFOLDER = "missionControl.newAgent.subfolder"
     const val NEW_AGENT_PROMPT = "missionControl.newAgent.prompt"
     const val NEW_AGENT_NAME = "missionControl.newAgent.name"
     const val NEW_AGENT_AGENT = "missionControl.newAgent.agent"
@@ -41,6 +47,11 @@ internal object MissionControlTags {
     const val NEW_AGENT_PROBLEM = "missionControl.newAgent.problem"
     const val NEW_AGENT_CANCEL = "missionControl.newAgent.cancel"
     const val NEW_AGENT_START = "missionControl.newAgent.start"
+    const val NEW_AGENT_TRUST = "missionControl.newAgent.trust"
+    const val NEW_AGENT_TRUST_PATH = "missionControl.newAgent.trust.path"
+    const val NEW_AGENT_TRUST_WARNING = "missionControl.newAgent.trust.warning"
+    const val NEW_AGENT_TRUST_CANCEL = "missionControl.newAgent.trust.cancel"
+    const val NEW_AGENT_TRUST_ACCEPT = "missionControl.newAgent.trust.accept"
 
     const val SESSION_BAR = "missionControl.sessionBar"
     const val SESSION_BAR_TILE = "missionControl.sessionBar.tile"
@@ -48,9 +59,12 @@ internal object MissionControlTags {
     const val SESSION_BAR_RESPAWN = "missionControl.sessionBar.respawn"
     const val SESSION_BAR_STOP = "missionControl.sessionBar.stop"
     const val HEADER_PATH = "missionControl.header.path"
+    const val HEADER_BRANCH = "missionControl.header.branch"
     const val HEADER_COUNT = "missionControl.header.count"
     const val DETAILS_STATE = "missionControl.details.state"
     const val DETAILS_SUMMARY = "missionControl.details.summary"
+    const val OVERVIEW = "missionControl.overview"
+    const val OVERVIEW_REST = "missionControl.overview.rest"
 
     /** The stat card of [kind]: `waiting`, `working`, `done` or `failed`. */
     fun stat(kind: String): String = "missionControl.stat.$kind"
@@ -78,4 +92,7 @@ internal object MissionControlTags {
 
     /** The row of session [id]; clicking it selects the session. */
     fun row(id: SessionId): String = "missionControl.row.${id.value}"
+
+    /** The row of the subfolder [name] in the group overview; clicking it opens the subfolder. */
+    fun overviewRow(name: SubfolderName): String = "missionControl.overview.row.${name.value}"
 }

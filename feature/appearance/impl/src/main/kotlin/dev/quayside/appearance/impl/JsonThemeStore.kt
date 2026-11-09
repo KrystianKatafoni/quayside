@@ -3,7 +3,11 @@ package dev.quayside.appearance.impl
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.api.AppearanceError
 import dev.quayside.appearance.api.AppearanceSettings
+import dev.quayside.appearance.api.CustomScheme
+import dev.quayside.appearance.api.SchemeError
+import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.ThemeCatalog
+import dev.quayside.appearance.api.ThemeSpec
 import dev.quayside.appearance.api.appliedFor
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
@@ -31,7 +35,7 @@ internal data class StartState(
  * newer, the defaults are used and nothing is ever written over the file.
  */
 internal class JsonThemeStore private constructor(
-    override val catalog: ThemeCatalog,
+    private val base: ThemeCatalog,
     private val store: JsonStore<AppearanceSettings>,
     private val systemDark: StateFlow<Boolean?>,
     private val logger: Logger,
@@ -41,6 +45,9 @@ internal class JsonThemeStore private constructor(
     private val saved = MutableStateFlow(start.settings)
     private val inUse = MutableStateFlow(start.settings.appliedFor(systemDark.value))
     private val mutex = Mutex()
+    private val themes = MutableStateFlow(catalogWith(base, start.settings.customSchemes))
+
+    override val catalog: StateFlow<ThemeCatalog> = themes.asStateFlow()
 
     override val settings: StateFlow<AppearanceSettings> = saved.asStateFlow()
 
@@ -50,12 +57,41 @@ internal class JsonThemeStore private constructor(
         change: (AppearanceSettings) -> AppearanceSettings,
     ): Outcome<AppearanceSettings, AppearanceError> =
         mutex.withLock {
-            val next = change(saved.value)
+            val next = change(saved.value).copy(customSchemes = saved.value.customSchemes)
             val refusal = refusalOf(next)
             when {
                 refusal != null -> Outcome.Err(refusal)
                 !writable -> Outcome.Err(AppearanceError.StorageFailed)
                 else -> persist(next)
+            }
+        }
+
+    override suspend fun addScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError> =
+        mutex.withLock {
+            val audited = auditedThemeOf(scheme)
+            when {
+                themes.value.theme(scheme.id) != null -> Outcome.Err(SchemeError.Taken(scheme.id))
+                audited is Outcome.Err -> audited
+                !writable -> Outcome.Err(SchemeError.StorageFailed)
+                else -> persistScheme(scheme)
+            }
+        }
+
+    override fun previewScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError> {
+        val audited = auditedThemeOf(scheme)
+        return if (themes.value.theme(scheme.id) != null) Outcome.Err(SchemeError.Taken(scheme.id)) else audited
+    }
+
+    override suspend fun removeScheme(id: SchemeId): Outcome<Unit, SchemeError> =
+        mutex.withLock {
+            val current = saved.value
+            val chosen = listOf(current.scheme, current.dayNight.day, current.dayNight.night)
+            when {
+                current.customSchemes.none { it.id == id } -> Outcome.Err(SchemeError.NotFound(id))
+                id in chosen -> Outcome.Err(SchemeError.InUse(id))
+                !writable -> Outcome.Err(SchemeError.StorageFailed)
+                save(current.copy(customSchemes = current.customSchemes.filter { it.id != id })) -> Outcome.Ok(Unit)
+                else -> Outcome.Err(SchemeError.StorageFailed)
             }
         }
 
@@ -66,22 +102,33 @@ internal class JsonThemeStore private constructor(
 
     // Not cancellable: a cancellation after the atomic move must not leave the file and the state apart.
     private suspend fun persist(next: AppearanceSettings): Outcome<AppearanceSettings, AppearanceError> =
+        if (save(next)) Outcome.Ok(next) else Outcome.Err(AppearanceError.StorageFailed)
+
+    private suspend fun persistScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError> {
+        val next = saved.value.copy(customSchemes = saved.value.customSchemes + scheme)
+        return if (save(next)) Outcome.Ok(themeOf(scheme)) else Outcome.Err(SchemeError.StorageFailed)
+    }
+
+    /** Saves [next] and publishes it with its catalog; false (and nothing published) when the file was not written. */
+    private suspend fun save(next: AppearanceSettings): Boolean =
         withContext(NonCancellable) {
             when (store.save(next)) {
                 is Outcome.Ok -> {
+                    themes.value = catalogWith(base, next.customSchemes)
                     saved.value = next
                     refresh()
-                    Outcome.Ok(next)
+                    true
                 }
 
                 is Outcome.Err -> {
                     logger.warn("theme.json save failed")
-                    Outcome.Err(AppearanceError.StorageFailed)
+                    false
                 }
             }
         }
 
     private fun refusalOf(candidate: AppearanceSettings): AppearanceError? {
+        val catalog = themes.value
         val unknownScheme =
             listOf(candidate.scheme, candidate.dayNight.day, candidate.dayNight.night)
                 .firstOrNull { catalog.theme(it) == null }
@@ -96,8 +143,9 @@ internal class JsonThemeStore private constructor(
         const val FILE_NAME = "theme.json"
 
         /**
-         * Loads [store] once. A saved id that is not in [catalog] gives the default of that field and a category in
-         * [logger]. `applied` is `settings.appliedFor(systemDark)` and is collected in [scope].
+         * Loads [store] once; [catalog] is the built-in one, the custom schemes of the file join it. A saved id
+         * outside gives the default of that field and a category in [logger]. `applied` is
+         * `settings.appliedFor(systemDark)` and is collected in [scope].
          */
         suspend fun open(
             store: JsonStore<AppearanceSettings>,

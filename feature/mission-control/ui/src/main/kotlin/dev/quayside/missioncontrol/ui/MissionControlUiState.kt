@@ -4,6 +4,9 @@ import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
+import dev.quayside.projects.api.ProjectFocus
+import dev.quayside.projects.api.SubfolderName
+import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionState
 import java.nio.file.Path
 import java.time.Instant
@@ -54,16 +57,22 @@ internal sealed interface MissionControlEvent {
     /** "Odpowiedz" in the details panel or the row menu (AM-511); `app` handles it. */
     data object Reply : MissionControlEvent
 
-    /** "Nowy agent" in the header of the project page (AM-608); `app` handles it. */
-    data object NewAgent : MissionControlEvent
+    /** A click on a subfolder row of the group overview (AM-307); `app` selects that focus in the sidebar. */
+    data class OpenSubfolder(
+        val focus: ProjectFocus,
+    ) : MissionControlEvent
 }
 
-/** What the user picked: the project (from the sidebar), the filter and the session. */
+/**
+ * What the user picked: the project (from the sidebar), the filter and the session; [subfolder] narrows the project
+ * page to the sessions of one subfolder of the group (FR-P7).
+ */
 internal data class Selection(
     val project: ProjectId? = null,
     val view: GlobalView? = null,
     val filter: SessionFilter = SessionFilter.ALL,
     val session: SessionId? = null,
+    val subfolder: SubfolderName? = null,
 )
 
 internal data class MissionControlUiState(
@@ -101,6 +110,7 @@ internal sealed interface Screen {
         val banner: UiText?,
         val loading: Boolean,
         val stats: SessionStats = SessionStats(),
+        val overview: GroupOverview? = null,
     ) : Screen
 
     /** A global view: sessions of every project, [sessions] of them, without filter tabs. */
@@ -114,11 +124,15 @@ internal sealed interface Screen {
     ) : Screen
 }
 
-/** @property sessions every session of the project, whatever the filter. */
+/**
+ * @property sessions every session of the project, whatever the filter.
+ * @property branch the git branch of the project directory (FR-A1), null when unknown or not a git work tree.
+ */
 internal data class ProjectHeader(
     val name: String,
     val path: Path,
     val sessions: Int,
+    val branch: String? = null,
 )
 
 /** Visual tone of a state glyph (docs/05 table); colors are internal constants until AM-802. */
@@ -155,6 +169,7 @@ internal data class SessionDetails(
     val worktree: Path,
     val startedAt: Instant,
     val lastActivityAt: Instant,
+    val meta: SessionMeta = SessionMeta(),
     val actions: Set<SessionAction> = emptySet(),
     val busy: SessionAction? = null,
     val failure: Failure? = null,
@@ -170,3 +185,9 @@ internal data class ModeBar(
     val working: Int,
     val freshness: UiText,
 )
+
+/** The project page with [branch] in its header; any other screen stays as it is. */
+internal fun MissionControlUiState.withBranch(branch: String?): MissionControlUiState {
+    val page = screen as? Screen.Project ?: return this
+    return copy(screen = page.copy(header = page.header.copy(branch = branch)))
+}

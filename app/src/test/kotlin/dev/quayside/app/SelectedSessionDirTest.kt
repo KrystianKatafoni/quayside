@@ -11,6 +11,7 @@ import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.MissionControlIntent
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionsApi
@@ -43,7 +44,7 @@ class SelectedSessionDirTest {
         MissionControlController(
             SessionsApi(monitor = fake, commands = fake),
             FakeProjectsApi(initial = listOf(project)),
-            MutableStateFlow(project.id),
+            MutableStateFlow<ProjectFocus?>(ProjectFocus(project.id)),
             TestClock(T0),
             backgroundScope,
             NoOpLogger,

@@ -164,7 +164,7 @@ class NotificationSettingsProjectsScreenTest {
             awaitTag(SettingsTags.PROJECTS_EMPTY).performScrollTo()
             awaitTagText(
                 SettingsTags.PROJECTS_EMPTY,
-                "Brak projektów. Dodaj folder projektu w pasku bocznym, a pojawi się tu z możliwością ustawienia wyjątku.",
+                "Brak projektów. Dodaj folder projektu w pasku bocznym, a pojawi się tu z wyjątkami.",
             )
         }
 

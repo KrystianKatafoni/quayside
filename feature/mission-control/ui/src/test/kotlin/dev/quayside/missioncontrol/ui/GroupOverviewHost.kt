@@ -26,14 +26,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.time.Duration.Companion.hours
 
 /**
- * Mission Control over the scripted [sessions] of [project] (default [OVERVIEW_GROUP]) with the group selected, the
- * way the sidebar would: the group page with its overview. Returns the controller.
+ * Mission Control over the scripted [sessions] of [project] (default [OVERVIEW_GROUP]) with [focus] selected (default:
+ * the group itself), the way the sidebar would: the group page with its overview. Returns the controller.
  */
 @OptIn(ExperimentalTestApi::class)
 internal fun ComposeUiTest.showGroup(
     sessions: List<Session>,
     handlers: MissionControlHandlers = MissionControlHandlers(),
     project: Project = OVERVIEW_GROUP,
+    focus: ProjectFocus = ProjectFocus(project.id),
 ): MissionControlController {
     var shown: MissionControlController? = null
     setContent {
@@ -44,7 +45,7 @@ internal fun ComposeUiTest.showGroup(
                     MissionControlController(
                         SessionsApi(ScriptedSessionMonitor(freshSnapshot(*sessions.toTypedArray())), FakeSessions()),
                         FakeProjectsApi(initial = listOf(project, OVERVIEW_NESTED)),
-                        MutableStateFlow<ProjectFocus?>(ProjectFocus(project.id)),
+                        MutableStateFlow<ProjectFocus?>(focus),
                         TestClock(T0.plusSeconds(600)),
                         scope,
                         NoOpLogger,
@@ -63,13 +64,16 @@ internal fun ComposeUiTest.showGroup(
 internal fun ComposeUiTest.overviewRow(name: String): SemanticsNodeInteraction =
     awaitTag(MissionControlTags.overviewRow(SubfolderName(name)))
 
-/** The counter texts (`2 czekają`, `1 z błędem`, `3 pracują`) announced inside the node tagged [tag]. */
+/**
+ * The counter descriptions (`czeka: 2`, `pracuje: 1`, `gotowe: 0`, `błąd: 0`; AM-310) announced inside the node
+ * tagged [tag], in the order of the semantics tree.
+ */
 @OptIn(ExperimentalTestApi::class)
-internal fun ComposeUiTest.counterTexts(tag: String): Set<String> =
+internal fun ComposeUiTest.counterTexts(tag: String): List<String> =
     onAllNodes(inTag(tag) and SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription), true)
         .fetchSemanticsNodes()
         .flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
-        .filterTo(HashSet()) { text -> COUNTER_ENDINGS.any { text.endsWith(it) } }
+        .filter { COUNTER_TEXT.matches(it) }
 
 /** The counter node announced as [description] inside the node tagged [tag]. */
 @OptIn(ExperimentalTestApi::class)
@@ -79,8 +83,8 @@ internal fun ComposeUiTest.counterNode(
 ): SemanticsNodeInteraction =
     onAllNodes(hasContentDescription(description) and inTag(tag), useUnmergedTree = true).onFirst()
 
-/** Endings of the three counter descriptions in the plan: "N czeka/czekają", "N z błędem", "N pracuje/pracują". */
-private val COUNTER_ENDINGS = listOf(" czeka", " czekają", " z błędem", " pracuje", " pracują")
+/** "czeka: N", "pracuje: N", "gotowe: N" or "błąd: N": the four counter descriptions of AM-310. */
+private val COUNTER_TEXT = Regex("(czeka|pracuje|gotowe|błąd): \\d+")
 
 /** True when a node tagged [tag] exists. */
 @OptIn(ExperimentalTestApi::class)

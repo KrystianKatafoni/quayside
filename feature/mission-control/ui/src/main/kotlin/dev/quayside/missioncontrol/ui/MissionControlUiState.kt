@@ -154,6 +154,8 @@ internal data class SessionRow(
     val age: UiText,
     val selected: Boolean,
     val project: UiText? = null,
+    /** Where the session runs, on the group page only (AM-310); null = no badge. */
+    val place: UiText? = null,
 )
 
 /**

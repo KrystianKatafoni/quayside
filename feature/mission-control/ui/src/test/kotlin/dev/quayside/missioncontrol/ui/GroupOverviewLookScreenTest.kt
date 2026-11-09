@@ -3,6 +3,7 @@ package dev.quayside.missioncontrol.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -33,10 +34,10 @@ internal class GroupOverviewLookScreenTest {
             project = OVERVIEW_GROUP.id,
             rows =
                 listOf(
-                    SubfolderStats(sub("Carl"), SessionStats(waiting = 1, failed = 2, working = 3)),
+                    SubfolderStats(sub("Carl"), SessionStats(waiting = 1, working = 2, done = 3, failed = 4)),
                     SubfolderStats(sub("Anna"), SessionStats()),
                 ),
-            rest = null,
+            rest = SessionStats(),
         )
 
     private fun androidx.compose.ui.test.ComposeUiTest.show(
@@ -69,51 +70,55 @@ internal class GroupOverviewLookScreenTest {
         }
 
     @Test
-    fun `idle text is drawn muted`() =
+    fun `zero counter numbers are drawn muted and subfolder names as plain text`() =
         runComposeUiTest {
             show()
             awaitTag(WRAP)
 
-            val idle = onAllNodes(hasText(mcText("overview.idle")), useUnmergedTree = true).onFirst().argbColors()
+            val zero = counterNode(MissionControlTags.overviewRow(sub("Anna")), "czeka: 0").argbColors()
             val name = onAllNodes(hasText("Carl"), useUnmergedTree = true).onFirst().argbColors()
 
-            idle shouldContain colors.content.muted.argb()
-            idle shouldNotContain colors.content.text.argb()
-            // while the name of a subfolder is plain text
+            zero shouldContain colors.content.muted.argb()
+            zero shouldNotContain colors.content.text.argb()
+            // while the name of a subfolder is plain text (not "not muted": a 70% blend of text over panel is exactly
+            // the muted colour of the sample theme, so an anti-aliased glyph edge may have that value)
             name shouldContain colors.content.text.argb()
-            name shouldNotContain colors.content.muted.argb()
         }
 
     @Test
-    fun `counters use the warn err and work tones`() =
+    fun `counters use the warn work ok and err tones`() =
         runComposeUiTest {
             // Given the overview and, beside it, the reference counters of the design system on the same panel
             show {
-                Column {
-                    reference(REF_WARN, 1, StatusTone.WARN, "1 czeka")
-                    reference(REF_ERR, 2, StatusTone.ERR, "2 z błędem")
-                    reference(REF_WORK, 3, StatusTone.WORK, "3 pracują")
+                Row {
+                    reference(REF_WARN, 1, StatusTone.WARN, "czeka: 1")
+                    reference(REF_WORK, 2, StatusTone.WORK, "pracuje: 2")
+                    reference(REF_OK, 3, StatusTone.OK, "gotowe: 3")
+                    reference(REF_ERR, 4, StatusTone.ERR, "błąd: 4")
                 }
             }
             val row = MissionControlTags.overviewRow(sub("Carl"))
             awaitTag(row)
 
-            // Then each counter is pixel for pixel the AmCounter of its tone
-            listOf(
-                Triple("1 czeka", REF_WARN, "warn"),
-                Triple("2 z błędem", REF_ERR, "err"),
-                Triple("3 pracują", REF_WORK, "work"),
-            ).forEach { (description, ref, _) ->
-                val counter = counterNode(row, description).pixelMap()
-                val expected = awaitTag(ref).pixelMap()
-                counter.width shouldBe expected.width
-                counter.height shouldBe expected.height
-                // (edge pixels may differ by float rounding at another x offset: at most 2 levels per channel)
-                counter.buffer.indices.all { nearly(counter.buffer[it], expected.buffer[it]) } shouldBe true
-            }
-            // (the three tones really differ, so a wrong tone cannot pass)
-            val fills = listOf(REF_WARN, REF_ERR, REF_WORK).map { awaitTag(it).pixelMap().argbAt(SCALE, 11 * SCALE) }
-            fills.toSet().size shouldBe 3
+            // Then each non-zero counter is pixel for pixel the AmCounter of its tone
+            listOf("czeka: 1" to REF_WARN, "pracuje: 2" to REF_WORK, "gotowe: 3" to REF_OK, "błąd: 4" to REF_ERR)
+                .forEach { (description, ref) ->
+                    val counter = counterNode(row, description).pixelMap()
+                    val expected = awaitTag(ref).pixelMap()
+                    counter.width shouldBe expected.width
+                    counter.height shouldBe expected.height
+                    // (edge pixels may differ by float rounding at another x offset: at most 2 levels per channel)
+                    counter.buffer.indices.all { nearly(counter.buffer[it], expected.buffer[it]) } shouldBe true
+                }
+            // (the four tones really differ, so a wrong tone cannot pass)
+            val fills =
+                listOf(REF_WARN, REF_WORK, REF_OK, REF_ERR).map {
+                    awaitTag(it).pixelMap().argbAt(
+                        SCALE,
+                        11 * SCALE,
+                    )
+                }
+            fills.toSet().size shouldBe 4
         }
 
     private fun nearly(
@@ -139,5 +144,6 @@ internal class GroupOverviewLookScreenTest {
         const val REF_WARN = "ref.warn"
         const val REF_ERR = "ref.err"
         const val REF_WORK = "ref.work"
+        const val REF_OK = "ref.ok"
     }
 }

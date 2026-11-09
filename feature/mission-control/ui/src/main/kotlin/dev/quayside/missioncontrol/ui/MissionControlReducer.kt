@@ -80,7 +80,7 @@ internal object MissionControlReducer {
         return Screen.Project(
             header = ProjectHeader(shownName(project, subfolder), shownDir(project, subfolder), mine.size),
             filter = selection.filter,
-            rows = visible.map { row(it, now, selected = it == picked) },
+            rows = visible.map { row(it, now, it == picked, place = place(project, subfolder, it)) },
             details = picked?.let(::details),
             banner = (snapshot.status as? SnapshotStatus.Stale)?.let { Freshness.of(it, zone) },
             loading = loading,
@@ -88,6 +88,13 @@ internal object MissionControlReducer {
             overview = if (subfolder == null && !loading) GroupOverviews.of(project, snapshot.sessions) else null,
         )
     }
+
+    /** The place badge exists on the group page only, not on a subfolder page. */
+    private fun place(
+        project: Project,
+        subfolder: SubfolderName?,
+        session: Session,
+    ): UiText? = if (subfolder == null) SessionPlace.of(project, session.cwd) else null
 
     /** "plant-puls / soft" on a subfolder page, else the project name (FR-P7). */
     private fun shownName(
@@ -105,6 +112,7 @@ internal object MissionControlReducer {
         now: Instant,
         selected: Boolean,
         project: UiText? = null,
+        place: UiText? = null,
     ): SessionRow =
         SessionRow(
             id = session.id,
@@ -115,6 +123,7 @@ internal object MissionControlReducer {
             age = AgeText.of(session.lastActivityAt, now),
             selected = selected,
             project = project,
+            place = place,
         )
 
     private fun details(session: Session): SessionDetails =

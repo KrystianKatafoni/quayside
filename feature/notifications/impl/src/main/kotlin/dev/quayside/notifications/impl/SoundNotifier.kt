@@ -68,7 +68,8 @@ internal class SoundNotifier(
     private suspend fun play(kind: NotificationKind) {
         // A sound can sit in the channel behind a long play; quiet hours may have started meanwhile.
         if (quietNow(settings.value.quietHours, context())) return
-        val result = sound.play(soundFor(kind))
+        val chosen = settings.value.sound
+        val result = sound.play(chosen.soundFor(kind), chosen.volume)
         if (result is Outcome.Err) logger.warn("sound failed", "reason" to result.error.category())
     }
 

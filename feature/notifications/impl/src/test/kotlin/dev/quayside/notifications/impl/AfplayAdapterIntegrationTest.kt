@@ -2,6 +2,7 @@ package dev.quayside.notifications.impl
 
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.process.LoginShellProcessRunner
+import dev.quayside.notifications.api.SoundId
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
@@ -64,19 +65,19 @@ class AfplayAdapterIntegrationTest {
             val sounds = soundsDir("Basso")
             val afplay = fakeAfplay("for a in \"\$@\"; do printf '%s\\n' \"\$a\"; done > '$log'")
 
-            val result = adapter(afplay, sounds).play(SystemSound.BASSO)
+            val result = adapter(afplay, sounds).play(SoundId("Basso"), 100)
 
             result shouldBe Outcome.Ok(Unit)
-            log.readLines() shouldBe listOf("${sounds.resolve("Basso.aiff")}")
+            log.readLines() shouldBe listOf("-v", "1.00", "${sounds.resolve("Basso.aiff")}")
         }
 
     @Test
     fun `missing file exit code triggers the fallback`() =
         runTest {
             val sounds = soundsDir("Glass")
-            val afplay = fakeAfplay("echo \"\$1\" >> '$log'; [ -f \"\$1\" ] || exit 1")
+            val afplay = fakeAfplay("echo \"\$3\" >> '$log'; [ -f \"\$3\" ] || exit 1")
 
-            val result = adapter(afplay, sounds).play(SystemSound.HERO)
+            val result = adapter(afplay, sounds).play(SoundId("Hero"), 100)
 
             result shouldBe Outcome.Ok(Unit)
             log.readLines() shouldBe listOf("${sounds.resolve("Hero.aiff")}", "${sounds.resolve("Glass.aiff")}")
@@ -86,9 +87,9 @@ class AfplayAdapterIntegrationTest {
     fun `a missing fallback file ends as Failed`() =
         runTest {
             val sounds = soundsDir()
-            val afplay = fakeAfplay("[ -f \"\$1\" ] || exit 1")
+            val afplay = fakeAfplay("[ -f \"\$3\" ] || exit 1")
 
-            adapter(afplay, sounds).play(SystemSound.HERO) shouldBe Outcome.Err(SoundError.Failed(1))
+            adapter(afplay, sounds).play(SoundId("Hero"), 100) shouldBe Outcome.Err(SoundError.Failed(1))
         }
 
     @Test
@@ -97,7 +98,7 @@ class AfplayAdapterIntegrationTest {
         runTest {
             val pidFile = dir.resolve("self.pid")
             val afplay = fakeAfplay("echo \$\$ > '$pidFile'; exec sleep 30")
-            val running = async { adapter(afplay, soundsDir("Glass")).play(SystemSound.GLASS) }
+            val running = async { adapter(afplay, soundsDir("Glass")).play(SoundId("Glass"), 100) }
             withContext(io) {
                 while (!pidFile.exists() || pidFile.readText().isBlank()) delay(10.milliseconds)
             }

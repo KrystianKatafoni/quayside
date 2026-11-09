@@ -23,6 +23,7 @@ import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.core.designsystem.AmDropdownTags
 import dev.quayside.core.designsystem.AmTestTheme
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
+import dev.quayside.notifications.api.FakeSoundLibrary
 import dev.quayside.notifications.api.FakeVoiceCatalog
 import dev.quayside.notifications.api.FakeVoicePreview
 import dev.quayside.notifications.api.NotificationChannel
@@ -65,7 +66,7 @@ class NotificationSettingsDialogScreenTest {
                             scope,
                         ).also(built::add)
                     }
-                NotificationSettingsDialog(controller)
+                NotificationSettingsDialog(controller, SoundPreviewController(FakeSoundLibrary(), scope))
             }
         }
         waitUntil(timeoutMillis = WAIT_MS) { built.isNotEmpty() }

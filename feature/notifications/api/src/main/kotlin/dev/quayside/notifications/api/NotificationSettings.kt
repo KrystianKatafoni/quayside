@@ -47,6 +47,7 @@ public enum class NotificationChannel {
  *   FR-N2), within [MIN_RUNNING_LONG_MINUTES]..[MAX_RUNNING_LONG_MINUTES].
  * @property popup how popups look and behave (FR-N3).
  * @property speech how spoken messages sound (FR-N4, FR-N5).
+ * @property sound which sound plays and how loud (FR-N1).
  * @property quietHours do-not-disturb hours and macOS Focus (FR-N6).
  * @property projects the exceptions per project (FR-N7); only deviations are stored, see [projectFor].
  */
@@ -57,6 +58,7 @@ public data class NotificationSettings(
     val runningLongMinutes: Int = DEFAULT_RUNNING_LONG_MINUTES,
     val popup: PopupSettings = PopupSettings(),
     val speech: SpeechSettings = SpeechSettings(),
+    val sound: SoundSettings = SoundSettings(),
     val quietHours: QuietHours = QuietHours(),
     val projects: Map<ProjectId, ProjectNotifications> = emptyMap(),
 ) {

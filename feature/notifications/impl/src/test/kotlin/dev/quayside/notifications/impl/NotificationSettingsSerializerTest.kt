@@ -8,6 +8,8 @@ import dev.quayside.notifications.api.PopupPosition
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.PopupStyle
 import dev.quayside.notifications.api.QuietHours
+import dev.quayside.notifications.api.SoundId
+import dev.quayside.notifications.api.SoundSettings
 import dev.quayside.notifications.api.SpeechSettings
 import dev.quayside.notifications.api.VoiceId
 import io.kotest.assertions.throwables.shouldThrow
@@ -317,5 +319,60 @@ class NotificationSettingsSerializerTest {
             )
 
         text shouldContain """"quietHours""""
+    }
+
+    @Test
+    fun `default sound settings write no sound section`() {
+        val text = Json.encodeToString(NotificationSettingsSerializer, NotificationSettings())
+
+        text.contains("\"sound\"") shouldBe false
+    }
+
+    @Test
+    fun `sound settings write only the deviations and round trip`() {
+        val sound = SoundSettings(volume = 40, sounds = mapOf(NotificationKind.FAILED to SoundId("Funk")))
+        val text = Json.encodeToString(NotificationSettingsSerializer, NotificationSettings(sound = sound))
+
+        text.contains("\"failed\":\"Funk\"") shouldBe true
+        text.contains("needsInput\":\"") shouldBe false
+        decode(text).sound shouldBe sound
+    }
+
+    @Test
+    fun `a sound equal to its default is not written`() {
+        val sound = SoundSettings(sounds = mapOf(NotificationKind.FAILED to SoundId("Basso")))
+
+        Json
+            .encodeToString(
+                NotificationSettingsSerializer,
+                NotificationSettings(sound = sound),
+            ).contains("sound\"") shouldBe
+            false
+    }
+
+    @Test
+    fun `missing sound section gives defaults`() {
+        decode("""{"popups": false}""").sound shouldBe SoundSettings()
+        decode("""{"sound": {}}""").sound shouldBe SoundSettings()
+    }
+
+    @Test
+    fun `sound volume is clamped`() {
+        decode("""{"sound": {"volume": 500}}""").sound.volume shouldBe 100
+        decode("""{"sound": {"volume": -5}}""").sound.volume shouldBe 0
+    }
+
+    @Test
+    fun `a sound name that cannot be a file name is skipped`() {
+        val sound = decode("""{"sound": {"sounds": {"failed": "../../etc/x", "needsInput": "Funk"}}}""").sound
+
+        sound.sounds shouldBe mapOf(NotificationKind.NEEDS_INPUT to SoundId("Funk"))
+    }
+
+    @Test
+    fun `a sound of the wrong type is refused`() {
+        shouldThrow<SerializationException> { decode("""{"sound": {"sounds": {"failed": 3}}}""") }
+        shouldThrow<SerializationException> { decode("""{"sound": {"volume": "loud"}}""") }
+        shouldThrow<SerializationException> { decode("""{"sound": 1}""") }
     }
 }

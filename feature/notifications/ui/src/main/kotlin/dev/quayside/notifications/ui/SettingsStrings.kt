@@ -6,6 +6,7 @@ import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.NotificationSettingsError
 import dev.quayside.notifications.api.PopupSettings
 import dev.quayside.notifications.api.ProjectProfile
+import dev.quayside.notifications.api.SoundSettings
 import dev.quayside.notifications.api.SpeechSettings
 import java.util.Locale
 import java.util.ResourceBundle
@@ -65,6 +66,10 @@ internal object SettingsStrings {
 
             NotificationField.VOLUME -> {
                 range("invalid.VOLUME", SpeechSettings.MIN_VOLUME, SpeechSettings.MAX_VOLUME)
+            }
+
+            NotificationField.SOUND_VOLUME -> {
+                range("invalid.SOUND_VOLUME", SoundSettings.MIN_VOLUME, SoundSettings.MAX_VOLUME)
             }
 
             NotificationField.QUIET_FROM, NotificationField.QUIET_TO -> {

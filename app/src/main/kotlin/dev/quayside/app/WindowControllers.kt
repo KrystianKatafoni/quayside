@@ -8,6 +8,7 @@ import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.notifications.ui.NotificationSettingsController
+import dev.quayside.notifications.ui.SoundPreviewController
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
@@ -73,11 +74,13 @@ internal class WindowControllers(
     val notificationSettings =
         NotificationSettingsController(
             modules.settings.notifications.settings,
-            modules.settings.notifications.voices,
-            modules.settings.notifications.preview,
+            modules.settings.notifications.choices.voices,
+            modules.settings.notifications.choices.preview,
             modules.projects.api.projects,
             scope,
         )
+
+    val soundPreview = SoundPreviewController(modules.settings.notifications.choices.sounds, scope)
 
     private val notificationDialogOpen = notificationSettings.dialogOpen(scope)
 

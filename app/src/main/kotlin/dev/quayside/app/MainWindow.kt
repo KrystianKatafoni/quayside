@@ -112,7 +112,7 @@ private fun WindowDialogs(
 ) {
     NewAgentDialog(controllers.newAgent)
     TerminalSettingsDialog(controllers.terminalSettings)
-    NotificationSettingsDialog(controllers.notificationSettings)
+    NotificationSettingsDialog(controllers.notificationSettings, controllers.soundPreview)
     SummarySettingsDialog(controllers.summarySettings)
     HookSetupDialog(controllers.hookSetup, hooks.backupDir)
 }

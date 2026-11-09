@@ -24,7 +24,7 @@ Ekrany czytają tokeny z `AmTheme` od AM-806 (domyślnie `plex` z typografią `p
 | `rose` | Rose Night | ciemny | `#191724` | `#1F1D2E` | `#E0DEF4` | `#C4A7E7` | `#F6C177` | `#9CCFD8` | `#EB6F92` | `#C4A7E7` | 10 px |
 | `contrast` | Wysoki kontrast | ciemny | `#000000` | `#000000` | `#FFFFFF` | `#FFD400` | `#00E5FF` | `#00FF6A` | `#FF5C5C` | `#FFD400` | 2 px |
 
-Pełny zestaw tokenów kolorów w każdym motywie (także w 20 motywach z kształtem, po wyprowadzeniu brakujących): `bg`, `panel`, `raised`, `sel`, `border`, `border2`, `text`, `muted`, `dim`, `accent`, `accentInk`, `warn`, `warnInk`, `warnBg`, `ok`, `err`, `work`, `termBg`, `termText`. Tokeny kształtu: `radius`, `borderWidth`, `shadow`, `backdrop`. W jasnych motywach terminal zostaje ciemny (`termBg` grafitowy).
+Pełny zestaw tokenów kolorów w każdym motywie (także w 20 motywach z kształtem, po wyprowadzeniu brakujących): `bg`, `panel`, `raised`, `sel`, `border`, `border2`, `text`, `muted`, `dim`, `accent`, `accentInk`, `warn`, `warnInk`, `warnBg`, `ok`, `err`, `work`, `termBg`, `termText`. Tokeny kształtu: `radius`, `borderWidth`, `shadow`, `backdrop`. Terminal ma kolory motywu w obu trybach (`termBg` = `bg`, `termText` = `text`); paleta ANSI jest w tokenie `ansi` (AM-811).
 
 **Semantyka kolorów:** `warn` = agent czeka na Ciebie (najważniejszy sygnał w UI), `work` = pracuje, `ok` = gotowe, `err` = błąd, `accent` = akcje główne i zaznaczenie. W schemacie *Amber CRT* akcent jest bursztynowy, więc `warn` jest turkusowy, żeby oba się nie myliły.
 
@@ -34,7 +34,7 @@ Korekty względem pierwotnej tabeli (test kontrastu AM-801, odcienie `warn`/`ok`
 
 ### Wyprowadzenie tokenów 9 podstawowych schematów (AM-801)
 
-Tabela wyżej podaje 8 kolorów; pozostałe 11 liczy czysta funkcja `deriveTokens` (mieszanie w kanałach sRGB, zaokrąglone). Reguły oznaczone ★ są nowe: `muted` = `text` zmieszany z `panel` 30 %; `border` = `panel` zmieszany z `text` 12 %. Pozostałe jak w wyprowadzeniu AM-805: `border2` = `border` + `text` 15 %, `dim` = `muted` + `bg` 30 %, `raised` i `sel` z `panel` (`text` 4 %/6 %, `accent` 12 %/18 % w jasnym/ciemnym), `accentInk` i `warnInk` czarne albo białe (większy kontrast), `warnBg` = `panel` + `warn` 15 %, `termBg`/`termText` ciemne (jasne schematy: `#1E242C`, `#E2E8F0`). Reguły dla motywów z kształtem są w „Wyprowadzenie i korekty (AM-805)”.
+Tabela wyżej podaje 8 kolorów; pozostałe 11 liczy czysta funkcja `deriveTokens` (mieszanie w kanałach sRGB, zaokrąglone). Reguły oznaczone ★ są nowe: `muted` = `text` zmieszany z `panel` 30 %; `border` = `panel` zmieszany z `text` 12 %. Pozostałe jak w wyprowadzeniu AM-805: `border2` = `border` + `text` 15 %, `dim` = `muted` + `bg` 30 %, `raised` i `sel` z `panel` (`text` 4 %/6 %, `accent` 12 %/18 % w jasnym/ciemnym), `accentInk` i `warnInk` czarne albo białe (większy kontrast), `warnBg` = `panel` + `warn` 15 %, `termBg` = `bg` i `termText` = `text` w każdym trybie (AM-811), `ansi` jak w „Paleta ANSI terminala (AM-811)”. Reguły dla motywów z kształtem są w „Wyprowadzenie i korekty (AM-805)”.
 
 ## Typografie
 
@@ -93,7 +93,7 @@ Wszystkie dołączane fonty są na licencji SIL Open Font License i można je do
 | --- | --- | --- |
 | `--bg-main` | `bg` | |
 | `--bg-panel` | `panel` | `rgba(…)` → kolor z kanałem alfa, rysowany na `bg` |
-| `--bg-terminal` | `termBg` | podany tylko w `nordic-light`; w pozostałych wyprowadzony (AM-805) |
+| `--bg-terminal` | `termBg` | podany tylko w `nordic-light` (`#1e242c`); od AM-811 ignorowany: `termBg` = `bg` także w `nordic-light` (odstępstwo od pliku źródłowego, decyzja człowieka 2026-11-08); w pozostałych wyprowadzony (AM-805) |
 | `--text-main` | `text` | |
 | `--text-muted` | `muted` | |
 | `--accent` | `accent` | |
@@ -163,7 +163,7 @@ Motywy z kształtem podają 6 kolorów (`bg`, `panel`, `text`, `muted`, `accent`
 | `warnBg` | `warn` z kryciem 15 % na złożonym `panel` |
 | `raised`, `sel` | złożony `panel` zmieszany z `text` (4 % jasny, 6 % ciemny) i z `accent` (12 % jasny, 18 % ciemny) |
 | `border2`, `dim` | `border` zmieszany z `text` (15 %, zachowuje alfę `border`); `muted` zmieszany z `bg` (30 %) |
-| `termBg`, `termText` | ciemny: `bg` i `text`; jasny: `#1E242C` i `#E2E8F0` — terminal zostaje ciemny jak w podstawowych |
+| `termBg`, `termText` | `bg` i `text` w każdym trybie (AM-811); `ansi` wg „Paleta ANSI terminala (AM-811)” |
 
 Kandydaci statusów (kolejność = preferencja; pierwsza trójka bez konfliktu odcieni wygrywa). Jasny motyw: `warn` `#A16207`, `#0F766E`; `ok` `#15803D`, `#4D7C0F`; `err` `#B91C1C`, `#BE185D`. Ciemny motyw: `warn` `#F59E0B`, `#FACC15`, `#5EEAD4`; `ok` `#4ADE80`, `#A3E635`; `err` `#F87171`, `#FF6E40`, `#FB7185`. Brak trójki przerywa budowę katalogu błędem. Odstępstwa od pierwszych kandydatów: `term-light` i `emerald-light` (`ok` `#4D7C0F`), `oatmeal-light` (`warn` `#0F766E`, `err` `#BE185D`), `monokai` (`warn` `#FACC15`, `err` `#FF6E40`), `gruvbox` (`warn` `#5EEAD4`, `ok` `#A3E635`, `err` `#FB7185`), `cyberpunk` (`ok` `#A3E635`), `deep-abyss` (`warn` `#5EEAD4`, `ok` `#A3E635`). Granicznie przechodzą: `dracula` (`err`~`accent` 34,5°), `teal-light` (`ok`~`accent` 32,3°), `oatmeal-light` (`warn`~`ok` 32,9°).
 
@@ -178,6 +178,12 @@ Test kontrastu (doc 12) obejmuje pary `muted/bg` i `muted/panel` (panel półprz
 Bez zmian (już przechodzą): `hc-light`, `teal-light`, `glass-light` (4,51:1 na złożonym `panel`, granicznie), `midnight-pro`, `cyberpunk`, `nord-dark`, `minimal-black`.
 
 Uwagi do oceny wzrokowej w AM-803: w `cyberpunk` `muted` (magenta) przechodzi kontrast, ale jest bardziej jaskrawy niż `text` — przeczy roli „przygaszony”; w `minimal-black` `accent` = `text` (`#FFFFFF`), więc zaznaczenie i akcje główne nie różnią się od tekstu; w `emerald-light` `muted` po korekcie jest ciemniejszy od `accent`.
+
+### Paleta ANSI terminala (AM-811)
+
+Baza to 16 kolorów xterm z JediTerm 3.76 (`ColorPaletteImpl`): `000000 CD0000 00CD00 CDCD00 1E90FF CD00CD 00CDCD E5E5E5 4C4C4C FF0000 00FF00 FFFF00 4682B4 FF00FF 00FFFF FFFFFF`. Funkcja `deriveTerminal(bg, text, dark)` poprawia każdy kolor regułą `readableOn` względem `termBg` (= `bg`): najmniejsze zmieszanie ku bieli (ciemny motyw) albo ku czerni (jasny) dające kontrast ≥ 4,5:1; kolor, który już przechodzi, zostaje. Wyjątek: kolor tła trybu (indeks 0 w ciemnym, 15 w jasnym) zostaje bez zmian. Zmiana dotyczy także ciemnych motywów (np. czerwony `#CD0000` na `#0B0A10` ma 3,4:1 i jaśnieje). Zaznaczenie i kursor to odwrócona para `termText`/`termBg`. Zmiana palety działa na karty otwierane później (ADR 0016). Szczegóły: ADR 0027.
+
+Rada: programy z kolorami 24-bit dobranymi pod ciemne tło (np. motyw `dark` w Claude Code) bywają nieczytelne na jasnym terminalu. W Claude Code ustaw `/theme light` albo `light-ansi` (kolory z palety terminala).
 
 ### Korekta kontrastu ekranów (AM-803)
 

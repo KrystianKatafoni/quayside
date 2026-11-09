@@ -2,10 +2,13 @@ package dev.quayside.notifications.impl
 
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.SessionId
+import dev.quayside.notifications.api.NotificationKind
 import dev.quayside.notifications.api.NotificationSettings
 import dev.quayside.notifications.api.PopupAction
 import dev.quayside.notifications.api.PopupId
 import dev.quayside.notifications.api.PopupModel
+import dev.quayside.sessions.api.SessionsSnapshot
+import dev.quayside.sessions.api.SnapshotStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -94,6 +97,23 @@ internal class PopupManager(
         }
     }
 
+    /**
+     * Removes the question popups ([NotificationKind.NEEDS_INPUT], [NotificationKind.PERMISSION]) whose session no
+     * longer waits for what the popup says: it works again, finished, stopped, waits for something else or is gone.
+     * Such a popup is sticky, so without this it would stay after the user answered in the terminal. Other kinds
+     * and popups without a session are left alone, and nothing is removed until the first listing ([current] is
+     * read under the lock, so it is never older than a popup already on screen).
+     */
+    fun retireAnswered(current: () -> SessionsSnapshot) {
+        synchronized(lock) {
+            val snapshot = current()
+            if (snapshot.status != SnapshotStatus.Loading) {
+                val waiting = snapshot.sessions.associate { it.id to questionKindOf(it.state) }
+                remove { it.session != null && it.kind in QUESTIONS && waiting[it.session] != it.kind }
+            }
+        }
+    }
+
     private fun mute(
         session: SessionId?,
         id: PopupId,
@@ -135,5 +155,7 @@ internal class PopupManager(
 
         /** How long "Wycisz" silences a session. */
         val MUTE = 15.minutes
+
+        private val QUESTIONS = setOf(NotificationKind.NEEDS_INPUT, NotificationKind.PERMISSION)
     }
 }

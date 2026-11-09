@@ -9,7 +9,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import dev.quayside.core.designsystem.AmLogo
 import dev.quayside.core.designsystem.AmText
+import dev.quayside.core.designsystem.AmWordmark
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.missioncontrol.ui.GlobalView
 import dev.quayside.missioncontrol.ui.MissionControlController
@@ -53,7 +55,10 @@ internal fun rememberCrumbs(
 
 private val NO_KEY: StateFlow<TabKey?> = MutableStateFlow(null)
 
-/** "Quayside / project / session"; the last crumb is in the text colour, the others muted. */
+/**
+ * The mark, then "Quayside / project / session": the root crumb is the wordmark, the last crumb is in the text colour,
+ * the others muted. The mark is decorative for the keys (never focusable) but has a label for accessibility.
+ */
 @Composable
 internal fun Breadcrumbs(
     crumbs: Crumbs,
@@ -61,14 +66,40 @@ internal fun Breadcrumbs(
 ) {
     Row(
         modifier = modifier.testTag(TopBarTags.CRUMBS),
-        horizontalArrangement = Arrangement.spacedBy(space = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        crumbs.parts.forEachIndexed { index, crumb ->
-            val last = index == crumbs.parts.lastIndex
-            if (index > 0) AmText("/", color = mutedColor())
-            val role = if (last && crumbs.endsWithSession) TextRole.NAME else TextRole.BODY
-            AmText(crumb, role = role, color = if (last) null else mutedColor())
+        AmLogo(LOGO_SIZE, Strings["topBar.logo"])
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(space = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            crumbs.parts.forEachIndexed { index, crumb ->
+                if (index > 0) AmText("/", color = mutedColor())
+                if (index == 0) {
+                    RootCrumb()
+                } else {
+                    Crumb(crumb, last = index == crumbs.parts.lastIndex, endsWithSession = crumbs.endsWithSession)
+                }
+            }
         }
     }
+}
+
+private val LOGO_SIZE = 20.dp
+
+/** The root crumb: "Quayside" as the wordmark (the text of `crumb.root` stays the first of [crumbsOf]). */
+@Composable
+private fun RootCrumb() {
+    AmWordmark()
+}
+
+@Composable
+private fun Crumb(
+    text: String,
+    last: Boolean,
+    endsWithSession: Boolean,
+) {
+    val role = if (last && endsWithSession) TextRole.NAME else TextRole.BODY
+    AmText(text, role = role, color = if (last) null else mutedColor())
 }

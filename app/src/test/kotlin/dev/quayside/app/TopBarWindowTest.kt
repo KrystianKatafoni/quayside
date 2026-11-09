@@ -3,7 +3,6 @@ package dev.quayside.app
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
@@ -16,14 +15,10 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.v2.runComposeUiTest
-import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import dev.quayside.notifications.api.NotificationSettings
@@ -279,16 +274,6 @@ class TopBarWindowTest {
                 textIn(WindowTags.CRUMBS, "Harbor") shouldBe true
             }
         }
-
-    private fun ComposeUiTest.crumbStyle(text: String): TextStyle {
-        val node =
-            onAllNodes(hasText(text) and hasAnyAncestor(hasTestTag(WindowTags.CRUMBS)), useUnmergedTree = true)
-                .onFirst()
-                .fetchSemanticsNode()
-        val results = mutableListOf<TextLayoutResult>()
-        checkNotNull(node.config.getOrNull(SemanticsActions.GetTextLayoutResult)).action?.invoke(results)
-        return results.first().layoutInput.style
-    }
 
     @Test
     fun `top bar sits above the sidebar and Mission Control`() =

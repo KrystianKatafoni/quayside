@@ -160,6 +160,18 @@ class ClaudeCliAdapterIntegrationTest {
         }
 
     @Test
+    fun `fake claude in untrusted mode gives WorkspaceNotTrusted`() =
+        runTest {
+            val runtime = runtime()
+            claude.setMode("untrusted")
+
+            val result = runtime.start(StartSpec(cwd = project, prompt = "Fix it"))
+
+            result shouldBe Outcome.Err(RuntimeError.WorkspaceNotTrusted)
+            logger.entries.toString() shouldNotContain project.toString()
+        }
+
+    @Test
     fun `bg leaving a background child returns without waiting`() =
         // The child sleeps 30 s with stdout and stderr open. The process itself exits at once, so the
         // start timeout never fires; only the wall-clock limit of runTest catches waiting for the child.

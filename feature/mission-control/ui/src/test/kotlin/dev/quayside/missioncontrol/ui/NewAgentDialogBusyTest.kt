@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test
 internal class NewAgentDialogBusyTest {
     private val fake: FakeSessions = NewAgentWorld.sessions()
     private val gate = CompletableDeferred<Unit>()
-    private val trusting = SessionError.Runtime(RuntimeProblem.COMMAND_FAILED)
+    private val refused = SessionError.Runtime(RuntimeProblem.COMMAND_FAILED)
 
     private fun ComposeUiTest.shown(rig: NewAgentRig) {
         showNewAgent(rig)
@@ -149,7 +149,7 @@ internal class NewAgentDialogBusyTest {
         runComposeUiTest {
             val rig = NewAgentRig(RecordingCommands(fake))
             shown(rig)
-            fake.failNext(trusting)
+            fake.failNext(refused)
 
             clickStart()
 
@@ -172,7 +172,7 @@ internal class NewAgentDialogBusyTest {
         runComposeUiTest {
             val rig = NewAgentRig(RecordingCommands(fake))
             shown(rig)
-            fake.failNext(trusting)
+            fake.failNext(refused)
 
             clickStart()
 
@@ -185,7 +185,7 @@ internal class NewAgentDialogBusyTest {
         runComposeUiTest {
             val rig = NewAgentRig(RecordingCommands(fake))
             shown(rig)
-            fake.failNext(trusting)
+            fake.failNext(refused)
             clickStart()
             await(MissionControlTags.NEW_AGENT_PROBLEM)
 
@@ -201,7 +201,7 @@ internal class NewAgentDialogBusyTest {
         runComposeUiTest {
             val rig = NewAgentRig(RecordingCommands(fake))
             shown(rig)
-            fake.failNext(trusting)
+            fake.failNext(refused)
             clickStart()
             await(MissionControlTags.NEW_AGENT_PROBLEM)
 

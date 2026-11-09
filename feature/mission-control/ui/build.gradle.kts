@@ -6,12 +6,16 @@ plugins {
 
 dependencies {
     implementation(project(":feature:sessions:api"))
+    // WorkspaceTrust: the "Zaufać katalogowi?" step of the "Nowy agent" dialog (AM-309, ADR 0031).
+    implementation(project(":feature:agent-runtime:api"))
     // Name and directory of the selected project.
     implementation(project(":feature:projects:api"))
     implementation(project(":core:domain"))
     // Colours, shape and typography of the screens come from AmTheme (AM-806, docs/11 section 3, rule 1).
     implementation(project(":core:design-system"))
 
+    // FakeWorkspaceTrust for the controller and UI tests of the trust step.
+    testImplementation(testFixtures(project(":feature:agent-runtime:api")))
     // FakeSessions, aSession and SessionsWorld for the controller and UI tests.
     testImplementation(testFixtures(project(":feature:sessions:api")))
     // FakeProjectsApi and aProject.

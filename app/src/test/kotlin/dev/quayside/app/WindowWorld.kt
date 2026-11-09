@@ -23,6 +23,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.agentruntime.api.FakeHookInstaller
+import dev.quayside.agentruntime.api.FakeWorkspaceTrust
+import dev.quayside.agentruntime.api.WorkspaceTrust
 import dev.quayside.appearance.api.AppearanceSettings
 import dev.quayside.appearance.api.FakeAppearanceApi
 import dev.quayside.appearance.api.FakeThemeFiles
@@ -40,6 +42,7 @@ import dev.quayside.core.testing.TestClock
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.missioncontrol.ui.NewAgentDialog
+import dev.quayside.missioncontrol.ui.NewAgentPorts
 import dev.quayside.notifications.api.FakeNotificationSettingsRepo
 import dev.quayside.notifications.api.FakeSoundLibrary
 import dev.quayside.notifications.api.FakeVoiceCatalog
@@ -122,6 +125,9 @@ internal class WindowSetup(
     val starts: SessionCommands? = null,
 ) {
     var keys: TerminalKeys? = null
+
+    /** What the "Zaufać katalogowi?" step of the "Nowy agent" dialog writes to (AM-309); records `trusted`. */
+    var trust: WorkspaceTrust = FakeWorkspaceTrust()
 
     /** The attacher of the window's terminal (null without one): what the popup Attach and the buttons call. */
     var attacher: SessionAttacher? = null
@@ -325,8 +331,7 @@ private class AgentWiring(
 ) {
     val newAgent =
         NewAgentController(
-            setup.starts ?: setup.sessions,
-            setup.projects,
+            NewAgentPorts(setup.starts ?: setup.sessions, setup.projects, setup.trust),
             scope,
             NoOpLogger,
             selectStartedSession(projects, missionControl),

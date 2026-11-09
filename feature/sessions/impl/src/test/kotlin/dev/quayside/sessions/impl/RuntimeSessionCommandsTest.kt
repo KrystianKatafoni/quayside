@@ -27,6 +27,7 @@ import dev.quayside.sessions.impl.MonitorFixtures.S2
 import dev.quayside.sessions.impl.MonitorFixtures.S3
 import dev.quayside.sessions.impl.MonitorFixtures.blocked
 import dev.quayside.sessions.impl.MonitorFixtures.working
+import io.kotest.assertions.assertSoftly
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -325,6 +326,27 @@ class RuntimeSessionCommandsTest {
     }
 
     @Test
+    fun `start in an untrusted workspace gives WORKSPACE_NOT_TRUSTED and logs only the problem`() =
+        runTest {
+            val world = commandsWorld()
+            world.listOnce()
+            world.runtime.fail("start", RuntimeError.WorkspaceNotTrusted)
+
+            val result = world.commands.start(P1, NewSessionSpec(prompt = "secret-prompt", name = "secret-name"))
+
+            assertSoftly {
+                result shouldBe Outcome.Err(SessionError.Runtime(RuntimeProblem.WORKSPACE_NOT_TRUSTED))
+                world.logger.entriesAt(LogLevel.WARN).any {
+                    it.fields["problem"].toString() == RuntimeProblem.WORKSPACE_NOT_TRUSTED.name
+                } shouldBe true
+                world.logger.entries.forEach {
+                    it.toString() shouldNotContain "secret"
+                    it.toString() shouldNotContain "/Users/test"
+                }
+            }
+        }
+
+    @Test
     fun `command logs carry ids and problems only`() =
         runTest {
             val secretDir = P1_DIR.resolve("secret-dir")
@@ -395,6 +417,10 @@ class RuntimeSessionCommandsTest {
                 ),
                 arguments(RuntimeError.Unparseable("bad-json"), SessionError.Runtime(RuntimeProblem.UNPARSEABLE)),
                 arguments(RuntimeError.Timeout, SessionError.Runtime(RuntimeProblem.TIMEOUT)),
+                arguments(
+                    RuntimeError.WorkspaceNotTrusted,
+                    SessionError.Runtime(RuntimeProblem.WORKSPACE_NOT_TRUSTED),
+                ),
             )
     }
 }

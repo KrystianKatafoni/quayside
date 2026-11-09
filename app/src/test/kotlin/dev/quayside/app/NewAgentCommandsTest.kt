@@ -2,6 +2,7 @@
 
 package dev.quayside.app
 
+import dev.quayside.agentruntime.api.FakeWorkspaceTrust
 import dev.quayside.commandpalette.api.Command
 import dev.quayside.commandpalette.api.CommandGroup
 import dev.quayside.commandpalette.api.CommandId
@@ -9,6 +10,7 @@ import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.testing.TestClock
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
+import dev.quayside.missioncontrol.ui.NewAgentPorts
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
@@ -82,6 +84,7 @@ class NewAgentCommandsTest {
         val newAgent: NewAgentController,
     )
 
+    @Suppress("LongMethod")
     private fun TestScope.parts(initial: List<dev.quayside.projects.api.Project>): Parts {
         val fake = FakeSessions(SessionsWorld(projects = listOf(WorldProject(project.id, project.dir))))
         val api = SessionsApi(monitor = fake, commands = fake)
@@ -105,7 +108,12 @@ class NewAgentCommandsTest {
                 NoOpLogger,
                 1.hours,
             )
-        val newAgent = NewAgentController(fake, projects, backgroundScope, NoOpLogger) { _, _ -> }
+        val newAgent =
+            NewAgentController(
+                NewAgentPorts(fake, projects, FakeWorkspaceTrust()),
+                backgroundScope,
+                NoOpLogger,
+            ) { _, _ -> }
         return Parts(projects, controller, missionControl, newAgent)
     }
 

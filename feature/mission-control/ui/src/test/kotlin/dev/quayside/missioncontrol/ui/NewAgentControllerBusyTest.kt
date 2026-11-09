@@ -51,7 +51,7 @@ internal class NewAgentControllerBusyTest : NewAgentControllerFixture() {
         runTest {
             val controller = opened()
             controller.onEvent(NewAgentEvent.Edit(NewAgentForm(QUAYSIDE.id, prompt = NewAgentWorld.SECRET_PROMPT)))
-            fake.failNext(trusting)
+            fake.failNext(refused)
 
             submit(controller)
 
@@ -194,7 +194,7 @@ internal class NewAgentControllerBusyTest : NewAgentControllerFixture() {
         runTest {
             val controller = opened()
             controller.edit()
-            fake.failNext(trusting)
+            fake.failNext(refused)
             submit(controller)
             controller.onEvent(NewAgentEvent.Cancel)
 
@@ -233,7 +233,7 @@ internal class NewAgentControllerBusyTest : NewAgentControllerFixture() {
             controller.onEvent(NewAgentEvent.Edit(secret.copy(agent = "bad agent")))
             submit(controller)
             controller.onEvent(NewAgentEvent.Edit(secret))
-            fake.failNext(trusting)
+            fake.failNext(refused)
             submit(controller)
             fake.failNext(SessionError.UnknownProject(QUAYSIDE.id))
             controller.onEvent(NewAgentEvent.Edit(secret.copy(project = QUAYSIDE.id)))
@@ -252,7 +252,7 @@ internal class NewAgentControllerBusyTest : NewAgentControllerFixture() {
         runTest {
             val controller = opened()
             controller.onEvent(NewAgentEvent.Edit(NewAgentForm(QUAYSIDE.id, prompt = NewAgentWorld.SECRET_PROMPT)))
-            fake.failNext(trusting)
+            fake.failNext(refused)
 
             submit(controller)
 

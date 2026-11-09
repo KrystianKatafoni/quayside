@@ -1,6 +1,7 @@
 package dev.quayside.app
 
 import dev.quayside.agentruntime.api.AgentRuntime
+import dev.quayside.agentruntime.api.WorkspaceTrust
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.api.ThemeFiles
 import dev.quayside.commandpalette.api.CommandRegistry
@@ -56,8 +57,9 @@ internal class AppearanceDeps(
     val files: ThemeFiles,
 )
 
-/** The projects module with the inspector that reads a project's directory. */
+/** The projects module with the inspector that reads a project's directory and the port that trusts it (AM-309). */
 internal class ProjectDeps(
     val api: ProjectsApi,
     val inspector: ProjectInspector,
+    val trust: WorkspaceTrust,
 )

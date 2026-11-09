@@ -126,6 +126,8 @@ private class PreviewProjects : ProjectsApi {
         id: ProjectId,
         subfolders: List<SubfolderName>,
     ): Outcome<Unit, ProjectError> = Outcome.Err(ProjectError.UnknownProject(id))
+
+    override suspend fun branch(id: ProjectId): String? = null
 }
 
 /** [PREVIEW_PROJECT] only; reading only, adding, renaming and removing are refused. */

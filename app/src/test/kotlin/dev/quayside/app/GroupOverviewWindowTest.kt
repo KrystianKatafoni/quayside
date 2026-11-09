@@ -6,7 +6,6 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
@@ -107,12 +106,7 @@ class GroupOverviewWindowTest {
             await(WindowTags.projectRow("project0001")).performClick()
             await(WindowTags.OVERVIEW)
             await(WindowTags.missionRow("rooted"))
-            waitUntil(timeoutMillis = OVERVIEW_WAIT_MS) {
-                onAllNodes(
-                    hasContentDescription("2 pracują") and hasAnyAncestor(hasTestTag(WindowTags.overviewRow("soft"))),
-                    useUnmergedTree = true,
-                ).fetchSemanticsNodes().isNotEmpty()
-            }
+            awaitCounters(WindowTags.overviewRow("soft"), waiting = 0, working = 2, done = 0, failed = 0)
 
             // When the user clicks the row "soft" in the overview
             await(WindowTags.overviewRow("soft")).performClick()
@@ -221,5 +215,33 @@ class GroupOverviewWindowTest {
             await(WindowTags.missionRow("rooted"))
             header("plant-puls")
             await(soft).assertIsNotSelected()
+        }
+
+    @Test
+    fun `FR-P8 overview root row and sidebar agree on the main folder sessions`() =
+        runComposeUiTest {
+            // Given sessions of every kind: in the directory, in an unchecked folder, in docs and in soft
+            val world = CountersWorld(root)
+            val mixed =
+                world.fake(
+                    world.session("rooted", "", SessionState.Working, 0),
+                    world.session("ended", "marketing", SessionState.Done, 1),
+                    world.session("asks", "docs", SessionState.AwaitingInput("q"), 2),
+                    world.session("bad", "soft/api", SessionState.Failed, 3),
+                    world.session("works", "soft", SessionState.Working, 4),
+                )
+            showWindow(world.projects, mixed)
+            await(WindowTags.projectRow("project0001")).performClick()
+            await(WindowTags.OVERVIEW_ROOT)
+
+            // Then the root row "folder główny" counts what is in the directory and in unchecked folders ...
+            awaitCounters(WindowTags.OVERVIEW_ROOT, waiting = 0, working = 1, done = 1, failed = 0)
+            // ... the subfolder rows of the overview and of the sidebar show the same numbers ...
+            awaitCounters(WindowTags.overviewRow("docs"), waiting = 1, working = 0, done = 0, failed = 0)
+            awaitCounters(WindowTags.subfolderRow("project0001", "docs"), 1, 0, 0, 0)
+            awaitCounters(WindowTags.overviewRow("soft"), waiting = 0, working = 1, done = 0, failed = 1)
+            awaitCounters(WindowTags.subfolderRow("project0001", "soft"), 0, 1, 0, 1)
+            // ... and the group row of the sidebar is the sum of the root row and the subfolder rows
+            awaitCounters(WindowTags.projectRow("project0001"), waiting = 1, working = 2, done = 1, failed = 1)
         }
 }

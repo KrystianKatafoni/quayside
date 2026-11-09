@@ -78,6 +78,11 @@ internal object WindowTags {
 
     fun overviewRow(name: String): String = "missionControl.overview.row.$name"
 
+    /** The root row of the overview, "folder główny" (AM-310), and the place badge of a session row (`internal`). */
+    const val OVERVIEW_ROOT = "missionControl.overview.root"
+
+    fun rowPlace(sessionId: String): String = "missionControl.rowPlace.$sessionId"
+
     /** The "Nowy agent" button of the top bar (AM-816, `TopBarTags.NEW_AGENT`) and the dialog (AM-608). */
     const val NEW_AGENT_BUTTON = "app.topBar.newAgent"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"

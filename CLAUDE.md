@@ -147,3 +147,8 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Composable z argumentami `(draft, controller)` jest pomijany przy rekompozycji, więc dane zmienne w czasie (np. katalog motywów jako `StateFlow`) zbieraj wyżej przez `collectAsState` i przekazuj w dół jako argument; odczyt `controller.x.value` w dziecku nie odświeży się po zmianie.
 - `ModalOverSwingWindowTest` (tag `awt-window`) bez `assumeTrue(fokus okna)` pada lokalnie losowo także na `main`; przed przypisaniem błędu zadaniu porównaj z `main` w tej samej sesji.
 - Test w `app`, który przepisuje regułę `internal` z `impl` (np. uchwyt paska), sprawdza dane katalogu względem kopii, a nie regułę — opisz to w teście albo testuj regułę w jej module.
+- W Compose 1.12 `Canvas.nativeCanvas` jest `@Deprecated` (przy `allWarningsAsErrors` zatrzyma build) — używaj `skiaCanvas`.
+- `onNodeWithTag(opakowanie)` w drzewie scalonym nie widzi `Text` dziecka — tekst czytaj z węzła tekstu w `useUnmergedTree`.
+- Liczbę kształtów i inne stałe z planu licz z pliku, nie przepisuj z opisu (AM-822: 9 zamiast 8 kształtów).
+- Gradle w sesji w chmurze wymaga `LC_ALL=C.UTF-8` i `-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8` w `JAVA_TOOL_OPTIONS`, inaczej `InvalidPathException` od nazw testów z polskimi znakami.
+- Dekoracyjny `Image(contentDescription = null)` ma w drzewie niescalonym neutralny węzeł z `Shape` — test dostępności sprawdza brak właściwości (opis, rola, akcje), nie brak dzieci.

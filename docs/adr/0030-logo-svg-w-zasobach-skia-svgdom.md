@@ -1,6 +1,6 @@
 # ADR 0030: Logo jako pliki SVG w zasobach rysowane przez Skia SVGDOM
 
-- **Status:** proponowana
+- **Status:** przyjęta
 - **Data:** 2026-11-09
 - **Dotyczy:** `core:design-system` (zasoby `logo/`, `AmLogo`), `app` (ikona okna i Docka), AM-901 (`.icns`)
 

@@ -35,7 +35,10 @@ import kotlin.time.toJavaDuration
  * Events are emitted under the mutex, after [snapshot] is set. With a full buffer (64 events) a
  * collector that stops collecting therefore also holds back every later snapshot update and command;
  * consumers (AM-405) must not collect [events] on a thread that may block or stall.
+ *
+ * The seventh parameter is [metas] (AM-818); the optional collaborators are named at every call site.
  */
+@Suppress("LongParameterList")
 internal class SessionsState(
     private val runtime: AgentRuntime,
     private val projects: ProjectsApi,

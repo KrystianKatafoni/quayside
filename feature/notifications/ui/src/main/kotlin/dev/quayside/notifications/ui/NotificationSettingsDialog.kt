@@ -40,8 +40,8 @@ import dev.quayside.notifications.api.NotificationSettingsError
 
 /**
  * The "Ustawienia powiadomień" dialog over the whole window (FR-N1, FR-N2); draws nothing while [controller] has it
- * closed; [sounds] lists and previews the sounds. A focusable popup covering the whole window, so keys reach its controls and not the window behind it;
- * the panel scrolls in the vertical axis; Escape is "Cancel".
+ * closed; [sounds] lists and previews the sounds. A focusable popup covering the whole window, so keys reach its
+ * controls and not the window behind it; the panel scrolls in the vertical axis; Escape is "Cancel".
  */
 @Composable
 public fun NotificationSettingsDialog(

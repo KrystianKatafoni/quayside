@@ -84,6 +84,7 @@ Plan i decyzje: [ADR 0029](adr/0029-wiele-kont-claude.md).
 | FR-L5 | Kontynuacja sesji przerwanej limitem na innym koncie: automatycznie (gdy automatyka włączona) albo ręcznie; stara sesja zostaje z odnośnikiem do nowej | S |
 | FR-L6 | Zużycie limitu i czas odnowienia per konto | C |
 | FR-L7 | Widok „Konta”: logowanie i wylogowanie wielu kont, dodawanie, usuwanie (bez kasowania katalogu), kolejność, przełączniki „Aktywne” i „W automacie” per konto, odblokowanie limitu, główny przełącznik automatyki i czas chłodzenia | S |
+| FR-L8 | Ikona bieżącego konta w prawym górnym rogu okna; klik otwiera listę kont pod ikoną z ręcznym przełączeniem bieżącego konta (dla nowych sesji), opcją „Automatycznie” i wejściem do widoku „Konta” | S |
 
 ## Wymagania niefunkcjonalne
 

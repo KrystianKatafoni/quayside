@@ -379,6 +379,10 @@ data class CornerRadii(val row: Dp, val card: Dp, val tile: Dp); fun cornerRadii
 @Composable fun AmSearchField(placeholder: String, keyCap: String?, onClick: () -> Unit, modifier: Modifier = Modifier)   // przycisk wyglądający jak pole, bez fokusu
 @Composable fun AmIconButton(icon: IconKind, label: String, onClick: () -> Unit, modifier: Modifier = Modifier, options: IconButtonOptions = IconButtonOptions())
 @Composable fun AmStatCard(value: String, label: String, icon: IconKind, modifier: Modifier = Modifier, tone: StatusTone = NEUTRAL)
+// AM-822: znak (latarnia, ADR 0030; poniżej 32 dp rysunek uproszczony, stałe kolory, bez fokusu), ikona okna, obraz Docka i słowo
+@Composable fun AmLogo(size: Dp, contentDescription: String?, modifier: Modifier = Modifier)
+@Composable fun rememberAmLogoPainter(size: Dp): Painter; fun amLogoImage(sizePx: Int): BufferedImage
+@Composable fun AmWordmark(modifier: Modifier = Modifier); fun ColorTokens.wordmarkAccent(): Rgba   // "side": akcent lub zmieszany z text do 4,5:1
 data class IconButtonOptions(val enabled: Boolean = true, val focusable: Boolean = true, val tone: StatusTone = NEUTRAL, val size: IconButtonSize = REGULAR, val style: IconButtonStyle = GHOST, val badge: String? = null)
 enum class IconButtonSize { COMPACT, REGULAR, LARGE }; enum class IconButtonStyle { GHOST, OUTLINED, SELECTED, DANGER }
 // AM-809: przycisk z tekstem w trzech rodzajach, opcjonalna ikona i skrót; kolor znaku stanu

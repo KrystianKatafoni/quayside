@@ -12,6 +12,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Added
 
+- Logo Quayside (latarnia): znak 20 dp przed okruszkami górnego paska, słowo „Quayside” z „side” w kolorze akcentu (korygowanym do 4,5:1), ikona okna i Docka z tego samego rysunku (AM-822, ADR 0030).
 - Panel szczegółów sesji pokazuje model, tryb uprawnień i gałąź git (gdy są znane z transkryptu Claude Code i `.git/HEAD`), a nagłówek projektu — gałąź katalogu projektu (AM-818).
 - Edytor własnych schematów kolorów w oknie Wygląd: „Nowy schemat…” otwiera formularz (klucz, nazwa, promień rogu, tryb i osiem kolorów `#RRGGBB`) z raportem kontrastu NFR-6 i próbką w wyprowadzonych kolorach, „Dodaj schemat” działa dopiero po przejściu audytu; „Usuń schemat” usuwa wybrany własny schemat (odmowa, gdy jest zapisanym motywem albo motywem dnia lub nocy), „Eksportuj schemat…” zapisuje jeden schemat do pliku motywu (AM-820).
 - Wybór dźwięku powiadomień: sekcja „Dźwięk” w ustawieniach powiadomień pozwala wybrać dźwięk systemowy dla każdego rodzaju zdarzenia, ustawić głośność (0–100%) i odsłuchać próbkę przyciskiem „Odsłuchaj” (AM-815).

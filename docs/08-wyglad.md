@@ -229,6 +229,12 @@ Wiersz: zaznaczony projekt lub widok (tło `sel`, ramka `accent`), wiersz `AmLis
 
 Dwie nowe role tekstu obok TITLE, HEADING, BODY, CAPTION i CODE: `NAME` (mono, 15 sp, SemiBold: nazwy sesji w wierszach, w panelu szczegółów, na pasku sesji i w okruszkach trybu terminala) oraz `LABEL` (UI, 11 sp, SemiBold, odstęp liter 0,12 em: „PROJEKTY”, „WIDOKI”, „PODSUMOWANIE”; wielkie litery są w tekstach). Kolory zawsze z tokenów: `LABEL` jest w `muted` na `panel` (≥ 4,5:1 w audycie).
 
+## Logo (AM-822)
+
+Znak Quayside to latarnia na ciemnym kaflu ([ADR 0030](adr/0030-logo-svg-w-zasobach-skia-svgdom.md)). Dwa rysunki SVG w zasobach `core/design-system/src/main/resources/logo/`: pełny `quayside-logo.svg` (viewBox 32, od 32 dp) i uproszczony `quayside-logo-16.svg` (viewBox 16, poniżej 32 dp, np. 20 dp w górnym pasku). Kolory są stałe (kafel `#1E1930`, wiązka `#FBBF24`, latarnia `#E8E5F2`, głowica i podstawa `#A78BFA`, czubek latarni w pełnym rysunku `#C4B5FD`), więc znak wygląda tak samo w jasnych i ciemnych motywach i nie zmienia się z `LocalTextColor`. Znak nie jest klikalny ani fokusowalny; ma etykietę dostępności albo jest dekoracją.
+
+Słowo „Quayside” (`AmWordmark`) to jeden węzeł tekstu w IBM Plex Sans SemiBold 15 sp niezależnie od typografii motywu: „Quay” w `text`, „side” w kolorze `wordmarkAccent()`. Akcent zostaje, gdy ma 4,5:1 na `panel` (rysowanym na `bg`); w przeciwnym razie jest mieszany w stronę `text` krokami po 5%, aż kontrast wystarczy (NFR-6). Ikona okna to ten sam rysunek (32 dp), ikona Docka to `amLogoImage(256)` przez `java.awt.Taskbar`; plik `.icns` robi AM-901.
+
 ## Pozostałe ustawienia wyglądu
 
 | Ustawienie | Opcje |

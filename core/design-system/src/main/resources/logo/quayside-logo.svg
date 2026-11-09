@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Quayside">
+  <rect x="1" y="1" width="30" height="30" rx="8" fill="#1E1930"/>
+  <path d="M18.5 8.2 L29 4.6 V14.2 Z" fill="#FBBF24" opacity=".9"/>
+  <path d="M3 9.5 L11 8.2 V12 Z" fill="#FBBF24" opacity=".45"/>
+  <path d="M12.6 12.4 H19.4 L21 25.4 H11 Z" fill="#E8E5F2"/>
+  <path d="M12.1 16.4 H19.9 L20.3 19.4 H11.7 Z" fill="#A78BFA"/>
+  <rect x="11.6" y="6.6" width="8.8" height="5.4" rx="1.6" fill="#A78BFA"/>
+  <rect x="14.3" y="4" width="3.4" height="2.8" rx="1.2" fill="#C4B5FD"/>
+  <rect x="6.5" y="25" width="19" height="2.8" rx="1.4" fill="#A78BFA"/>
+</svg>

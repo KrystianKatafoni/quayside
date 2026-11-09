@@ -2,6 +2,7 @@ package dev.quayside.app
 
 import dev.quayside.appearance.api.ThemeSpec
 import dev.quayside.appearance.impl.builtInCatalog
+import dev.quayside.core.designsystem.wordmarkAccent
 import dev.quayside.core.designtokens.ColorTokens
 import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.Wcag
@@ -10,12 +11,14 @@ import dev.quayside.core.designtokens.over
 import io.kotest.assertions.withClue
 import io.kotest.matchers.doubles.shouldBeGreaterThanOrEqual
 import org.junit.jupiter.api.Named
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 
 private const val TINT_PERCENT = 15
+private const val LOGO_BEAM_PERCENT = 90
 
 /**
  * NFR-6 for the pairs that the AM-816 screens draw newly (top bar, status bar, counters, selected rows), on every theme
@@ -117,6 +120,36 @@ class ScreenContrastBarsTest {
         with(pairs(theme)) {
             colors.content.accent.shouldMeet(Wcag.NON_TEXT_MIN, panel, "row frame", "panel")
         }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("themes")
+    fun `wordmark quay text on panel`(theme: ThemeSpec) =
+        with(pairs(theme)) {
+            colors.content.text.shouldMeet(Wcag.TEXT_MIN, panel, "wordmark Quay", "panel")
+        }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("themes")
+    fun `wordmark side on panel`(theme: ThemeSpec) =
+        with(pairs(theme)) {
+            // The drawn colour of "side": the accent where it reads, else mixed toward the text colour
+            colors.wordmarkAccent().shouldMeet(Wcag.TEXT_MIN, panel, "wordmark side", "panel")
+        }
+
+    @Test
+    fun `logo parts meet 3 to 1 on their tile`() {
+        // The mark has fixed colours on a fixed tile (ADR 0030): one case, not one per theme
+        val tile = checkNotNull(Rgba.parse("#1E1930"))
+        val parts =
+            mapOf(
+                "beam" to checkNotNull(Rgba.parse("#FBBF24")).withAlpha(LOGO_BEAM_PERCENT).over(tile),
+                "lantern" to checkNotNull(Rgba.parse("#E8E5F2")),
+                "head and base" to checkNotNull(Rgba.parse("#A78BFA")),
+            )
+        parts.forEach { (name, color) ->
+            withClue("$name on the tile") { Wcag.contrast(color, tile) shouldBeGreaterThanOrEqual Wcag.NON_TEXT_MIN }
+        }
+    }
 
     companion object {
         @JvmStatic

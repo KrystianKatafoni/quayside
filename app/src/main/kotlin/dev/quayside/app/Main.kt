@@ -14,7 +14,10 @@ import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.appearance.impl.themeFilesModule
 import dev.quayside.commandpalette.impl.commandPaletteModule
+import dev.quayside.core.designsystem.amLogoImage
+import dev.quayside.core.designsystem.rememberAmLogoPainter
 import dev.quayside.core.designtokens.TerminalColors
+import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.info
 import dev.quayside.core.process.LoginShellProcessRunner
 import dev.quayside.notifications.api.NotificationSettingsRepo
@@ -43,27 +46,26 @@ import java.nio.file.Path
 /** Port of the hook server and of the URLs the installer writes into the settings file (docs/11 §9). */
 internal const val HOOK_PORT = 47321
 
+private const val DOCK_ICON_PX = 256
+private val WINDOW_ICON_SIZE = 32.dp
+
 /**
  * Entry point: builds the dependency graph once, then opens the main window. The project list is read before
  * the window opens: `main` is the one place allowed to block (ENG-C3).
  */
 @Suppress("ForbiddenMethodCall")
 fun main() {
-    // Before the first use of AWT: FileDialog then chooses folders, natively on macOS (AwtDirectoryPicker).
-    System.setProperty("apple.awt.fileDialogForDirectories", "true")
+    enableNativeFolderDialog()
     val core = productionCoreDeps()
     core.logger.info("app start")
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
     val appScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
     val appearance = runBlocking { appearanceModule(core.storage, core.process, core.homeDir, appScope, core.logger) }
     val looks = appLooks(appearance, appScope)
-    // Before the first window (JediTerm reads the installed fonts once, by name): every font the dialog offers.
-    registerTerminalFonts(appearance.catalog.value, core.logger)
+    prepareWindowing(core.logger, appearance)
     val modules = appModules(core, projects, runBlocking { storedSettings(core) }, appearance, looks)
     val hooks = hookDeps(core, projects)
     val keys = WindowKeys()
-    // Before the first application {}: Compose content (the palette) must draw over the Swing terminals (ADR 0012).
-    System.setProperty("compose.interop.blending", "true")
     application {
         // Window passes the composition locals of its parent composition to its content, so one AppTheme is enough.
         AppTheme(looks) {
@@ -74,6 +76,7 @@ fun main() {
                 },
                 onKeyEvent = keys::onKeyEvent,
                 title = Strings["app.title"],
+                icon = rememberAmLogoPainter(WINDOW_ICON_SIZE),
                 state = rememberWindowState(size = DpSize(width = 1280.dp, height = 800.dp)),
             ) {
                 MainWindow(core, modules, keys, hooks)
@@ -81,6 +84,24 @@ fun main() {
             PopupWindow(modules.settings.notifications.popups)
         }
     }
+}
+
+/** Before the first use of AWT: FileDialog then chooses folders, natively on macOS (AwtDirectoryPicker). */
+private fun enableNativeFolderDialog() {
+    System.setProperty("apple.awt.fileDialogForDirectories", "true")
+}
+
+/** Before the first window: terminal fonts, interop blending and the Dock icon. */
+private fun prepareWindowing(
+    logger: Logger,
+    appearance: AppearanceApi,
+) {
+    // JediTerm reads the installed fonts once, by name: register every font the dialog offers.
+    registerTerminalFonts(appearance.catalog.value, logger)
+    // Compose content (the palette) must draw over the Swing terminals (ADR 0012).
+    System.setProperty("compose.interop.blending", "true")
+    // The Dock shows the mark only through Taskbar (macOS ignores Window(icon)); the full drawing, 256 px.
+    installDockIcon(amLogoImage(DOCK_ICON_PX), logger)
 }
 
 /** The module graph of the window over the already read [projects] and [stored] settings. */

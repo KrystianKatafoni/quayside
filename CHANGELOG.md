@@ -88,6 +88,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/), wersjonowanie:
 
 ### Changed
 
+- Jasny terminal w jasnych motywach: tło i tekst terminala pochodzą z motywu we wszystkich 29 motywach; kolory ANSI to paleta xterm poprawiona do ≥ 4,5:1 względem tła terminala (także w ciemnych motywach zmieniają się czerwony, magenta i jasna czerń); nowe kolory dostają tylko nowe karty (AM-811, ADR 0016, ADR 0027).
+- API (zmiana łamiąca `core:design-tokens`): nowy typ `AnsiColors`, pole `TerminalColors.ansi`; konstruktor `TerminalColors` jest niezgodny wstecz (AM-811).
+
 - API (ENG-I6, zmiana łamiąca `projects:api`): nowe pole `Project.subfolders`, nowe metody `ProjectsApi.setSubfolders` i `ProjectInspector.subfolders`, typy `SubfolderName`, `ProjectFocus`, `ProjectGroups` oraz `ProjectError.InvalidSubfolder`; `projects.json` w schemacie 2 (migracja 1→2 bez zmiany danych; starsza wersja aplikacji zgłasza nowszy schemat i nie nadpisuje pliku) (AM-306, ADR 0026).
 - Kolory 23 z 29 motywów poprawione tak, by ekrany spełniały kontrast 4,5:1 (tekst) i 3:1 (znaki): `warn`, `ok`, `err`, `work`, `muted` i w `oatmeal-light` `accent` są minimalnie ściemnione lub rozjaśnione tam, gdzie wcześniej zawodziły; motywy `plex`, `graphite`, `phosphor`, `synth`, `amber` i `contrast` bez zmian (AM-803).
 - Nowa nazwa aplikacji: Quayside (wcześniej Agent Manager). Dane aplikacji leżą w `~/Library/Application Support/Quayside/`; listę projektów ze starego katalogu `AgentManager/` trzeba przenieść ręcznie.

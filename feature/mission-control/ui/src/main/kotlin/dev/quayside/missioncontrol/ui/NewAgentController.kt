@@ -6,10 +6,12 @@ import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionError
+import dev.quayside.sessions.api.SubfolderProblem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +38,7 @@ public class NewAgentController(
     private val projects: ProjectsApi,
     private val scope: CoroutineScope,
     private val logger: Logger,
-    private val onStarted: (ProjectId, SessionId) -> Unit,
+    private val onStarted: (ProjectFocus, SessionId) -> Unit,
 ) {
     private val current = MutableStateFlow<NewAgentState?>(null)
     private val open = MutableStateFlow(false)
@@ -47,11 +49,15 @@ public class NewAgentController(
     /** For the palette and the menu: true while the dialog is open. */
     public val isOpen: StateFlow<Boolean> = open
 
-    /** Opens with [project] preselected (null: the user picks); ignored when open or with no projects. */
-    public fun open(project: ProjectId?) {
+    /**
+     * Opens with the project of [focus] preselected, and its subfolder when the project is a group that still has it
+     * (null: the user picks); ignored when open or with no projects.
+     */
+    public fun open(focus: ProjectFocus?) {
         val list = projects.projects.value
         if (current.value != null || list.isEmpty()) return
-        show(NewAgentState(NewAgentForm(NewAgentRules.defaultProject(project, list)), list))
+        val (project, subfolder) = NewAgentRules.defaultFocus(focus, list)
+        show(NewAgentState(NewAgentForm(project, subfolder = subfolder), list))
     }
 
     internal fun onEvent(event: NewAgentEvent) {
@@ -89,7 +95,7 @@ public class NewAgentController(
         scope.launch {
             try {
                 when (val result = commands.start(project, spec)) {
-                    is Outcome.Ok -> started(project, result.value)
+                    is Outcome.Ok -> started(ProjectFocus(project, shown.form.subfolder), result.value)
                     is Outcome.Err -> failed(result.error)
                 }
             } finally {
@@ -99,23 +105,44 @@ public class NewAgentController(
     }
 
     private fun started(
-        project: ProjectId,
+        focus: ProjectFocus,
         id: SessionId,
     ) {
-        logger.info("new agent: started", "session" to id.value, "project" to project.value)
+        logger.info("new agent: started", "session" to id.value, "project" to focus.project.value)
         show(null)
-        onStarted(project, id)
+        onStarted(focus, id)
     }
 
     private fun failed(error: SessionError) {
-        val problem = (error as? SessionError.Runtime)?.problem?.name
+        val problem =
+            when (error) {
+                is SessionError.Runtime -> error.problem.name
+                is SessionError.SubfolderUnavailable -> error.problem.name
+                else -> null
+            }
         logger.warn("new agent: start failed", "error" to error::class.simpleName, "problem" to problem)
         val reason = NewAgentProblem.StartFailed(NewAgentRules.failureOf(error))
         current.update { shown ->
             shown?.let {
-                val form = if (error is SessionError.UnknownProject) it.form.copy(project = null) else it.form
+                val form = it.form.after(error)
                 it.copy(form = form, problem = reason)
             }
         }
     }
 }
+
+/** The form after a refused start: the project or the subfolder that was refused is cleared (AM-608, AM-308). */
+private fun NewAgentForm.after(error: SessionError): NewAgentForm =
+    when {
+        error is SessionError.UnknownProject -> {
+            copy(project = null, subfolder = null)
+        }
+
+        error is SessionError.SubfolderUnavailable && error.problem == SubfolderProblem.NOT_IN_PROJECT -> {
+            copy(subfolder = null)
+        }
+
+        else -> {
+            this
+        }
+    }

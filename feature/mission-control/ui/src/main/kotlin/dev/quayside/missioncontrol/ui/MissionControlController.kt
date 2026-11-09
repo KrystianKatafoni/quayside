@@ -174,7 +174,7 @@ public class MissionControlController(
             MissionControlIntent.RespawnSelected -> run(SessionAction.RESPAWN)
             MissionControlIntent.RemoveSelected -> askToRemove()
             is MissionControlIntent.SelectFilter -> Unit
-            is MissionControlIntent.SelectSession -> selection.value = Selection(intent.project, session = intent.id)
+            is MissionControlIntent.SelectSession -> selection.value = intent.toSelection()
             MissionControlIntent.TogglePreview -> togglePreview()
             is MissionControlIntent.ShowView -> selection.update { it.copy(view = intent.view, session = null) }
         }
@@ -260,6 +260,8 @@ public class MissionControlController(
         }
     }
 }
+
+private fun MissionControlIntent.SelectSession.toSelection() = Selection(project, session = id, subfolder = subfolder)
 
 private fun namesOf(
     snapshot: SessionsSnapshot,

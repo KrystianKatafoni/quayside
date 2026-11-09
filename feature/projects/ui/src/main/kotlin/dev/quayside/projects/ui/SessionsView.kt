@@ -96,6 +96,7 @@ internal object StopMessages {
             is SessionError.UnknownProject,
             is SessionError.UnknownSession,
             is SessionError.SessionActive,
+            is SessionError.SubfolderUnavailable,
             -> UiText("remove.stopFailed")
         }
 
@@ -106,5 +107,6 @@ internal object StopMessages {
             is SessionError.UnknownSession -> "unknownSession"
             is SessionError.SessionActive -> "sessionActive"
             is SessionError.Runtime -> "runtime.${error.problem.name}"
+            is SessionError.SubfolderUnavailable -> "subfolderUnavailable"
         }
 }

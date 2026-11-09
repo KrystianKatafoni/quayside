@@ -7,6 +7,7 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.RecordingLogger
 import dev.quayside.missioncontrol.ui.NewAgentWorld.QUAYSIDE
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionError
@@ -24,6 +25,7 @@ internal abstract class NewAgentControllerFixture {
     protected val fake: FakeSessions = NewAgentWorld.sessions()
     protected val log = RecordingLogger()
     protected val started = mutableListOf<Pair<ProjectId, SessionId>>()
+    protected val focuses = mutableListOf<ProjectFocus>()
     protected val first = SessionId("00000001")
     protected val trusting = SessionError.Runtime(RuntimeProblem.COMMAND_FAILED)
 
@@ -31,7 +33,10 @@ internal abstract class NewAgentControllerFixture {
         commands: RecordingCommands = RecordingCommands(fake),
         projects: FakeProjectsApi = NewAgentWorld.projects(),
     ): NewAgentController =
-        NewAgentController(commands, projects, backgroundScope, log) { project, id -> started += project to id }
+        NewAgentController(commands, projects, backgroundScope, log) { focus, id ->
+            started += focus.project to id
+            focuses += focus
+        }
 
     protected fun TestScope.opened(
         commands: RecordingCommands = RecordingCommands(fake),

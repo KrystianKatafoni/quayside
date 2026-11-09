@@ -87,12 +87,20 @@ internal class ThemeFileActions(
     }
 
     private suspend fun addAll(schemes: List<CustomScheme>): FileResult {
-        if (schemes.isEmpty()) return FileResult.Failed(ApplyError.SCHEMES_NONE)
+        val failure = if (schemes.isEmpty()) ApplyError.SCHEMES_NONE else firstFailure(schemes)
+        return if (failure == null) {
+            FileResult.SchemesImported(appearance.settings.value.customSchemes)
+        } else {
+            FileResult.Failed(failure)
+        }
+    }
+
+    private suspend fun firstFailure(schemes: List<CustomScheme>): ApplyError? {
         for (scheme in schemes) {
             val added = appearance.addScheme(scheme)
-            if (added is Outcome.Err) return FileResult.Failed(schemeErrorOf(added.error))
+            if (added is Outcome.Err) return schemeErrorOf(added.error)
         }
-        return FileResult.SchemesImported(appearance.settings.value.customSchemes)
+        return null
     }
 
     suspend fun export(settings: AppearanceSettings): FileResult {

@@ -34,25 +34,34 @@ internal fun FileControls(
             )
         }
         state.notice?.let { AmText(AppearanceStrings.of(it), Modifier.testTag(AppearanceTags.NOTICE)) }
-        Row(horizontalArrangement = Arrangement.spacedBy(space = 8.dp)) {
-            AmButton(
-                AppearanceStrings["import"],
-                { onIntent(AppearanceIntent.Import) },
-                Modifier.testTag(AppearanceTags.IMPORT),
-                ButtonOptions(enabled = !state.busy),
-            )
-            AmButton(
-                AppearanceStrings["importSchemes"],
-                { onIntent(AppearanceIntent.ImportSchemes) },
-                Modifier.testTag(AppearanceTags.IMPORT_SCHEMES),
-                ButtonOptions(enabled = !state.busy),
-            )
-            AmButton(
-                AppearanceStrings["export"],
-                { onIntent(AppearanceIntent.Export) },
-                Modifier.testTag(AppearanceTags.EXPORT),
-                ButtonOptions(enabled = !state.busy),
-            )
-        }
+        FileButtons(state.busy, onIntent)
+    }
+}
+
+/** "Importuj…", "Importuj schemat…" and "Eksportuj…"; off while [busy]. */
+@Composable
+private fun FileButtons(
+    busy: Boolean,
+    onIntent: (AppearanceIntent) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(space = 8.dp)) {
+        AmButton(
+            AppearanceStrings["import"],
+            { onIntent(AppearanceIntent.Import) },
+            Modifier.testTag(AppearanceTags.IMPORT),
+            ButtonOptions(enabled = !busy),
+        )
+        AmButton(
+            AppearanceStrings["importSchemes"],
+            { onIntent(AppearanceIntent.ImportSchemes) },
+            Modifier.testTag(AppearanceTags.IMPORT_SCHEMES),
+            ButtonOptions(enabled = !busy),
+        )
+        AmButton(
+            AppearanceStrings["export"],
+            { onIntent(AppearanceIntent.Export) },
+            Modifier.testTag(AppearanceTags.EXPORT),
+            ButtonOptions(enabled = !busy),
+        )
     }
 }

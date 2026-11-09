@@ -63,7 +63,7 @@ class CustomSchemeCodecTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidSchemes")
     fun `invalid scheme is null`(
-        label: String,
+        @Suppress("UnusedParameter") label: String,
         element: JsonElement,
     ) {
         parseScheme(element) shouldBe null

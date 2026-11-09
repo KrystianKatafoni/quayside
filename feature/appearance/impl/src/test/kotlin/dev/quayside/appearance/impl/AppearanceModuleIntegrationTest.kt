@@ -6,8 +6,11 @@ import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.api.AppearanceError
 import dev.quayside.appearance.api.AppearanceSettings
 import dev.quayside.appearance.api.DayNight
+import dev.quayside.appearance.api.SampleSchemes
+import dev.quayside.appearance.api.SchemeError
 import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.UiScale
+import dev.quayside.core.designtokens.ContrastAudit
 import dev.quayside.core.domain.LogLevel
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.Outcome
@@ -22,6 +25,7 @@ import io.kotest.matchers.paths.shouldNotExist
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -59,6 +63,7 @@ class AppearanceModuleIntegrationTest {
     @AfterEach
     fun closeDispatcher() = io.close()
 
+    private val mine = SampleSchemes.mine()
     private val storageDir: Path get() = tempDir.resolve("storage")
     private val file: Path get() = storageDir.resolve("theme.json")
 
@@ -84,7 +89,7 @@ class AppearanceModuleIntegrationTest {
             val api = open()
 
             api.settings.value shouldBe AppearanceSettings()
-            api.catalog shouldBe builtInCatalog()
+            api.catalog.value shouldBe builtInCatalog()
             runner.calls.shouldBeEmpty()
             file.shouldNotExist()
         }
@@ -186,11 +191,64 @@ class AppearanceModuleIntegrationTest {
     fun `exported file loads as theme json at start`() =
         runTest {
             val wanted = AppearanceSettings(scheme = SchemeId("graphite"), uiScale = UiScale.S, dayNight = dayNight)
-            val files = themeFilesModule(builtInCatalog(), io, NoOpLogger)
             storageDir.toFile().mkdirs()
+            val files = themeFilesModule(open(), io, NoOpLogger)
 
             files.write(wanted, file) shouldBe Outcome.Ok(Unit)
 
             open().settings.value shouldBe wanted
+        }
+
+    @Test
+    fun `added scheme survives restart and can be chosen`() =
+        runTest {
+            val first = open()
+            first.addScheme(mine).shouldBeInstanceOf<Outcome.Ok<*>>()
+            first.update { it.copy(scheme = mine.id) } shouldBe
+                Outcome.Ok(AppearanceSettings(scheme = mine.id, customSchemes = listOf(mine)))
+
+            val second = open()
+
+            second.catalog.value
+                .theme(mine.id)
+                ?.name shouldBe "Mine"
+            second.settings.value shouldBe AppearanceSettings(scheme = mine.id, customSchemes = listOf(mine))
+        }
+
+    @Test
+    fun `theme json without custom schemes has no customSchemes key`() =
+        runTest {
+            val api = open()
+
+            api.update { it.copy(uiScale = UiScale.S) }
+
+            file.readText() shouldNotContain "customSchemes"
+        }
+
+    @Test
+    fun `scheme with low contrast is not saved`() =
+        runTest {
+            val api = open()
+
+            val grey = mine.copy(colors = mine.colors.copy(text = SampleSchemes.color("#222222")))
+
+            api.addScheme(grey) shouldBe
+                Outcome.Err(SchemeError.LowContrast(ContrastAudit.problems(themeOf(grey).colors)))
+
+            file.toFile().exists() shouldBe false
+        }
+
+    @Test
+    fun `exported custom schemes can be imported again`() =
+        runTest {
+            storageDir.toFile().mkdirs()
+            val api = open()
+            api.addScheme(mine)
+            val files = themeFilesModule(api, io, NoOpLogger)
+            val exported = tempDir.resolve("export.json")
+
+            files.write(api.settings.value, exported) shouldBe Outcome.Ok(Unit)
+
+            files.readSchemes(exported) shouldBe Outcome.Ok(listOf(mine))
         }
 }

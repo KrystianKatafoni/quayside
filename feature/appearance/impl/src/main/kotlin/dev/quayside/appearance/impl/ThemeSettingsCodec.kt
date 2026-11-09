@@ -58,7 +58,10 @@ internal fun decodeSettings(
     return DecodedSettings(settings, reader.invalid)
 }
 
-/** The flat `data` object of theme.json for [settings]: every field, also the ones with default values. */
+/**
+ * The flat `data` object of theme.json for [settings]: every field, also the ones with default values; the
+ * `customSchemes` array only when there are any (ADR 0024).
+ */
 internal fun encodeSettings(settings: AppearanceSettings): JsonObject =
     buildJsonObject {
         put(SCHEME, JsonPrimitive(settings.scheme.value))
@@ -68,6 +71,7 @@ internal fun encodeSettings(settings: AppearanceSettings): JsonObject =
         put(FOLLOW_SYSTEM, JsonPrimitive(settings.dayNight.enabled))
         put(DAY_SCHEME, JsonPrimitive(settings.dayNight.day.value))
         put(NIGHT_SCHEME, JsonPrimitive(settings.dayNight.night.value))
+        if (settings.customSchemes.isNotEmpty()) put(CUSTOM_SCHEMES, encodeSchemes(settings.customSchemes))
     }
 
 /** Reads the fields of [obj]; every key that is present but not parsable is collected in [invalid]. */
@@ -110,9 +114,10 @@ private fun JsonPrimitive.flag(): Boolean? = if (isString) null else booleanOrNu
 
 /**
  * `data` of theme.json for the store: reads like [decodeSettings] (invalid fields fall back, unknown keys are
- * ignored); anything that is not a JSON object throws `SerializationException`, so the file is moved aside.
- * [onInvalid] gets the JSON keys (never values) of fields that were present but invalid, so the owner can log a
- * fixed category.
+ * ignored) against [catalog] extended with the accepted `customSchemes` of the file (valid, free id, NFR-6; the
+ * others are dropped and `customSchemes` is reported as invalid); anything that is not a JSON object throws
+ * `SerializationException`, so the file is moved aside. [onInvalid] gets the JSON keys (never values) of fields that
+ * were present but invalid, so the owner can log a fixed category.
  */
 internal class ThemeSettingsSerializer(
     private val catalog: ThemeCatalog,
@@ -132,8 +137,12 @@ internal class ThemeSettingsSerializer(
         val json = decoder as? JsonDecoder ?: throw SerializationException("theme.json needs a JSON decoder")
         val element = json.decodeJsonElement()
         if (element !is JsonObject) throw SerializationException("theme.json data is not an object")
-        val decoded = decodeSettings(element, catalog)
-        if (decoded.invalid.isNotEmpty()) onInvalid(decoded.invalid)
-        return decoded.settings
+        val schemes = decodeSchemes(element)
+        val accepted = acceptedSchemes(catalog, schemes.schemes)
+        val decoded = decodeSettings(element, catalogWith(catalog, accepted))
+        val dropped = schemes.invalid || accepted.size != schemes.schemes.size
+        val invalid = if (dropped) decoded.invalid + CUSTOM_SCHEMES else decoded.invalid
+        if (invalid.isNotEmpty()) onInvalid(invalid)
+        return decoded.settings.copy(customSchemes = accepted)
     }
 }

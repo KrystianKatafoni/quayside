@@ -2,6 +2,7 @@ package dev.quayside.appearance.api
 
 import dev.quayside.core.designtokens.TypographyId
 import dev.quayside.core.domain.Outcome
+import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -25,21 +26,28 @@ public abstract class AppearanceApiContract {
 
     private fun AppearanceApi.second(): SchemeId = otherScheme()
 
-    private fun AppearanceApi.otherScheme(): SchemeId = catalog.themes.first { it.id != ThemeCatalog.DEFAULT_SCHEME }.id
+    private fun AppearanceApi.otherScheme(): SchemeId =
+        catalog.value.themes
+            .first {
+                it.id !=
+                    ThemeCatalog.DEFAULT_SCHEME
+            }.id
 
     private fun AppearanceApi.otherTypography(): TypographyId =
-        catalog.typographies.first { it.id != ThemeCatalog.DEFAULT_TYPOGRAPHY }.id
+        catalog.value.typographies
+            .first { it.id != ThemeCatalog.DEFAULT_TYPOGRAPHY }
+            .id
 
     @Test
     public fun `catalog is the same on every read`() {
         val api = api()
 
-        api.catalog shouldBeSameInstanceAs api.catalog
+        api.catalog.value shouldBeSameInstanceAs api.catalog.value
     }
 
     @Test
     public fun `catalog contains the default scheme and typography`() {
-        val catalog = api().catalog
+        val catalog = api().catalog.value
 
         catalog.theme(ThemeCatalog.DEFAULT_SCHEME).shouldNotBeNull().id shouldBe ThemeCatalog.DEFAULT_SCHEME
         catalog.typography(ThemeCatalog.DEFAULT_TYPOGRAPHY).shouldNotBeNull().id shouldBe
@@ -245,5 +253,75 @@ public abstract class AppearanceApiContract {
             }
 
             api.applied.value shouldBe api.settings.value.copy(scheme = api.second())
+        }
+
+    private val mine = SampleSchemes.mine()
+
+    @Test
+    public fun `added scheme joins the catalog and the saved settings`() =
+        runTest {
+            val api = api()
+
+            val added = api.addScheme(mine)
+
+            added.shouldBeInstanceOf<Outcome.Ok<ThemeSpec>>().value.let {
+                it.id shouldBe mine.id
+                it.name shouldBe mine.name
+                it.mode shouldBe mine.mode
+                it.shape.radius shouldBe mine.radius
+            }
+            api.catalog.value
+                .theme(mine.id)
+                .shouldNotBeNull()
+                .name shouldBe "Mine"
+            api.settings.value.customSchemes shouldBe listOf(mine)
+        }
+
+    @Test
+    public fun `scheme with a taken id is refused and changes nothing`() =
+        runTest {
+            val api = api()
+            val before = api.catalog.value
+
+            api.addScheme(mine.copy(id = ThemeCatalog.DEFAULT_SCHEME)) shouldBe
+                Outcome.Err(SchemeError.Taken(ThemeCatalog.DEFAULT_SCHEME))
+
+            api.addScheme(mine).shouldBeInstanceOf<Outcome.Ok<ThemeSpec>>()
+            api.addScheme(mine) shouldBe Outcome.Err(SchemeError.Taken(mine.id))
+            api.catalog.value.themes.size shouldBe before.themes.size + 1
+            api.settings.value.customSchemes shouldBe listOf(mine)
+        }
+
+    @Test
+    public fun `scheme with unreadable text is refused for contrast`() =
+        runTest {
+            val api = api()
+            val grey = mine.copy(colors = mine.colors.copy(text = SampleSchemes.color("#222222")))
+
+            api
+                .addScheme(grey)
+                .shouldBeInstanceOf<Outcome.Err<SchemeError>>()
+                .error
+                .shouldBeInstanceOf<SchemeError.LowContrast>()
+                .problems
+                .shouldNotBeEmpty()
+
+            api.catalog.value.theme(mine.id) shouldBe null
+            api.settings.value.customSchemes shouldBe emptyList()
+        }
+
+    @Test
+    public fun `added scheme can be chosen and update keeps the custom schemes`() =
+        runTest {
+            val api = api()
+            api.addScheme(mine)
+
+            val result = api.update { it.copy(scheme = mine.id, customSchemes = emptyList()) }
+
+            result.shouldBeInstanceOf<Outcome.Ok<AppearanceSettings>>().value.let {
+                it.scheme shouldBe mine.id
+                it.customSchemes shouldBe listOf(mine)
+            }
+            api.settings.value.customSchemes shouldBe listOf(mine)
         }
 }

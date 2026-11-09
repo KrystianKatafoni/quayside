@@ -49,7 +49,7 @@ class FileThemeFilesTest : ThemeFilesContract() {
     @AfterEach
     fun closeDispatcher() = io.close()
 
-    private val subject get() = FileThemeFiles(builtInCatalog(), io, logger)
+    private val subject get() = FileThemeFiles({ builtInCatalog() }, io, logger)
 
     override fun files(): ThemeFiles = subject
 

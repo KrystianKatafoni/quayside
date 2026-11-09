@@ -106,4 +106,43 @@ public abstract class ThemeFilesContract {
             files.read(first) shouldBe Outcome.Ok(custom)
             files.read(second) shouldBe Outcome.Ok(AppearanceSettings(density = ListDensity.COMPACT))
         }
+
+    @Test
+    public fun `file without custom schemes reads an empty list`() =
+        runTest {
+            val files = files()
+            val target = path("plain.json")
+            files.write(custom, target)
+
+            files.readSchemes(target) shouldBe Outcome.Ok(emptyList())
+        }
+
+    @Test
+    public fun `custom schemes written with the settings read back`() =
+        runTest {
+            val files = files()
+            val target = path("with-schemes.json")
+            val mine = SampleSchemes.mine()
+
+            files.write(custom.copy(customSchemes = listOf(mine)), target) shouldBe Outcome.Ok(Unit)
+
+            files.readSchemes(target) shouldBe Outcome.Ok(listOf(mine))
+            files.read(target) shouldBe Outcome.Ok(custom)
+        }
+
+    @Test
+    public fun `missing file has no schemes`() =
+        runTest {
+            files().readSchemes(path("nothing-here.json")) shouldBe Outcome.Err(ThemeFileError.ReadFailed)
+        }
+
+    @Test
+    public fun `newer schema has no schemes`() =
+        runTest {
+            val files = files()
+            val target = path("newer-schemes.json")
+            plantNewer(target, found = 7)
+
+            files.readSchemes(target) shouldBe Outcome.Err(ThemeFileError.NewerVersion(7))
+        }
 }

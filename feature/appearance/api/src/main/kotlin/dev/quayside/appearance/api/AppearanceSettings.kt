@@ -27,13 +27,17 @@ public data class DayNight(
     }
 }
 
-/** What the user chose; ids always exist in [AppearanceApi.catalog]. Immutable. */
+/**
+ * What the user chose; ids always exist in [AppearanceApi.catalog]. [customSchemes] are the schemes saved in
+ * theme.json; only [AppearanceApi.addScheme] changes them. Immutable.
+ */
 public data class AppearanceSettings(
     val scheme: SchemeId = ThemeCatalog.DEFAULT_SCHEME,
     val typography: TypographyId = ThemeCatalog.DEFAULT_TYPOGRAPHY,
     val uiScale: UiScale = UiScale.M,
     val density: ListDensity = ListDensity.COMFORTABLE,
     val dayNight: DayNight = DayNight(),
+    val customSchemes: List<CustomScheme> = emptyList(),
 )
 
 /**

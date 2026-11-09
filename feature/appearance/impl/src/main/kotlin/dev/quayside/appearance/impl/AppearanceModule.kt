@@ -46,9 +46,12 @@ public suspend fun appearanceModule(
     return api
 }
 
-/** Reads and writes the theme.json files the user picks, checking ids against [catalog] (FR-A6). */
+/**
+ * Reads and writes the theme.json files the user picks, checking ids against the catalog of [appearance] at the time
+ * of each read (FR-A6).
+ */
 public fun themeFilesModule(
-    catalog: ThemeCatalog,
+    appearance: AppearanceApi,
     io: CoroutineDispatcher,
     logger: Logger,
-): ThemeFiles = FileThemeFiles(catalog, io, logger)
+): ThemeFiles = FileThemeFiles({ appearance.catalog.value }, io, logger)

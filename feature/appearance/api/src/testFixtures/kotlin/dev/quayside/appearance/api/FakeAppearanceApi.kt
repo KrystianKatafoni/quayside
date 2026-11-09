@@ -5,6 +5,7 @@ import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.SampleTokens
 import dev.quayside.core.designtokens.TypographyId
 import dev.quayside.core.designtokens.TypographySpec
+import dev.quayside.core.designtokens.Wcag
 import dev.quayside.core.domain.Outcome
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,10 +19,11 @@ import kotlinx.coroutines.sync.withLock
  * simulate the macOS mode. Passes [AppearanceApiContract].
  */
 public class FakeAppearanceApi(
-    override val catalog: ThemeCatalog = defaultCatalog(),
+    initialCatalog: ThemeCatalog = defaultCatalog(),
     initial: AppearanceSettings = AppearanceSettings(),
 ) : AppearanceApi {
     private val mutex = Mutex()
+    private val themes = MutableStateFlow(initialCatalog)
     private val current = MutableStateFlow(initial)
     private val effective = MutableStateFlow(initial.appliedFor(null))
 
@@ -49,6 +51,8 @@ public class FakeAppearanceApi(
     public var updates: Int = 0
         private set
 
+    override val catalog: StateFlow<ThemeCatalog> get() = themes
+
     override val settings: StateFlow<AppearanceSettings> get() = current
 
     override val applied: StateFlow<AppearanceSettings> get() = effective
@@ -58,7 +62,7 @@ public class FakeAppearanceApi(
     ): Outcome<AppearanceSettings, AppearanceError> =
         mutex.withLock {
             val refused = failure
-            val next = change(current.value)
+            val next = change(current.value).copy(customSchemes = current.value.customSchemes)
             val unknown = refused ?: refusalOf(next) ?: AppearanceError.StorageFailed.takeIf { failSaves }
             if (unknown != null) {
                 Outcome.Err(unknown)
@@ -70,14 +74,54 @@ public class FakeAppearanceApi(
             }
         }
 
-    private fun refusalOf(next: AppearanceSettings): AppearanceError? =
-        when {
+    override suspend fun addScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError> =
+        mutex.withLock {
+            val ratio = Wcag.contrast(scheme.colors.text, scheme.colors.bg)
+            when {
+                themes.value.theme(scheme.id) != null -> {
+                    Outcome.Err(SchemeError.Taken(scheme.id))
+                }
+
+                ratio < Wcag.TEXT_MIN -> {
+                    Outcome.Err(SchemeError.LowContrast(listOf("text/bg")))
+                }
+
+                failSaves -> {
+                    Outcome.Err(SchemeError.StorageFailed)
+                }
+
+                else -> {
+                    val spec = specOf(scheme)
+                    themes.value = themes.value.copy(themes = themes.value.themes + spec)
+                    current.value = current.value.copy(customSchemes = current.value.customSchemes + scheme)
+                    Outcome.Ok(spec)
+                }
+            }
+        }
+
+    private fun specOf(scheme: CustomScheme): ThemeSpec =
+        ThemeSpec(
+            id = scheme.id,
+            name = scheme.name,
+            mode = scheme.mode,
+            colors =
+                SampleTokens.colors().recolored(
+                    Palette(scheme.colors.bg.argb, scheme.colors.text.argb, scheme.colors.accent.argb),
+                ),
+            shape = SampleTokens.shape().copy(radius = scheme.radius),
+            defaultTypography = null,
+        )
+
+    private fun refusalOf(next: AppearanceSettings): AppearanceError? {
+        val catalog = themes.value
+        return when {
             catalog.theme(next.scheme) == null -> AppearanceError.UnknownScheme(next.scheme)
             catalog.theme(next.dayNight.day) == null -> AppearanceError.UnknownScheme(next.dayNight.day)
             catalog.theme(next.dayNight.night) == null -> AppearanceError.UnknownScheme(next.dayNight.night)
             catalog.typography(next.typography) == null -> AppearanceError.UnknownTypography(next.typography)
             else -> null
         }
+    }
 
     public companion object {
         /** Two themes (`plex` dark, `paper` light) and two typographies (`plex`, `geist`); no defaults suggested. */
@@ -129,7 +173,7 @@ public class FakeAppearanceApi(
                     ),
             )
 
-        /** Colours that replace the ones of the sample tokens; null keeps them. */
+        /** Colours (ARGB) that replace the ones of the sample tokens; null keeps them. */
         private class Palette(
             val bg: Long? = null,
             val text: Long? = null,

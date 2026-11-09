@@ -64,13 +64,16 @@ internal object MissionControlTags {
     const val DETAILS_STATE = "missionControl.details.state"
     const val DETAILS_SUMMARY = "missionControl.details.summary"
     const val OVERVIEW = "missionControl.overview"
-    const val OVERVIEW_REST = "missionControl.overview.rest"
+    const val OVERVIEW_ROOT = "missionControl.overview.root"
 
     /** The stat card of [kind]: `waiting`, `working`, `done` or `failed`. */
     fun stat(kind: String): String = "missionControl.stat.$kind"
 
     /** The "Odpowiedz" button in the selected row of session [id]. */
     fun rowReply(id: SessionId): String = "missionControl.rowReply.${id.value}"
+
+    /** The place badge ("folder główny" or the subfolder) in the row of session [id] (AM-310). */
+    fun rowPlace(id: SessionId): String = "missionControl.rowPlace.${id.value}"
 
     /** The Attach icon button in the selected row of session [id]. */
     fun rowAttach(id: SessionId): String = "missionControl.rowAttach.${id.value}"

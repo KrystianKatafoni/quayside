@@ -341,8 +341,8 @@ private class AgentWiring(
         setup.keys = TerminalKeys(registry, palette, scope)
     }
 
-    /** The button of the project page: opens the dialog on the project selected in the sidebar. */
-    fun openForSelection() = newAgent.open(projects.selection.value)
+    /** The button of the project page: the real `openNewAgent` that the menu, the shortcut and the palette call. */
+    fun openForSelection() = openNewAgent(projects, newAgent)
 }
 
 /**

@@ -93,7 +93,7 @@ private fun chromeOf(
             readSupervisor(modules.terminal.runtime)
     }
     return WindowChrome(
-        onNewAgent = { controllers.newAgent.open(controllers.projects.selection.value) },
+        onNewAgent = { openNewAgent(controllers.projects, controllers.newAgent) },
         newAgentEnabled = enabled,
         notifications =
             NotificationChrome(

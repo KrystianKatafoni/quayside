@@ -13,7 +13,10 @@ import dev.quayside.missioncontrol.ui.SessionFilter
 import dev.quayside.projects.api.A_PROJECT_DIR
 import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
+import dev.quayside.projects.api.ProjectFocus
+import dev.quayside.projects.api.SubfolderName
 import dev.quayside.projects.api.aProject
+import dev.quayside.projects.api.subfolderNames
 import dev.quayside.projects.ui.DirectoryPicker
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsPorts
@@ -38,13 +41,33 @@ import kotlin.time.Duration.Companion.hours
  */
 class SelectStartedSessionTest {
     private val project = aProject(id = "project0001", dir = A_PROJECT_DIR, displayName = "Quayside")
+    private val group =
+        aProject(
+            id = "project0002",
+            dir = A_PROJECT_DIR.resolveSibling("plant-puls"),
+            displayName = "plant-puls",
+            subfolders = subfolderNames("docs", "soft"),
+        )
+    private val soft = SubfolderName("soft")
+    private val inSoft = SessionId("soft0001")
     private val fresh = SessionId("fresh001")
     private val fake =
         FakeSessions(
             SessionsWorld(
-                projects = listOf(WorldProject(project.id, project.dir)),
+                projects =
+                    listOf(
+                        WorldProject(project.id, project.dir),
+                        WorldProject(group.id, group.dir, subfolders = listOf("docs", "soft")),
+                    ),
                 sessions =
                     listOf(
+                        WorldSession(
+                            inSoft,
+                            group.dir.resolve("soft"),
+                            SessionState.Working,
+                            "soft",
+                            T0.plusSeconds(20),
+                        ),
                         WorldSession(fresh, A_PROJECT_DIR, SessionState.Working, "fresh", T0.plusSeconds(10)),
                         WorldSession(SessionId("old00001"), A_PROJECT_DIR, SessionState.Done, "old", T0),
                     ),
@@ -59,7 +82,7 @@ class SelectStartedSessionTest {
 
     private fun TestScope.parts(): Parts {
         val api = SessionsApi(monitor = fake, commands = fake)
-        val list = FakeProjectsApi(initial = listOf(project))
+        val list = FakeProjectsApi(initial = listOf(project, group))
         val projects =
             ProjectsController(
                 list,
@@ -82,7 +105,7 @@ class SelectStartedSessionTest {
             parts.projects.selection.value
                 .shouldBeNull()
 
-            selectStartedSession(parts.projects, parts.missionControl)(project.id, fresh)
+            selectStartedSession(parts.projects, parts.missionControl)(ProjectFocus(project.id), fresh)
             runCurrent()
 
             parts.projects.selection.value shouldBe project.id
@@ -93,7 +116,7 @@ class SelectStartedSessionTest {
         runTest {
             val parts = parts()
 
-            selectStartedSession(parts.projects, parts.missionControl)(project.id, fresh)
+            selectStartedSession(parts.projects, parts.missionControl)(ProjectFocus(project.id), fresh)
             runCurrent()
 
             // The fresh session is working, so it can be stopped; the old one could only be respawned.
@@ -107,7 +130,7 @@ class SelectStartedSessionTest {
         runTest {
             val parts = parts()
 
-            selectStartedSession(parts.projects, parts.missionControl)(project.id, fresh)
+            selectStartedSession(parts.projects, parts.missionControl)(ProjectFocus(project.id), fresh)
             runCurrent()
             runCurrent()
 
@@ -124,11 +147,48 @@ class SelectStartedSessionTest {
             runCurrent()
             parts.missionControl.view.value shouldBe GlobalView.WAITING
 
-            selectStartedSession(parts.projects, parts.missionControl)(project.id, fresh)
+            selectStartedSession(parts.projects, parts.missionControl)(ProjectFocus(project.id), fresh)
             runCurrent()
 
             parts.missionControl.view.value
                 .shouldBeNull()
             parts.missionControl.actions.value.canStop shouldBe true
+        }
+
+    @Test
+    fun `the sidebar selects the subfolder of the new session`() =
+        runTest {
+            val parts = parts()
+
+            selectStartedSession(parts.projects, parts.missionControl)(ProjectFocus(group.id, soft), inSoft)
+            runCurrent()
+
+            parts.projects.focus.value shouldBe ProjectFocus(group.id, soft)
+        }
+
+    @Test
+    fun `Mission Control selects the session started in the subfolder`() =
+        runTest {
+            val parts = parts()
+
+            selectStartedSession(parts.projects, parts.missionControl)(ProjectFocus(group.id, soft), inSoft)
+            runCurrent()
+            runCurrent()
+
+            parts.missionControl.actions.value.canStop shouldBe true
+            parts.missionControl.attachTarget()?.session shouldBe inSoft
+        }
+
+    @Test
+    fun `a start in the project directory of a group selects the group row`() =
+        runTest {
+            val parts = parts()
+            selectStartedSession(parts.projects, parts.missionControl)(ProjectFocus(group.id, soft), inSoft)
+            runCurrent()
+
+            selectStartedSession(parts.projects, parts.missionControl)(ProjectFocus(group.id), fresh)
+            runCurrent()
+
+            parts.projects.focus.value shouldBe ProjectFocus(group.id)
         }
 }

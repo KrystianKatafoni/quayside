@@ -130,7 +130,7 @@ class JediTermTerminalApiTest {
     fun `colors changed after open apply to the next tab only`() =
         runTest {
             val first = kit.openShell()
-            kit.colors.value = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0))
+            kit.colors.value = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0), ansi = TEST_ANSI)
             val second = kit.openShell()
 
             first.defaultColours() shouldBe
@@ -146,7 +146,7 @@ class JediTermTerminalApiTest {
     fun `scroll bar of the next tab follows changed colours`() =
         runTest {
             val first = kit.openShell()
-            val changed = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0))
+            val changed = TerminalColors(termBg = Rgba(0xFF102030), termText = Rgba(0xFFE0D0C0), ansi = TEST_ANSI)
             kit.colors.value = changed
             val second = kit.openShell()
 

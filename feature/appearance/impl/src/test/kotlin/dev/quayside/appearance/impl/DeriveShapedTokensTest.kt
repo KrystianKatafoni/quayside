@@ -5,6 +5,7 @@ import dev.quayside.core.designtokens.ColorTokens
 import dev.quayside.core.designtokens.Rgba
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
 
 /** Table 3 of the AM-805 plan, plus one dark row whose bg, panel, text, muted, accent and border all differ. */
@@ -44,7 +45,7 @@ class DeriveShapedTokensTest {
     }
 
     @Test
-    fun `light theme corrects muted and derives dim, border2 and the fixed terminal pair`() {
+    fun `light theme corrects muted and derives dim, border2 and the terminal from bg and text`() {
         val tokens = light()
 
         // #808080 is corrected for bg, panel, sel and warnBg; #6D6D6D would pass on bg and panel only
@@ -52,8 +53,28 @@ class DeriveShapedTokensTest {
         tokens.content.dim shouldBe hex("#8F8F8F")
         tokens.surfaces.border shouldBe Rgba.BLACK.withAlpha(5)
         tokens.surfaces.border2 shouldBe Rgba.BLACK.withAlpha(5)
-        tokens.terminal.termBg shouldBe hex("#1E242C")
-        tokens.terminal.termText shouldBe hex("#E2E8F0")
+        tokens.terminal.termBg shouldBe hex("#F0F0F0")
+        tokens.terminal.termText shouldBe hex("#000000")
+        tokens.terminal shouldBe deriveTerminal(hex("#F0F0F0"), hex("#000000"), dark = false)
+    }
+
+    @Test
+    fun `ansi of a translucent light theme is derived on bg not on the composited panel`() {
+        // Panel #FFFFFF/60 over bg #F0F0F0 is #F6F6F6, a different background for the palette.
+        val onBg = deriveTerminal(hex("#F0F0F0"), hex("#000000"), dark = false).ansi
+        val onPanel = deriveTerminal(hex("#F6F6F6"), hex("#000000"), dark = false).ansi
+
+        onBg shouldNotBe onPanel
+        light().terminal.ansi shouldBe onBg
+    }
+
+    @Test
+    fun `ansi of a dark theme is derived on bg not on panel`() {
+        val onBg = deriveTerminal(hex("#0B0F19"), hex("#F3F4F6"), dark = true).ansi
+        val onPanel = deriveTerminal(hex("#111827"), hex("#F3F4F6"), dark = true).ansi
+
+        onBg shouldNotBe onPanel
+        midnight().terminal.ansi shouldBe onBg
     }
 
     @Test

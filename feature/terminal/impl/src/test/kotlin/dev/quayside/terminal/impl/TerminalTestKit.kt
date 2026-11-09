@@ -54,7 +54,7 @@ internal class TerminalTestKit(
 
     companion object {
         /** Colours that differ from the JediTerm defaults (black on white), so a test can see them apply. */
-        val DEFAULT_COLORS = TerminalColors(termBg = Rgba(0xFF0B0A10), termText = Rgba(0xFFE8E5F2))
+        val DEFAULT_COLORS = TerminalColors(termBg = Rgba(0xFF0B0A10), termText = Rgba(0xFFE8E5F2), ansi = TEST_ANSI)
 
         val headless: Boolean get() = GraphicsEnvironment.isHeadless()
     }

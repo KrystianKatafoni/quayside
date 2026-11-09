@@ -5,6 +5,7 @@ import dev.quayside.appearance.api.SchemeError
 import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.ThemeCatalog
 import dev.quayside.appearance.api.ThemeMode
+import dev.quayside.appearance.api.ThemeSpec
 import dev.quayside.core.designtokens.Backdrop
 import dev.quayside.core.designtokens.ContrastAudit
 import dev.quayside.core.designtokens.Rgba
@@ -80,4 +81,29 @@ class CustomSchemesTest {
         extended.themes shouldBe base.themes + themeOf(mine)
         extended.typographies shouldBe base.typographies
     }
+
+    @Test
+    fun `custom scheme gets the terminal colors derived by the AM-811 rule`() {
+        val light = mine.copy(mode = ThemeMode.LIGHT, colors = lightColors())
+
+        val terminal = themeOf(light).colors.terminal
+
+        terminal shouldBe deriveTerminal(light.colors.bg, light.colors.text, dark = false)
+        terminal.termBg shouldBe light.colors.bg
+        terminal.termText shouldBe light.colors.text
+    }
+
+    @Test
+    fun `terminal palette of a readable light custom scheme passes the audit`() {
+        val light = mine.copy(mode = ThemeMode.LIGHT, colors = lightColors())
+
+        auditedThemeOf(light).shouldBeInstanceOf<Outcome.Ok<ThemeSpec>>()
+    }
+
+    private fun lightColors() =
+        mine.colors.copy(
+            bg = SampleSchemes.color("#F4F6F8"),
+            panel = SampleSchemes.color("#FFFFFF"),
+            text = SampleSchemes.color("#2D3748"),
+        )
 }

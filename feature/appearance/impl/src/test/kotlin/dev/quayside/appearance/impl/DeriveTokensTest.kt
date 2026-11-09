@@ -6,6 +6,7 @@ import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.SampleTokens.rgb
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -19,6 +20,11 @@ class DeriveTokensTest {
         accent: String = text,
         warn: String = text,
     ): SchemeRow = SchemeRow("t", "T", mode, "$bg $bg $text $accent $warn #00FF00 #FF0000 #0000FF", 4)
+
+    private val lightRow =
+        SchemeRow("l", "L", ThemeMode.LIGHT, "#F4F6F8 #FFFFFF #2D3748 #4338CA #A16207 #15803D #B91C1C #0E7490", 4)
+    private val darkRow =
+        SchemeRow("d", "D", ThemeMode.DARK, "#0B0A10 #1B1A22 #E8E5F2 #A78BFA #FBBF24 #86EFAC #FCA5A5 #C4B5FD", 4)
 
     private val dark: ColorTokens get() = deriveTokens(row(ThemeMode.DARK, "#000000", "#FFFFFF"))
     private val light: ColorTokens get() = deriveTokens(row(ThemeMode.LIGHT, "#FFFFFF", "#000000"))
@@ -90,11 +96,33 @@ class DeriveTokensTest {
     }
 
     @Test
-    fun `light terminal is a fixed dark pair`() {
-        val tokens = light
+    fun `light terminal is bg and text`() {
+        // bg, panel, text, accent and warn all differ, so a wrong source column is visible.
+        val tokens = deriveTokens(lightRow)
 
-        tokens.terminal.termBg shouldBe color("#1E242C")
-        tokens.terminal.termText shouldBe color("#E2E8F0")
+        tokens.terminal.termBg shouldBe color("#F4F6F8")
+        tokens.terminal.termText shouldBe color("#2D3748")
+        tokens.terminal shouldBe deriveTerminal(color("#F4F6F8"), color("#2D3748"), dark = false)
+    }
+
+    @Test
+    fun `ansi of a light scheme is derived on bg not on panel`() {
+        val onBg = deriveTerminal(color("#F4F6F8"), color("#2D3748"), dark = false).ansi
+        val onPanel = deriveTerminal(color("#FFFFFF"), color("#2D3748"), dark = false).ansi
+
+        onBg shouldNotBe onPanel
+        deriveTokens(lightRow).terminal.ansi shouldBe onBg
+    }
+
+    @Test
+    fun `ansi of a dark scheme is derived on bg not on panel`() {
+        val tokens = deriveTokens(darkRow)
+        val onBg = deriveTerminal(color("#0B0A10"), color("#E8E5F2"), dark = true).ansi
+        val onPanel = deriveTerminal(color("#1B1A22"), color("#E8E5F2"), dark = true).ansi
+
+        onBg shouldNotBe onPanel
+        tokens.terminal.ansi shouldBe onBg
+        tokens.terminal.termBg shouldBe color("#0B0A10")
     }
 
     @Test

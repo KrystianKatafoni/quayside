@@ -23,7 +23,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`. Czysty Kotlin | brak (tylko coroutines-core) |
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
-| `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`), bez Compose | brak (dozwolone `core:domain`) |
+| `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`, `AnsiColors` — 16 kolorów palety terminala w `TerminalColors.ansi`), bez Compose | brak (dozwolone `core:domain`) |
 | `core:design-system` | Komponenty Compose (przyciski, przyciski ikonowe, ikony, pigułki, kafelki liczników, wiersze listy, lista rozwijana `AmDropdown`, pasek trybu, popup od pierwszego użytkownika), `AmTheme` z `CompositionLocal`; `amScrim()` i otwarta lista `AmDropdown` mają skutek uboczny: zgłaszają warstwę modalną do `AmModalGate` (widgety Swing nie biorą wtedy kliknięć) | `core:design-tokens` |
 | `core:testing` | Wspólne narzędzia testowe: `TestClock`, `TestDispatchers`, buildery danych, asercje | `core:domain` |
 
@@ -345,6 +345,7 @@ object Wcag { fun luminance(c: Rgba): Double; fun contrast(fg: Rgba, bg: Rgba): 
 data class ColorTokens(val surfaces: SurfaceColors, val content: ContentColors, val status: StatusColors, val terminal: TerminalColors)
 data class ShapeTokens(val radius: Int, val borderWidth: Int, val shadow: ShadowSpec?, val backdrop: Backdrop)
 data class TypographySpec(val id: TypographyId, val name: String, val uiFont: String, val terminalFont: String)
+class AnsiColors(colors: List<Rgba>)             // 16 kolorów xterm, get(i); TerminalColors(termBg, termText, ansi) — AM-811
 
 // core:design-system (AM-802; Compose, wątek UI, niemutowalne)
 object AmTheme { val colors: ColorTokens; val shape: AmShape; val typography: AmTypography; val density: AmDensity }   // @Composable, CompositionLocal

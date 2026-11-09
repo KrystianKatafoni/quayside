@@ -41,7 +41,7 @@ internal fun paperColors(): ColorTokens {
                 err = rgb(0xB91C1C),
                 work = accent,
             ),
-        terminal = TerminalColors(termBg = rgb(0x1E242C), termText = rgb(0xE2E8F0)),
+        terminal = TerminalColors(termBg = bg, termText = text, ansi = SampleTokens.xtermAnsi()),
     )
 }
 

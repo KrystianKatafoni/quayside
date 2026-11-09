@@ -9,7 +9,6 @@ import dev.quayside.core.designtokens.ShadowSpec
 import dev.quayside.core.designtokens.ShapeTokens
 import dev.quayside.core.designtokens.StatusColors
 import dev.quayside.core.designtokens.SurfaceColors
-import dev.quayside.core.designtokens.TerminalColors
 import dev.quayside.core.designtokens.Wcag
 import dev.quayside.core.designtokens.mix
 import dev.quayside.core.designtokens.over
@@ -121,7 +120,7 @@ internal fun deriveShapedTokens(row: ShapedRow): ColorTokens {
         surfaces = surfaces,
         content = ContentColors(text, muted, muted.mix(bg, DIM_PERCENT), accent, Wcag.inkFor(accent)),
         status = status,
-        terminal = if (dark) TerminalColors(bg, text) else TerminalColors(LIGHT_TERM_BG, LIGHT_TERM_TEXT),
+        terminal = deriveTerminal(bg, text, dark),
     )
 }
 

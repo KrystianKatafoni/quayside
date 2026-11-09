@@ -131,6 +131,32 @@ internal class StatusBarScreenTest {
         }
 
     @Test
+    fun `status bar uses many for five`() =
+        runComposeUiTest {
+            val asking = SessionState.AwaitingInput("q")
+            val sessions =
+                (1..5).map { aSession(id = "q$it", project = MC_PROJECT.id, state = asking) } +
+                    (1..5).map { aSession(id = "w$it", project = MC_PROJECT.id, state = SessionState.Working) }
+            showBar(freshSnapshot(*sessions.toTypedArray()))
+
+            barText("5 czeka")
+            barText("5 pracuje")
+            barHas("czekają") shouldBe false
+            barHas("pracują") shouldBe false
+        }
+
+    @Test
+    fun `status bar uses many for zero`() =
+        runComposeUiTest {
+            showBar(freshSnapshot())
+
+            barText("0 czeka")
+            barText("0 pracuje")
+            barHas("czekają") shouldBe false
+            barHas("pracują") shouldBe false
+        }
+
+    @Test
     fun `status bar shows supervisor version`() =
         runComposeUiTest {
             showBar(supervisor = "2.1.150")

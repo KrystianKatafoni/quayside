@@ -28,12 +28,20 @@ internal class RailLabelTest {
 
     companion object {
         @JvmStatic
-        fun cases(): List<Arguments> =
+        fun cases(): List<Arguments> = basicCases() + pluralCases()
+
+        private fun basicCases(): List<Arguments> =
             listOf(
                 arguments("both", SessionCounts(working = 1, waiting = 2), "Quayside, 2 czekają, 1 pracuje"),
                 arguments("one waiting", SessionCounts(working = 0, waiting = 1), "Quayside, 1 czeka"),
                 arguments("working only", SessionCounts(working = 2, waiting = 0), "Quayside, 2 pracują"),
+                arguments("one working", SessionCounts(working = 1, waiting = 0), "Quayside, 1 pracuje"),
+                arguments("four is few", SessionCounts(working = 4, waiting = 4), "Quayside, 4 czekają, 4 pracują"),
                 arguments("five", SessionCounts(working = 5, waiting = 5), "Quayside, 5 czeka, 5 pracuje"),
+            )
+
+        private fun pluralCases(): List<Arguments> =
+            listOf(
                 arguments(
                     "twelve is not few",
                     SessionCounts(working = 12, waiting = 12),
@@ -43,6 +51,21 @@ internal class RailLabelTest {
                     "twenty-two is few",
                     SessionCounts(working = 22, waiting = 24),
                     "Quayside, 24 czekają, 22 pracują",
+                ),
+                arguments(
+                    "fourteen is not few",
+                    SessionCounts(working = 14, waiting = 14),
+                    "Quayside, 14 czeka, 14 pracuje",
+                ),
+                arguments(
+                    "twenty-one is many",
+                    SessionCounts(working = 21, waiting = 21),
+                    "Quayside, 21 czeka, 21 pracuje",
+                ),
+                arguments(
+                    "hundred twelve is many",
+                    SessionCounts(working = 112, waiting = 112),
+                    "Quayside, 112 czeka, 112 pracuje",
                 ),
             )
     }

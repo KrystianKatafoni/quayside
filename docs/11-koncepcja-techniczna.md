@@ -31,7 +31,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 
 | Feature | `api` (kontrakt) | `impl` (implementacja i adaptery) | `ui` |
 | --- | --- | --- | --- |
-| `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller` | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller` | – |
+| `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller`, `WorkspaceTrust` | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller`, `ClaudeJsonTrust` | – |
 | `projects` | `ProjectsApi` | `JsonProjectStore`, `DirectoryInspector` (git, `CLAUDE.md`, hooki) | sidebar, dialogi dodaj/usuń |
 | `sessions` | `SessionMonitor`, `SessionCommands` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami | – |
 | `summaries` | `Summarizer`, `SummariesApi`, `SummarySettingsRepo` | `LastMessageSummary` (czysty) z `last_assistant_message`; model Haiku przez `claude -p` w części B (ADR 0019) | okno „Ustawienia podsumowań” |
@@ -174,6 +174,12 @@ sealed interface HookError {                                     // reason: sta�
     data class WriteFailed(val file: Path, val reason: String) : HookError
     data class BackupNotFound(val ref: BackupRef) : HookError
 }
+
+// Zaufanie katalogu w ~/.claude.json (AM-309, ADR 0031). Wołać tylko po jawnej zgodzie użytkownika.
+fun interface WorkspaceTrust {
+    suspend fun trust(dir: Path): Outcome<Unit, TrustError>      // hasTrustDialogAccepted = true dla toRealPath(dir), nigdy dla rodziców
+}
+enum class TrustError { DIRECTORY_MISSING, CONFIG_MISSING, CONFIG_UNSUPPORTED, CONFIG_UNREADABLE, CONFIG_INVALID, CONCURRENT_CHANGE, WRITE_FAILED }
 ```
 
 ```kotlin
@@ -489,6 +495,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 - Każdy plik ma **jednego właściciela**. Inne moduły nie czytają cudzych plików.
 - `JsonStore<T>` z `core:storage`: zapis do pliku tymczasowego i `ATOMIC_MOVE`, pole `schemaVersion`, lista migracji `vN → vN+1`. Uszkodzony plik jest odkładany jako `*.broken` i zastępowany domyślnymi wartościami z komunikatem w UI.
 - Lista głosów systemowych (`VoiceCatalog`) nie jest zapisywana na dysku: `notifications:ui` wczytuje ją raz na kontroler przy pierwszym otwarciu dialogu (po błędzie: ponownie przy kolejnym otwarciu); do `notifications.json` trafia tylko wybrana nazwa głosu.
+- `~/.claude.json` (plik Claude Code z danymi konta, zapisywany przez każdą działającą sesję) **nie ma właściciela w Quayside**. Jedynym zapisem jest `WorkspaceTrust` (`agent-runtime:impl`) po zgodzie użytkownika: jedno pole `hasTrustDialogAccepted` dla jednego katalogu, plik tymczasowy w tym samym katalogu, ponowny odczyt przed `ATOMIC_MOVE`, bez kopii zapasowej, w logach tylko kategorie ([ADR 0031](adr/0031-zaufanie-katalogu-w-claude-json.md)).
 - Token hooków przechowywany w Keychain macOS (adapter w `agent-runtime:impl`), nie w plikach.
 
 ## 9. Composition root

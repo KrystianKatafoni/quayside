@@ -152,3 +152,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Liczbę kształtów i inne stałe z planu licz z pliku, nie przepisuj z opisu (AM-822: 9 zamiast 8 kształtów).
 - Gradle w sesji w chmurze wymaga `LC_ALL=C.UTF-8` i `-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8` w `JAVA_TOOL_OPTIONS`, inaczej `InvalidPathException` od nazw testów z polskimi znakami.
 - Dekoracyjny `Image(contentDescription = null)` ma w drzewie niescalonym neutralny węzeł z `Shape` — test dostępności sprawdza brak właściwości (opis, rola, akcje), nie brak dzieci.
+- `Json.parseToJsonElement` bez `isLenient` przyjmuje nieopakowane literały spoza JSON (`NaN`, `abc`, `01`) — przy przepisywaniu cudzego pliku przez `JsonUnquotedLiteral` waliduj każdy literał gramatyką liczby JSON, inaczej niepoprawny plik zostaje zapisany mimo reguły „nie-JSON → bez zapisu”.
+- Kotest `shouldBe` na `List<Path>` spłaszcza `Path` (jest `Iterable<Path>`), a `list + path` dołącza elementy ścieżki — porównuj `map(Path::toString)`.
+- Przy powtórnym review sprawdzaj wszystkie wcześniejsze uwagi blokujące, nie tylko te wskazane w zleceniu (raport implementera o zmianie KDoc okazał się błędny, bo replace trafił w inny tekst).

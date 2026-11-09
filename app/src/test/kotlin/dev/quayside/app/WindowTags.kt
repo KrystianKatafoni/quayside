@@ -90,6 +90,10 @@ internal object WindowTags {
     const val NEW_AGENT_PROBLEM = "missionControl.newAgent.problem"
     const val NEW_AGENT_CANCEL = "missionControl.newAgent.cancel"
     const val NEW_AGENT_START = "missionControl.newAgent.start"
+    const val NEW_AGENT_TRUST = "missionControl.newAgent.trust"
+    const val NEW_AGENT_TRUST_PATH = "missionControl.newAgent.trust.path"
+    const val NEW_AGENT_TRUST_CANCEL = "missionControl.newAgent.trust.cancel"
+    const val NEW_AGENT_TRUST_ACCEPT = "missionControl.newAgent.trust.accept"
 
     /** The terminal settings dialog (AM-508) and its parts; tags of `terminal:ui`, `internal` there. */
     const val SETTINGS_DIALOG = "terminal.settings"

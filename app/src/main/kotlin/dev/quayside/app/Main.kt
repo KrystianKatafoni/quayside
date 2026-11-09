@@ -10,6 +10,7 @@ import dev.quayside.agentruntime.impl.agentRuntimeModule
 import dev.quayside.agentruntime.impl.hookEventSourceModule
 import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.agentruntime.impl.oneShotPromptModule
+import dev.quayside.agentruntime.impl.workspaceTrustModule
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.impl.appearanceModule
 import dev.quayside.appearance.impl.themeFilesModule
@@ -129,7 +130,7 @@ private fun appModules(
     val terminal =
         terminalDeps(core, runtime, stored.terminal, notifications, looks)
     return AppModules(
-        ProjectDeps(projects, inspector),
+        ProjectDeps(projects, inspector, workspaceTrustModule(core.homeDir, core.dispatchers.io, core.logger)),
         sessions,
         registry,
         terminal,

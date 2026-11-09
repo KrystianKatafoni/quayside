@@ -149,7 +149,7 @@ class NewAgentKeysWindowTest {
         }
 
     @Test
-    fun `FR-S3 failed start shows the trust hint and keeps the prompt`() =
+    fun `FR-S3 failed start shows the failure text and keeps the prompt`() =
         runComposeUiTest {
             // Given the open dialog with a prompt and a start that Claude Code refuses
             showWindowOf(world.setup)
@@ -160,8 +160,8 @@ class NewAgentKeysWindowTest {
             // When the user clicks "Uruchom"
             onNodeWithTag(WindowTags.NEW_AGENT_START).performClick()
 
-            // Then the dialog stays with the hint about trusting the folder, and the prompt is kept
-            awaitText(WindowTags.NEW_AGENT_PROBLEM, "zaufany")
+            // Then the dialog stays with the failure text (no longer a trust hint, AM-309), and the prompt is kept
+            awaitText(WindowTags.NEW_AGENT_PROBLEM, "odmówił startu")
             onNodeWithTag(WindowTags.NEW_AGENT_PROMPT).assertTextEquals("Fix the login")
             onNodeWithTag(WindowTags.NEW_AGENT_DIALOG).assertExists()
             awaitFocus(WindowTags.NEW_AGENT_PROMPT)

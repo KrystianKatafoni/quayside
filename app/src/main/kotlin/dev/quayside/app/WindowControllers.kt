@@ -7,6 +7,7 @@ import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
+import dev.quayside.missioncontrol.ui.NewAgentPorts
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.notifications.ui.SoundPreviewController
 import dev.quayside.projects.ui.DirectoryPicker
@@ -99,8 +100,7 @@ internal class WindowControllers(
 
     val newAgent =
         NewAgentController(
-            modules.sessions.commands,
-            modules.projects.api,
+            NewAgentPorts(modules.sessions.commands, modules.projects.api, modules.projects.trust),
             scope,
             core.logger,
             selectStartedSession(projects, missionControl),

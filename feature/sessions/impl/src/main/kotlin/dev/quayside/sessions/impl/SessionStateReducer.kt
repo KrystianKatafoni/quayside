@@ -7,6 +7,7 @@ import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionRules
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
@@ -121,6 +122,7 @@ internal object SessionStateReducer {
             startedAt = startedAt,
             lastActivityAt = lastActivityAt,
             summary = hooks.summaries[id] ?: before?.summary,
+            meta = (before?.meta ?: SessionMeta()).updatedBy(hooks.metas[id]),
         )
     }
 

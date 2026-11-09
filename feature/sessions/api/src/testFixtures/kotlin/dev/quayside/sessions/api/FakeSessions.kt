@@ -209,6 +209,7 @@ public class FakeSessions(
             startedAt = session.startedAt,
             lastActivityAt = session.startedAt,
             summary = null,
+            meta = session.meta,
         )
 
     private fun statusAfter(

@@ -35,6 +35,7 @@ import dev.quayside.terminal.api.TerminalSettingsRepo
 import dev.quayside.terminal.impl.terminalModule
 import dev.quayside.terminal.impl.terminalSettingsModule
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -126,7 +127,17 @@ private fun sessionsDeps(
     scope: CoroutineScope,
 ): SessionsApi {
     val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir, port = HOOK_PORT)
-    return sessionsModule(runtime, hooks, projects, scope, core.clock, core.logger, summaries = summaries)
+    return sessionsModule(
+        runtime,
+        hooks,
+        projects,
+        scope,
+        core.clock,
+        core.logger,
+        summaries = summaries,
+        claudeHome = core.homeDir.resolve(".claude"),
+        io = Dispatchers.IO,
+    )
 }
 
 /**

@@ -7,6 +7,7 @@ import dev.quayside.core.domain.flatMap
 import dev.quayside.core.domain.info
 import dev.quayside.core.domain.map
 import dev.quayside.core.domain.warn
+import dev.quayside.core.process.GitBranch
 import dev.quayside.core.storage.JsonStore
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectError
@@ -82,6 +83,11 @@ internal class JsonProjectStore private constructor(
                     .also { logged(it, "project renamed", id) }
             }
         }
+    }
+
+    override suspend fun branch(id: ProjectId): String? {
+        val dir = state.value.firstOrNull { it.id == id }?.dir ?: return null
+        return withContext(io) { GitBranch.read(dir) }
     }
 
     override suspend fun setSubfolders(

@@ -33,7 +33,10 @@ internal fun worktreeText(
         cwd.toString()
     }
 
-/** Worktree, ID, start and last activity as label and value pairs in two columns, in a card with the theme frame. */
+/**
+ * Worktree, ID, start, last activity and the known model, permission mode and branch as label and value pairs in two
+ * columns, in a card with the theme frame.
+ */
 @Composable
 internal fun DetailsFields(details: SessionDetails) {
     val shape = AmTheme.shape
@@ -54,6 +57,9 @@ internal fun DetailsFields(details: SessionDetails) {
         Field("details.id", details.id.value)
         Field("details.startedAt", timeFormat.format(details.startedAt))
         Field("details.lastActivity", timeFormat.format(details.lastActivityAt))
+        details.meta.model?.let { Field("details.model", it) }
+        details.meta.permissionMode?.let { Field("details.permissionMode", it) }
+        details.meta.branch?.let { Field("details.branch", it) }
     }
 }
 

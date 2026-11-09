@@ -21,6 +21,7 @@ import java.time.Instant
  * @property startedAt when the session was started.
  * @property lastActivityAt last state change or hook event (FR-S1).
  * @property summary short summary of the session; null when unknown.
+ * @property meta model, permission mode and git branch (FR-S8); every part may be unknown.
  */
 public data class Session(
     val id: SessionId,
@@ -31,11 +32,30 @@ public data class Session(
     val startedAt: Instant,
     val lastActivityAt: Instant,
     val summary: String?,
+    val meta: SessionMeta = SessionMeta(),
 ) {
     override fun toString(): String =
         "Session(id=$id, project=$project, name=$name, cwd=$cwd, state=$state, startedAt=$startedAt, " +
-            "lastActivityAt=$lastActivityAt, summary=${summary?.let { HIDDEN }})"
+            "lastActivityAt=$lastActivityAt, summary=${summary?.let { HIDDEN }}, meta=$meta)"
 }
+
+/**
+ * What the details panel shows besides the supervisor's fields (FR-S8). Every part is null while Quayside does not
+ * know it: the monitor reads them from the Claude Code transcript and the work tree, so a brand-new session or a
+ * directory outside a repository has gaps. Values are shown as they are, never interpreted.
+ *
+ * [branch] is user data (ENG-C8): log a whole [SessionMeta] at DEBUG level only.
+ *
+ * @property model model id of the last answer, e.g. `claude-opus-4-1`.
+ * @property permissionMode Claude Code permission mode, e.g. `default`, `acceptEdits`, `plan`, `bypassPermissions`.
+ * @property branch checked-out git branch of the session directory; the first 7 characters of the commit when `HEAD`
+ *   is detached.
+ */
+public data class SessionMeta(
+    val model: String? = null,
+    val permissionMode: String? = null,
+    val branch: String? = null,
+)
 
 /**
  * What a session is doing (FR-S2). [isActive] is the single "active session" rule: the agent keeps

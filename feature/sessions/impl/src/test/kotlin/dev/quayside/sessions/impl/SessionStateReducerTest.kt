@@ -13,6 +13,7 @@ import dev.quayside.core.testing.aSessionId
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
@@ -146,6 +147,48 @@ class SessionStateReducerTest {
         val session = reduce(previous, ok(runtime())).snapshot.sessions.single()
 
         session.summary shouldBe "Fixing the login bug"
+    }
+
+    @Test
+    fun `meta read from disk is put into the session`() {
+        val meta = SessionMeta(model = "claude-opus-4-1", permissionMode = "plan", branch = "main")
+        val hooks = HookData(metas = mapOf(aSessionId() to meta))
+
+        val session = reduce(SessionsSnapshot.Initial, ok(runtime()), hooks = hooks).snapshot.sessions.single()
+
+        session.meta shouldBe meta
+    }
+
+    @Test
+    fun `meta of another session is not used`() {
+        val hooks = HookData(metas = mapOf(aSessionId("other") to SessionMeta(branch = "x")))
+
+        reduce(SessionsSnapshot.Initial, ok(runtime()), hooks = hooks)
+            .snapshot.sessions
+            .single()
+            .meta shouldBe
+            SessionMeta()
+    }
+
+    @Test
+    fun `a part that is unknown now keeps its last known value and a known part replaces it`() {
+        val before = SessionMeta(model = "old-model", permissionMode = "default", branch = "main")
+        val previous = fresh(listOf(aSession(meta = before)))
+        val hooks = HookData(metas = mapOf(aSessionId() to SessionMeta(model = "new-model")))
+
+        val session = reduce(previous, ok(runtime()), hooks = hooks).snapshot.sessions.single()
+
+        session.meta shouldBe SessionMeta(model = "new-model", permissionMode = "default", branch = "main")
+    }
+
+    @Test
+    fun `meta stays when the listing is not read`() {
+        val before = SessionMeta(model = "m", branch = "main")
+        val previous = fresh(listOf(aSession(meta = before)))
+
+        val shown = reduce(previous, ok(runtime())).snapshot.sessions.single()
+
+        shown.meta shouldBe before
     }
 
     @Test

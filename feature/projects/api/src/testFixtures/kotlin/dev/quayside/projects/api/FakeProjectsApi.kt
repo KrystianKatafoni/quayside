@@ -44,12 +44,24 @@ public class FakeProjectsApi(
     private val recorded = MutableStateFlow(emptyList<String>())
     private val pendingFailure = MutableStateFlow<ProjectError?>(null)
     private val lastId = AtomicInteger()
+    private val branches = MutableStateFlow(emptyMap<ProjectId, String>())
 
     /**
      * Commands called so far, in order, as `<command> <argument>`: `add <dir as given>`,
      * `remove <id>`, `rename <id>`, e.g. `add /Users/test/projects/agent-manager`, `remove project0001`.
      */
     public val calls: List<String> get() = recorded.value
+
+    /** Sets the branch [branch] reports for [id]; null = no branch. Unknown ids are reported as null either way. */
+    public fun setBranch(
+        id: ProjectId,
+        branch: String?,
+    ) {
+        branches.update { if (branch == null) it - id else it + (id to branch) }
+    }
+
+    override suspend fun branch(id: ProjectId): String? =
+        if (state.value.none { it.id == id }) null else branches.value[id]
 
     /** Makes the next command return `Err(error)` without changing anything; later commands work again. */
     public fun failNext(error: ProjectError) {

@@ -11,6 +11,7 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.map
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -42,6 +43,7 @@ internal class SessionsState(
     private val overlayTtl: Duration,
     private val hookLead: Duration = HOOK_LEAD,
     private val summaries: TurnSummaries = TurnSummaries(null),
+    private val metas: SessionMetaSource = SessionMetaSource.None,
 ) {
     private val mutex = Mutex()
     private val current = MutableStateFlow(SessionsSnapshot.Initial)
@@ -55,6 +57,9 @@ internal class SessionsState(
 
     /** The last successful listing with command effects, before hooks; null until there is one. Guarded by [mutex]. */
     private var lastListing: List<RuntimeSession>? = null
+
+    /** Model, mode and branch read at the last successful listing (AM-818); guarded by [mutex]. */
+    private var lastMetas: Map<SessionId, SessionMeta> = emptyMap()
 
     /** Latest snapshot, [SessionsSnapshot.Initial] until the first [refresh]. */
     val snapshot: StateFlow<SessionsSnapshot> = current.asStateFlow()
@@ -75,7 +80,10 @@ internal class SessionsState(
             val listing = runtime.listSessions(under = null)
             val now = clock.now()
             val overlaid = listing.map { overlay(it, now) }
-            if (overlaid is Outcome.Ok) lastListing = overlaid.value
+            if (overlaid is Outcome.Ok) {
+                lastListing = overlaid.value
+                lastMetas = overlaid.value.associate { it.id to metas.read(it) }
+            }
             val reduction = publish(overlaid, now)
             listing.map { reduction.snapshot }
         }
@@ -110,7 +118,8 @@ internal class SessionsState(
         if (merged != null) notes = merged.notes
         val dirs = projects.projects.value.associate { it.id to it.dir }
         val input = merged?.let { Outcome.Ok(it.sessions) } ?: listing
-        val hooks = HookData(merged?.details.orEmpty(), summaries.forListing((listing as? Outcome.Ok)?.value))
+        val hooks =
+            HookData(merged?.details.orEmpty(), summaries.forListing((listing as? Outcome.Ok)?.value), lastMetas)
         val reduction = SessionStateReducer.reduce(current.value, input, dirs, now, hooks)
         val snapshot = if (status == null) reduction.snapshot else reduction.snapshot.copy(status = status)
         current.value = snapshot

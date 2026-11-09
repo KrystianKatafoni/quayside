@@ -53,6 +53,7 @@ internal object MissionControlTags {
     const val SESSION_BAR_RESPAWN = "missionControl.sessionBar.respawn"
     const val SESSION_BAR_STOP = "missionControl.sessionBar.stop"
     const val HEADER_PATH = "missionControl.header.path"
+    const val HEADER_BRANCH = "missionControl.header.branch"
     const val HEADER_COUNT = "missionControl.header.count"
     const val DETAILS_STATE = "missionControl.details.state"
     const val DETAILS_SUMMARY = "missionControl.details.summary"

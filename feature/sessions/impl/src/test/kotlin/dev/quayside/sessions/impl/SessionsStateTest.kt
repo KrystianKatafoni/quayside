@@ -3,12 +3,15 @@
 package dev.quayside.sessions.impl
 
 import dev.quayside.agentruntime.api.A_PROJECT_DIR
+import dev.quayside.agentruntime.api.AgentEvent
 import dev.quayside.agentruntime.api.AgentRuntime
+import dev.quayside.agentruntime.api.EventMeta
 import dev.quayside.agentruntime.api.FakeAgentRuntime
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimePhase
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.RuntimeWorld
+import dev.quayside.agentruntime.api.aConversationId
 import dev.quayside.agentruntime.api.aRuntimeSession
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Outcome
@@ -20,6 +23,7 @@ import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
@@ -51,6 +55,42 @@ class SessionsStateTest {
 
     private fun runtimeWith(vararg sessions: RuntimeSession): FakeAgentRuntime =
         FakeAgentRuntime(RuntimeWorld(sessions = sessions.toList()))
+
+    @Test
+    fun `sessions carry the meta read at the listing and keep it across hooks`() =
+        runTest {
+            val read = mutableListOf<SessionMeta>()
+            val source = SessionMetaSource { read.removeFirstOrNull() ?: SessionMeta() }
+            read += SessionMeta(model = "claude-opus-4-1", branch = "main")
+            val state =
+                SessionsState(runtimeWith(aRuntimeSession()), projects, clock, COMMAND_OVERLAY_TTL, metas = source)
+
+            state.refresh()
+
+            state.snapshot.value.sessions
+                .single()
+                .meta shouldBe SessionMeta(model = "claude-opus-4-1", branch = "main")
+            state.onHook(AgentEvent.TurnEnded(EventMeta(aConversationId(), A_PROJECT_DIR, clock.now()), "Done."))
+            state.snapshot.value.sessions
+                .single()
+                .meta shouldBe SessionMeta(model = "claude-opus-4-1", branch = "main")
+        }
+
+    @Test
+    fun `a later listing updates the meta and an unknown part keeps its value`() =
+        runTest {
+            val read = mutableListOf(SessionMeta(model = "m1", branch = "a"), SessionMeta(branch = "b"))
+            val source = SessionMetaSource { read.removeFirst() }
+            val state =
+                SessionsState(runtimeWith(aRuntimeSession()), projects, clock, COMMAND_OVERLAY_TTL, metas = source)
+
+            state.refresh()
+            state.refresh()
+
+            state.snapshot.value.sessions
+                .single()
+                .meta shouldBe SessionMeta(model = "m1", branch = "b")
+        }
 
     @Test
     fun `starts with the initial snapshot`() {

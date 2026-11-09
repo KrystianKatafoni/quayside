@@ -10,6 +10,7 @@ import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.aProject
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.Session
+import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
@@ -182,6 +183,16 @@ internal class MissionControlReducerTest {
                 lastActivityAt = T0.plusSeconds(30),
             )
         page.rows.filter { it.selected }.map { it.id.value } shouldBe listOf("picked")
+    }
+
+    @Test
+    fun `details carry the model, permission mode and branch of the session`() {
+        val meta = SessionMeta(model = "claude-opus-5", permissionMode = "plan", branch = "feat/AM-818")
+        val snapshot = fresh(aSession(id = "picked", meta = meta), aSession(id = "else"))
+
+        val page = reduce(snapshot, selection = Selection(project.id, session = SessionId("picked"))).page()
+
+        page.details?.meta shouldBe meta
     }
 
     @Test

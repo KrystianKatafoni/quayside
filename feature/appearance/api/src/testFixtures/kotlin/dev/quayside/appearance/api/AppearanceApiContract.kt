@@ -324,4 +324,95 @@ public abstract class AppearanceApiContract {
             }
             api.settings.value.customSchemes shouldBe listOf(mine)
         }
+
+    @Test
+    public fun `preview derives the theme and saves nothing`() =
+        runTest {
+            val api = api()
+
+            api
+                .previewScheme(mine)
+                .shouldBeInstanceOf<Outcome.Ok<ThemeSpec>>()
+                .value.id shouldBe mine.id
+
+            api.catalog.value.theme(mine.id) shouldBe null
+            api.settings.value.customSchemes shouldBe emptyList()
+        }
+
+    @Test
+    public fun `preview reports a taken id and low contrast like addScheme`() =
+        runTest {
+            val api = api()
+            val grey = mine.copy(colors = mine.colors.copy(text = SampleSchemes.color("#222222")))
+
+            api
+                .previewScheme(grey)
+                .shouldBeInstanceOf<Outcome.Err<SchemeError>>()
+                .error
+                .shouldBeInstanceOf<SchemeError.LowContrast>()
+            api.previewScheme(mine.copy(id = ThemeCatalog.DEFAULT_SCHEME)) shouldBe
+                Outcome.Err(SchemeError.Taken(ThemeCatalog.DEFAULT_SCHEME))
+            api.addScheme(mine)
+            api.previewScheme(mine) shouldBe Outcome.Err(SchemeError.Taken(mine.id))
+        }
+
+    @Test
+    public fun `removed scheme leaves the catalog and the saved settings`() =
+        runTest {
+            val api = api()
+            val other = mine.copy(id = SchemeId("other"), name = "Other")
+            api.addScheme(mine)
+            api.addScheme(other)
+
+            api.removeScheme(mine.id) shouldBe Outcome.Ok(Unit)
+
+            api.catalog.value.theme(mine.id) shouldBe null
+            api.catalog.value
+                .theme(other.id)
+                .shouldNotBeNull()
+            api.settings.value.customSchemes shouldBe listOf(other)
+            api.addScheme(mine).shouldBeInstanceOf<Outcome.Ok<ThemeSpec>>()
+        }
+
+    @Test
+    public fun `removing a built-in or unknown theme is refused`() =
+        runTest {
+            val api = api()
+            val before = api.catalog.value
+
+            api.removeScheme(ThemeCatalog.DEFAULT_SCHEME) shouldBe
+                Outcome.Err(SchemeError.NotFound(ThemeCatalog.DEFAULT_SCHEME))
+            api.removeScheme(mine.id) shouldBe Outcome.Err(SchemeError.NotFound(mine.id))
+
+            api.catalog.value shouldBe before
+        }
+
+    @Test
+    public fun `a chosen scheme cannot be removed`() =
+        runTest {
+            val api = api()
+            api.addScheme(mine)
+            api.update { it.copy(scheme = mine.id) }
+
+            api.removeScheme(mine.id) shouldBe Outcome.Err(SchemeError.InUse(mine.id))
+
+            api.catalog.value
+                .theme(mine.id)
+                .shouldNotBeNull()
+            api.settings.value.customSchemes shouldBe listOf(mine)
+        }
+
+    @Test
+    public fun `a day or night scheme cannot be removed`() =
+        runTest {
+            val api = api()
+            val night = mine.copy(id = SchemeId("night"), name = "Night")
+            api.addScheme(mine)
+            api.addScheme(night)
+            api.update { it.copy(dayNight = DayNight(enabled = true, day = mine.id, night = night.id)) }
+
+            api.removeScheme(mine.id) shouldBe Outcome.Err(SchemeError.InUse(mine.id))
+            api.removeScheme(night.id) shouldBe Outcome.Err(SchemeError.InUse(night.id))
+            api.settings.value.customSchemes.size shouldBe 2
+        }
 }

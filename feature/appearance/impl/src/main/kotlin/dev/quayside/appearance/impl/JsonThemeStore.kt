@@ -5,6 +5,7 @@ import dev.quayside.appearance.api.AppearanceError
 import dev.quayside.appearance.api.AppearanceSettings
 import dev.quayside.appearance.api.CustomScheme
 import dev.quayside.appearance.api.SchemeError
+import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.ThemeCatalog
 import dev.quayside.appearance.api.ThemeSpec
 import dev.quayside.appearance.api.appliedFor
@@ -73,6 +74,24 @@ internal class JsonThemeStore private constructor(
                 audited is Outcome.Err -> audited
                 !writable -> Outcome.Err(SchemeError.StorageFailed)
                 else -> persistScheme(scheme)
+            }
+        }
+
+    override fun previewScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError> {
+        val audited = auditedThemeOf(scheme)
+        return if (themes.value.theme(scheme.id) != null) Outcome.Err(SchemeError.Taken(scheme.id)) else audited
+    }
+
+    override suspend fun removeScheme(id: SchemeId): Outcome<Unit, SchemeError> =
+        mutex.withLock {
+            val current = saved.value
+            val chosen = listOf(current.scheme, current.dayNight.day, current.dayNight.night)
+            when {
+                current.customSchemes.none { it.id == id } -> Outcome.Err(SchemeError.NotFound(id))
+                id in chosen -> Outcome.Err(SchemeError.InUse(id))
+                !writable -> Outcome.Err(SchemeError.StorageFailed)
+                save(current.copy(customSchemes = current.customSchemes.filter { it.id != id })) -> Outcome.Ok(Unit)
+                else -> Outcome.Err(SchemeError.StorageFailed)
             }
         }
 

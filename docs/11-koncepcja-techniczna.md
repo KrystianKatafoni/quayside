@@ -390,6 +390,8 @@ interface AppearanceApi {
     val applied: StateFlow<AppearanceSettings>    // to, co aplikacja rysuje teraz: settings.appliedFor(tryb macOS ciemny?); tryb czytany co 5 s
     suspend fun update(change: (AppearanceSettings) -> AppearanceSettings): Outcome<AppearanceSettings, AppearanceError>  // zapis theme.json, potem publikacja; nie zmienia customSchemes
     suspend fun addScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError>  // AM-814: wyprowadza tokeny, audyt NFR-6, zapis, nowy katalog; Taken/LowContrast/StorageFailed
+    fun previewScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError>  // AM-820: jak addScheme, ale bez zapisu (raport kontrastu edytora); Taken/LowContrast
+    suspend fun removeScheme(id: SchemeId): Outcome<Unit, SchemeError>  // AM-820: zapis i nowy katalog; NotFound (podstawowy lub nieznany), InUse (zapisany motyw lub dzień/noc), StorageFailed
 }
 interface ThemeFiles {                            // pliki theme.json wybrane przez użytkownika (FR-A6); niczego nie stosuje
     suspend fun read(source: Path): Outcome<AppearanceSettings, ThemeFileError>           // ścisły odczyt, do 64 KiB

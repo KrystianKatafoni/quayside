@@ -5,6 +5,7 @@ import dev.quayside.appearance.api.ListDensity
 import dev.quayside.appearance.api.SchemeId
 import dev.quayside.appearance.api.ThemeCatalog
 import dev.quayside.appearance.api.ThemeFiles
+import dev.quayside.appearance.api.ThemeMode
 import dev.quayside.appearance.api.UiScale
 import dev.quayside.core.designtokens.TypographyId
 import dev.quayside.core.domain.Outcome
@@ -63,6 +64,36 @@ public sealed interface AppearanceIntent {
     /** Asks for a theme file and adds its custom schemes to the catalog at once (they are saved, not drafted). */
     public data object ImportSchemes : AppearanceIntent
 
+    /** Opens the scheme editor with the colours of graphite (FR-A6). */
+    public data object OpenSchemeEditor : AppearanceIntent
+
+    /** Closes the scheme editor and drops what was typed. */
+    public data object CloseSchemeEditor : AppearanceIntent
+
+    /** Sets one text field of the open scheme editor. */
+    public data class EditSchemeField(
+        val field: EditorField,
+        val value: String,
+    ) : AppearanceIntent
+
+    /** Sets the mode of the scheme in the open editor. */
+    public data class EditSchemeMode(
+        val mode: ThemeMode,
+    ) : AppearanceIntent
+
+    /** Adds the scheme of the editor to the catalog at once (saved, not drafted); ignored when it is invalid. */
+    public data object SaveScheme : AppearanceIntent
+
+    /** Removes the custom scheme [id] at once; refused while it is the saved or the day or night theme. */
+    public data class RemoveScheme(
+        val id: SchemeId,
+    ) : AppearanceIntent
+
+    /** Asks where to save and writes the custom scheme [id] alone as a theme file. */
+    public data class ExportScheme(
+        val id: SchemeId,
+    ) : AppearanceIntent
+
     /** Asks where to save and writes the draft (not the saved settings) as a theme file. */
     public data object Export : AppearanceIntent
 
@@ -70,7 +101,7 @@ public sealed interface AppearanceIntent {
 }
 
 /** What a finished import or export tells the user. */
-public enum class FileNotice { IMPORTED, EXPORTED, SCHEMES_IMPORTED }
+public enum class FileNotice { IMPORTED, EXPORTED, SCHEMES_IMPORTED, SCHEME_ADDED, SCHEME_REMOVED }
 
 /** Where the file dialogs of the system are shown; null = the user cancelled. */
 public interface ThemeFilePicker {
@@ -81,12 +112,16 @@ public interface ThemeFilePicker {
     public suspend fun save(suggestedName: String): Path?
 }
 
-/** Draft, busy flag, the last error (fixed category) and the last import or export notice; immutable. */
+/**
+ * Draft, busy flag, the last error (fixed category), the last import or export notice and the scheme [editor] (null =
+ * closed); immutable.
+ */
 public data class AppearanceDialogState(
     val draft: AppearanceDraft,
     val busy: Boolean,
     val error: ApplyError?,
     val notice: FileNotice? = null,
+    val editor: SchemeEditor? = null,
 )
 
 /** State of the Appearance dialog (MVI); runs in [scope] (window scope, Main). Applies at most one change at a time. */
@@ -104,6 +139,9 @@ public class AppearanceController(
 
     /** The catalog the dialog lists (the one of the appearance module); grows when custom schemes are imported. */
     internal val catalog: StateFlow<ThemeCatalog> get() = appearance.catalog
+
+    /** The appearance module behind the dialog; the scheme editor asks it for its contrast report. */
+    internal val appearanceApi: AppearanceApi get() = appearance
 
     /** The open dialog; null = closed. */
     public val state: StateFlow<AppearanceDialogState?> = dialog
@@ -125,24 +163,39 @@ public class AppearanceController(
         val current = dialog.value ?: return
         if (current.busy) return
         val edited = editedDraft(current.draft, intent, appearance.catalog.value)
-        if (edited == null) {
-            start(intent, current.draft)
-        } else {
-            dialog.value = current.copy(draft = edited, error = null, notice = null)
+        val editing = editedEditor(current.editor, intent)
+        when {
+            edited != null -> dialog.value = current.copy(draft = edited, error = null, notice = null)
+            editing != null -> dialog.value = current.copy(editor = editing.value, error = null, notice = null)
+            else -> start(intent, current)
         }
     }
 
     /** Starts the action of [intent] when it is one (apply, import, export); other intents are edits. */
     private fun start(
         intent: AppearanceIntent,
-        draft: AppearanceDraft,
+        state: AppearanceDialogState,
     ): Unit =
         when (intent) {
-            AppearanceIntent.Apply -> apply(draft)
-            AppearanceIntent.Import -> runFileAction { actions.import() }
-            AppearanceIntent.ImportSchemes -> runFileAction { actions.importSchemes() }
-            AppearanceIntent.Export -> runFileAction { actions.export(draft.settings) }
-            else -> Unit
+            AppearanceIntent.Apply -> {
+                apply(state.draft)
+            }
+
+            AppearanceIntent.Import -> {
+                runFileAction { actions.import() }
+            }
+
+            AppearanceIntent.ImportSchemes -> {
+                runFileAction { actions.importSchemes() }
+            }
+
+            AppearanceIntent.Export -> {
+                runFileAction { actions.export(state.draft.settings) }
+            }
+
+            else -> {
+                actions.schemeAction(intent, state.editor)?.let(::runFileAction) ?: Unit
+            }
         }
 
     private fun apply(draft: AppearanceDraft) {

@@ -54,6 +54,25 @@ internal object AppearanceTags {
     /** The fixed message after a finished import or export; absent otherwise. */
     const val NOTICE = "appearance.notice"
 
+    /** The buttons under the theme list: new scheme, remove and export the chosen custom scheme. */
+    const val SCHEME_NEW = "appearance.scheme.new"
+    const val SCHEME_REMOVE = "appearance.scheme.remove"
+    const val SCHEME_EXPORT = "appearance.scheme.export"
+
+    /** The scheme editor and its parts; absent while the editor is closed. */
+    const val EDITOR = "appearance.editor"
+    const val EDITOR_MODE = "appearance.editor.mode"
+    const val EDITOR_SAVE = "appearance.editor.save"
+    const val EDITOR_CANCEL = "appearance.editor.cancel"
+
+    /** The line under the fields: incomplete, taken key, low contrast or ready. */
+    const val EDITOR_REPORT = "appearance.editor.report"
+
+    /** The sample drawn with the derived colours; present only while the scheme passes the audit. */
+    const val EDITOR_PREVIEW = "appearance.editor.preview"
+
+    fun editorField(field: EditorField): String = "appearance.editor.field.${field.name}"
+
     fun slot(slot: ThemeSlot): String = "appearance.slot.${slot.name}"
 
     fun theme(id: SchemeId): String = "appearance.theme.${id.value}"

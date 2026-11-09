@@ -99,6 +99,45 @@ public class FakeAppearanceApi(
             }
         }
 
+    override fun previewScheme(scheme: CustomScheme): Outcome<ThemeSpec, SchemeError> =
+        when {
+            themes.value.theme(scheme.id) != null -> {
+                Outcome.Err(SchemeError.Taken(scheme.id))
+            }
+
+            Wcag.contrast(scheme.colors.text, scheme.colors.bg) < Wcag.TEXT_MIN -> {
+                Outcome.Err(SchemeError.LowContrast(listOf("text/bg")))
+            }
+
+            else -> {
+                Outcome.Ok(specOf(scheme))
+            }
+        }
+
+    override suspend fun removeScheme(id: SchemeId): Outcome<Unit, SchemeError> =
+        mutex.withLock {
+            val now = current.value
+            when {
+                now.customSchemes.none { it.id == id } -> {
+                    Outcome.Err(SchemeError.NotFound(id))
+                }
+
+                id in listOf(now.scheme, now.dayNight.day, now.dayNight.night) -> {
+                    Outcome.Err(SchemeError.InUse(id))
+                }
+
+                failSaves -> {
+                    Outcome.Err(SchemeError.StorageFailed)
+                }
+
+                else -> {
+                    themes.value = themes.value.copy(themes = themes.value.themes.filter { it.id != id })
+                    current.value = now.copy(customSchemes = now.customSchemes.filter { it.id != id })
+                    Outcome.Ok(Unit)
+                }
+            }
+        }
+
     private fun specOf(scheme: CustomScheme): ThemeSpec =
         ThemeSpec(
             id = scheme.id,

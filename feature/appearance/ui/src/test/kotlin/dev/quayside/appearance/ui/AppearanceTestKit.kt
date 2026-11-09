@@ -5,6 +5,7 @@ package dev.quayside.appearance.ui
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.api.AppearanceError
 import dev.quayside.appearance.api.AppearanceSettings
+import dev.quayside.appearance.api.CustomScheme
 import dev.quayside.appearance.api.DayNight
 import dev.quayside.appearance.api.FakeAppearanceApi
 import dev.quayside.appearance.api.FakeThemeFiles
@@ -83,6 +84,12 @@ internal class HeldFiles(
         reads++
         if (hold) release.await()
         return inner.read(source)
+    }
+
+    override suspend fun readSchemes(source: Path): Outcome<List<CustomScheme>, ThemeFileError> {
+        reads++
+        if (hold) release.await()
+        return inner.readSchemes(source)
     }
 
     override suspend fun write(

@@ -48,6 +48,9 @@ internal object AppearanceTags {
     const val IMPORT = "appearance.import"
     const val EXPORT = "appearance.export"
 
+    /** The button "Importuj schemat…" (custom schemes of a theme file, FR-A6). */
+    const val IMPORT_SCHEMES = "appearance.importSchemes"
+
     /** The fixed message after a finished import or export; absent otherwise. */
     const val NOTICE = "appearance.notice"
 

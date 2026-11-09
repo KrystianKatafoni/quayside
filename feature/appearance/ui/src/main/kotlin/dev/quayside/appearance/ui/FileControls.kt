@@ -15,8 +15,8 @@ import dev.quayside.core.designsystem.toColor
 
 /**
  * The fixed message of a failed apply, import or export, the notice after a finished import or export, and the buttons
- * "Importuj…" and "Eksportuj…". The buttons are SECONDARY and never get the start focus (lesson of the consent dialog);
- * they are off while a save or a file action runs.
+ * "Importuj…", "Importuj schemat…" and "Eksportuj…". The buttons are SECONDARY and never get the start focus
+ * (lesson of the consent dialog); they are off while a save or a file action runs.
  */
 @Composable
 internal fun FileControls(
@@ -39,6 +39,12 @@ internal fun FileControls(
                 AppearanceStrings["import"],
                 { onIntent(AppearanceIntent.Import) },
                 Modifier.testTag(AppearanceTags.IMPORT),
+                ButtonOptions(enabled = !state.busy),
+            )
+            AmButton(
+                AppearanceStrings["importSchemes"],
+                { onIntent(AppearanceIntent.ImportSchemes) },
+                Modifier.testTag(AppearanceTags.IMPORT_SCHEMES),
                 ButtonOptions(enabled = !state.busy),
             )
             AmButton(

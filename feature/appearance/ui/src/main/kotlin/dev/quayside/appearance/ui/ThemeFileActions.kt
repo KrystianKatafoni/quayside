@@ -1,6 +1,9 @@
 package dev.quayside.appearance.ui
 
+import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.api.AppearanceSettings
+import dev.quayside.appearance.api.CustomScheme
+import dev.quayside.appearance.api.SchemeError
 import dev.quayside.appearance.api.ThemeFileError
 import dev.quayside.appearance.api.ThemeFiles
 import dev.quayside.core.domain.Outcome
@@ -16,6 +19,11 @@ internal sealed interface FileResult {
         val settings: AppearanceSettings,
     ) : FileResult
 
+    /** Custom schemes were added; [all] are the custom schemes saved now. */
+    data class SchemesImported(
+        val all: List<CustomScheme>,
+    ) : FileResult
+
     data object Exported : FileResult
 
     data class Failed(
@@ -26,16 +34,41 @@ internal sealed interface FileResult {
 /** [state] after [result]: an import replaces the settings of the draft, a failure shows its category. */
 internal fun AppearanceDialogState.withResult(result: FileResult): AppearanceDialogState =
     when (result) {
-        FileResult.Cancelled -> this
-        is FileResult.Imported -> copy(draft = draft.copy(settings = result.settings), notice = FileNotice.IMPORTED)
-        FileResult.Exported -> copy(notice = FileNotice.EXPORTED)
-        is FileResult.Failed -> copy(error = result.error)
+        FileResult.Cancelled -> {
+            this
+        }
+
+        is FileResult.Imported -> {
+            copy(
+                draft = draft.copy(settings = result.settings.copy(customSchemes = draft.settings.customSchemes)),
+                notice = FileNotice.IMPORTED,
+            )
+        }
+
+        is FileResult.SchemesImported -> {
+            copy(
+                draft = draft.copy(settings = draft.settings.copy(customSchemes = result.all)),
+                notice = FileNotice.SCHEMES_IMPORTED,
+            )
+        }
+
+        FileResult.Exported -> {
+            copy(notice = FileNotice.EXPORTED)
+        }
+
+        is FileResult.Failed -> {
+            copy(error = result.error)
+        }
     }
 
-/** Asks [picker] for a file and runs [files] on it; never applies anything. */
+/**
+ * Asks [picker] for a file and runs [files] on it; never applies settings. Custom schemes of a file go to [appearance]
+ * at once, one by one in file order: the first refused scheme stops the import, the ones before it stay.
+ */
 internal class ThemeFileActions(
     private val files: ThemeFiles,
     private val picker: ThemeFilePicker,
+    private val appearance: AppearanceApi,
 ) {
     suspend fun import(): FileResult {
         val source = picker.open() ?: return FileResult.Cancelled
@@ -43,6 +76,23 @@ internal class ThemeFileActions(
             is Outcome.Ok -> FileResult.Imported(read.value)
             is Outcome.Err -> FileResult.Failed(importErrorOf(read.error))
         }
+    }
+
+    suspend fun importSchemes(): FileResult {
+        val source = picker.open() ?: return FileResult.Cancelled
+        return when (val read = files.readSchemes(source)) {
+            is Outcome.Err -> FileResult.Failed(importErrorOf(read.error))
+            is Outcome.Ok -> addAll(read.value)
+        }
+    }
+
+    private suspend fun addAll(schemes: List<CustomScheme>): FileResult {
+        if (schemes.isEmpty()) return FileResult.Failed(ApplyError.SCHEMES_NONE)
+        for (scheme in schemes) {
+            val added = appearance.addScheme(scheme)
+            if (added is Outcome.Err) return FileResult.Failed(schemeErrorOf(added.error))
+        }
+        return FileResult.SchemesImported(appearance.settings.value.customSchemes)
     }
 
     suspend fun export(settings: AppearanceSettings): FileResult {
@@ -60,4 +110,11 @@ private fun importErrorOf(error: ThemeFileError): ApplyError =
         ThemeFileError.NotThemeFile -> ApplyError.IMPORT_NOT_THEME
         is ThemeFileError.NewerVersion -> ApplyError.IMPORT_NEWER
         ThemeFileError.InvalidValue -> ApplyError.IMPORT_INVALID
+    }
+
+private fun schemeErrorOf(error: SchemeError): ApplyError =
+    when (error) {
+        is SchemeError.Taken -> ApplyError.SCHEME_TAKEN
+        is SchemeError.LowContrast -> ApplyError.SCHEME_CONTRAST
+        SchemeError.StorageFailed -> ApplyError.SCHEME_SAVE
     }

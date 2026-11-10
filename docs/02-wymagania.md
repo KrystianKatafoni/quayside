@@ -10,7 +10,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | --- | --- | --- |
 | FR-P1 | Dodanie projektu przez wybór katalogu (`NSOpenPanel`), skrót ⌘⇧O, przycisk w sidebarze i komenda w palecie | M |
 | FR-P2 | Przy dodawaniu sprawdzenie katalogu: repo git i branch, obecność `CLAUDE.md`, liczba istniejących sesji, obecność hooków w `.claude/settings*.json` | S |
-| FR-P3 | Usunięcie projektu z narzędzia (menu ⋯, ⌘⌫, komenda w palecie). Pliki, transkrypty i worktree **zostają na dysku** | M |
+| FR-P3 | Usunięcie projektu z narzędzia (menu pod prawym klikiem wiersza projektu, ⌘⌫, komenda w palecie). Pliki, transkrypty i worktree **zostają na dysku** | M |
 | FR-P4 | Jeśli w usuwanym projekcie działają sesje: wybór „zatrzymaj sesje i usuń” albo „usuń z listy, sesje działają dalej” | M |
 | FR-P5 | Import projektów z historii `~/.claude/projects/` | C |
 | FR-P6 | Zmiana nazwy wyświetlanej projektu, plakietki sesji czekających, pracujących i z błędem (z ikoną stanu) przy projekcie w sidebarze | S |
@@ -29,7 +29,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-S6 | Pozwól/Odmów dla prośby o zgodę z popupu | S |
 | FR-S7 | Krótkie podsumowanie sesji: `last_assistant_message` z hooka `Stop`, opcjonalnie streszczenie modelem klasy Haiku | M |
 | FR-S8 | Panel szczegółów: worktree, model, tryb, ID, lista ostatnich zdarzeń hooków, link do PR | S |
-| FR-S9 | Filtry: wszystkie / aktywne / zakończone oraz widoki globalne „czeka na mnie”, „pracuje”, „błędy” | S |
+| FR-S9 | Filtry: wszystkie / aktywne / zakończone oraz widoki globalne „czeka na mnie”, „pracuje”, „gotowe”, „błędy” | S |
 
 ### Terminal
 
@@ -69,7 +69,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-A7 | Tokeny kształtu w motywie: promień, grubość ramki, cień, półprzezroczyste tło panelu (przybliżenie bez rozmycia) | S |
 | FR-K1 | Paleta komend ⌘K obejmująca wszystkie akcje (sesje, projekty, ustawienia) | M |
 | FR-K2 | Skróty jako przyspieszenie: j/k, ⏎ attach, r odpowiedz, x stop, space podgląd, g p przełącz projekt ([ADR 0015](adr/0015-skroty-jako-dodatek.md)) | S |
-| FR-K3 | Każda akcja na sesji i projekcie ma widoczną kontrolkę: przycisk w panelu szczegółów albo pozycję menu kontekstowego wiersza (prawy klik, przycisk ⋯); podgląd i attach także kliknięciem | M |
+| FR-K3 | Każda akcja na sesji i projekcie ma widoczną kontrolkę: przycisk w panelu szczegółów albo pozycję menu kontekstowego wiersza (wiersz sesji: prawy klik lub przycisk ⋯; wiersz projektu: prawy klik); podgląd i attach także kliknięciem | M |
 
 ### Konta
 

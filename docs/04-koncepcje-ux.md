@@ -4,7 +4,7 @@ Na start powstało 5 różnych kierunków UX. Każdy obsługuje te same funkcje:
 
 ## 1. Mission Control
 
-Trzy panele: projekty po lewej, tabela sesji z terminalem pod spodem w środku, szczegóły sesji po prawej. Projekt usuwa się z menu kontekstowego „⋯”, a dodaje przyciskiem „+ Dodaj projekt z dysku…”.
+Trzy panele: projekty po lewej, tabela sesji z terminalem pod spodem w środku, szczegóły sesji po prawej. Projekt usuwa się z menu kontekstowego otwieranego prawym klikiem na wierszu projektu (wiersz nie ma przycisku „⋯”; plakietki stanu stoją w linii z nazwą, podfoldery łączy linia drzewa), a dodaje przyciskiem „+ Dodaj projekt z dysku…”.
 
 ## 2. Keyboard-first (paleta komend)
 

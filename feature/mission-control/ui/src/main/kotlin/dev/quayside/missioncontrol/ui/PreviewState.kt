@@ -51,7 +51,7 @@ internal class PreviewState(
     fun toggle() {
         if (openFlow.value) {
             openFlow.value = false
-        } else if (SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.value) != null) {
+        } else if (SessionPreview.key(true, monitor.snapshot.value.sessions, selection.value, projects.value) != null) {
             openFlow.value = true
         }
     }

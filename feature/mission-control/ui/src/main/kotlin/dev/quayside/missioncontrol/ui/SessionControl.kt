@@ -22,11 +22,14 @@ internal fun SessionDetails.openControls(): List<SessionControl> =
 /** Everything the row menu offers: [openControls], then [otherControls]. */
 internal fun SessionDetails.allControls(): List<SessionControl> = openControls() + otherControls()
 
-/** Stop, Respawn and Remove when they apply now, then the always available "Podgląd". */
+/** Stop, Respawn and Remove when they apply now, then "Podgląd" (not for a disk session, which has no output). */
 internal fun SessionDetails.otherControls(): List<SessionControl> =
     SessionAction.entries.filter { it in actions }.map {
         SessionControl(it.name.lowercase(), "action.${it.name.lowercase()}", MissionControlEvent.Run(it), it.icon())
-    } + SessionControl("preview", "action.preview", MissionControlEvent.TogglePreview)
+    } +
+        listOfNotNull(
+            SessionControl("preview", "action.preview", MissionControlEvent.TogglePreview).takeUnless { fromDisk },
+        )
 
 private fun SessionAction.icon(): IconKind =
     when (this) {

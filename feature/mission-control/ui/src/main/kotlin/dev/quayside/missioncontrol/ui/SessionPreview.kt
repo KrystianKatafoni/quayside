@@ -6,6 +6,7 @@ import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.RecentOutput
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionError
+import dev.quayside.sessions.api.SessionOrigin
 
 /** What the preview panel shows (AM-411). */
 internal sealed interface PreviewContent {
@@ -37,13 +38,24 @@ internal data class PreviewUi(
 
 /** Pure rules of the preview (AM-411 plan, decision 3 and table 1). */
 internal object SessionPreview {
-    /** The id of the session whose output is read: the target of [selection] when [open], else null. */
+    /**
+     * The id of the session whose output is read: the target of [selection] when [open], else null; a disk session
+     * has no output.
+     */
     fun key(
         open: Boolean,
         sessions: List<Session>,
         selection: Selection,
         projects: List<Project>,
-    ): SessionId? = if (open) SessionActions.target(sessions, selection, projects)?.id else null
+    ): SessionId? =
+        if (open) {
+            SessionActions
+                .target(sessions, selection, projects)
+                ?.takeIf { it.origin == SessionOrigin.SUPERVISOR }
+                ?.id
+        } else {
+            null
+        }
 
     /** The content for the result of one read. */
     fun content(outcome: Outcome<RecentOutput, SessionError>): PreviewContent =

@@ -93,19 +93,19 @@ Plan i decyzje: [ADR 0029](adr/0029-wiele-kont-claude.md).
 | FR-U4 | Przed restartem aplikacja mówi, ile kart terminala zostanie zamkniętych | S |
 | FR-U5 | Przed migracją konfiguracji po aktualizacji powstaje kopia (trzy ostatnie wersje); użytkownik może przywrócić poprzednią wersję razem z kopią | M |
 | FR-U6 | Gdy automatyczna instalacja nie jest możliwa, aplikacja prowadzi do ręcznego pobrania | M |
-| FR-C1 | Panel kontekstu pod informacjami o sesji: zajęcie kontekstu (tokeny i procent okna modelu) oraz stan pamięci podręcznej promptu (ciepła albo zimna, czas do wygaśnięcia) | C |
-| FR-C2 | Podpowiedzi zmniejszające zużycie tokenów są zawsze widoczne w panelu i mają od razu przycisk akcji; naraz najwyżej jedna główna i dwie dodatkowe; można je zamknąć i wyłączyć na stałe; tekst nie zawiera treści rozmowy | C |
-| FR-C3 | Gdy pamięć podręczna zaraz wygaśnie, panel proponuje „Kompaktuj teraz”; po wygaśnięciu pokazuje szacunek tokenów do przeliczenia i wybór: Kompaktuj, Zacznij od nowa, Kontynuuj | C |
-| FR-C4 | Akcje z panelu (kompaktuj, zacznij od nowa, cofnij, zatrzymaj, zmień model lub wysiłek) wymagają kliknięcia; panel nic nie robi sam, a zmiana modelu lub wysiłku ostrzega, że przelicza kontekst | C |
-| FR-C5 | Panel pokazuje najważniejsze wiersze z `/usage` (zużycie przypisane do skilli, subagentów, wtyczek i serwerów MCP) i raportu `/insights` oraz otwiera pełny wynik | C |
-| FR-C6 | Panel ostrzega, że sesja zużywa tokeny także gdy stoi (zadanie `/loop`, cel, zespół agentów), z przyciskiem Zatrzymaj | C |
-| FR-Z1 | Zadania cykliczne: Quayside uruchamia w wybranym projekcie i podfolderze prompt o zadanej godzinie i dniach tygodnia albo co N minut lub godzin; każde uruchomienie to nowa sesja w tle z nazwą zawierającą datę | C |
-| FR-Z2 | Uruchomienia przegapione (aplikacja zamknięta, Mac uśpiony) i ponawianie po błędzie są konfigurowalne dla każdego zadania (pominąć, nadrobić raz, ponowić N razy z odstępem) | C |
-| FR-Z3 | Gdy poprzednie uruchomienie zadania jeszcze trwa, nowe jest pomijane, a w historii zostaje wpis „pominięto” | C |
-| FR-Z4 | Limity kosztów są konfigurowalne: liczba uruchomień na dobę oraz budżet tokenów na uruchomienie i na dobę; po przekroczeniu zadanie się zatrzymuje albo wyłącza i użytkownik dostaje powiadomienie | C |
-| FR-Z5 | Tryb uprawnień uruchomień bez nadzoru jest konfigurowalny dla każdego zadania; domyślnie bezpieczny, a „Pomiń zgody” wymaga świadomego potwierdzenia i nie jest osiągalny jedną strzałką od wartości domyślnej | C |
-| FR-Z6 | Sesje zaplanowane mają znacznik „zaplanowane” i własny filtr na liście sesji; przy każdym zadaniu widać historię uruchomień: kiedy ruszyło, ile trwało i jaki był wynik (gotowa, błąd, pominięto, przerwano limitem) | C |
-| FR-Z7 | Wynik uruchomienia trafia na zwykłe listy i powiadomienia (Gotowe, Czeka na mnie, Błędy) | C |
+| FR-C1 | Panel kontekstu pod informacjami o sesji: zajęcie kontekstu (tokeny i procent okna modelu) oraz stan pamięci podręcznej promptu (ciepła albo zimna, czas do wygaśnięcia) | S |
+| FR-C2 | Podpowiedzi zmniejszające zużycie tokenów są zawsze widoczne w panelu i mają od razu przycisk akcji; naraz najwyżej jedna główna i dwie dodatkowe; można je zamknąć i wyłączyć na stałe; tekst nie zawiera treści rozmowy | S |
+| FR-C3 | Gdy pamięć podręczna zaraz wygaśnie, panel proponuje „Kompaktuj teraz”; po wygaśnięciu pokazuje szacunek tokenów do przeliczenia i wybór: Kompaktuj, Zacznij od nowa, Kontynuuj | S |
+| FR-C4 | Akcje z panelu (kompaktuj, zacznij od nowa, cofnij, zatrzymaj, zmień model lub wysiłek) wymagają kliknięcia; panel nic nie robi sam, a zmiana modelu lub wysiłku ostrzega, że przelicza kontekst | S |
+| FR-C5 | Panel pokazuje najważniejsze wiersze z `/usage` (zużycie przypisane do skilli, subagentów, wtyczek i serwerów MCP) i raportu `/insights` oraz otwiera pełny wynik | S |
+| FR-C6 | Panel ostrzega, że sesja zużywa tokeny także gdy stoi (zadanie `/loop`, cel, zespół agentów), z przyciskiem Zatrzymaj | S |
+| FR-Z1 | Zadania cykliczne: Quayside uruchamia w wybranym projekcie i podfolderze prompt o zadanej godzinie i dniach tygodnia albo co N minut lub godzin; każde uruchomienie to nowa sesja w tle z nazwą zawierającą datę | S |
+| FR-Z2 | Uruchomienia przegapione (aplikacja zamknięta, Mac uśpiony) i ponawianie po błędzie są konfigurowalne dla każdego zadania (pominąć, nadrobić raz, ponowić N razy z odstępem) | S |
+| FR-Z3 | Gdy poprzednie uruchomienie zadania jeszcze trwa, nowe jest pomijane, a w historii zostaje wpis „pominięto” | S |
+| FR-Z4 | Limity kosztów są konfigurowalne: liczba uruchomień na dobę oraz budżet tokenów na uruchomienie i na dobę; po przekroczeniu zadanie się zatrzymuje albo wyłącza i użytkownik dostaje powiadomienie | S |
+| FR-Z5 | Tryb uprawnień uruchomień bez nadzoru jest konfigurowalny dla każdego zadania; domyślnie bezpieczny, a „Pomiń zgody” wymaga świadomego potwierdzenia i nie jest osiągalny jedną strzałką od wartości domyślnej | S |
+| FR-Z6 | Sesje zaplanowane mają znacznik „zaplanowane” i własny filtr na liście sesji; przy każdym zadaniu widać historię uruchomień: kiedy ruszyło, ile trwało i jaki był wynik (gotowa, błąd, pominięto, przerwano limitem) | S |
+| FR-Z7 | Wynik uruchomienia trafia na zwykłe listy i powiadomienia (Gotowe, Czeka na mnie, Błędy) | S |
 | FR-L10 | Ustawienie sesji „Przełączaj konto automatycznie” (domyślnie wyłączone): po limicie sesja przenosi się bez pytania na następne dostępne konto, z powiadomieniem | S |
 
 ## Wymagania niefunkcjonalne

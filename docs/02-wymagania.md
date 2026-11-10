@@ -16,6 +16,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-P6 | Zmiana nazwy wyświetlanej projektu, plakietki sesji czekających, pracujących i z błędem (z ikoną stanu) przy projekcie w sidebarze | S |
 | FR-P7 | Grupa projektu: projekt z podfolderami (np. `plant-puls/` z `soft/`, `marketing/`) pokazany w sidebarze jako grupa z podpozycjami, filtr sesji po podfolderze, liczniki per podfolder | S |
 | FR-P8 | Przegląd grupy projektu: po wybraniu grupy widok z każdym podprojektem i liczbą agentów, którzy na mnie czekają (oraz pracujących i z błędem), klik w podprojekt otwiera jego sesje | S |
+| FR-P9 | Stare sesje projektu z dysku (też interaktywne i zakończone, których nie zna supervisor) są widoczne na liście sesji jako zatrzymane, z podfolderem wyliczonym z katalogu startu, i można je wznowić pojedynczo; limit wieku (domyślnie 30 dni, konfigurowalny, także „bez limitu”) i liczby (oba konfigurowalne, domyślnie 30 dni i 200 sesji na projekt); pliki sesji nigdy nie są usuwane przez Quayside | S |
 
 ### Sesje agentów
 

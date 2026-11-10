@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import java.nio.file.Path
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -24,10 +25,19 @@ import java.util.concurrent.atomic.AtomicInteger
  * Sessions of [world] are attributed to its projects by [SessionRules.projectFor]. The snapshot is
  * [SnapshotStatus.Fresh] at [Clock.now] from the start, and every change is visible in it at once.
  * Started sessions get ids `00000001`, `00000002`, … and [Clock.now] as their start time.
+ *
+ * Session files of the world ([WorldPastSession]) are listed as disk sessions (FR-P9, [SessionOrigin.DISK]) by the
+ * rules of `sessions:impl`: age and count limit from [historySettings], hidden ones left out, a conversation of a
+ * supervisor session not listed twice, the deepest project owns the session. [SessionsSnapshot.history] has a key for
+ * every project of the world. The scan is instant; [pauseScan] holds it back, [resumeScan] runs it.
  */
 public class FakeSessions(
     world: SessionsWorld = SessionsWorld(),
     private val clock: Clock = TestClock(),
+    /** The settings of the disk sessions; a change shows in [snapshot] at once. */
+    public val historySettings: FakeSessionHistorySettings = FakeSessionHistorySettings(),
+    /** true: the first scan is held back like after [pauseScan] until [resumeScan]; [SessionsSnapshot.history] is empty. */
+    startPaused: Boolean = false,
 ) : SessionMonitor,
     SessionCommands {
     private val projectDirs: Map<ProjectId, Path> = world.projects.associate { it.id to it.dir }
@@ -43,6 +53,20 @@ public class FakeSessions(
     private val outputs = MutableStateFlow(world.outputs)
     private val pendingOutputFailure = MutableStateFlow<SessionError?>(null)
     private val reads = MutableStateFlow(emptyList<SessionId>())
+    private val pastFiles = MutableStateFlow(world.pastSessions)
+    private val conversations =
+        MutableStateFlow(
+            world.sessions
+                .mapNotNull { s ->
+                    s.conversationId?.let { s.id to it }
+                }.toMap(),
+        )
+    private val scanPaused = MutableStateFlow(startPaused)
+
+    init {
+        historySettings.onSaved { publishDisk() }
+        publishDisk()
+    }
 
     override val snapshot: StateFlow<SessionsSnapshot> = state.asStateFlow()
 
@@ -53,6 +77,23 @@ public class FakeSessions(
 
     /** Sessions whose output was read so far, in order. Reads are not [calls]. */
     public val outputReads: List<SessionId> get() = reads.value
+
+    /** Adds the session file [file] to the disk, as if it had been written outside the app; shown by the next scan. */
+    public fun addPastSession(file: WorldPastSession) {
+        pastFiles.update { it.filterNot { old -> old.id == file.id } + file }
+        publishDisk()
+    }
+
+    /** The scan holds back its result: [SessionsSnapshot.history] and the disk sessions stay as they are. */
+    public fun pauseScan() {
+        scanPaused.value = true
+    }
+
+    /** The held back scan finishes and its result shows in [snapshot]; later changes show at once again. */
+    public fun resumeScan() {
+        scanPaused.value = false
+        publishDisk()
+    }
 
     /** The next [recentOutput] returns `Err(error)`; later reads work again. */
     public fun failNextOutput(error: SessionError) {
@@ -90,7 +131,9 @@ public class FakeSessions(
      */
     public suspend fun appear(session: WorldSession) {
         val added = toSession(session)
+        session.conversationId?.let { uuid -> conversations.update { it + (session.id to uuid) } }
         insert(added)
+        publishDisk()
         if (added.state.isWaiting) transitions.emit(SessionEvent.BecameBlocked(added))
     }
 
@@ -112,7 +155,8 @@ public class FakeSessions(
         reads.update { it + id }
         pendingOutputFailure.getAndUpdate { null }?.let { return Outcome.Err(it) }
         if (runtimeDown.value) return Outcome.Err(SessionError.Runtime(RuntimeProblem.NOT_INSTALLED))
-        if (find(id) == null) return Outcome.Err(SessionError.UnknownSession(id))
+        val session = find(id)
+        if (session == null || session.origin == SessionOrigin.DISK) return Outcome.Err(SessionError.UnknownSession(id))
         return Outcome.Ok(RecentOutput(outputs.value[id].orEmpty()))
     }
 
@@ -148,13 +192,20 @@ public class FakeSessions(
     override suspend fun respawn(id: SessionId): Outcome<Unit, SessionError> {
         begin("respawn ${id.value}")?.let { return Outcome.Err(it) }
         val session = inactive(id).getOrElse { return Outcome.Err(it) }
+        if (session.origin == SessionOrigin.DISK) return Outcome.Err(SessionError.UnknownSession(id))
         replace(session.copy(state = SessionState.Working, lastActivityAt = clock.now()))
         return Outcome.Ok(Unit)
     }
 
     override suspend fun remove(id: SessionId): Outcome<Unit, SessionError> {
         begin("remove ${id.value}")?.let { return Outcome.Err(it) }
-        inactive(id).getOrElse { return Outcome.Err(it) }
+        val session = inactive(id).getOrElse { return Outcome.Err(it) }
+        if (session.origin == SessionOrigin.DISK) {
+            return when (historySettings.update { it.copy(hidden = it.hidden + id) }) {
+                is Outcome.Ok -> Outcome.Ok(Unit)
+                is Outcome.Err -> Outcome.Err(SessionError.Runtime(RuntimeProblem.COMMAND_FAILED))
+            }
+        }
         state.update { current -> current.copy(sessions = current.sessions.filterNot { it.id == id }) }
         return Outcome.Ok(Unit)
     }
@@ -203,6 +254,59 @@ public class FakeSessions(
         val session = find(id) ?: return Outcome.Err(SessionError.UnknownSession(id))
         return if (session.state.isActive) Outcome.Err(SessionError.SessionActive(id)) else Outcome.Ok(session)
     }
+
+    /** Runs the scan: the disk sessions and [SessionsSnapshot.history] from the files, the settings and the supervisor. */
+    private fun publishDisk() {
+        if (scanPaused.value) return
+        val settings = historySettings.settings.value
+        state.update { current ->
+            val supervisor = current.sessions.filter { it.origin == SessionOrigin.SUPERVISOR }
+            val (disk, history) = scan(supervisor, settings)
+            current.copy(sessions = ordered(supervisor + disk), history = history)
+        }
+    }
+
+    private fun scan(
+        supervisor: List<Session>,
+        settings: SessionHistorySettings,
+    ): Pair<List<Session>, Map<ProjectId, ProjectHistory>> {
+        val since = settings.maxAge.days?.let { clock.now().minus(it.toLong(), ChronoUnit.DAYS) }
+        val known = supervisor.map { it.id.value.take(UUID_PREFIX) }.toSet() + conversations.value.values
+        val byProject =
+            pastFiles.value
+                .filter { it.id !in settings.hidden && (since == null || it.modifiedAt >= since) }
+                .filter { it.id.value !in known && it.id.value.take(UUID_PREFIX) !in known }
+                .groupBy { SessionRules.projectFor(it.cwd, projectDirs) }
+        val shown =
+            projectDirs.keys.associateWith { project ->
+                byProject[project].orEmpty().sortedByDescending { it.modifiedAt }
+            }
+        val kept = shown.mapValues { (_, files) -> files.take(settings.maxPerProject.count) }
+        val history =
+            shown.mapValues { (project, files) ->
+                ProjectHistory(
+                    kept.getValue(project).size,
+                    files.size - kept.getValue(project).size,
+                )
+            }
+        return kept.flatMap { (project, files) -> files.map { toDiskSession(it, project) } } to history
+    }
+
+    private fun toDiskSession(
+        file: WorldPastSession,
+        project: ProjectId,
+    ): Session =
+        Session(
+            id = file.id,
+            project = project,
+            name = file.title ?: file.id.value.take(UUID_PREFIX),
+            cwd = file.cwd,
+            state = SessionState.Stopped,
+            startedAt = file.startedAt ?: file.modifiedAt,
+            lastActivityAt = file.lastActivityAt ?: file.modifiedAt,
+            summary = null,
+            origin = SessionOrigin.DISK,
+        )
 
     private fun find(id: SessionId): Session? = state.value.sessions.firstOrNull { it.id == id }
 
@@ -259,6 +363,7 @@ public class FakeSessions(
 
     private companion object {
         const val ID_FORMAT = "%08d"
+        const val UUID_PREFIX = 8
         const val EVENT_BUFFER = 64
 
         fun ordered(sessions: List<Session>): List<Session> =

@@ -30,7 +30,8 @@ public interface SessionCommands {
     ): Outcome<SessionId, SessionError>
 
     /**
-     * Stops the session (FR-S4). Idempotent: a session that is not active is left as it is.
+     * Stops the session (FR-S4). Idempotent: a session that is not active is left as it is, also a
+     * [SessionOrigin.DISK] one (`Ok`, the supervisor is not called).
      * Errors: [SessionError.UnknownSession], [SessionError.Runtime].
      */
     public suspend fun stop(id: SessionId): Outcome<Unit, SessionError>
@@ -47,13 +48,17 @@ public interface SessionCommands {
 
     /**
      * Brings a [SessionState.Stopped], [SessionState.Done] or [SessionState.Failed] session back as
-     * [SessionState.Working]. Errors: [SessionError.UnknownSession], [SessionError.SessionActive],
+     * [SessionState.Working]. A [SessionOrigin.DISK] session is not the supervisor's: `UnknownSession`, the
+     * supervisor is not called. Errors: [SessionError.UnknownSession], [SessionError.SessionActive],
      * [SessionError.Runtime].
      */
     public suspend fun respawn(id: SessionId): Outcome<Unit, SessionError>
 
     /**
-     * Removes an inactive session from the list; never deletes project files.
+     * Removes an inactive session from the list; never deletes project files. A [SessionOrigin.DISK] session is
+     * hidden for good (its UUID is saved in [SessionHistorySettings.hidden]); its session file is never deleted,
+     * a hide that could not be saved is [SessionError.Runtime] with [RuntimeProblem.COMMAND_FAILED], and (like every
+     * command that checks the session first) it needs a successful listing of the supervisor.
      * Errors: [SessionError.UnknownSession], [SessionError.SessionActive], [SessionError.Runtime].
      */
     public suspend fun remove(id: SessionId): Outcome<Unit, SessionError>

@@ -1,0 +1,2 @@
+{"type":"file-history-snapshot","messageId":"00000000-0000-4000-8000-000000000122","snapshot":{"trackedFileBackups":{}}}
+{"type":"assistant","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/test/projects/quayside","timestamp":"2026-01-01T10:00:00Z","uuid":"00000000-0000-4000-8000-000000000123","version":"2.1.322","isSidechain":false,"message":{"role":"assistant","content":"redacted"}}

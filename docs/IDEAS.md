@@ -92,3 +92,39 @@ Zasady, żeby podpowiedzi nie męczyły: każda ma próg, naraz widać najwyżej
 - Podpowiedzi zależne od sytuacji, np. „zmiana modelu teraz unieważni cache”, „kontekst ma 80%, rozważ kompaktowanie na przerwie”, „zmiana zadania: `/clear` zamiast kontynuacji”, „sesja stoi dłużej niż TTL: pierwsza wiadomość będzie droga”.
 - Przycisk „Kompaktuj” z polem na instrukcje dla kompaktowania. Nie wiadomo jeszcze, czy da się wysłać `/compact` do sesji w tle z zewnątrz; do sprawdzenia razem z wysyłaniem odpowiedzi do sesji.
 - Dla zespołów i kont: ten sam widok zużycia na koncie (limit 5-godzinny i tygodniowy) obok kontekstu, jeśli skrypt `statusLine` je podaje (pole `rate_limits`).
+
+## 9. Zadania cykliczne
+
+Zadania, które Quayside uruchamia samo o wybranej godzinie albo co jakiś czas, np. „pon–pt o 9:00 przejrzyj otwarte PR-y w projekcie i napisz krótkie podsumowanie”. Claude Code ma własne mechanizmy ([Run prompts on a schedule](https://code.claude.com/docs/en/scheduled-tasks), sprawdzone 2026-11-10): `/loop` w sesji (wygasa po 7 dniach, działa tylko przy uruchomionej sesji), zadania Desktop (lokalnie, przeżywają restart) i zadania w chmurze (najkrótszy odstęp godzina, bez lokalnych plików). Quayside dałby do nich jedno miejsce z widocznością i kontrolą kosztów.
+
+### Jak to ma działać
+
+- Przy każdym uruchomieniu powstaje **nowa sesja w tle** w wybranym projekcie i podfolderze, z nazwą zawierającą datę (np. „Przegląd PR · 10.11”). Nie wznawiamy jednej sesji, bo wznowiona rozmowa wczytuje całą historię i z dnia na dzień kosztuje więcej.
+- Wynik trafia na zwykłe listy: gotowa do „Gotowe”, pytająca do „Czeka na mnie”, błędna do „Błędy”, razem z powiadomieniem.
+- Użytkownik ustawia: kiedy (godzina i dni tygodnia albo co N minut lub godzin), gdzie (projekt, podfolder), co (prompt, opcjonalnie agent, model, poziom wysiłku, tryb uprawnień). Domyślnie tańszy model i niski wysiłek, bo uruchomienie jest bez nadzoru.
+
+### Ustalone zasady (decyzje człowieka, 2026-11-10)
+
+- **Uruchomienia przegapione** (Mac uśpiony, aplikacja zamknięta) i **ponawianie po błędzie**: konfigurowalne dla każdego zadania. Do wyboru m.in. pominąć, nadrobić raz po powrocie, a po błędzie nie ponawiać albo ponowić N razy z odstępem. (Rozumiem „ponowne uruchomienie” jako ponowienie po nieudanym przebiegu; do potwierdzenia.)
+- **Poprzednie uruchomienie jeszcze trwa:** nowe jest pomijane, a w historii zostaje wpis „pominięto”. To zasada stała, bez ustawienia.
+- **Limit kosztów i tokenów:** konfigurowalny, np. maksymalna liczba uruchomień na dobę, budżet tokenów na jedno uruchomienie i na dobę. Po przekroczeniu zadanie się zatrzymuje albo wyłącza i użytkownik dostaje powiadomienie. Zużycie tokenów można liczyć z `usage` w plikach sesji (patrz punkt 8).
+- **Uprawnienia bez nadzoru:** konfigurowalne dla każdego zadania. Domyślnie bezpieczny tryb. Tryb „Pomiń zgody” wymaga świadomego potwierdzenia z ostrzeżeniem i nie może być osiągalny jedną strzałką od wartości domyślnej, tak jak w oknie „Nowy agent”. Sesja, która zapyta o zgodę, trafia do „Czeka na mnie”.
+- **Widoczność:** sesje zaplanowane mają wyraźny znacznik „zaplanowane” i **własny filtr** na liście sesji. Przy każdym zadaniu widać **historię uruchomień**: kiedy ruszyło, ile trwało i jaki był wynik (gotowa, błąd, pominięto, przerwano limitem).
+
+### Sposoby wykonania (do wyboru przy planowaniu)
+
+1. **Własny harmonogram w Quayside:** aplikacja co minutę sprawdza, czy coś jest do uruchomienia, i startuje `claude --bg` z promptem. Proste i pod naszą kontrolą, ale działa tylko przy uruchomionym Quayside. Wersja działająca przy zamkniętej aplikacji (agent launchd) jest dużo większa.
+2. **Widok zadań `/loop` z żywych sesji:** lista, następne uruchomienie, czas do wygaśnięcia, przycisk „Anuluj”. Quayside ich nie tworzy, tylko daje kontrolę (łączy się z podpowiedziami o tokenach z punktu 8).
+3. **Nakładka na zadania Desktop albo chmury:** nie wiadomo, czy da się je tworzyć z zewnątrz.
+
+Proponowana kolejność: 1, potem 2.
+
+### Na przyszłość
+
+Gdy będą sesje zdalne (punkty 3 i 7), to samo zadanie powinno dać się uruchamiać na serwerze zamiast na tym komputerze, czyli także wtedy, gdy Mac jest wyłączony. Do tego czasu zadania działają tylko lokalnie.
+
+### Do sprawdzenia
+
+- Czy `claude --bg` przyjmuje prompt, nazwę, agenta, model, wysiłek i tryb uprawnień przy starcie z automatu. Część robi okno „Nowy agent”.
+- Czy zadania Desktop mają interfejs, do którego da się coś zapisać.
+- Jak wykryć wybudzenie Maca po uśpieniu, żeby zastosować zasadę nadrabiania.

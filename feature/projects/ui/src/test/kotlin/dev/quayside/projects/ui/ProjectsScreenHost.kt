@@ -11,8 +11,11 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performMouseInput
+import androidx.compose.ui.test.rightClick
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import dev.quayside.core.designsystem.AmTestTheme
+import dev.quayside.core.domain.ProjectId
 
 /** Composes [content] over the fakes of [world] in the plex theme and returns the controller. */
 @OptIn(ExperimentalTestApi::class)
@@ -43,4 +46,10 @@ internal fun ComposeUiTest.awaitTag(tag: String): SemanticsNodeInteraction {
 internal fun SemanticsNodeInteraction.argbColors(): Set<Int> {
     val map = captureToImage().toPixelMap()
     return (0 until map.width).flatMapTo(HashSet()) { x -> (0 until map.height).map { y -> map[x, y].toArgb() } }
+}
+
+/** Right-clicks the row of project [id] (the real pointer event), which opens its context menu. */
+@OptIn(ExperimentalTestApi::class)
+internal fun ComposeUiTest.openRowMenu(id: ProjectId) {
+    awaitTag(ProjectsTags.row(id)).performMouseInput { rightClick() }
 }

@@ -40,7 +40,9 @@ import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.WorldSession
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
+import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.comparables.shouldBeLessThan
+import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -217,17 +219,21 @@ internal class SidebarCountersLookTest {
     }
 
     @Test
-    fun `project with only zero counts has no row of chips`() =
+    fun `project with only zero counts has no chip and is no lower than a row with a chip`() =
         runTallTest {
             // Given a project with a done and a stopped session only, next to one with a working session
             show(world(*plainSessions(SessionState.Done, SessionState.Stopped)))
             awaitLoaded()
 
-            // Then it has no chip, and its row is lower than the row with a chip (no empty row of chips)
+            // Then it has no chip, and its row is as high as the row with a chip (the chips stand on the line of the
+            // name). Both are 32 dp: the 20 dp folder icon and the 20 dp chip dictate the line; at 4 px per dp the
+            // chip is 129 px high against 128 px of the icon, so the rows differ by at most 1 px (a quarter of a dp)
             chipTexts(plainRow) shouldBe emptyList()
             val quiet = onNodeWithTag(plainRow).fetchSemanticsNode().boundsInRoot.height
             val busy = onNodeWithTag(markerRow).fetchSemanticsNode().boundsInRoot.height
-            quiet shouldBeLessThan busy
+            (busy - quiet) shouldBeLessThanOrEqualTo 1f
+            busy shouldBeGreaterThanOrEqualTo quiet
+            busy shouldBeLessThan 33f * SCALE
         }
 
     private fun groupSessions() =
@@ -261,12 +267,12 @@ internal class SidebarCountersLookTest {
             show(world(*groupSessions()))
             awaitLoaded()
 
-            // When the folder icons (16 dp after 28 dp of indent) are drawn
+            // When the folder icons (16 dp after 58 dp of indent) are drawn
             val warn = colors.status.warn.argb()
             val work = colors.status.work.argb()
-            val anna = awaitTag(annaRow).iconStrip(from = 28, to = 44)
-            val bob = awaitTag(bobRow).iconStrip(from = 28, to = 44)
-            val cara = awaitTag(caraRow).iconStrip(from = 28, to = 44)
+            val anna = awaitTag(annaRow).iconStrip(from = 58, to = 74)
+            val bob = awaitTag(bobRow).iconStrip(from = 58, to = 74)
+            val cara = awaitTag(caraRow).iconStrip(from = 58, to = 74)
 
             // Then waiting gives warn, working gives work, and none gives neither
             anna shouldContain warn

@@ -244,7 +244,7 @@ class ProjectsSidebarGroupTest {
         runComposeUiTest {
             show()
 
-            await(ProjectsTags.rowMenu(plant.id)).performClick()
+            openRowMenu(plant.id)
             await(ProjectsTags.ROW_MENU_SUBFOLDERS).performClick()
 
             await(ProjectsTags.SUBFOLDERS_DIALOG)

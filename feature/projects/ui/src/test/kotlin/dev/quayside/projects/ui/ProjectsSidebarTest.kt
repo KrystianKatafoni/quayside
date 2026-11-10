@@ -83,16 +83,16 @@ class ProjectsSidebarTest {
     ): SemanticsNodeInteraction =
         onAllNodes(hasText(text, substring = true) and (hasTestTag(tag) or hasAnyAncestor(hasTestTag(tag)))).onFirst()
 
-    /** Opens the ⋯ menu of [project] and picks "Remove…". */
+    /** Opens the context menu (right click) of [project] and picks "Remove…". */
     private fun ComposeUiTest.askToRemove(id: ProjectId) {
-        await(ProjectsTags.rowMenu(id)).performClick()
+        openRowMenu(id)
         await(ProjectsTags.ROW_MENU_REMOVE).performClick()
         await(ProjectsTags.CONFIRM_REMOVE)
     }
 
-    /** Opens the ⋯ menu of the project and picks "Rename…". */
+    /** Opens the context menu (right click) of the project and picks "Rename…". */
     private fun ComposeUiTest.askToRename(id: ProjectId) {
-        await(ProjectsTags.rowMenu(id)).performClick()
+        openRowMenu(id)
         await(ProjectsTags.ROW_MENU_RENAME).performClick()
         await(ProjectsTags.RENAME_DIALOG)
     }

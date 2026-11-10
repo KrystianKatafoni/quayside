@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +27,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -31,7 +39,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
 import dev.quayside.core.designsystem.AmChip
 import dev.quayside.core.designsystem.AmIcon
 import dev.quayside.core.designsystem.AmKeyCap
@@ -44,10 +54,11 @@ import dev.quayside.projects.api.Project
 
 /**
  * The row never takes focus: a focused `selectable` would consume `space` and Enter before the window shortcuts. A
- * click requests focus anyway and an unfocusable parent hands it to its first focusable child, so the ⋯ button of the
- * row is unfocusable too. The selection is taken by a layer behind the cells, so the counters are separate nodes of
- * the semantics tree; the tagged node itself carries the name and says whether the row is selected. The selected row
- * has the sel fill and an accent frame, both with the row radius (r+2).
+ * click requests focus anyway and an unfocusable parent hands it to its first focusable child, so every child of
+ * the row is unfocusable too. A right click opens the menu of the row ([RowContextMenu]). The selection is taken by
+ * a layer behind the cells, so the chips are separate nodes of the semantics tree; the tagged node itself carries
+ * the name and says whether the row is selected. The selected row has the sel fill and an accent frame, both with
+ * the row radius (r+2).
  */
 @Composable
 internal fun ProjectRow(
@@ -55,11 +66,13 @@ internal fun ProjectRow(
     state: RowState,
     actions: RowActions,
 ) {
+    var menuAt by remember { mutableStateOf<IntOffset?>(null) }
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .testTag(ProjectsTags.row(project.id))
+                .onRightClick { menuAt = it }
                 .semantics {
                     this.selected = state.selected
                     text = AnnotatedString(project.displayName)
@@ -73,8 +86,27 @@ internal fun ProjectRow(
                 .selectable(selected = state.selected, onClick = actions.select),
         )
         RowCells(project, state, actions)
+        menuAt?.let { RowContextMenu(it, actions) { menuAt = null } }
     }
 }
+
+/** Calls [onClick] with the position (in this node) of every right click; the click goes on to the children. */
+private fun Modifier.onRightClick(onClick: (IntOffset) -> Unit): Modifier =
+    pointerInput(Unit) {
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
+                    onClick(
+                        event.changes
+                            .first()
+                            .position
+                            .round(),
+                    )
+                }
+            }
+        }
+    }
 
 @Composable
 internal fun Modifier.selectedFrame(selected: Boolean): Modifier {
@@ -90,7 +122,7 @@ internal fun Modifier.selectedFrame(selected: Boolean): Modifier {
         )
 }
 
-/** Arrow of a group, folder in the tone of the project, its name over the counters, and the ⋯ menu. */
+/** Arrow of a group, folder in the tone of the project, and its name with the chips on the same line. */
 @Composable
 private fun RowCells(
     project: Project,
@@ -104,11 +136,14 @@ private fun RowCells(
     ) {
         state.collapsed?.let { GroupChevron(project.id, it, actions.toggleGroup) }
         AmIcon(IconKind.FOLDER, null, Modifier.size(20.dp), projectTone(state.statuses.active).markColor())
-        Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
-            AmText(project.displayName, Modifier.clearAndSetSemantics {})
+        Row(
+            modifier = Modifier.weight(weight = 1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+        ) {
+            AmText(project.displayName, Modifier.weight(weight = 1f, fill = false).clearAndSetSemantics {})
             Counters(state.statuses)
         }
-        RowMenu(project, actions)
     }
 }
 

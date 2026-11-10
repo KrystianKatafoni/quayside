@@ -34,6 +34,8 @@ Możliwość podpinania sesji Claude uruchamianych zdalnie, np. na zewnętrznych
 
 ## 8. Panel kontekstu sesji
 
+Przeniesione do zakresu (2026-11-10): wymagania FR-C1–FR-C6 w [02-wymagania.md](02-wymagania.md), zadania M11 (AM-1101–AM-1106) w [ROADMAP.md](ROADMAP.md). Opis i tabela podpowiedzi niżej zostają jako materiał źródłowy dla AM-1104.
+
 Mały panel po prawej stronie, pod informacjami o sesji, który pokazuje, ile kontekstu sesja zużyła, jak działa pamięć podręczna promptu (cache) i podpowiada, co zrobić, żeby zmniejszyć zużycie tokenów i nie przepalać limitów. Źródłem są oficjalne strony dokumentacji Claude Code: [Manage costs](https://code.claude.com/docs/en/costs), [Prompt caching](https://code.claude.com/docs/en/prompt-caching) i [Status line](https://code.claude.com/docs/en/statusline) (sprawdzone 2026-11-10).
 
 ### Co pokazuje dokumentacja o kontekście
@@ -94,6 +96,8 @@ Zasady, żeby podpowiedzi nie męczyły: każda ma próg, naraz widać najwyżej
 - Dla zespołów i kont: ten sam widok zużycia na koncie (limit 5-godzinny i tygodniowy) obok kontekstu, jeśli skrypt `statusLine` je podaje (pole `rate_limits`).
 
 ## 9. Zadania cykliczne
+
+Przeniesione do zakresu (2026-11-10): wymagania FR-Z1–FR-Z7 w [02-wymagania.md](02-wymagania.md), zadania M12 (AM-1201–AM-1207) w [ROADMAP.md](ROADMAP.md). Opis niżej zostaje jako materiał źródłowy; uruchamianie na serwerze po wprowadzeniu sesji zdalnych zostaje pomysłem na później.
 
 Zadania, które Quayside uruchamia samo o wybranej godzinie albo co jakiś czas, np. „pon–pt o 9:00 przejrzyj otwarte PR-y w projekcie i napisz krótkie podsumowanie”. Claude Code ma własne mechanizmy ([Run prompts on a schedule](https://code.claude.com/docs/en/scheduled-tasks), sprawdzone 2026-11-10): `/loop` w sesji (wygasa po 7 dniach, działa tylko przy uruchomionej sesji), zadania Desktop (lokalnie, przeżywają restart) i zadania w chmurze (najkrótszy odstęp godzina, bez lokalnych plików). Quayside dałby do nich jedno miejsce z widocznością i kontrolą kosztów.
 

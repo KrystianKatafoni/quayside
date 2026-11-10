@@ -81,7 +81,7 @@ class ConfirmRemoveHooksDialogTest {
             .isNotEmpty()
 
     private fun ComposeUiTest.askToRemove(id: ProjectId) {
-        await(ProjectsTags.rowMenu(id)).performClick()
+        openRowMenu(id)
         await(ProjectsTags.ROW_MENU_REMOVE).performClick()
         await(ProjectsTags.CONFIRM_REMOVE)
     }

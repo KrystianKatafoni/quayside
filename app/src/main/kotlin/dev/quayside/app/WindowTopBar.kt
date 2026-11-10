@@ -16,13 +16,9 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import dev.quayside.core.designsystem.AmButton
 import dev.quayside.core.designsystem.AmSearchField
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
-import dev.quayside.core.designsystem.ButtonKind
-import dev.quayside.core.designsystem.ButtonOptions
-import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.core.designsystem.toColor
 import dev.quayside.missioncontrol.ui.AlertsBell
@@ -56,7 +52,6 @@ internal object TopBarTags {
     const val CRUMBS = "app.topBar.crumbs"
     const val SEARCH = "app.topBar.search"
     const val VOICE = "app.topBar.voice"
-    const val NEW_AGENT = "app.topBar.newAgent"
 }
 
 /**
@@ -125,18 +120,6 @@ private fun TopBarActions(
         VoiceChip(settings, notifications.onOpen, Modifier.testTag(TopBarTags.VOICE))
     }
     AlertsBell(controllers.missionControl, onBell)
-    AmButton(
-        Strings["topBar.newAgent"],
-        chrome.onNewAgent,
-        Modifier.testTag(TopBarTags.NEW_AGENT),
-        ButtonOptions(
-            kind = ButtonKind.PRIMARY,
-            focusable = false,
-            enabled = chrome.newAgentEnabled,
-            icon = IconKind.PLUS,
-            shortcut = keyCapOf(AppShortcuts.NEW_AGENT),
-        ),
-    )
 }
 
 /**

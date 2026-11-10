@@ -123,6 +123,7 @@ private fun viewCommand(
         when (view) {
             GlobalView.WAITING -> listOf("waiting", "czeka")
             GlobalView.WORKING -> listOf("working")
+            GlobalView.DONE -> listOf("done", "gotowe")
             GlobalView.FAILED -> listOf("failed", "errors", "błąd")
         }
     return sessionCommand("sessions.view.$name", "command.view.$name", null, ShowView(view), onIntent)

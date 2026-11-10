@@ -20,6 +20,7 @@ import dev.quayside.missioncontrol.ui.GlobalViews
 import dev.quayside.missioncontrol.ui.MissionControl
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.MissionControlHandlers
+import dev.quayside.missioncontrol.ui.NewAgentAction
 import dev.quayside.missioncontrol.ui.SessionKeyCaps
 import dev.quayside.missioncontrol.ui.ShortcutsHelp
 import dev.quayside.projects.ui.ProjectsController
@@ -88,7 +89,7 @@ internal fun QuaysideApp(
                     TerminalModeParts(projects, missionControl, mode, panel, terminal.terminalKey, attacher),
                 )
             } else {
-                ListLayout(projects, missionControl, handlersOf(attacher, keyCaps, projects), panel, terminal)
+                ListLayout(projects, missionControl, handlersOf(attacher, keyCaps, projects, chrome), panel, terminal)
             }
         }
         WindowStatusBar(controllers, chrome, terminalMode)
@@ -100,12 +101,14 @@ private fun handlersOf(
     attacher: SessionAttacher?,
     keyCaps: SessionKeyCaps?,
     projects: ProjectsController,
+    chrome: WindowChrome,
 ): MissionControlHandlers =
     MissionControlHandlers(
         onAttach = { attacher?.attachSelected() },
         onReply = { attacher?.replySelected() },
         keyCaps = keyCaps,
         onOpenSubfolder = { projects.onIntent(ProjectsIntent.Select(it.project, it.subfolder)) },
+        newAgent = NewAgentAction(chrome.onNewAgent, chrome.newAgentEnabled, keyCapOf(AppShortcuts.NEW_AGENT)),
     )
 
 private val LIST_ONLY: StateFlow<WindowMode> = MutableStateFlow(WindowMode.LIST)

@@ -58,14 +58,15 @@ internal fun GroupChevron(
 }
 
 /**
- * The row of a subfolder under its group row: indented, with a small folder, the name and the counters of the
- * sessions in it. Like [ProjectRow] it never takes focus; it has no children that could.
+ * The row of a subfolder under its group row: indented, joined to the group row by a tree guide ([treeGuide]; [last]
+ * ends it), with a small folder and the name. Like [ProjectRow] it never takes focus; it has no children that could.
  */
 @Composable
 internal fun SubfolderRow(
     id: ProjectId,
     name: SubfolderName,
     state: RowState,
+    last: Boolean,
     onSelect: () -> Unit,
 ) {
     Box(
@@ -88,7 +89,7 @@ internal fun SubfolderRow(
                 .clip(AmTheme.shape.row)
                 .selectable(selected = state.selected, onClick = onSelect),
         )
-        SubfolderCells(name, state)
+        SubfolderCells(name, state, last)
     }
 }
 
@@ -96,21 +97,25 @@ internal fun SubfolderRow(
 private fun SubfolderCells(
     name: SubfolderName,
     state: RowState,
+    last: Boolean,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 28.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .treeGuide(last, guideColor())
+                .padding(start = SUBFOLDER_INDENT, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
     ) {
         AmIcon(IconKind.FOLDER, null, Modifier.size(16.dp), projectTone(state.statuses.active).markColor())
         Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
             AmText(name.value, Modifier.clearAndSetSemantics {})
-            Counters(state.statuses, state.selected)
         }
     }
 }
 
-/** What the ⋯ menu and the clicks of a project row do; the rest of the row is [RowState]. */
+/** What the context menu (right click) and the clicks of a project row do; the rest of the row is [RowState]. */
 internal class RowActions(
     val select: () -> Unit,
     val rename: () -> Unit,
@@ -119,7 +124,7 @@ internal class RowActions(
     val toggleGroup: () -> Unit,
 )
 
-/** What a row shows besides its name: selection, the four counters, and for a group row whether it is collapsed. */
+/** What a row shows besides its name: selection, the counters, and for a group row whether it is collapsed. */
 internal data class RowState(
     val selected: Boolean,
     val statuses: StatusCounts,

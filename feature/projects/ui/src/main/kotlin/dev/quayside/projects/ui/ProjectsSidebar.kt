@@ -17,9 +17,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,7 +27,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import dev.quayside.core.designsystem.AmButton
 import dev.quayside.core.designsystem.AmIconButton
 import dev.quayside.core.designsystem.AmText
@@ -131,12 +127,14 @@ private fun ProjectWithSubfolders(
         actions = rowActions(project, controller),
     )
     if (!collapsed) {
-        project.subfolders.sortedWith(ProjectGroups.order).forEach { name ->
+        val subfolders = project.subfolders.sortedWith(ProjectGroups.order)
+        subfolders.forEach { name ->
             val focus = ProjectFocus(project.id, name)
             SubfolderRow(
                 id = project.id,
                 name = name,
                 state = RowState(state.focusIs(focus), state.statusesOf(focus)),
+                last = name == subfolders.last(),
                 onSelect = { controller.onEvent(SidebarEvent.Select(project.id, name)) },
             )
         }
@@ -164,49 +162,6 @@ private fun ProjectsUiState.statusesOf(focus: ProjectFocus): StatusCounts = sess
 
 private fun ProjectsUiState.focusIs(focus: ProjectFocus): Boolean =
     selected == focus.project && subfolder == focus.subfolder
-
-/** The ⋯ button of a row with its menu: rename and remove. */
-@Composable
-internal fun RowMenu(
-    project: Project,
-    actions: RowActions,
-) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        TextButton("⋯", ProjectsTags.rowMenu(project.id)) { open = true }
-        if (open) {
-            Popup(
-                alignment = Alignment.TopEnd,
-                onDismissRequest = { open = false },
-                properties = PopupProperties(focusable = true),
-            ) {
-                Column {
-                    MenuButton("row.rename", ProjectsTags.ROW_MENU_RENAME) {
-                        open = false
-                        actions.rename()
-                    }
-                    MenuButton("row.subfolders", ProjectsTags.ROW_MENU_SUBFOLDERS) {
-                        open = false
-                        actions.subfolders()
-                    }
-                    MenuButton("row.remove", ProjectsTags.ROW_MENU_REMOVE) {
-                        open = false
-                        actions.remove()
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MenuButton(
-    key: String,
-    tag: String,
-    onClick: () -> Unit,
-) {
-    AmButton(label = ProjectsStrings[key], onClick = onClick, modifier = Modifier.testTag(tag))
-}
 
 @Composable
 private fun Banner(

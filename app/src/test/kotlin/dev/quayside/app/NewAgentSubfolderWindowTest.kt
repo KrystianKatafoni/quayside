@@ -96,10 +96,9 @@ class NewAgentSubfolderWindowTest {
             await(WindowTags.projectRow("project0001")).assertIsNotSelected()
             header("plant-puls / soft")
             await(WindowTags.missionRow("00000001")).assertIsSelected()
-            // and the subfolder row counts it (the other three counters are there at zero, AM-310) while the group row
-            // counts the two sessions it had before as well
-            awaitCounters(soft, waiting = 0, working = 1, done = 0, failed = 0)
-            awaitCounters(WindowTags.projectRow("project0001"), waiting = 0, working = 3, done = 0, failed = 0)
+            // and the group row counts it with the two sessions it had before (the subfolder row has no chips)
+            awaitChips(WindowTags.projectRow("project0001"), working = 3)
+            counters(soft) shouldBe emptyMap()
         }
 
     @Test

@@ -36,6 +36,7 @@ internal object MissionControlTags {
     const val STATUS_DOT = "missionControl.statusBar.dot"
     const val VIEWS_LABEL = "missionControl.views.label"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"
+    const val NEW_AGENT_BUTTON = "missionControl.newAgent.button"
     const val NEW_AGENT_PROJECT = "missionControl.newAgent.project"
     const val NEW_AGENT_SUBFOLDER = "missionControl.newAgent.subfolder"
     const val NEW_AGENT_PROMPT = "missionControl.newAgent.prompt"
@@ -64,7 +65,6 @@ internal object MissionControlTags {
     const val DETAILS_STATE = "missionControl.details.state"
     const val DETAILS_SUMMARY = "missionControl.details.summary"
     const val OVERVIEW = "missionControl.overview"
-    const val OVERVIEW_ROOT = "missionControl.overview.root"
 
     /** The stat card of [kind]: `waiting`, `working`, `done` or `failed`. */
     fun stat(kind: String): String = "missionControl.stat.$kind"

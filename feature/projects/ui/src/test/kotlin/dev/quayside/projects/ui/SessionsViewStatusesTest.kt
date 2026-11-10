@@ -61,7 +61,7 @@ internal class SessionsViewStatusesTest {
                 session("old", "/p/plant-puls/marketing", SessionState.Done),
             )
 
-        view.at(main) shouldBe StatusCounts(waiting = 1, working = 1, done = 2, failed = 1)
+        view.at(main) shouldBe StatusCounts(waiting = 1, working = 1, failed = 1)
     }
 
     @Test
@@ -80,7 +80,7 @@ internal class SessionsViewStatusesTest {
     }
 
     @Test
-    fun `done and failed are counted per subfolder`() {
+    fun `failed is counted per subfolder and done is not counted`() {
         val view =
             view(
                 session("a", "/p/plant-puls/soft", SessionState.Done),
@@ -89,8 +89,9 @@ internal class SessionsViewStatusesTest {
                 session("d", "/p/plant-puls/docs", SessionState.Done),
             )
 
-        view.at(soft) shouldBe StatusCounts(done = 2, failed = 1)
-        view.at(docs) shouldBe StatusCounts(done = 1)
+        view.at(soft) shouldBe StatusCounts(failed = 1)
+        view.at(docs) shouldBe StatusCounts()
+        view.nonZero().keys shouldBe setOf(main, soft)
     }
 
     @Test
@@ -151,7 +152,7 @@ internal class SessionsViewStatusesTest {
                 session("c", "/p/lone/soft", SessionState.Failed, project = lone.id),
             )
 
-        view.nonZero() shouldBe mapOf(ProjectFocus(lone.id) to StatusCounts(working = 1, done = 1, failed = 1))
+        view.nonZero() shouldBe mapOf(ProjectFocus(lone.id) to StatusCounts(working = 1, failed = 1))
     }
 
     @Test
@@ -163,7 +164,7 @@ internal class SessionsViewStatusesTest {
 
         view.fresh shouldBe false
         view.at(soft) shouldBe StatusCounts(working = 1)
-        view.at(main) shouldBe StatusCounts(working = 1, done = 1)
+        view.at(main) shouldBe StatusCounts(working = 1)
     }
 
     @Test

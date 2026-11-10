@@ -40,7 +40,7 @@ public fun MissionControl(
             else -> controller.onEvent(event)
         }
     }
-    CompositionLocalProvider(LocalKeyCaps provides handlers.keyCaps) {
+    CompositionLocalProvider(LocalKeyCaps provides handlers.keyCaps, LocalNewAgent provides handlers.newAgent) {
         Column(modifier = modifier.fillMaxSize().background(color = bgColor()).testTag(MissionControlTags.ROOT)) {
             Box(modifier = Modifier.weight(weight = 1f).fillMaxWidth()) { ScreenContent(state, onEvent) }
         }
@@ -106,7 +106,7 @@ internal fun SessionPage(
     Row(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.weight(weight = 1f).fillMaxHeight().padding(all = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(space = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(space = 12.dp),
         ) {
             header()
             banner?.let {

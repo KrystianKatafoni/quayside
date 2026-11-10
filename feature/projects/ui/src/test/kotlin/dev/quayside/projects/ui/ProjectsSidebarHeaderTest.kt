@@ -106,7 +106,7 @@ internal class ProjectsSidebarHeaderTest {
                 .size shouldBe 0
 
             // And the folder icon of the busy row draws the warn tone while that of the quiet row draws no status tone
-            // (the strip left of the name holds the icon only; the zero counters of AM-310 use the tokens too)
+            // (the strip left of the name holds the icon only; the chips use the tokens too)
             val warn =
                 colors.status.warn
                     .toColor()

@@ -83,16 +83,16 @@ class ProjectsSidebarTest {
     ): SemanticsNodeInteraction =
         onAllNodes(hasText(text, substring = true) and (hasTestTag(tag) or hasAnyAncestor(hasTestTag(tag)))).onFirst()
 
-    /** Opens the ⋯ menu of [project] and picks "Remove…". */
+    /** Opens the context menu (right click) of [project] and picks "Remove…". */
     private fun ComposeUiTest.askToRemove(id: ProjectId) {
-        await(ProjectsTags.rowMenu(id)).performClick()
+        openRowMenu(id)
         await(ProjectsTags.ROW_MENU_REMOVE).performClick()
         await(ProjectsTags.CONFIRM_REMOVE)
     }
 
-    /** Opens the ⋯ menu of the project and picks "Rename…". */
+    /** Opens the context menu (right click) of the project and picks "Rename…". */
     private fun ComposeUiTest.askToRename(id: ProjectId) {
-        await(ProjectsTags.rowMenu(id)).performClick()
+        openRowMenu(id)
         await(ProjectsTags.ROW_MENU_RENAME).performClick()
         await(ProjectsTags.RENAME_DIALOG)
     }
@@ -304,9 +304,9 @@ class ProjectsSidebarTest {
         }
 
     @Test
-    fun `FR-P6 sidebar shows four counters per project, zeros included`() =
+    fun `FR-P6 sidebar shows chips only for non-zero counts of a project`() =
         runComposeUiTest {
-            // Given one working and one waiting session in the project and none in the other (AM-310: zeros are shown)
+            // Given one working and one waiting session in the project and none in the other
             val other = aProject(id = "project0002", dir = A_PROJECT_DIR.resolveSibling("other"), displayName = "other")
             val world =
                 ControllerWorld(
@@ -317,15 +317,11 @@ class ProjectsSidebarTest {
             // When
             showSidebar(world)
 
-            // Then the project shows both counts, the other one shows the same four counters at zero (AM-310)
+            // Then the project shows both counts and no chip for the zeros, the other one has no chip at all
             awaitChip(ProjectsTags.row(project.id), UiText("row.waiting", listOf("1")))
             awaitChip(ProjectsTags.row(project.id), UiText("row.working", listOf("1")))
-            awaitChip(ProjectsTags.row(project.id), UiText("row.done", listOf("0")))
-            awaitChip(ProjectsTags.row(project.id), UiText("row.failed", listOf("0")))
-            listOf("row.waiting", "row.working", "row.done", "row.failed").forEach { key ->
-                awaitChip(ProjectsTags.row(other.id), UiText(key, listOf("0")))
-            }
-            chips(ProjectsTags.row(other.id), ": 1").assertCountEquals(0)
+            chips(ProjectsTags.row(project.id), ": ").assertCountEquals(2)
+            chips(ProjectsTags.row(other.id), ": ").assertCountEquals(0)
         }
 
     @Test
@@ -340,10 +336,10 @@ class ProjectsSidebarTest {
             // When the session starts waiting for the user
             runBlocking { world.sessions.setState(working.id, SessionState.AwaitingPermission("Bash")) }
 
-            // Then the row shows "waiting: 1" and the working counter has dropped to zero
+            // Then the row shows "waiting: 1" and the working chip is gone (not shown as zero)
             awaitChip(ProjectsTags.row(project.id), UiText("row.waiting", listOf("1")))
-            awaitChip(ProjectsTags.row(project.id), UiText("row.working", listOf("0")))
-            chips(ProjectsTags.row(project.id), "pracuje: 1").assertCountEquals(0)
+            chips(ProjectsTags.row(project.id), "pracuje").assertCountEquals(0)
+            chips(ProjectsTags.row(project.id), ": ").assertCountEquals(1)
         }
 
     @Test

@@ -1,39 +1,21 @@
 package dev.quayside.missioncontrol.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
-import dev.quayside.core.designsystem.AmTestTheme
-import dev.quayside.core.designsystem.StatusTone
-import dev.quayside.core.designsystem.toColor
-import dev.quayside.core.designtokens.Rgba
-import dev.quayside.core.designtokens.SampleTokens
 import dev.quayside.core.domain.SessionId
-import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.sessions.api.SessionState
-import io.kotest.matchers.collections.shouldContain
-import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.Arguments.arguments
-import org.junit.jupiter.params.provider.MethodSource
 
 /**
- * The four counters of the group overview (FR-P6, FR-P8, NFR-6, AM-310): order waiting, working, done, failed, zero
- * counters instead of the old "brak agentów", the root row "folder główny" named like the badge in the list, and the
- * ring of a zero counter read from pixels at 4 px per dp. Subfolders are `bob`, `Carl`, `Anna`.
+ * The chips of the group overview (FR-P6, FR-P8, AM-310): waiting, working, done, failed in that order, none for a
+ * state at zero or for stopped sessions, no old "brak agentów", and no row for the main folder. Subfolders are `bob`,
+ * `Carl`, `Anna`.
  */
 @OptIn(ExperimentalTestApi::class)
 internal class GroupOverviewCountersScreenTest {
-    private val colors = SampleTokens.colors()
     private val carl = MissionControlTags.overviewRow(sub("Carl"))
 
     private fun carlSessions() =
@@ -51,128 +33,57 @@ internal class GroupOverviewCountersScreenTest {
         )
 
     @Test
-    fun `overview counters keep the order waiting working done failed`() =
+    fun `overview chips keep the order waiting working done failed`() =
         runComposeUiTest {
             // Given a subfolder with 2 waiting, 1 working, 3 done and 4 failed sessions
             showGroup(carlSessions())
             overviewRow("Carl")
 
-            // Then the counters are announced in that order ...
+            // Then the chips are announced in that order, with "gotowe: 3" for the 3 done sessions ...
             val expected = listOf("czeka: 2", "pracuje: 1", "gotowe: 3", "błąd: 4")
             counterTexts(carl) shouldBe expected
-            // ... and drawn from left to right in that order
+            // ... and drawn from left to right in that order, each in its own place
             val lefts = expected.map { counterNode(carl, it).fetchSemanticsNode().boundsInRoot.left }
             lefts shouldBe lefts.sorted()
             lefts.toSet().size shouldBe 4
         }
 
     @Test
-    fun `overview shows four zero counters instead of an idle text`() =
+    fun `row without sessions has no chips and no idle text`() =
         runComposeUiTest {
-            // Given a group where only Anna has a session
-            showGroup(listOf(groupSession("a", "Anna", SessionState.Working, 1)))
+            // Given a group where only Anna has a session, and Carl only a stopped one
+            showGroup(
+                listOf(
+                    groupSession("a", "Anna", SessionState.Working, 1),
+                    groupSession("c", "Carl", SessionState.Stopped, 2),
+                ),
+            )
             overviewRow("Anna")
 
-            // Then the quiet rows have four zero counters and no text "brak agentów" is shown anywhere
-            val zeros = listOf("czeka: 0", "pracuje: 0", "gotowe: 0", "błąd: 0")
-            counterTexts(carl) shouldBe zeros
-            counterTexts(MissionControlTags.overviewRow(sub("bob"))) shouldBe zeros
-            counterTexts(MissionControlTags.OVERVIEW_ROOT) shouldBe zeros
+            // Then the quiet rows have no chip at all and no text "brak agentów" is shown anywhere
+            counterTexts(carl) shouldBe emptyList()
+            counterTexts(MissionControlTags.overviewRow(sub("bob"))) shouldBe emptyList()
+            counterTexts(MissionControlTags.overviewRow(sub("Anna"))) shouldBe listOf("pracuje: 1")
             onAllNodes(hasText("brak agentów", substring = true), useUnmergedTree = true).assertCountEquals(0)
         }
 
     @Test
-    fun `root row is labelled folder główny like the badge`() =
+    fun `badge says folder główny while the overview has no such row`() =
         runComposeUiTest {
-            // Given a session in the project directory, so that its badge and the root row are on screen together
+            // Given a session in the project directory, so that its badge and the overview are on screen together
             showGroup(listOf(groupSession("rooted", "", SessionState.Working, 1)))
-            awaitTag(MissionControlTags.OVERVIEW_ROOT)
+            awaitTag(MissionControlTags.OVERVIEW)
             awaitTag(MissionControlTags.row(SessionId("rooted")))
 
-            // Then the root row and the badge carry the same text, from the same key
-            val label = mcText("overview.root")
-            label shouldBe mcText("row.place.root")
-            // (unmerged tree: the badge clears the semantics of its text and is read by its description)
-            listOf(MissionControlTags.OVERVIEW_ROOT, MissionControlTags.rowPlace(SessionId("rooted"))).forEach {
-                onAllNodes(hasText(label) and inTag(it), useUnmergedTree = true).fetchSemanticsNodes().size shouldBe 1
-            }
-            // and the old name of the row is gone
+            // Then the badge says "folder główny" (unmerged tree: it is read by its description) ...
+            mcText("row.place.root") shouldBe "folder główny"
+            onAllNodes(
+                hasText("folder główny") and inTag(MissionControlTags.rowPlace(SessionId("rooted"))),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes().size shouldBe 1
+            // ... and the overview has no such row, nor the old name "Pozostałe"
+            onAllNodes(hasText("folder główny") and inTag(MissionControlTags.OVERVIEW), useUnmergedTree = true)
+                .assertCountEquals(0)
             onAllNodes(hasText("Pozostałe"), useUnmergedTree = true).assertCountEquals(0)
         }
-
-    @Test
-    fun `root row click does nothing`() =
-        runComposeUiTest {
-            val clicks = mutableListOf<ProjectFocus>()
-            showGroup(carlSessions(), MissionControlHandlers(onOpenSubfolder = { clicks += it }))
-
-            awaitTag(MissionControlTags.OVERVIEW_ROOT).performClick()
-            waitForIdle()
-
-            clicks shouldBe emptyList()
-            exists(MissionControlTags.OVERVIEW) shouldBe true
-        }
-
-    private fun androidx.compose.ui.test.ComposeUiTest.showZeroOverview() =
-        setContent {
-            AmTestTheme {
-                Scaled4 {
-                    Box(Modifier.testTag(WRAP).background(colors.surfaces.bg.toColor())) {
-                        GroupOverviewView(
-                            GroupOverview(
-                                project = OVERVIEW_GROUP.id,
-                                rows = listOf(SubfolderStats(sub("Anna"), SessionStats())),
-                                rest = SessionStats(),
-                            ),
-                            onEvent = {},
-                        )
-                    }
-                }
-            }
-        }
-
-    private fun ring(tone: StatusTone): Rgba =
-        when (tone) {
-            StatusTone.WARN -> colors.status.warn
-            StatusTone.WORK -> colors.status.work
-            StatusTone.OK -> colors.status.ok
-            else -> colors.status.err
-        }
-
-    @ParameterizedTest(name = "{1} on {0}")
-    @MethodSource("zeroCounters")
-    fun `zero counters in the overview use the ring and muted number`(
-        row: String,
-        description: String,
-        tone: StatusTone,
-    ) = runComposeUiTest {
-        // Given an overview whose rows have only zero counters
-        showZeroOverview()
-        awaitTag(WRAP)
-
-        // When a zero counter is drawn
-        val counter = counterNode(row, description)
-        val pixels = counter.pixelMap()
-
-        // Then it has a 1 dp ring in the status token, the panel inside it, and a muted number
-        pixels.argbAt(2, pixels.height / 2) shouldBe ring(tone).argb()
-        pixels.argbAt(2 * SCALE, pixels.height / 2) shouldBe colors.surfaces.panel.argb()
-        counter.argbColors() shouldContain colors.content.muted.argb()
-        counter.argbColors() shouldNotContain colors.content.text.argb()
-    }
-
-    companion object {
-        private const val WRAP = "overview.counters.wrap"
-
-        @JvmStatic
-        fun zeroCounters(): List<Arguments> =
-            listOf(MissionControlTags.overviewRow(sub("Anna")), MissionControlTags.OVERVIEW_ROOT).flatMap { row ->
-                listOf(
-                    "czeka: 0" to StatusTone.WARN,
-                    "pracuje: 0" to StatusTone.WORK,
-                    "gotowe: 0" to StatusTone.OK,
-                    "błąd: 0" to StatusTone.ERR,
-                ).map { (text, tone) -> arguments(row, text, tone) }
-            }
-    }
 }

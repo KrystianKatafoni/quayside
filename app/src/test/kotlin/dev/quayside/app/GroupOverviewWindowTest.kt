@@ -3,6 +3,7 @@ package dev.quayside.app
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasAnyAncestor
@@ -106,7 +107,7 @@ class GroupOverviewWindowTest {
             await(WindowTags.projectRow("project0001")).performClick()
             await(WindowTags.OVERVIEW)
             await(WindowTags.missionRow("rooted"))
-            awaitCounters(WindowTags.overviewRow("soft"), waiting = 0, working = 2, done = 0, failed = 0)
+            awaitChips(WindowTags.overviewRow("soft"), working = 2)
 
             // When the user clicks the row "soft" in the overview
             await(WindowTags.overviewRow("soft")).performClick()
@@ -218,7 +219,7 @@ class GroupOverviewWindowTest {
         }
 
     @Test
-    fun `FR-P8 overview root row and sidebar agree on the main folder sessions`() =
+    fun `FR-P8 overview has only subfolder rows and no main folder row`() =
         runComposeUiTest {
             // Given sessions of every kind: in the directory, in an unchecked folder, in docs and in soft
             val world = CountersWorld(root)
@@ -229,19 +230,23 @@ class GroupOverviewWindowTest {
                     world.session("asks", "docs", SessionState.AwaitingInput("q"), 2),
                     world.session("bad", "soft/api", SessionState.Failed, 3),
                     world.session("works", "soft", SessionState.Working, 4),
+                    world.session("finished", "soft", SessionState.Done, 5),
                 )
             showWindow(world.projects, mixed)
-            await(WindowTags.projectRow("project0001")).performClick()
-            await(WindowTags.OVERVIEW_ROOT)
 
-            // Then the root row "folder główny" counts what is in the directory and in unchecked folders ...
-            awaitCounters(WindowTags.OVERVIEW_ROOT, waiting = 0, working = 1, done = 1, failed = 0)
-            // ... the subfolder rows of the overview and of the sidebar show the same numbers ...
-            awaitCounters(WindowTags.overviewRow("docs"), waiting = 1, working = 0, done = 0, failed = 0)
-            awaitCounters(WindowTags.subfolderRow("project0001", "docs"), 1, 0, 0, 0)
-            awaitCounters(WindowTags.overviewRow("soft"), waiting = 0, working = 1, done = 0, failed = 1)
-            awaitCounters(WindowTags.subfolderRow("project0001", "soft"), 0, 1, 0, 1)
-            // ... and the group row of the sidebar is the sum of the root row and the subfolder rows
-            awaitCounters(WindowTags.projectRow("project0001"), waiting = 1, working = 2, done = 1, failed = 1)
+            // When the user opens the group
+            await(WindowTags.projectRow("project0001")).performClick()
+            await(WindowTags.overviewRow("docs"))
+
+            // Then the overview shows the subfolder rows with their own numbers ...
+            // (in the order waiting, working, done, failed; the finished session of "soft" has the green chip)
+            awaitChips(WindowTags.overviewRow("docs"), waiting = 1)
+            awaitChips(WindowTags.overviewRow("soft"), working = 1, done = 1, failed = 1)
+            // ... and no row "folder główny": the sessions of the directory and of unchecked folders have none
+            onAllNodes(hasText("folder główny") and hasAnyAncestor(hasTestTag(WindowTags.OVERVIEW)))
+                .assertCountEquals(0)
+            // ... while the sidebar group row still counts them
+            // (and has no "done" chip, though two sessions are done)
+            awaitChips(WindowTags.projectRow("project0001"), waiting = 1, working = 2, failed = 1)
         }
 }

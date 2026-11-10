@@ -16,6 +16,9 @@ public enum class GlobalView {
     /** Sessions in [SessionState.Working]. */
     WORKING,
 
+    /** Sessions in [SessionState.Done]. */
+    DONE,
+
     /** Sessions in [SessionState.Failed]. */
     FAILED,
     ;
@@ -24,6 +27,7 @@ public enum class GlobalView {
         when (this) {
             WAITING -> state.isWaiting
             WORKING -> state == SessionState.Working
+            DONE -> state == SessionState.Done
             FAILED -> state == SessionState.Failed
         }
 }

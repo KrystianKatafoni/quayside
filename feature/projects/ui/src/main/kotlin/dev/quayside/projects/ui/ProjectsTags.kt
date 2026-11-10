@@ -59,7 +59,4 @@ internal object ProjectsTags {
 
     /** The line of [name] in the subfolders dialog; a checkable, selectable node. */
     fun subfolderCheck(name: SubfolderName): String = "projects.dialog.subfolders.check.${name.value}"
-
-    /** The ⋯ button of the row of project [id]; opens the row menu. */
-    fun rowMenu(id: ProjectId): String = "projects.row.${id.value}.menu"
 }

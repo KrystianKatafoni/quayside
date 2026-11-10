@@ -6,6 +6,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performMouseInput
+import androidx.compose.ui.test.rightClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.waitUntilDoesNotExist
 import dev.quayside.agentruntime.api.FakeHookInstaller
@@ -44,7 +46,7 @@ class ProjectRemoveHooksWindowTest {
     }
 
     private fun ComposeUiTest.askToRemove(id: String) {
-        await(WindowTags.rowMenu(id)).performClick()
+        await(WindowTags.projectRow(id)).performMouseInput { rightClick() }
         await(WindowTags.ROW_MENU_REMOVE).performClick()
         await(WindowTags.CONFIRM_REMOVE_PROJECT)
     }

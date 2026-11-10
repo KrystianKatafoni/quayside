@@ -131,7 +131,8 @@ internal class GlobalViewReducerTest {
     @Test
     fun `view entries count sessions of every project and mark the shown view`() {
         val snapshot = waiting()
-        val all = listOf(GlobalView.WAITING to 3, GlobalView.WORKING to 1, GlobalView.FAILED to 0)
+        val all =
+            listOf(GlobalView.WAITING to 3, GlobalView.WORKING to 1, GlobalView.DONE to 0, GlobalView.FAILED to 0)
 
         reduce(snapshot, Selection(view = GlobalView.WORKING)).views shouldBe
             all.map { (view, count) -> ViewEntry(view, count, selected = view == GlobalView.WORKING) }
@@ -139,7 +140,33 @@ internal class GlobalViewReducerTest {
         reduce(snapshot, Selection(project = project.id, filter = SessionFilter.FINISHED)).views shouldBe
             all.map { (view, count) -> ViewEntry(view, count, selected = false) }
         // Without projects the entries still count (the sessions have no project).
-        reduce(snapshot, Selection(), projects = emptyList()).views.map { it.count } shouldBe listOf(3, 1, 0)
+        reduce(snapshot, Selection(), projects = emptyList()).views.map { it.count } shouldBe listOf(3, 1, 0, 0)
+    }
+
+    @Test
+    fun `done view counts only done sessions and lists the newest first`() {
+        val snapshot =
+            fresh(
+                aSession(id = "old", project = project.id, state = SessionState.Done, startedAt = T0),
+                aSession(
+                    id = "stopped",
+                    project = project.id,
+                    state = SessionState.Stopped,
+                    startedAt = T0.plusSeconds(1),
+                ),
+                aSession(id = "work", project = other.id, state = SessionState.Working, startedAt = T0.plusSeconds(2)),
+                aSession(id = "new", project = other.id, state = SessionState.Done, startedAt = T0.plusSeconds(3)),
+                aSession(id = "none", project = null, state = SessionState.Done, startedAt = T0.plusSeconds(4)),
+            )
+
+        val state = reduce(snapshot, Selection(view = GlobalView.DONE))
+
+        state.views.map { it.view } shouldBe
+            listOf(GlobalView.WAITING, GlobalView.WORKING, GlobalView.DONE, GlobalView.FAILED)
+        state.views.single { it.view == GlobalView.DONE } shouldBe ViewEntry(GlobalView.DONE, 3, selected = true)
+        state.global().view shouldBe GlobalView.DONE
+        state.global().sessions shouldBe 3
+        state.global().rows.map { it.id.value } shouldBe listOf("none", "new", "old")
     }
 
     @Test

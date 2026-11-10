@@ -65,13 +65,14 @@ internal fun ComposeUiTest.overviewRow(name: String): SemanticsNodeInteraction =
     awaitTag(MissionControlTags.overviewRow(SubfolderName(name)))
 
 /**
- * The counter descriptions (`czeka: 2`, `pracuje: 1`, `gotowe: 0`, `błąd: 0`; AM-310) announced inside the node
- * tagged [tag], in the order of the semantics tree.
+ * The descriptions of the chips (`czeka: 2`, `pracuje: 1`, `gotowe: 3`, `błąd: 4`; AM-310) announced inside the node
+ * tagged [tag], from left to right. A state at zero has no chip.
  */
 @OptIn(ExperimentalTestApi::class)
 internal fun ComposeUiTest.counterTexts(tag: String): List<String> =
     onAllNodes(inTag(tag) and SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription), true)
         .fetchSemanticsNodes()
+        .sortedBy { it.boundsInRoot.left }
         .flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
         .filter { COUNTER_TEXT.matches(it) }
 
@@ -83,7 +84,7 @@ internal fun ComposeUiTest.counterNode(
 ): SemanticsNodeInteraction =
     onAllNodes(hasContentDescription(description) and inTag(tag), useUnmergedTree = true).onFirst()
 
-/** "czeka: N", "pracuje: N", "gotowe: N" or "błąd: N": the four counter descriptions of AM-310. */
+/** "czeka: N", "pracuje: N", "gotowe: N" or "błąd: N". */
 private val COUNTER_TEXT = Regex("(czeka|pracuje|gotowe|błąd): \\d+")
 
 /** True when a node tagged [tag] exists. */

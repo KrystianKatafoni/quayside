@@ -46,3 +46,9 @@ internal fun raisedColor(): Color =
 internal fun selColor(): Color =
     AmTheme.colors.surfaces.sel
         .toColor()
+
+/** The line of the folder tree in the overview of the subfolders: decorative, so the quiet frame colour. */
+@Composable
+internal fun guideColor(): Color =
+    AmTheme.colors.surfaces.border2
+        .toColor()

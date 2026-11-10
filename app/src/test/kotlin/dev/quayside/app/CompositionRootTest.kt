@@ -54,6 +54,7 @@ class CompositionRootTest {
                 "command.filterFinished",
                 "command.view.waiting",
                 "command.view.working",
+                "command.view.done",
                 "command.view.failed",
                 "command.terminalSettings",
                 "command.notificationSettings",

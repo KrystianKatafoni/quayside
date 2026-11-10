@@ -87,6 +87,12 @@ Plan i decyzje: [ADR 0029](adr/0029-wiele-kont-claude.md).
 | FR-L7 | Widok „Konta”: logowanie i wylogowanie wielu kont, dodawanie, usuwanie (bez kasowania katalogu), kolejność, przełączniki „Aktywne” i „W automacie” per konto, odblokowanie limitu, główny przełącznik automatyki i czas chłodzenia | S |
 | FR-L8 | Ikona bieżącego konta w prawym górnym rogu okna; klik otwiera listę kont pod ikoną z ręcznym przełączeniem bieżącego konta (dla nowych sesji), opcją „Automatycznie” i wejściem do widoku „Konta”; każde przełączenie potwierdzane krótkim oknem; przełączenie nie przenosi sesji | S |
 | FR-L9 | Wspólna historia rozmów i pamięć projektów dla wszystkich kont (rozdzielone per projekt i podprojekt); globalne instrukcje, subagenci, skille, komendy i ustawienia osobne per konto, jednorazowo kopiowane z konta domyślnego przy tworzeniu konta (wybór elementów) | S |
+| FR-U1 | Aplikacja sprawdza najnowszą wersję na GitHub Releases przy starcie i raz na dobę; można to wyłączyć | S |
+| FR-U2 | Nowa wersja jest zgłaszana wskaźnikiem, nigdy oknem modalnym w trakcie pracy; użytkownik może zainstalować teraz, po zamknięciu aplikacji, przypomnieć jutro albo pominąć wersję | M |
+| FR-U3 | Instalacja pobiera wydanie, weryfikuje sumę SHA-256, podpis (Team ID) i notaryzację, podmienia aplikację i uruchamia ją ponownie; sesje w tle nie są zatrzymywane | M |
+| FR-U4 | Przed restartem aplikacja mówi, ile kart terminala zostanie zamkniętych | S |
+| FR-U5 | Przed migracją konfiguracji po aktualizacji powstaje kopia (trzy ostatnie wersje); użytkownik może przywrócić poprzednią wersję razem z kopią | M |
+| FR-U6 | Gdy automatyczna instalacja nie jest możliwa, aplikacja prowadzi do ręcznego pobrania | M |
 | FR-L10 | Ustawienie sesji „Przełączaj konto automatycznie” (domyślnie wyłączone): po limicie sesja przenosi się bez pytania na następne dostępne konto, z powiadomieniem | S |
 
 ## Wymagania niefunkcjonalne

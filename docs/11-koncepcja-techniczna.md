@@ -31,9 +31,9 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 
 | Feature | `api` (kontrakt) | `impl` (implementacja i adaptery) | `ui` |
 | --- | --- | --- | --- |
-| `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller`, `WorkspaceTrust` | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller`, `ClaudeJsonTrust` | – |
+| `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller`, `WorkspaceTrust`, `SessionHistory` (tylko odczyt plików sesji) | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller`, `ClaudeJsonTrust`, `FileSessionHistory` | – |
 | `projects` | `ProjectsApi` | `JsonProjectStore`, `DirectoryInspector` (git, `CLAUDE.md`, hooki) | sidebar, dialogi dodaj/usuń |
-| `sessions` | `SessionMonitor`, `SessionCommands` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami | – |
+| `sessions` | `SessionMonitor`, `SessionCommands`, `SessionHistorySettingsRepo` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami, `DiskSessions` (czyste scalanie sesji z dysku) i `HistoryScan` (kiedy skanować) | okno „Stare sesje z dysku” (w `mission-control:ui`) |
 | `summaries` | `Summarizer`, `SummariesApi`, `SummarySettingsRepo` | `LastMessageSummary` (czysty) z `last_assistant_message`; model Haiku przez `claude -p` w części B (ADR 0019) | okno „Ustawienia podsumowań” |
 | `notifications` | `NotificationCenter`, `NotificationSettingsRepo` | `NotificationPolicy` (czysta), `MacSayAdapter`, `SoundAdapter`, `DockBadgeAdapter` | okna popupów, ekran ustawień |
 | `terminal` | `TerminalApi`, `TerminalSession` | JediTerm + pty4j, profile powłoki, OSC 133 | karty, panele, szukanie |
@@ -210,7 +210,17 @@ interface ProjectInspector {
 ```
 
 ```kotlin
+// agent-runtime:api — tylko odczyt plików sesji `<claudeHome>/projects/*/<uuid>.jsonl` (FR-P9, ADR 0032)
+fun interface SessionHistory {
+    suspend fun list(dirs: List<Path>, since: Instant?): Outcome<List<PastConversation>, HistoryError>  // najnowsze pierwsze; błąd tylko UNREADABLE
+}
+data class PastConversation(val conversationId: ConversationId, val startCwd: Path, val startedAt: Instant?,
+    val lastActivityAt: Instant?, val modifiedAt: Instant, val cwdChanged: Boolean, val title: String?)  // title: dane użytkownika, toString go ukrywa
+
 // sessions:api — odczyt i komendy rozdzielone (ENG-I2)
+// Session.origin: SUPERVISOR | DISK (FR-P9). Sesja z dysku jest zawsze Stopped, jej id to UUID rozmowy;
+// SessionsSnapshot.history: Map<ProjectId, ProjectHistory(shown, older)> — klucz dla każdego zeskanowanego projektu.
+// Dla DISK: respawn/recentOutput = UnknownSession, stop = Ok, remove = ukrycie na stałe (hidden w session-history.json).
 interface SessionMonitor {
     val snapshot: StateFlow<SessionsSnapshot>
     val events: Flow<SessionEvent>                 // przejścia stanów, konsumowane m.in. przez powiadomienia
@@ -486,6 +496,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 | `projects.json` | `projects:impl` |
 | `notifications.json` | `notifications:impl` (schemat 2: `channels` tylko z odstępstwami od `defaultChannels`, brak klucza = bieżąca domyślna; [ADR 0024](adr/0024-format-notifications-json.md)) |
 | `terminal.json` | `terminal:impl` |
+| `session-history.json` | `sessions:impl` (`maxAge` 7 / 90 dni / bez limitu, `maxPerProject` 50 / 1000, `hidden` posortowane UUID ukrytych sesji z dysku; zapisywane tylko odstępstwa od domyślnych 30 dni i 200, brak klucza = domyślna; plik sesji Claude Code nigdy nie jest zmieniany; [ADR 0032](adr/0032-odczyt-plikow-sesji-i-session-history-json.md)) |
 | `summaries.json` | `summaries:impl` (`{"useModel": false}`: streszczenia modelem Haiku, domyślnie wyłączone; brak lub uszkodzony plik = wyłączone) |
 | `theme.json` | `appearance:impl` |
 | `hook-offer.json` | `app` (`{"dismissed": true}`: użytkownik pominął propozycję instalacji hooków albo je odinstalował; brak lub uszkodzony plik = nie odrzucono; [ADR 0020](adr/0020-format-hook-offer-json.md)) |

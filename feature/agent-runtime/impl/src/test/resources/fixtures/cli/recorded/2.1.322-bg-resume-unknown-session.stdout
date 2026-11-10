@@ -1,0 +1,5 @@
+backgrounded · 00000000
+  claude agents             list sessions
+  claude attach 00000000    open in this terminal
+  claude logs 00000000      show recent output
+  claude stop 00000000      stop this session

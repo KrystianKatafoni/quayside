@@ -9,29 +9,19 @@ import dev.quayside.agentruntime.impl.ParseNotice.EntrySkipped
 import dev.quayside.agentruntime.impl.ParseNotice.StartedAtMissing
 import dev.quayside.agentruntime.impl.ParseNotice.UnknownPhase
 import dev.quayside.core.domain.SessionId
-import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
-import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
-import io.kotest.matchers.string.shouldNotContain
-import io.kotest.matchers.string.shouldStartWith
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.Arguments.arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
-import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
-import kotlin.io.path.invariantSeparatorsPathString
-import kotlin.io.path.isRegularFile
-import kotlin.io.path.name
 import kotlin.io.path.readText
-import kotlin.streams.asSequence
 
 class AgentsJsonFixturesTest {
     private val root: Path =
@@ -40,11 +30,6 @@ class AgentsJsonFixturesTest {
     private fun fixture(relative: String): String = root.resolve(relative).readText()
 
     private fun parseFixture(relative: String): AgentsListing = parseOk(fixture(relative))
-
-    private fun fixtureFiles(): List<Path> =
-        Files.walk(root).use { paths ->
-            paths.asSequence().filter { it.isRegularFile() && it.name != "README.md" }.toList()
-        }
 
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = ["recorded/2.1.302-interactive-only.json", "recorded/2.1.302-all-interactive-only.json"])
@@ -153,31 +138,14 @@ class AgentsJsonFixturesTest {
 
     @Test
     fun `every fixture file is listed in the README`() {
-        val readme = fixture("README.md")
-        val files = fixtureFiles()
-
-        files.shouldNotBeEmpty()
-        files.forEach { file ->
-            readme shouldContain "`${root.relativize(file).invariantSeparatorsPathString}`"
-        }
+        FixtureAnonymity.assertAllListedInReadme(root)
     }
 
     @Test
     fun `recorded fixtures are anonymized`() {
-        val recorded = fixtureFiles().filter { root.relativize(it).startsWith("recorded") }
-        val uuid = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
-        val foreignUserDir = Regex("/Users/(?!test/)")
+        val recorded = FixtureAnonymity.fixtureFiles(root).filter { root.relativize(it).startsWith("recorded") }
 
-        recorded.shouldNotBeEmpty()
-        recorded.forEach { file ->
-            val text = file.readText()
-            withClue(root.relativize(file).toString()) {
-                text shouldNotContain "/home/"
-                text shouldNotContain "/root"
-                foreignUserDir.containsMatchIn(text) shouldBe false
-                uuid.findAll(text).forEach { it.value shouldStartWith "00000000-0000-4000-8000-" }
-            }
-        }
+        FixtureAnonymity.assertAnonymous(root, recorded)
     }
 
     /** A working background session from the synthetic fixtures; entry `n` starts `n` seconds after the first. */

@@ -1,0 +1,2 @@
+{"type":"user","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/test/projects/quayside/soft","timestamp":"2026-01-01T10:00:00Z","uuid":"00000000-0000-4000-8000-000000000120","version":"2.1.322","isSidechain":false,"message":{"role":"user","content":"Work only in soft"}}
+{"type":"assistant","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/test/projects/quayside/soft","timestamp":"2026-01-01T10:01:00Z","uuid":"00000000-0000-4000-8000-000000000121","version":"2.1.322","isSidechain":false,"message":{"role":"assistant","content":"redacted"}}

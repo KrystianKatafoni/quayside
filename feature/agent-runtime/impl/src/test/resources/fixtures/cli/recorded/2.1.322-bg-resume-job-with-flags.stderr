@@ -1,0 +1,1 @@
+note: background session 00000001 keeps its own saved options, so the flags you passed started a copy as 00000002. Without flags, the same command continues 00000001 itself.

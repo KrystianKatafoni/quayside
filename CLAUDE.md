@@ -161,3 +161,6 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Po zmianie nazwy elementu UI (np. „Pozostałe” → „folder główny”) zrób grep po starym tekście w całym `src/main` (KDoc publicznych typów), nie tylko w `properties`.
 - Detekt `MatchingDeclarationName` wymaga, by plik z jedną klasą nosił jej nazwę, a Konsist zabrania klas kończących się na `Colors` w `ui`/`app` — paletę kolorów komponentu nazwij np. `…Paint` i trzymaj w pliku o tej nazwie.
 - `filterValues` usuwający wpisy zerowe z mapy nie jest obserwowalny, gdy brak klucza = zero, ale testy porównujące widoki przez `==` z pustym widokiem go wymagają — nie usuwaj bez sprawdzenia tych testów.
+- `catch (SerializationException)` po `catch (IllegalArgumentException)` jest martwy (dziedziczy po IAE) — łap szerszy wyjątek raz albo najpierw węższy.
+- Test pliku bez prawa odczytu (`chmod 000`) wymaga `assumeTrue` dla POSIX i nie-roota, a strażnik `isRegularFile` zasłania prawdziwą ścieżkę `IOException` — ustaw uprawnienia po strażniku albo użyj celu, który psuje dopiero odczyt.
+- Limit 400 linii pliku testowego i 5 parametrów funkcji nie są łapane przez detekt — sprawdzaj `wc -l` i sygnatury ręcznie przed oddaniem.

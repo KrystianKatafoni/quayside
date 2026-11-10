@@ -10,6 +10,7 @@ import dev.quayside.agentruntime.impl.agentRuntimeModule
 import dev.quayside.agentruntime.impl.hookEventSourceModule
 import dev.quayside.agentruntime.impl.hookInstallerModule
 import dev.quayside.agentruntime.impl.oneShotPromptModule
+import dev.quayside.agentruntime.impl.sessionHistoryModule
 import dev.quayside.agentruntime.impl.workspaceTrustModule
 import dev.quayside.appearance.api.AppearanceApi
 import dev.quayside.appearance.impl.appearanceModule
@@ -27,7 +28,9 @@ import dev.quayside.notifications.ui.PopupWindow
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.impl.projectInspectorModule
 import dev.quayside.projects.impl.projectsModule
+import dev.quayside.sessions.api.SessionHistorySettingsRepo
 import dev.quayside.sessions.api.SessionsApi
+import dev.quayside.sessions.impl.sessionHistorySettingsModule
 import dev.quayside.sessions.impl.sessionsModule
 import dev.quayside.summaries.api.SummariesApi
 import dev.quayside.summaries.api.SummarySettingsRepo
@@ -117,13 +120,7 @@ private fun appModules(
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
     // Lives as long as the app, not the window (AM-405 risks).
     val sessions =
-        sessionsDeps(
-            core,
-            runtime,
-            projects,
-            stored.summaries,
-            CoroutineScope(SupervisorJob() + core.dispatchers.io),
-        )
+        sessionsDeps(core, runtime, projects, stored, CoroutineScope(SupervisorJob() + core.dispatchers.io))
     // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
     val registry = commandPaletteModule(CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger)
     val notifications = notificationDeps(core, stored.notifications, sessions, projects)
@@ -134,7 +131,7 @@ private fun appModules(
         sessions,
         registry,
         terminal,
-        SettingsDeps(notifications, stored.summarySettings, stored.layout),
+        SettingsDeps(notifications, stored.summarySettings, stored.layout, stored.history),
         AppearanceDeps(appearance, looks, themeFilesModule(appearance, core.dispatchers.io, core.logger)),
     )
 }
@@ -144,9 +141,10 @@ private fun sessionsDeps(
     core: CoreDeps,
     runtime: AgentRuntime,
     projects: ProjectsApi,
-    summaries: SummariesApi,
+    stored: StoredSettings,
     scope: CoroutineScope,
 ): SessionsApi {
+    val claudeHome = core.homeDir.resolve(".claude")
     val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir, port = HOOK_PORT)
     return sessionsModule(
         runtime,
@@ -155,9 +153,11 @@ private fun sessionsDeps(
         scope,
         core.clock,
         core.logger,
-        summaries = summaries,
-        claudeHome = core.homeDir.resolve(".claude"),
+        summaries = stored.summaries,
+        claudeHome = claudeHome,
         io = core.dispatchers.io,
+        history = sessionHistoryModule(claudeHome, core.dispatchers.io, core.logger),
+        historySettings = stored.history,
     )
 }
 
@@ -189,6 +189,7 @@ private class StoredSettings(
     val summaries: SummariesApi,
     val summarySettings: SummarySettingsRepo,
     val layout: WindowLayoutDeps,
+    val history: SessionHistorySettingsRepo,
 )
 
 private suspend fun storedSettings(core: CoreDeps): StoredSettings {
@@ -199,6 +200,7 @@ private suspend fun storedSettings(core: CoreDeps): StoredSettings {
         summariesModule(core.storage, oneShotPromptModule(core.process, core.homeDir), core.logger),
         summarySettingsModule(core.storage, core.logger),
         WindowLayoutDeps(layout, layout.load()),
+        sessionHistorySettingsModule(core.storage, core.logger),
     )
 }
 

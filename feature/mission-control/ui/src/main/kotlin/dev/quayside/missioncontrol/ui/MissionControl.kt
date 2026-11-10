@@ -37,6 +37,7 @@ public fun MissionControl(
             MissionControlEvent.Attach -> handlers.onAttach()
             MissionControlEvent.Reply -> handlers.onReply()
             is MissionControlEvent.OpenSubfolder -> handlers.onOpenSubfolder(event.focus)
+            MissionControlEvent.ChangeHistoryLimit -> handlers.onChangeHistoryLimit()
             else -> controller.onEvent(event)
         }
     }
@@ -83,7 +84,8 @@ private fun ProjectPage(
     onEvent: (MissionControlEvent) -> Unit,
 ) {
     CompositionLocalProvider(LocalProjectDir provides page.header.path) {
-        SessionPage(page.banner, page.loading, page.rows, page.details, preview, onEvent) {
+        val list = PageList(page.banner, page.loading, page.rows, page.details, page.older)
+        SessionPage(list, preview, onEvent) {
             ProjectHeaderView(page.header, page.filter, onEvent)
             StatCards(page.stats)
             page.overview?.let { GroupOverviewView(it, onEvent) }
@@ -91,14 +93,19 @@ private fun ProjectPage(
     }
 }
 
+/** What the list and the details panel of one page show; [older] is the count of the row "jeszcze N starszych". */
+internal data class PageList(
+    val banner: UiText?,
+    val loading: Boolean,
+    val rows: List<SessionRow>,
+    val details: SessionDetails?,
+    val older: Int = 0,
+)
+
 /** The list and the details panel shared by the project page and the global views. */
 @Composable
-@Suppress("LongParameterList") // all parts of one page; the two callers pass them straight through
 internal fun SessionPage(
-    banner: UiText?,
-    loading: Boolean,
-    rows: List<SessionRow>,
-    details: SessionDetails?,
+    list: PageList,
     preview: PreviewUi?,
     onEvent: (MissionControlEvent) -> Unit,
     header: @Composable () -> Unit,
@@ -109,23 +116,23 @@ internal fun SessionPage(
             verticalArrangement = Arrangement.spacedBy(space = 12.dp),
         ) {
             header()
-            banner?.let {
+            list.banner?.let {
                 Text(
                     it,
                     Modifier.fillMaxWidth().background(color = warnBgColor()),
                     MissionControlTags.BANNER,
                 )
             }
-            if (loading) {
+            if (list.loading) {
                 Text(UiText("list.loading"), tag = MissionControlTags.LOADING)
             } else {
                 val listWeight = if (preview == null) 1f else LIST_SHARE
-                SessionRows(rows, details, onEvent, Modifier.weight(weight = listWeight))
+                SessionRows(list.rows, list.details, onEvent, Modifier.weight(weight = listWeight), list.older)
             }
             preview?.let { SessionPreviewView(it, onEvent, Modifier.weight(weight = 1f - LIST_SHARE)) }
             KeyHintsBar()
         }
-        Details(details, rows.firstOrNull { it.id == details?.id }?.age, onEvent)
+        Details(list.details, list.rows.firstOrNull { it.id == list.details?.id }?.age, onEvent)
     }
 }
 

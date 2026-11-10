@@ -69,8 +69,8 @@ internal fun menuStateOf(
 }
 
 /**
- * The palette, the notification settings (AM-704), the summaries settings (AM-606), the appearance (AM-803) and the
- * hooks (AM-607); all wait for dialogs like the palette.
+ * The palette, the notification settings (AM-704), the summaries settings (AM-606), the old sessions (AM-312), the
+ * appearance (AM-803) and the hooks (AM-607); all wait for dialogs like the palette.
  */
 @Composable
 private fun MenuScope.ViewItems(
@@ -84,6 +84,25 @@ private fun MenuScope.ViewItems(
         shortcut = AppShortcuts.PALETTE.toKeyShortcut(),
         onClick = { palette.open() },
     )
+    SessionSettingsItems(controllers, enabled)
+    Item(
+        text = Strings["menu.appearance"],
+        enabled = enabled.palette,
+        onClick = { controllers.appearance.open() },
+    )
+    Item(
+        text = Strings["menu.hookSetup"],
+        enabled = enabled.palette,
+        onClick = { controllers.hookSetup.open() },
+    )
+}
+
+/** The settings of notifications, summaries and old sessions (AM-704, AM-606, AM-312). */
+@Composable
+private fun MenuScope.SessionSettingsItems(
+    controllers: WindowControllers,
+    enabled: AppMenuState,
+) {
     Item(
         text = Strings["menu.notificationSettings"],
         enabled = enabled.palette,
@@ -95,14 +114,9 @@ private fun MenuScope.ViewItems(
         onClick = { controllers.summarySettings.open() },
     )
     Item(
-        text = Strings["menu.appearance"],
+        text = Strings["menu.sessionHistory"],
         enabled = enabled.palette,
-        onClick = { controllers.appearance.open() },
-    )
-    Item(
-        text = Strings["menu.hookSetup"],
-        enabled = enabled.palette,
-        onClick = { controllers.hookSetup.open() },
+        onClick = { controllers.historySettings.open() },
     )
 }
 
@@ -149,6 +163,7 @@ private fun anyDialogOpen(controllers: WindowControllers): Boolean {
     val settingsDialog by controllers.terminalSettings.state.collectAsState()
     val notificationDialog by controllers.notificationSettings.state.collectAsState()
     val summaryDialog by controllers.summarySettings.state.collectAsState()
+    val historyDialog by controllers.historySettings.state.collectAsState()
     val hookDialog by controllers.hookSetup.state.collectAsState()
     val newAgentOpen by controllers.newAgent.isOpen.collectAsState()
     val appearanceDialog by controllers.appearance.state.collectAsState()
@@ -157,6 +172,7 @@ private fun anyDialogOpen(controllers: WindowControllers): Boolean {
         settingsDialog != null ||
         notificationDialog != null ||
         summaryDialog != null ||
+        historyDialog != null ||
         hookDialog != null ||
         newAgentOpen
 }

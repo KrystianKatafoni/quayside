@@ -5,12 +5,14 @@ import dev.quayside.appearance.ui.AppearanceController
 import dev.quayside.appearance.ui.ThemeFilePicker
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.ui.CommandPaletteController
+import dev.quayside.missioncontrol.ui.HistorySettingsController
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.missioncontrol.ui.NewAgentPorts
 import dev.quayside.notifications.ui.NotificationSettingsController
 import dev.quayside.notifications.ui.SoundPreviewController
 import dev.quayside.projects.ui.DirectoryPicker
+import dev.quayside.projects.ui.PastSessionsPorts
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsIntent
 import dev.quayside.projects.ui.ProjectsPorts
@@ -47,7 +49,7 @@ internal class WindowControllers(
             modules.projects.api,
             modules.projects.inspector,
             modules.sessions,
-            ProjectsPorts(pickers.directory, hooks.projectHooks),
+            ProjectsPorts(pickers.directory, hooks.projectHooks, pastSessionsPorts(modules)),
             scope,
             core.logger,
         )
@@ -87,6 +89,8 @@ internal class WindowControllers(
 
     val summarySettings = SummarySettingsController(modules.settings.summaries, scope)
 
+    val historySettings = HistorySettingsController(modules.settings.history, scope)
+
     val appearance =
         AppearanceController(
             modules.appearance.api,
@@ -112,7 +116,9 @@ internal class WindowControllers(
                 terminal != null || notification || look != null
             },
             summarySettings.isOpen,
-        ) { others, summaries -> others || summaries }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
+            historySettings.isOpen,
+        ) { others, summaries, history -> others || summaries || history }
+            .stateIn(scope, SharingStarted.Eagerly, initialValue = false)
 
     /** What hides the hooks command: the settings dialogs and "Nowy agent" (the hooks dialog hides it itself). */
     private val hooksBlocked =
@@ -141,6 +147,13 @@ internal class WindowControllers(
     /** Which layout the window shows (AM-809); leaves the terminal mode when the last tab is gone. */
     val mode = WindowModeState { terminal.menu.value.hasTabs }
 
+    /**
+     * The disk sessions of a new project (FR-P9): the global settings behind the choices of the add dialog, and the
+     * answer "Pokaż", which selects the filter "Zakończone" of Mission Control (the project is selected by then).
+     */
+    private fun pastSessionsPorts(modules: AppModules): PastSessionsPorts =
+        PastSessionsPorts(modules.settings.history) { missionControl.showFinished(it) }
+
     init {
         terminal.followSessions(modules.sessions.monitor.snapshot, scope)
         mode.follow(terminal.menu, scope)
@@ -154,6 +167,7 @@ internal class WindowControllers(
             TerminalSettingsCommands(projects, missionControl, terminalSettings, scope, notificationDialogOpen),
             NotificationSettingsCommands(projects, missionControl, notificationSettings, scope),
             SummarySettingsCommands(projects, missionControl, summarySettings, scope),
+            SessionHistoryCommands(projects, missionControl, historySettings, scope),
             AppearanceCommands(projects, missionControl, appearance, scope),
             HookSetupCommands(projects, missionControl, hookSetup, scope, hooksBlocked),
             NewAgentCommands(projects, missionControl, modules.projects.api, newAgent, scope, newAgentBlocked),

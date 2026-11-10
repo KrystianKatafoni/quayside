@@ -10,9 +10,10 @@ import java.time.Instant
  *
  * [summary] (FR-S7), [cwd] and [name] are user data: log them at DEBUG level only (ENG-C8).
  * `toString` shows [summary] as `***` but, like `RuntimeSession`, prints [cwd] and [name], so log
- * a whole [Session] at DEBUG level only.
+ * a whole [Session] at DEBUG level only. For [SessionOrigin.DISK] the [name] is the first user message of the
+ * conversation (or the start of its UUID): conversation content, so also DEBUG only.
  *
- * @property id short supervisor id, e.g. `7c5dcf5d`.
+ * @property id short supervisor id, e.g. `7c5dcf5d`; for [SessionOrigin.DISK] the conversation UUID.
  * @property project the deepest registered project whose directory contains [cwd], compared by path
  *   components (see [SessionRules.projectFor]); null when no project contains it.
  * @property name display name of the session.
@@ -22,6 +23,7 @@ import java.time.Instant
  * @property lastActivityAt last state change or hook event (FR-S1).
  * @property summary short summary of the session; null when unknown.
  * @property meta model, permission mode and git branch (FR-S8); every part may be unknown.
+ * @property origin where the session comes from (FR-P9).
  */
 public data class Session(
     val id: SessionId,
@@ -33,10 +35,23 @@ public data class Session(
     val lastActivityAt: Instant,
     val summary: String?,
     val meta: SessionMeta = SessionMeta(),
+    val origin: SessionOrigin = SessionOrigin.SUPERVISOR,
 ) {
     override fun toString(): String =
         "Session(id=$id, project=$project, name=$name, cwd=$cwd, state=$state, startedAt=$startedAt, " +
             "lastActivityAt=$lastActivityAt, summary=${summary?.let { HIDDEN }}, meta=$meta)"
+}
+
+/** Where a [Session] comes from (FR-P9, ADR 0032). */
+public enum class SessionOrigin {
+    /** Listed by the Claude Code supervisor; [Session.id] is its short id. */
+    SUPERVISOR,
+
+    /**
+     * Read from a session file only; always [SessionState.Stopped], [Session.id] is the conversation UUID, and every
+     * command except [SessionCommands.remove] and [SessionCommands.stop] gives [SessionError.UnknownSession].
+     */
+    DISK,
 }
 
 /**

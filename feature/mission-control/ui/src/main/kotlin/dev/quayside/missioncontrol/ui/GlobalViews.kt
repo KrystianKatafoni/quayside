@@ -117,14 +117,9 @@ internal fun GlobalPage(
     preview: PreviewUi?,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
-    SessionPage(
-        page.banner,
-        page.loading,
-        page.rows,
-        page.details,
-        preview,
-        onEvent,
-    ) { GlobalHeader(page) }
+    SessionPage(PageList(page.banner, page.loading, page.rows, page.details), preview, onEvent) {
+        GlobalHeader(page)
+    }
 }
 
 @Composable

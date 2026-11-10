@@ -10,8 +10,12 @@ import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.map
 import dev.quayside.projects.api.ProjectsApi
+import dev.quayside.sessions.api.RuntimeProblem
+import dev.quayside.sessions.api.Session
+import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionMeta
+import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -36,7 +40,9 @@ import kotlin.time.toJavaDuration
  * collector that stops collecting therefore also holds back every later snapshot update and command;
  * consumers (AM-405) must not collect [events] on a thread that may block or stall.
  *
- * The seventh parameter is [metas] (AM-818); the optional collaborators are named at every call site.
+ * The optional collaborators ([metas], AM-818, and [disk], AM-312) are named at every call site. With [disk] the
+ * published sessions also hold the disk sessions of the last scan (FR-P9): they are merged after the reduction, so
+ * the reducer never sees them and they emit no events.
  */
 @Suppress("LongParameterList")
 internal class SessionsState(
@@ -47,6 +53,7 @@ internal class SessionsState(
     private val hookLead: Duration = HOOK_LEAD,
     private val summaries: TurnSummaries = TurnSummaries(null),
     private val metas: SessionMetaSource = NoSessionMetas,
+    private val disk: HistoryScan? = null,
 ) {
     private val mutex = Mutex()
     private val current = MutableStateFlow(SessionsSnapshot.Initial)
@@ -123,11 +130,64 @@ internal class SessionsState(
         val input = merged?.let { Outcome.Ok(it.sessions) } ?: listing
         val hooks =
             HookData(merged?.details.orEmpty(), summaries.forListing((listing as? Outcome.Ok)?.value), lastMetas)
-        val reduction = SessionStateReducer.reduce(current.value, input, dirs, now, hooks)
-        val snapshot = if (status == null) reduction.snapshot else reduction.snapshot.copy(status = status)
+        val previous = current.value.withoutDisk()
+        val reduction = SessionStateReducer.reduce(previous, input, dirs, now, hooks)
+        val reduced = if (status == null) reduction.snapshot else reduction.snapshot.copy(status = status)
+        val snapshot = withDisk(reduced, (input as? Outcome.Ok)?.value ?: lastListing.orEmpty())
         current.value = snapshot
         reduction.events.forEach { emitted.emit(it) }
         return reduction.copy(snapshot = snapshot)
+    }
+
+    /** The snapshot as the reducer must see it: only the supervisor's sessions, so disk sessions never double. */
+    private fun SessionsSnapshot.withoutDisk(): SessionsSnapshot =
+        copy(sessions = sessions.filter { it.origin == SessionOrigin.SUPERVISOR })
+
+    /**
+     * Lays the sessions of the last scan over [reduced]; the supervisor's [listing] decides which conversations
+     * are already known to it (FR-P9).
+     */
+    private fun withDisk(
+        reduced: SessionsSnapshot,
+        listing: List<RuntimeSession>,
+    ): SessionsSnapshot {
+        val merge = disk?.merge(listing) ?: return reduced
+        val sessions =
+            (reduced.sessions + merge.sessions).sortedWith(
+                compareBy<Session> {
+                    it.startedAt
+                }.thenBy { it.id.value },
+            )
+        return reduced.copy(sessions = sessions, history = merge.history)
+    }
+
+    /**
+     * Publishes the disk sessions again over the last listing, after a scan or a change of the settings or of the
+     * hidden sessions (FR-P9); no events, the status stays. Nothing happens before the first successful listing:
+     * that listing merges the scan itself.
+     */
+    suspend fun republishDisk() =
+        mutex.withLock {
+            val listing = lastListing ?: return@withLock
+            publish(Outcome.Ok(listing), clock.now(), current.value.status)
+        }
+
+    /**
+     * Hides the disk session [id] for good and publishes the list without it before returning (FR-P9); a failed
+     * save changes nothing. Without a history source there is no disk session: [SessionError.UnknownSession].
+     */
+    suspend fun hide(id: SessionId): Outcome<Unit, SessionError> {
+        val scan = disk ?: return Outcome.Err(SessionError.UnknownSession(id))
+        return when (scan.hide(id)) {
+            is Outcome.Ok -> {
+                republishDisk()
+                Outcome.Ok(Unit)
+            }
+
+            is Outcome.Err -> {
+                Outcome.Err(SessionError.Runtime(RuntimeProblem.COMMAND_FAILED))
+            }
+        }
     }
 
     /**

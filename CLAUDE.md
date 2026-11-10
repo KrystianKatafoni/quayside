@@ -164,3 +164,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - `catch (SerializationException)` po `catch (IllegalArgumentException)` jest martwy (dziedziczy po IAE) — łap szerszy wyjątek raz albo najpierw węższy.
 - Test pliku bez prawa odczytu (`chmod 000`) wymaga `assumeTrue` dla POSIX i nie-roota, a strażnik `isRegularFile` zasłania prawdziwą ścieżkę `IOException` — ustaw uprawnienia po strażniku albo użyj celu, który psuje dopiero odczyt.
 - Limit 400 linii pliku testowego i 5 parametrów funkcji nie są łapane przez detekt — sprawdzaj `wc -l` i sygnatury ręcznie przed oddaniem.
+- Akcja „Pokaż” z innego okna musi ustawić projekt i filtr jednym krokiem (`MissionControlController.showFinished`): osobne `SelectFilter` po zmianie projektu przegrywa z resetem filtra przy nowym focusie (`onFocus`).
+- Fake i impl muszą mapować błąd zapisu (np. ukrycie sesji `hidden`) tą samą kategorią `SessionError`; kontrakt w `testFixtures` przypina to na obu, inaczej fake ukrywa rozjazd.

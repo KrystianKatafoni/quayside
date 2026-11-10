@@ -17,6 +17,10 @@
 
 `kafelek stanu 38 dp · nazwa (mono) nad podsumowaniem · pigułka ostatniego zdarzenia/narzędzia · wiek`. W gęstości **Kompaktowej** (ustawienie Wyglądu, docs/08) wiersz ma kafelek 28 dp, odstęp pionowy 4 dp i jedną linię: podsumowanie jest wtedy tylko w panelu szczegółów, a stan nadal widać w kafelku i pigułce (nie tylko kolorem). Zaznaczony wiersz ma tło `sel` oraz przyciski Odpowiedz (gdy sesja czeka) i Attach (przycisk ikonowy); „⋯” otwiera menu akcji.
 
+## Stare sesje z dysku (FR-P9)
+
+Sesje Claude Code z plików `<claudeHome>/projects/*/<uuid>.jsonl`, których nie zna supervisor (interaktywne i stare), są na liście sesji projektu jako zatrzymane, z neutralną plakietką „z dysku” (tekst i etykieta dla czytnika „Stara sesja odczytana z pliku na dysku”, obok plakietki miejsca). Są w filtrach „Wszystkie” i „Zakończone”, nigdy w „Aktywne”, w widokach globalnych, kafelkach liczników ani plakietkach paska bocznego. W panelu szczegółów mają tylko „Usuń z listy” (ukrywa sesję na stałe w `session-history.json`, plik sesji zostaje na dysku); nie mają Attach, Odpowiedz, Respawn, Zatrzymaj ani Podglądu. Gdy limit liczby na projekt ucina listę, ostatni wiersz strony grupy mówi „jeszcze N starszych” (odmiana jak liczniki) i ma link „Zmień limit”, który otwiera okno „Stare sesje z dysku…” (menu Widok i paleta): wiek 7 / 30 / 90 dni lub bez limitu (domyślnie 30) i liczba na projekt 50 / 200 / 1000 (domyślnie 200); wybór zapisuje się od razu, bez przycisku „Zapisz”. Te same dwa wybory są w oknie „Dodać projekt?”. Po dodaniu folderu, gdy pierwszy skan znajdzie stare sesje, pasek boczny pyta „Znaleziono N starych sesji (podfolder: n, folder główny: m). Pokazać…”; podział widać tylko dla projektu z podfolderami, „Pokaż” zaznacza projekt i filtr „Zakończone”, „Nie teraz” nic nie zapisuje.
+
 ## Stany sesji
 
 | Glif | Stan w UI | Kolor | `state` / `waitingFor` z `--json` | Hook |

@@ -10,7 +10,10 @@ public sealed interface SessionError {
         val id: ProjectId,
     ) : SessionError
 
-    /** The supervisor does not know session [id]. */
+    /**
+     * The supervisor does not know session [id]; also the answer for a command that does not apply to a
+     * [SessionOrigin.DISK] session (respawn, output) and for a disk session that is hidden or gone.
+     */
     public data class UnknownSession(
         val id: SessionId,
     ) : SessionError

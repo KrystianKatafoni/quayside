@@ -39,6 +39,7 @@ import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.core.testing.TestClock
+import dev.quayside.missioncontrol.ui.HistorySettingsDialog
 import dev.quayside.missioncontrol.ui.MissionControlController
 import dev.quayside.missioncontrol.ui.NewAgentController
 import dev.quayside.missioncontrol.ui.NewAgentDialog
@@ -56,6 +57,7 @@ import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.ui.DirectoryPicker
+import dev.quayside.projects.ui.PastSessionsPorts
 import dev.quayside.projects.ui.ProjectHooks
 import dev.quayside.projects.ui.ProjectHooksError
 import dev.quayside.projects.ui.ProjectHooksState
@@ -141,6 +143,13 @@ internal class WindowSetup(
     /** The version of Claude Code the status bar shows, as `readSupervisor` would give it; null = unknown. */
     var supervisor: String? = null
 
+    /**
+     * true: the add flow of the sidebar also asks about the disk sessions of the new project (FR-P9, AM-312): the
+     * ports get [FakeSessions.historySettings] and "Pokaż" selects the filter "Zakończone" in Mission Control, the
+     * way `Main` wires it. Off by default so that the other window tests keep the plain add dialog.
+     */
+    var pastSessions: Boolean = false
+
     /** The resizable terminal pane (AM-819): the layout store and the height of the window container. */
     val panes = PaneSetup()
 }
@@ -150,9 +159,12 @@ internal class CountingPicker : DirectoryPicker {
     var picks: Int = 0
         private set
 
+    /** What the chooser answers; null (the default) = cancelled. */
+    var answer: Path? = null
+
     override suspend fun pick(): Path? {
         picks++
-        return null
+        return answer
     }
 }
 
@@ -210,13 +222,15 @@ private fun WindowContent(
         val mode = remember { terminal.controller?.let { windowMode(it, registry, scope) } }
         val parts = WindowParts(projects, missionControl, scope, setup.projects.projects)
         val notifications = remember { notificationsOf(setup, parts) }
+        val history = remember { historyOf(setup.sessions, registry, projects, missionControl, scope) }
         KeysBox(keys) {
             QuaysideApp(
                 controllers = AppControllers(projects, missionControl, palette),
                 terminal = remember(terminal.controller) { slotOf(setup, terminal, mode) },
-                chrome = chromeOf(setup, agent, notifications, this),
+                chrome = chromeOf(setup, agent, notifications, this).withHistory(history),
             )
             SettingsHosts(setup.settings, registry, parts, notifications)
+            HistorySettingsDialog(history)
             NewAgentDialog(agent.newAgent)
         }
     }
@@ -311,8 +325,12 @@ private fun windowCore(
     scope: CoroutineScope,
     onPalette: (CommandPaletteController) -> Unit,
 ): WindowCore {
-    val controller = projectsController(setup.projects, setup.sessions, setup.projectHooks, setup.picker, scope)
-    val missionControl = missionControlController(setup.projects, setup.sessions, controller, scope)
+    var shown: MissionControlController? = null
+    val past =
+        PastSessionsPorts(setup.sessions.historySettings) { shown?.showFinished(it) }.takeIf { setup.pastSessions }
+    val ports = ProjectsPorts(setup.picker, setup.projectHooks, past)
+    val controller = projectsController(setup.projects, setup.sessions, ports, scope)
+    val missionControl = missionControlController(setup.projects, setup.sessions, controller, scope).also { shown = it }
     val registry = FakeCommandRegistry(scope)
     val palette = CommandPaletteController(registry, scope, NoOpLogger).also(onPalette)
     registry.register(AppCommands(setup.projects, controller, missionControl, palette, scope))
@@ -596,15 +614,14 @@ private fun KeysBox(
 private fun projectsController(
     projects: FakeProjectsApi,
     sessions: FakeSessions,
-    hooks: ProjectHooks,
-    picker: DirectoryPicker,
+    ports: ProjectsPorts,
     scope: CoroutineScope,
 ): ProjectsController =
     ProjectsController(
         projects = projects,
         inspector = FakeProjectInspector(projects = projects),
         sessions = SessionsApi(monitor = sessions, commands = sessions),
-        ports = ProjectsPorts(picker, hooks),
+        ports = ports,
         scope = scope,
         logger = NoOpLogger,
     )

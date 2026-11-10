@@ -14,9 +14,11 @@ import dev.quayside.core.testing.T0
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.aProject
 import dev.quayside.projects.api.subfolderNames
+import dev.quayside.sessions.api.FakeSessionHistorySettings
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsWorld
+import dev.quayside.sessions.api.WorldPastSession
 import dev.quayside.sessions.api.WorldProject
 import dev.quayside.sessions.api.WorldSession
 import java.nio.file.Files
@@ -50,7 +52,11 @@ internal class CountersWorld(
         index: Long,
     ) = WorldSession(SessionId(id), plantDir.resolve(cwd), state, id, T0.plusSeconds(index))
 
-    fun fake(vararg sessions: WorldSession): FakeSessions =
+    fun fake(
+        vararg sessions: WorldSession,
+        past: List<WorldPastSession> = emptyList(),
+        settings: FakeSessionHistorySettings = FakeSessionHistorySettings(),
+    ): FakeSessions =
         FakeSessions(
             SessionsWorld(
                 projects =
@@ -59,7 +65,9 @@ internal class CountersWorld(
                         WorldProject(other.id, other.dir),
                     ),
                 sessions = sessions.toList(),
+                pastSessions = past,
             ),
+            historySettings = settings,
         )
 }
 

@@ -2,10 +2,12 @@ package dev.quayside.sessions.impl
 
 import dev.quayside.agentruntime.api.AgentEventSource
 import dev.quayside.agentruntime.api.AgentRuntime
+import dev.quayside.agentruntime.api.SessionHistory
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Logger
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.RuntimeProblem
+import dev.quayside.sessions.api.SessionHistorySettingsRepo
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsSnapshot
@@ -53,6 +55,10 @@ import kotlin.time.Duration.Companion.seconds
  * unknown (tests that must not leave the test scheduler). A missing file is an unknown value, never an error.
  * It also runs the disk check of a start in a subfolder (`NOFOLLOW_LINKS`, AM-308); with null the check is skipped
  * and a missing directory is reported by the runtime as `COMMAND_FAILED`.
+ * @param history the session files of Claude Code (ADR 0032); with [historySettings] the snapshot also lists them as
+ * disk sessions (FR-P9), scanned at start, after a change of the project dirs or of the settings, and every 60 s;
+ * null = no disk sessions and an empty [dev.quayside.sessions.api.SessionsSnapshot.history].
+ * @param historySettings age and count limit and the hidden sessions; null together with [history] = defaults.
  * @throws IllegalArgumentException if [pollInterval] is not positive or [maxRetryInterval] is shorter.
  */
 @Suppress("LongParameterList")
@@ -68,7 +74,10 @@ public fun sessionsModule(
     summaries: SummariesApi? = null,
     claudeHome: Path? = null,
     io: CoroutineDispatcher? = null,
+    history: SessionHistory? = null,
+    historySettings: SessionHistorySettingsRepo? = null,
 ): SessionsApi {
+    val scan = history?.let { HistoryScan(it, historySettings ?: InMemoryHistorySettings(), projects, clock, logger) }
     val refinement = summaries?.refiner?.let { SummaryRefinement(it, scope, logger) }
     val state =
         SessionsState(
@@ -78,6 +87,7 @@ public fun sessionsModule(
             COMMAND_OVERLAY_TTL,
             summaries = TurnSummaries(summaries?.summarizer, refinement),
             metas = io?.let { FileSessionMetaSource(claudeHome, it) } ?: NoSessionMetas,
+            disk = scan,
         )
     val monitor =
         PollingSessionMonitor(
@@ -88,12 +98,15 @@ public fun sessionsModule(
             reader = RecentOutputReader(runtime, logger),
             hooks = hooks,
         ).also { it.start(scope) }
-    val isDirectory: suspend (Path) -> Boolean =
-        if (io == null) {
-            { true }
-        } else {
-            { dir -> withContext(io) { Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS) } }
-        }
-    val commands = RuntimeSessionCommands(runtime, StartDirs(projects, isDirectory), state, clock, logger)
+    scan?.start(scope, state::republishDisk)
+    val commands = RuntimeSessionCommands(runtime, StartDirs(projects, directoryCheck(io)), state, clock, logger)
     return SessionsApi(monitor = monitor, commands = commands)
 }
+
+/** The disk check of a start in a subfolder (`NOFOLLOW_LINKS`, AM-308); without [io] every directory passes. */
+private fun directoryCheck(io: CoroutineDispatcher?): suspend (Path) -> Boolean =
+    if (io == null) {
+        { true }
+    } else {
+        { dir -> withContext(io) { Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS) } }
+    }

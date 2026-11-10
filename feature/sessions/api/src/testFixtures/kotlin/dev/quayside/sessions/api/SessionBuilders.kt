@@ -28,3 +28,31 @@ public fun aNewSessionSpec(
     name: String? = "fix-login",
     subfolder: String? = null,
 ): NewSessionSpec = NewSessionSpec(prompt = prompt, name = name, subfolder = subfolder)
+
+/** UUID of the default [pastSession]. */
+public const val A_PAST_UUID: String = "0b7e5c1e-3f4a-4d8b-9a51-2c6f0e9d1a77"
+
+/**
+ * A session read from disk (FR-P9): stopped, named by [name], the UUID as id, [SessionOrigin.DISK]. Not the output of
+ * a fake: what a listing of a [WorldPastSession] must give.
+ */
+public fun pastSession(
+    id: String = A_PAST_UUID,
+    project: ProjectId? = ProjectId("agent-manager"),
+    cwd: Path = A_SESSION_CWD,
+    name: String = "Fix the login bug",
+    startedAt: Instant = T0,
+    lastActivityAt: Instant = startedAt,
+): Session =
+    Session(
+        SessionId(id),
+        project,
+        name,
+        cwd,
+        SessionState.Stopped,
+        startedAt,
+        lastActivityAt,
+        summary = null,
+        meta = SessionMeta(),
+        origin = SessionOrigin.DISK,
+    )

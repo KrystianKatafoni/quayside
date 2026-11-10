@@ -36,4 +36,6 @@ public enum class ProjectHooksError { UNREADABLE, WRITE_FAILED }
 public class ProjectsPorts(
     public val picker: DirectoryPicker,
     public val hooks: ProjectHooks,
+    /** The disk sessions of a new project (FR-P9); null = the add flow ends with the project (no wait, no choices). */
+    public val past: PastSessionsPorts? = null,
 )

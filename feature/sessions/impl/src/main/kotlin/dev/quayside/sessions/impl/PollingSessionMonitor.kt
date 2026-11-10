@@ -15,6 +15,7 @@ import dev.quayside.sessions.api.RecentOutput
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SessionMonitor
+import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionsSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -49,7 +50,12 @@ internal class PollingSessionMonitor(
 
     override val events: Flow<SessionEvent> get() = state.events
 
-    override suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError> = reader.read(id)
+    override suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError> =
+        if (snapshot.value.sessions.any { it.id == id && it.origin == SessionOrigin.DISK }) {
+            Outcome.Err(SessionError.UnknownSession(id))
+        } else {
+            reader.read(id)
+        }
 
     /**
      * Starts the project watcher, the hook collector and the loop; all stop when [scope] is cancelled. The

@@ -35,3 +35,17 @@ public fun anEventMeta(
     cwd: Path = A_PROJECT_DIR,
     at: Instant = T0,
 ): EventMeta = EventMeta(conversationId, cwd, at)
+
+/** UUIDs of the default past conversations of the history tests. */
+public const val A_CONVERSATION_UUID: String = "0b7e5c1e-3f4a-4d8b-9a51-2c6f0e9d1a77"
+
+public fun aPastConversation(
+    conversationId: ConversationId = aConversationId(A_CONVERSATION_UUID),
+    startCwd: Path = A_PROJECT_DIR,
+    startedAt: Instant? = T0,
+    lastActivityAt: Instant? = T0.plusSeconds(60),
+    modifiedAt: Instant = T0.plusSeconds(60),
+    cwdChanged: Boolean = false,
+    title: String? = "Fix the login bug",
+): PastConversation =
+    PastConversation(conversationId, startCwd, startedAt, lastActivityAt, modifiedAt, cwdChanged, title)

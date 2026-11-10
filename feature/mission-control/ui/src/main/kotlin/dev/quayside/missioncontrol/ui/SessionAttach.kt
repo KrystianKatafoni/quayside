@@ -3,6 +3,7 @@ package dev.quayside.missioncontrol.ui
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.Session
+import dev.quayside.sessions.api.SessionOrigin
 
 /**
  * The selected session to attach to: `⏎` (AM-505) and `r` (AM-506, only when [waiting]). Holds its [session] id,
@@ -20,13 +21,13 @@ public data class AttachTarget(
 
 /** When `⏎` and `r` can attach (AM-505, AM-506, table 1). */
 internal object SessionAttach {
-    /** The target for [session], or null without a session, outside [projects] or while a dialog is open. */
+    /** The target for [session], or null without a session, for a disk session, outside [projects] or in a dialog. */
     fun targetOf(
         session: Session?,
         projects: List<Project>,
         dialogOpen: Boolean,
     ): AttachTarget? {
-        if (session == null || dialogOpen) return null
+        if (session == null || dialogOpen || session.origin == SessionOrigin.DISK) return null
         val project = projects.firstOrNull { it.id == session.project }
         return project?.let { AttachTarget(session.id, session.name, it, session.state.isWaiting) }
     }

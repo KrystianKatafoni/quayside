@@ -3,6 +3,7 @@ package dev.quayside.missioncontrol.ui
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.Session
+import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 
@@ -25,10 +26,14 @@ internal data class ActionUi(
 
 /** A dialog of Mission Control over the window (AM-410). */
 internal sealed interface SessionDialog {
-    /** Asks to confirm removing session [id] from the list; [name] is shown only, never logged. */
+    /**
+     * Asks to confirm removing session [id] from the list; [name] is shown only, never logged. [fromDisk]: a disk
+     * session, which is hidden for good while its session file stays (FR-P9), and the hint says so.
+     */
     data class ConfirmRemove(
         val id: SessionId,
         val name: String,
+        val fromDisk: Boolean = false,
     ) : SessionDialog
 }
 
@@ -41,13 +46,18 @@ internal object SessionActions {
         projects: List<Project>,
     ): Session? = SessionScope.visible(sessions, selection, projects).find { it.id == selection.session }
 
-    /** Active sessions can be stopped, the others respawned or removed; nothing while an action or a dialog is open. */
+    /**
+     * Active sessions can be stopped, the others respawned or removed; a disk session ([SessionOrigin.DISK]) can only
+     * be removed (hidden, FR-P9); nothing while an action or a dialog is open.
+     */
     fun available(
         state: SessionState,
         busy: Boolean,
+        origin: SessionOrigin = SessionOrigin.SUPERVISOR,
     ): Set<SessionAction> =
         when {
             busy -> emptySet()
+            origin == SessionOrigin.DISK -> setOf(SessionAction.REMOVE)
             state.isActive -> setOf(SessionAction.STOP)
             else -> setOf(SessionAction.RESPAWN, SessionAction.REMOVE)
         }
@@ -69,7 +79,12 @@ internal fun MissionControlUiState.withActions(
         details.copy(
             canAttach = attach != null,
             canReply = attach?.waiting == true,
-            actions = SessionActions.available(target.state, busy = acting.busy != null || acting.dialog != null),
+            actions =
+                SessionActions.available(
+                    target.state,
+                    busy = acting.busy != null || acting.dialog != null,
+                    origin = target.origin,
+                ),
             busy = acting.busy?.takeIf { it.first == details.id }?.second,
             failure = acting.failure?.takeIf { it.id == details.id },
         )

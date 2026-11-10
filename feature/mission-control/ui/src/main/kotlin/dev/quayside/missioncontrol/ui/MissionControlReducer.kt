@@ -5,6 +5,7 @@ import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectGroups
 import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.Session
+import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.sessions.api.SnapshotStatus
@@ -86,6 +87,7 @@ internal object MissionControlReducer {
             loading = loading,
             stats = SessionStats.of(mine.map { it.state }),
             overview = if (subfolder == null && !loading) GroupOverviews.of(project, snapshot.sessions) else null,
+            older = if (subfolder == null) snapshot.history[project.id]?.older ?: 0 else 0,
         )
     }
 
@@ -124,6 +126,7 @@ internal object MissionControlReducer {
             selected = selected,
             project = project,
             place = place,
+            fromDisk = session.origin == SessionOrigin.DISK,
         )
 
     private fun details(session: Session): SessionDetails =
@@ -136,6 +139,7 @@ internal object MissionControlReducer {
             startedAt = session.startedAt,
             lastActivityAt = session.lastActivityAt,
             meta = session.meta,
+            fromDisk = session.origin == SessionOrigin.DISK,
         )
 }
 

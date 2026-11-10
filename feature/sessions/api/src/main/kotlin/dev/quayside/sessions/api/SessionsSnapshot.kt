@@ -8,10 +8,13 @@ import java.time.Instant
  *
  * @property sessions ordered by [Session.startedAt], then by [Session.id].
  * @property status whether [sessions] come from a successful listing.
+ * @property history disk sessions of each project after the last scan (FR-P9); a key exists for every scanned
+ *   project, also with zeros. Empty until the first scan and without a history source.
  */
 public data class SessionsSnapshot(
     val sessions: List<Session>,
     val status: SnapshotStatus,
+    val history: Map<ProjectId, ProjectHistory> = emptyMap(),
 ) {
     /**
      * Pure: active sessions (see [SessionState.isActive]) whose [Session.project] is [project]
@@ -30,6 +33,17 @@ public data class SessionsSnapshot(
         public val Initial: SessionsSnapshot = SessionsSnapshot(emptyList(), SnapshotStatus.Loading)
     }
 }
+
+/**
+ * Disk sessions of one project after the last scan.
+ *
+ * @property shown disk sessions in [SessionsSnapshot.sessions].
+ * @property older disk sessions left out because of the count limit (the oldest ones); hidden ones are not counted.
+ */
+public data class ProjectHistory(
+    val shown: Int,
+    val older: Int,
+)
 
 /**
  * Active sessions of one project.

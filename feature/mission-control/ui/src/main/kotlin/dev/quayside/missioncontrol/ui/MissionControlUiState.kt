@@ -57,6 +57,9 @@ internal sealed interface MissionControlEvent {
     /** "Odpowiedz" in the details panel or the row menu (AM-511); `app` handles it. */
     data object Reply : MissionControlEvent
 
+    /** "Zmień limit" in the row "jeszcze N starszych" (FR-P9); `app` opens the settings window. */
+    data object ChangeHistoryLimit : MissionControlEvent
+
     /** A click on a subfolder row of the group overview (AM-307); `app` selects that focus in the sidebar. */
     data class OpenSubfolder(
         val focus: ProjectFocus,
@@ -101,6 +104,8 @@ internal sealed interface Screen {
      * @property loading the snapshot is [dev.quayside.sessions.api.SnapshotStatus.Loading]: "Wczytywanie sesji…".
      * @property details null without a (visible) selected session: "Wybierz sesję".
      * @property banner the stale text of [Freshness] when the snapshot is stale, else null.
+     * @property older disk sessions of the project that the count limit cut off (FR-P9): the "jeszcze N starszych"
+     *   row; 0 = no row. Only on the group page, not on a subfolder page.
      */
     data class Project(
         val header: ProjectHeader,
@@ -111,6 +116,7 @@ internal sealed interface Screen {
         val loading: Boolean,
         val stats: SessionStats = SessionStats(),
         val overview: GroupOverview? = null,
+        val older: Int = 0,
     ) : Screen
 
     /** A global view: sessions of every project, [sessions] of them, without filter tabs. */
@@ -156,12 +162,15 @@ internal data class SessionRow(
     val project: UiText? = null,
     /** Where the session runs, on the group page only (AM-310); null = no badge. */
     val place: UiText? = null,
+    /** The session was read from a session file only (FR-P9): the row has the "z dysku" badge. */
+    val fromDisk: Boolean = false,
 )
 
 /**
  * FR-S8, only the fields `sessions:api` has. [worktree] is the session cwd.
  * @property canAttach `⏎` and the "Attach" controls apply ([SessionActionsState.canAttach]).
  * @property canReply [canAttach] and the session waits for the user ([SessionActionsState.canReply]).
+ * @property fromDisk read from a session file only (FR-P9): no "Podgląd", no output to read.
  */
 internal data class SessionDetails(
     val id: SessionId,
@@ -177,6 +186,7 @@ internal data class SessionDetails(
     val failure: Failure? = null,
     val canAttach: Boolean = false,
     val canReply: Boolean = false,
+    val fromDisk: Boolean = false,
 )
 
 /** @property waiting @property working counted over the sessions of every project. */

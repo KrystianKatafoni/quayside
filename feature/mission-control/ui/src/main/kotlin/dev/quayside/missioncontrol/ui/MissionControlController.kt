@@ -2,11 +2,13 @@ package dev.quayside.missioncontrol.ui
 
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Logger
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionMonitor
+import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsSnapshot
 import kotlinx.coroutines.CoroutineScope
@@ -158,6 +160,15 @@ public class MissionControlController(
             ui.value.dialog != null,
         )
 
+    /**
+     * Shows [project] on the filter "Zakończone" in one step (FR-P9, the answer "Pokaż" after adding a folder). The
+     * sidebar selects the same project a moment later; a focus on the shown project keeps the filter, whereas
+     * selecting the project first and the filter second would lose the filter to the reset of a new project.
+     */
+    public fun showFinished(project: ProjectId) {
+        selection.value = Selection(project = project, filter = SessionFilter.FINISHED)
+    }
+
     /** Handles [intent] from the palette and window keys; ignored without a shown project, view or rows. */
     public fun onIntent(intent: MissionControlIntent) {
         when (intent) {
@@ -192,8 +203,9 @@ public class MissionControlController(
     private fun askToRemove() {
         val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value)
         if (ui.value.busy != null || ui.value.dialog != null || target == null) return
-        if (SessionAction.REMOVE !in SessionActions.available(target.state, busy = false)) return
-        ui.value = ActionUi(dialog = SessionDialog.ConfirmRemove(target.id, target.name))
+        if (SessionAction.REMOVE !in SessionActions.available(target.state, busy = false, target.origin)) return
+        ui.value =
+            ActionUi(dialog = SessionDialog.ConfirmRemove(target.id, target.name, target.origin == SessionOrigin.DISK))
     }
 
     /**
@@ -212,7 +224,7 @@ public class MissionControlController(
     private fun run(action: SessionAction) {
         val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value)
         if (ui.value.busy != null || ui.value.dialog != null || target == null) return
-        if (action !in SessionActions.available(target.state, busy = false)) return
+        if (action !in SessionActions.available(target.state, busy = false, target.origin)) return
         launchAction(action, target.id)
     }
 
@@ -256,7 +268,11 @@ public class MissionControlController(
 
             // `app`'s job, not the controller's: MissionControl routes these to its callbacks (Attach and Reply open
             // a terminal tab, AM-511; OpenSubfolder selects the subfolder in the sidebar, AM-307).
-            MissionControlEvent.Attach, MissionControlEvent.Reply, is MissionControlEvent.OpenSubfolder -> Unit
+            MissionControlEvent.Attach,
+            MissionControlEvent.Reply,
+            MissionControlEvent.ChangeHistoryLimit,
+            is MissionControlEvent.OpenSubfolder,
+            -> Unit
         }
     }
 }
@@ -278,13 +294,13 @@ private fun actionsOf(
     val target = SessionActions.target(snapshot.sessions, picked, projects)
     val attach = SessionAttach.targetOf(target, projects, acting.dialog != null)
     val blocked = acting.busy != null || acting.dialog != null
-    val available = target?.let { SessionActions.available(it.state, blocked) }.orEmpty()
+    val available = target?.let { SessionActions.available(it.state, blocked, it.origin) }.orEmpty()
     return SessionActionsState(
         canStop = SessionAction.STOP in available,
         canRespawn = SessionAction.RESPAWN in available,
         canRemove = SessionAction.REMOVE in available,
         dialogOpen = acting.dialog != null,
-        canPreview = target != null && acting.dialog == null,
+        canPreview = target?.origin == SessionOrigin.SUPERVISOR && acting.dialog == null,
         previewOpen = previewOpen,
         canAttach = attach != null,
         canReply = attach?.waiting == true,

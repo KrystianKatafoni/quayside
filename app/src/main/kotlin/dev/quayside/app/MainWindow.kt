@@ -16,6 +16,7 @@ import dev.quayside.commandpalette.api.CommandRegistry
 import dev.quayside.commandpalette.ui.CommandPaletteController
 import dev.quayside.core.designsystem.AmModalGate
 import dev.quayside.core.designsystem.LocalAmModalGate
+import dev.quayside.missioncontrol.ui.HistorySettingsDialog
 import dev.quayside.missioncontrol.ui.NewAgentDialog
 import dev.quayside.notifications.ui.NotificationSettingsDialog
 import dev.quayside.summaries.ui.SummarySettingsDialog
@@ -101,6 +102,7 @@ private fun chromeOf(
                 controllers.notificationSettings::open,
             ),
         supervisor = supervisor,
+        onHistorySettings = controllers.historySettings::open,
     )
 }
 
@@ -114,6 +116,7 @@ private fun WindowDialogs(
     TerminalSettingsDialog(controllers.terminalSettings)
     NotificationSettingsDialog(controllers.notificationSettings, controllers.soundPreview)
     SummarySettingsDialog(controllers.summarySettings)
+    HistorySettingsDialog(controllers.historySettings)
     HookSetupDialog(controllers.hookSetup, hooks.backupDir)
 }
 

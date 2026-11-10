@@ -57,12 +57,13 @@ internal fun SessionRows(
     details: SessionDetails?,
     onEvent: (MissionControlEvent) -> Unit,
     modifier: Modifier,
+    older: Int = 0,
 ) {
     var menuFor by remember { mutableStateOf<SessionId?>(value = null) }
     val selectedId = rows.firstOrNull { it.selected }?.id
     LaunchedEffect(selectedId) { if (menuFor != selectedId) menuFor = null }
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
-        if (rows.isNotEmpty()) {
+        if (rows.isNotEmpty() || older > 0) {
             ListCard {
                 rows.forEachIndexed { index, row ->
                     if (index > 0) Separator()
@@ -72,6 +73,10 @@ internal fun SessionRows(
                             menuFor = if (open) row.id else null
                         }
                     SessionRowView(row, shown, menu, onEvent)
+                }
+                if (older > 0) {
+                    if (rows.isNotEmpty()) Separator()
+                    OlderRow(older, onEvent)
                 }
             }
         }
@@ -179,9 +184,23 @@ private fun RowScope.RowCells(row: SessionRow) {
         if (metrics.twoLines) AmText(row.summary.orEmpty(), role = TextRole.CAPTION, color = mutedColor())
     }
     row.project?.let { AmText(MissionControlStrings.format(it), color = mutedColor()) }
+    if (row.fromDisk) DiskBadge(row.id)
     row.place?.let { PlaceBadge(row.id, it) }
     AmChip(MissionControlStrings.format(row.lastEvent), tone = row.glyph.tone)
     AmText(MissionControlStrings.format(row.age), color = mutedColor())
+}
+
+/**
+ * The session was read from a session file only (FR-P9): a neutral chip with the text "z dysku", read with a longer
+ * description, so the meaning is not in the colour.
+ */
+@Composable
+private fun DiskBadge(id: SessionId) {
+    AmChip(
+        label = MissionControlStrings["row.fromDisk"],
+        modifier = Modifier.testTag(HistoryTags.rowDisk(id)),
+        description = MissionControlStrings["row.fromDisk.description"],
+    )
 }
 
 /**

@@ -24,8 +24,8 @@ public class NewAgentAction(
 )
 
 /**
- * What `app` does on Attach, Reply and a click on a subfolder row; [keyCaps] null hides the shortcut marks;
- * [newAgent] null = no "Nowy agent" button. Not a data class (lambdas never compare equal).
+ * What `app` does on Attach, Reply, a click on a subfolder row and on the link "Zmień limit"; [keyCaps] null hides
+ * the shortcut marks; [newAgent] null = no "Nowy agent" button. Not a data class (lambdas never compare equal).
  */
 public class MissionControlHandlers(
     public val onAttach: () -> Unit = {},
@@ -37,6 +37,8 @@ public class MissionControlHandlers(
      */
     public val onOpenSubfolder: (ProjectFocus) -> Unit = {},
     public val newAgent: NewAgentAction? = null,
+    /** "Zmień limit" in the row "jeszcze N starszych" (FR-P9); `app` opens the window "Stare sesje z dysku". */
+    public val onChangeHistoryLimit: () -> Unit = {},
 )
 
 /** The "Nowy agent" button of the handlers for the page headers; null = none. */

@@ -82,7 +82,8 @@ private fun ConfirmRemove(
             AmText(MissionControlStrings["confirmRemove.title"], role = TextRole.HEADING)
             // The name is user data: shown here, never logged (ENG-C8).
             AmText(dialog.name, role = TextRole.CODE, maxLines = Int.MAX_VALUE)
-            AmText(MissionControlStrings["confirmRemove.hint"], color = mutedColor(), maxLines = Int.MAX_VALUE)
+            val hint = if (dialog.fromDisk) "confirmRemove.hint.disk" else "confirmRemove.hint"
+            AmText(MissionControlStrings[hint], color = mutedColor(), maxLines = Int.MAX_VALUE)
             Button("confirmRemove.confirm", MissionControlTags.CONFIRM_REMOVE_OK) {
                 onEvent(MissionControlEvent.ConfirmRemove)
             }

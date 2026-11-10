@@ -37,6 +37,7 @@ import androidx.compose.ui.window.PopupProperties
 import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.TextRole
 import dev.quayside.core.designsystem.amScrim
+import dev.quayside.core.domain.PluralForm
 
 /**
  * The open [dialog] over the whole window, inside it rather than a separate window (AM-304 plan, decision 4).
@@ -84,6 +85,8 @@ private fun DialogContent(
         is Dialog.Subfolders -> SubfoldersDialog(dialog, onEvent)
 
         is Dialog.Message -> Message(dialog.text, cancel)
+
+        is Dialog.PastSessions -> PastSessionsDialog(dialog, onEvent)
     }
 }
 
@@ -115,9 +118,36 @@ private fun ConfirmAdd(
         // The path is user data: shown here, never logged (ENG-C8, KDoc of `ProjectError`).
         DialogText(dialog.report.dir.toString())
         ReportSummary.lines(dialog.report).forEach { DialogText(ProjectsStrings.format(it), muted = true) }
+        dialog.history?.let { HistoryChoices(it, onEvent) }
         dialog.error?.let { DialogText(ProjectsStrings.format(it)) }
         DialogButton(ProjectsStrings["add.confirm"], ProjectsTags.ADD) { onEvent(SidebarEvent.ConfirmAdd) }
         Cancel { onEvent(SidebarEvent.Dismiss) }
+    }
+}
+
+/**
+ * "Znaleziono N starych sesji" (FR-P9): "Pokaż" opens the project on the filter "Zakończone", "Nie teraz" only closes.
+ * The start focus is on "Nie teraz", the answer that changes nothing (NFR-5).
+ */
+@Composable
+private fun PastSessionsDialog(
+    dialog: Dialog.PastSessions,
+    onEvent: (SidebarEvent) -> Unit,
+) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    val counts = dialog.counts
+    Panel(
+        ProjectsTags.PAST_DIALOG,
+        ProjectsStrings.format(UiText("past.title.${PluralForm.of(counts.total).key}", listOf("${counts.total}"))),
+    ) {
+        if (counts.inSubfolders != null && counts.inRoot != null) {
+            val split = UiText("past.split", listOf("${counts.inSubfolders}", "${counts.inRoot}"))
+            DialogText(ProjectsStrings.format(split), muted = true)
+        }
+        DialogText(ProjectsStrings["past.ask"])
+        DialogButton(ProjectsStrings["past.show"], ProjectsTags.PAST_SHOW) { onEvent(SidebarEvent.ShowPastSessions) }
+        DialogButton(ProjectsStrings["past.later"], ProjectsTags.PAST_LATER, focus) { onEvent(SidebarEvent.Dismiss) }
     }
 }
 

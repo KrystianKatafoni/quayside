@@ -2,7 +2,6 @@ package dev.quayside.missioncontrol.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.v2.runComposeUiTest
 import dev.quayside.core.domain.SessionId
@@ -11,9 +10,9 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
 /**
- * The chips of the group overview (FR-P6, FR-P8, AM-310): waiting, working, failed in that order, none for a state at
- * zero or for finished sessions, no old "brak agentów", and no row for the main folder. Subfolders are `bob`, `Carl`,
- * `Anna`.
+ * The chips of the group overview (FR-P6, FR-P8, AM-310): waiting, working, done, failed in that order, none for a
+ * state at zero or for stopped sessions, no old "brak agentów", and no row for the main folder. Subfolders are `bob`,
+ * `Carl`, `Anna`.
  */
 @OptIn(ExperimentalTestApi::class)
 internal class GroupOverviewCountersScreenTest {
@@ -34,32 +33,29 @@ internal class GroupOverviewCountersScreenTest {
         )
 
     @Test
-    fun `overview chips keep the order waiting working failed and have none for done`() =
+    fun `overview chips keep the order waiting working done failed`() =
         runComposeUiTest {
             // Given a subfolder with 2 waiting, 1 working, 3 done and 4 failed sessions
             showGroup(carlSessions())
             overviewRow("Carl")
 
-            // Then the chips are announced in that order, without one for the 3 done sessions ...
-            val expected = listOf("czeka: 2", "pracuje: 1", "błąd: 4")
+            // Then the chips are announced in that order, with "gotowe: 3" for the 3 done sessions ...
+            val expected = listOf("czeka: 2", "pracuje: 1", "gotowe: 3", "błąd: 4")
             counterTexts(carl) shouldBe expected
             // ... and drawn from left to right in that order, each in its own place
             val lefts = expected.map { counterNode(carl, it).fetchSemanticsNode().boundsInRoot.left }
             lefts shouldBe lefts.sorted()
-            lefts.toSet().size shouldBe 3
-            onAllNodes(hasContentDescription("gotowe", substring = true) and inTag(carl), useUnmergedTree = true)
-                .assertCountEquals(0)
+            lefts.toSet().size shouldBe 4
         }
 
     @Test
     fun `row without sessions has no chips and no idle text`() =
         runComposeUiTest {
-            // Given a group where only Anna has a session, and Carl only finished ones
+            // Given a group where only Anna has a session, and Carl only a stopped one
             showGroup(
                 listOf(
                     groupSession("a", "Anna", SessionState.Working, 1),
-                    groupSession("c", "Carl", SessionState.Done, 2),
-                    groupSession("c2", "Carl", SessionState.Stopped, 3),
+                    groupSession("c", "Carl", SessionState.Stopped, 2),
                 ),
             )
             overviewRow("Anna")

@@ -36,6 +36,7 @@ internal class GlobalViewTest {
             mapOf(
                 GlobalView.WAITING to setOf("AwaitingInput", "AwaitingPermission", "AwaitingPermission without tool"),
                 GlobalView.WORKING to setOf("Working"),
+                GlobalView.DONE to setOf("Done"),
                 GlobalView.FAILED to setOf("Failed"),
             )
 

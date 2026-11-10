@@ -29,6 +29,7 @@ class CrumbsTest {
                 arguments("project page", "Agent Manager", null, null, listOf("Quayside", "Agent Manager")),
                 arguments("waiting view", null, GlobalView.WAITING, null, listOf("Quayside", "Czeka na mnie")),
                 arguments("working view", null, GlobalView.WORKING, null, listOf("Quayside", "Pracuje")),
+                arguments("done view", null, GlobalView.DONE, null, listOf("Quayside", "Gotowe")),
                 arguments("failed view", null, GlobalView.FAILED, null, listOf("Quayside", "Błędy")),
                 arguments(
                     "view wins over a project",

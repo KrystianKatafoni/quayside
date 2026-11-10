@@ -30,9 +30,9 @@ import org.junit.jupiter.api.Test
 import java.util.Locale
 
 /**
- * The "Podfoldery" overview on the group page (FR-P8, AM-307, AM-310): rows, order, the chips of waiting, working and
- * failed, no row for the main folder, and the way the rows take clicks and keys. Subfolders are `bob`, `Carl`, `Anna`;
- * none is named like a fixed text.
+ * The "Podfoldery" overview on the group page (FR-P8, AM-307, AM-310): rows, order, the chips of waiting, working,
+ * done and failed, no row for the main folder, and the way the rows take clicks and keys. Subfolders are `bob`,
+ * `Carl`, `Anna`; none is named like a fixed text.
  */
 @OptIn(ExperimentalTestApi::class)
 internal class GroupOverviewScreenTest {
@@ -50,7 +50,7 @@ internal class GroupOverviewScreenTest {
     @Test
     fun `group page shows a row per subfolder with chips of its non-zero states`() =
         runComposeUiTest {
-            // Given a group where Carl waits and works, bob failed and Anna has only a finished session
+            // Given a group where Carl waits and works, bob failed and Anna has a finished session
             showGroup(busy())
 
             // Then the section is titled and every subfolder has a row
@@ -59,10 +59,10 @@ internal class GroupOverviewScreenTest {
             listOf("Anna", "bob", "Carl").forEach { overviewRow(it).assertExists() }
             textUnder(rowsOfCarl, "Carl").assertExists()
 
-            // And each row has chips only for its states above zero; Anna, with a finished session only, has none
+            // Each row has chips only for states above zero; Anna, with a finished session only, has just the green one
             counterTexts(rowsOfCarl) shouldBe listOf("czeka: 2", "pracuje: 1")
             counterTexts(MissionControlTags.overviewRow(sub("bob"))) shouldBe listOf("błąd: 1")
-            counterTexts(MissionControlTags.overviewRow(sub("Anna"))) shouldBe emptyList()
+            counterTexts(MissionControlTags.overviewRow(sub("Anna"))) shouldBe listOf("gotowe: 1")
         }
 
     @Test
@@ -183,8 +183,8 @@ internal class GroupOverviewScreenTest {
             showGroup(listOf(groupSession("loose", "", SessionState.Working, 1, big.id)), project = big)
             awaitTag(MissionControlTags.OVERVIEW)
 
-            // Then the card is at most 168 dp high: the first row shows, the last waits below
-            (awaitTag(MissionControlTags.OVERVIEW).getUnclippedBoundsInRoot().height <= 168.dp) shouldBe true
+            // Then the card is 168 dp of rows and 2 * 10 dp of padding high: the first row shows, the last waits
+            awaitTag(MissionControlTags.OVERVIEW).getUnclippedBoundsInRoot().height shouldBe (168 + 20).dp
             overviewRow("s01").assertIsDisplayed()
             overviewRow("s12").assertIsNotDisplayed()
             // And the session list under it is still on the screen

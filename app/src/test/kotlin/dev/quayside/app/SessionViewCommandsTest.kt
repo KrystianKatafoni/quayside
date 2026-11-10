@@ -35,7 +35,8 @@ class SessionViewCommandsTest {
 
     private fun List<Command>.ids(): List<String> = map { it.id.value }
 
-    private val viewIds = listOf("sessions.view.waiting", "sessions.view.working", "sessions.view.failed")
+    private val viewIds =
+        listOf("sessions.view.waiting", "sessions.view.working", "sessions.view.done", "sessions.view.failed")
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("views")
@@ -61,11 +62,14 @@ class SessionViewCommandsTest {
     fun `view commands are offered except the shown view`() {
         commands(view = null).ids() shouldContainAll viewIds
         commands(view = GlobalView.WAITING).ids().filter { it in viewIds } shouldBe
-            listOf("sessions.view.working", "sessions.view.failed")
+            listOf("sessions.view.working", "sessions.view.done", "sessions.view.failed")
         commands(view = GlobalView.WORKING).ids().filter { it in viewIds } shouldBe
-            listOf("sessions.view.waiting", "sessions.view.failed")
+            listOf("sessions.view.waiting", "sessions.view.done", "sessions.view.failed")
+        commands(view = GlobalView.DONE).ids().filter { it in viewIds } shouldBe
+            listOf("sessions.view.waiting", "sessions.view.working", "sessions.view.failed")
         commands(view = GlobalView.FAILED).ids().filter { it in viewIds } shouldBe
-            listOf("sessions.view.waiting", "sessions.view.working")
+            listOf("sessions.view.waiting", "sessions.view.working", "sessions.view.done")
+        commands(view = null).ids().filter { it in viewIds } shouldBe viewIds
     }
 
     @Test
@@ -114,6 +118,7 @@ class SessionViewCommandsTest {
                     GlobalView.WAITING,
                 ),
                 arguments("sessions.view.working", "Widok: Pracuje", listOf("working"), GlobalView.WORKING),
+                arguments("sessions.view.done", "Widok: Gotowe", listOf("done", "gotowe"), GlobalView.DONE),
                 arguments(
                     "sessions.view.failed",
                     "Widok: Błędy",

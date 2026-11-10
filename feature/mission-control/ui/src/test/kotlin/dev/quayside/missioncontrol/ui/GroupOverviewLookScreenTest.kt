@@ -80,7 +80,8 @@ internal class GroupOverviewLookScreenTest {
             show()
             awaitTag(WRAP)
 
-            val name = onAllNodes(hasText("Carl"), useUnmergedTree = true).onFirst().argbColors()
+            // (Anna, not Carl: at 4 px per dp the four chips of Carl leave its name no width in the test window)
+            val name = onAllNodes(hasText("Anna"), useUnmergedTree = true).onFirst().argbColors()
 
             // The name of a subfolder is plain text (not "not muted": a 70% blend of text over panel is exactly the
             // muted colour of the sample theme, so an anti-aliased glyph edge may have that value)
@@ -109,20 +110,43 @@ internal class GroupOverviewLookScreenTest {
 
         // Then it is pixel for pixel the AmChip of that state: tone fill, icon and number
         differences(drawn, awaitTag(ref).pixelMap()) shouldBe 0
-        // (the three states are drawn differently, so the match above is not by accident)
+        // (the four states are drawn differently, so the match above is not by accident)
         REFERENCES.filter { it.tag != ref }.forEach { other ->
             (differences(drawn, awaitTag(other.tag).pixelMap()) > 0) shouldBe true
         }
     }
 
     @Test
-    fun `finished sessions get no chip next to the three states`() =
+    fun `finished sessions get the green chip between working and failed`() =
         runComposeUiTest {
             show()
             val row = MissionControlTags.overviewRow(sub("Carl"))
             awaitTag(row)
 
-            counterTexts(row) shouldBe listOf("czeka: 1", "pracuje: 2", "błąd: 4")
+            counterTexts(row) shouldBe listOf("czeka: 1", "pracuje: 2", "gotowe: 3", "błąd: 4")
+        }
+
+    @Test
+    fun `tree guide runs unbroken from the first row to the middle of the last row`() =
+        runComposeUiTest {
+            show()
+            val map = awaitTag(WRAP).pixelMap()
+            val first = awaitTag(MissionControlTags.overviewRow(sub("Carl"))).fetchSemanticsNode().boundsInRoot
+            val last = awaitTag(MissionControlTags.overviewRow(sub("Anna"))).fetchSemanticsNode().boundsInRoot
+            val x = (OVERVIEW_GUIDE_X.value * SCALE).toInt()
+            val guide = colors.surfaces.border2.argb()
+            val lastMiddle = last.center.y.toInt()
+
+            // Then the vertical line is one colour from the top of the first row, across the border of both rows,
+            // down to the middle of the last row (an "L"); below it there is none
+            (first.top.toInt()..lastMiddle - SCALE).forEach { y -> apart(map.argbAt(x, y), guide) shouldBe false }
+            (lastMiddle + SCALE..last.bottom.toInt()).forEach { y -> apart(map.argbAt(x, y), guide) shouldBe true }
+            // And each row has a branch from the line to 32 dp, and none beyond it
+            listOf(first, last).forEach { row ->
+                val y = row.center.y.toInt()
+                (x until 32 * SCALE).forEach { px -> apart(map.argbAt(px, y), guide) shouldBe false }
+                (34 * SCALE until 36 * SCALE).forEach { px -> apart(map.argbAt(px, y), guide) shouldBe true }
+            }
         }
 
     /** Pixels of [a] that differ visibly from [b] (more than [TOLERANCE] in a channel; as in the sidebar test). */
@@ -165,6 +189,7 @@ internal class GroupOverviewLookScreenTest {
             listOf(
                 Reference("ref.waiting", "1", StatusTone.WARN, IconKind.WAITING),
                 Reference("ref.working", "2", StatusTone.WORK, IconKind.WORKING),
+                Reference("ref.done", "3", StatusTone.OK, IconKind.DONE),
                 Reference("ref.failed", "4", StatusTone.ERR, IconKind.FAILED),
             )
 
@@ -173,6 +198,7 @@ internal class GroupOverviewLookScreenTest {
             listOf(
                 arguments("ref.waiting", "czeka: 1"),
                 arguments("ref.working", "pracuje: 2"),
+                arguments("ref.done", "gotowe: 3"),
                 arguments("ref.failed", "błąd: 4"),
             )
     }

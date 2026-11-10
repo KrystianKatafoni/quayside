@@ -107,6 +107,7 @@ private fun lookOf(view: GlobalView): Pair<IconKind, StatusTone> =
     when (view) {
         GlobalView.WAITING -> IconKind.WAITING to StatusTone.WARN
         GlobalView.WORKING -> IconKind.WORKING to StatusTone.WORK
+        GlobalView.DONE -> IconKind.DONE to StatusTone.OK
         GlobalView.FAILED -> IconKind.FAILED to StatusTone.ERR
     }
 
@@ -129,7 +130,7 @@ internal fun GlobalPage(
 @Composable
 private fun GlobalHeader(page: Screen.Global) {
     Column(modifier = Modifier.testTag(MissionControlTags.HEADER)) {
-        AmText(page.view.title(), role = TextRole.TITLE)
+        TitleRow { AmText(page.view.title(), Modifier.weight(weight = 1f), role = TextRole.TITLE) }
         AmText(MissionControlStrings.formatted("header.global", page.sessions), color = mutedColor())
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
@@ -36,9 +37,9 @@ internal fun ProjectHeaderView(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().testTag(MissionControlTags.HEADER),
-        verticalArrangement = Arrangement.spacedBy(space = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(space = 12.dp),
     ) {
-        AmText(header.name, role = TextRole.TITLE)
+        TitleRow { AmText(header.name, Modifier.weight(weight = 1f), role = TextRole.TITLE) }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
@@ -47,6 +48,19 @@ internal fun ProjectHeaderView(
             HeaderChips(header, Modifier.weight(weight = 1f))
             Filters(filter, onEvent)
         }
+    }
+}
+
+/** A page title with the "Nowy agent" button at the right edge, on the same line. */
+@Composable
+internal fun TitleRow(title: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        title()
+        NewAgentButton()
     }
 }
 

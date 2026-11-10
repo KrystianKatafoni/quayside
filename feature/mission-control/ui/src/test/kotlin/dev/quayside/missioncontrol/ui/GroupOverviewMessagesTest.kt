@@ -16,6 +16,7 @@ internal class GroupOverviewMessagesTest {
         mcText("overview.title") shouldBe "Podfoldery"
         mcText("overview.count.waiting", "1") shouldBe "czeka: 1"
         mcText("overview.count.working", "1") shouldBe "pracuje: 1"
+        mcText("overview.count.done", "1") shouldBe "gotowe: 1"
         mcText("overview.count.failed", "1") shouldBe "błąd: 1"
     }
 
@@ -31,7 +32,6 @@ internal class GroupOverviewMessagesTest {
             listOf(
                 "overview.rest",
                 "overview.root",
-                "overview.count.done",
                 "overview.idle",
                 "overview.failed",
                 "overview.waiting.one",
@@ -50,6 +50,7 @@ internal class GroupOverviewMessagesTest {
     fun `counters do not inflect`(count: Int) {
         mcText("overview.count.waiting", "$count") shouldBe "czeka: $count"
         mcText("overview.count.working", "$count") shouldBe "pracuje: $count"
+        mcText("overview.count.done", "$count") shouldBe "gotowe: $count"
         mcText("overview.count.failed", "$count") shouldBe "błąd: $count"
     }
 }

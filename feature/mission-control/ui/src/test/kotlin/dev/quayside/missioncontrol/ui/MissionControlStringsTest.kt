@@ -121,6 +121,7 @@ internal class MissionControlStringsTest {
                 "dialog.cancel",
                 "view.waiting",
                 "view.working",
+                "view.done",
                 "view.failed",
                 "row.noProject",
                 "row.project",
@@ -175,6 +176,7 @@ internal class MissionControlStringsTest {
                 "overview.title",
                 "overview.count.waiting",
                 "overview.count.working",
+                "overview.count.done",
                 "overview.count.failed",
             )
 
@@ -236,6 +238,7 @@ internal class MissionControlStringsTest {
                     UiText("row.place.subfolder", listOf("soft")),
                     UiText("overview.count.waiting", listOf("1")),
                     UiText("overview.count.working", listOf("2")),
+                    UiText("overview.count.done", listOf("3")),
                     UiText("overview.count.failed", listOf("4")),
                 )
 
@@ -249,6 +252,7 @@ internal class MissionControlStringsTest {
                 arguments("empty.noSelection", "Wybierz projekt"),
                 arguments("view.waiting", "Czeka na mnie"),
                 arguments("view.working", "Pracuje"),
+                arguments("view.done", "Gotowe"),
                 arguments("view.failed", "Błędy"),
                 arguments("row.noProject", "bez projektu"),
                 arguments("filter.all", "Wszystkie"),

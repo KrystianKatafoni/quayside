@@ -14,8 +14,18 @@ public data class SessionKeyCaps(
 )
 
 /**
- * What `app` does on Attach, Reply and a click on a subfolder row; [keyCaps] null hides the shortcut marks. Not a
- * data class (lambdas never compare equal).
+ * The "Nowy agent" button at the right of the page title: what `app` does on a click ([onClick]), whether it is
+ * [enabled] (as the menu item) and the text of its shortcut ([keyCap], null = none). Not a data class (lambda).
+ */
+public class NewAgentAction(
+    public val onClick: () -> Unit,
+    public val enabled: Boolean = true,
+    public val keyCap: String? = null,
+)
+
+/**
+ * What `app` does on Attach, Reply and a click on a subfolder row; [keyCaps] null hides the shortcut marks;
+ * [newAgent] null = no "Nowy agent" button. Not a data class (lambdas never compare equal).
  */
 public class MissionControlHandlers(
     public val onAttach: () -> Unit = {},
@@ -26,7 +36,11 @@ public class MissionControlHandlers(
      * Control follows through `selected`. Never called for the "folder główny" row.
      */
     public val onOpenSubfolder: (ProjectFocus) -> Unit = {},
+    public val newAgent: NewAgentAction? = null,
 )
+
+/** The "Nowy agent" button of the handlers for the page headers; null = none. */
+internal val LocalNewAgent = staticCompositionLocalOf<NewAgentAction?> { null }
 
 /** The key caps of the handlers for the buttons below [MissionControl]; null = no marks. */
 internal val LocalKeyCaps = staticCompositionLocalOf<SessionKeyCaps?> { null }

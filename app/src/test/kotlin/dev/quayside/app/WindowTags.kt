@@ -60,9 +60,6 @@ internal object WindowTags {
     const val SESSION_BAR_REPLY = "missionControl.sessionBar.reply"
     const val RAIL = "projects.rail"
 
-    /** The ⋯ button of the sidebar row of a project (`projects:ui`, `internal` there). */
-    fun rowMenu(projectId: String): String = "projects.row.$projectId.menu"
-
     fun railButton(projectId: String): String = "projects.rail.$projectId"
 
     /** A group in the sidebar (AM-306, `projects:ui`, `internal` there): a subfolder row and the chevron. */
@@ -81,8 +78,8 @@ internal object WindowTags {
     /** The place badge of a session row (`internal`). */
     fun rowPlace(sessionId: String): String = "missionControl.rowPlace.$sessionId"
 
-    /** The "Nowy agent" button of the top bar (AM-816, `TopBarTags.NEW_AGENT`) and the dialog (AM-608). */
-    const val NEW_AGENT_BUTTON = "app.topBar.newAgent"
+    /** The "Nowy agent" button of the page title (`missioncontrol:ui`, `internal` there) and the dialog (AM-608). */
+    const val NEW_AGENT_BUTTON = "missionControl.newAgent.button"
     const val NEW_AGENT_DIALOG = "missionControl.newAgent.dialog"
     const val NEW_AGENT_PROJECT = "missionControl.newAgent.project"
     const val NEW_AGENT_SUBFOLDER = "missionControl.newAgent.subfolder"

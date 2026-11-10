@@ -87,6 +87,21 @@ internal class GlobalViewsScreenTest {
             aSession(id = "none-fail", project = null, state = SessionState.Failed, startedAt = T0.plusSeconds(5)),
         )
 
+    /** Three done sessions (two projects and none), a stopped and a working one. */
+    private fun doneAndOthers(): SessionsSnapshot =
+        fresh(
+            aSession(id = "mine-done", project = project.id, state = SessionState.Done, startedAt = T0),
+            aSession(
+                id = "mine-stopped",
+                project = project.id,
+                state = SessionState.Stopped,
+                startedAt = T0.plusSeconds(1),
+            ),
+            aSession(id = "other-done", project = other.id, state = SessionState.Done, startedAt = T0.plusSeconds(2)),
+            aSession(id = "none-work", project = null, startedAt = T0.plusSeconds(3)),
+            aSession(id = "none-done", project = null, state = SessionState.Done, startedAt = T0.plusSeconds(4)),
+        )
+
     private fun ComposeUiTest.showViews(sessions: SessionsApi) {
         setContent {
             AmTestTheme {
@@ -185,6 +200,30 @@ internal class GlobalViewsScreenTest {
         }
 
     @Test
+    fun `FR-S9 done view shows done sessions of every project newest first`() =
+        runComposeUiTest {
+            // Given done sessions in two projects and outside any project, a stopped and a working one
+            showScripted(doneAndOthers())
+
+            // When the user picks "Gotowe"
+            open(GlobalView.DONE)
+
+            // Then only the done sessions are listed, the newest first
+            await(MissionControlTags.view(GlobalView.DONE)).assertIsSelected()
+            val rows = listOf("none-done", "other-done", "mine-done").map { await(row(it)).fetchSemanticsNode() }
+            rows.map { it.boundsInRoot.top }.zipWithNext().all { (above, below) -> above < below } shouldBe true
+            awaitGone(row("mine-stopped"))
+            awaitGone(row("none-work"))
+            // And the header is titled "Gotowe" and counts three sessions; the entry counter says 3 too
+            textIn(MissionControlTags.HEADER, text("view.done")).assertIsDisplayed()
+            textIn(MissionControlTags.HEADER, text("header.global", "3")).assertIsDisplayed()
+            onAllNodes(
+                hasContentDescription(text("view.count", text("view.done"), "3")),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes().size shouldBe 1
+        }
+
+    @Test
     fun `FR-S9 global rows show the project column`() =
         runComposeUiTest {
             // Given working sessions in two projects and one without a project
@@ -231,9 +270,11 @@ internal class GlobalViewsScreenTest {
             await(MissionControlTags.view(GlobalView.WAITING))
             textIn(MissionControlTags.view(GlobalView.WAITING), text("view.waiting")).assertIsDisplayed()
             textIn(MissionControlTags.view(GlobalView.WORKING), text("view.working")).assertIsDisplayed()
+            textIn(MissionControlTags.view(GlobalView.DONE), text("view.done")).assertIsDisplayed()
             textIn(MissionControlTags.view(GlobalView.FAILED), text("view.failed")).assertIsDisplayed()
             countOf(GlobalView.WAITING, "view.waiting") shouldBe 1
             countOf(GlobalView.WORKING, "view.working") shouldBe 1
+            countOf(GlobalView.DONE, "view.done") shouldBe 1
             countOf(GlobalView.FAILED, "view.failed") shouldBe 1
         }
 
@@ -242,7 +283,13 @@ internal class GlobalViewsScreenTest {
         view: GlobalView,
         titleKey: String,
     ): Int {
-        val expected = mapOf(GlobalView.WAITING to "3", GlobalView.WORKING to "2", GlobalView.FAILED to "1")
+        val expected =
+            mapOf(
+                GlobalView.WAITING to "3",
+                GlobalView.WORKING to "2",
+                GlobalView.DONE to "0",
+                GlobalView.FAILED to "1",
+            )
         val description = text("view.count", text(titleKey), expected.getValue(view))
         return onAllNodes(
             hasContentDescription(description) and

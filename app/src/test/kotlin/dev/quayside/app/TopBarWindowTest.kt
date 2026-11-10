@@ -1,15 +1,10 @@
 package dev.quayside.app
 
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
@@ -17,7 +12,6 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -29,8 +23,8 @@ import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
 /**
- * The top bar of the window on fakes (AM-816, decisions 1 and 3): crumbs, the search field, the voice chip, the bell
- * and "Nowy agent", above both layouts. Menus do not work in `runComposeUiTest`, so the controls are clicked.
+ * The top bar of the window on fakes (AM-816, decisions 1 and 3): crumbs, the search field, the voice chip and the
+ * bell, above both layouts. Menus do not work in `runComposeUiTest`, so the controls are clicked.
  */
 @OptIn(ExperimentalTestApi::class)
 class TopBarWindowTest {
@@ -38,69 +32,6 @@ class TopBarWindowTest {
     lateinit var root: Path
 
     private val world by lazy { TopBarWorld(root) }
-
-    @Test
-    fun `top bar new agent opens the dialog`() =
-        runComposeUiTest {
-            with(world) {
-                window()
-                await(WindowTags.projectRow("project0001")).performClick()
-
-                await(WindowTags.NEW_AGENT_BUTTON).performClick()
-
-                await(WindowTags.NEW_AGENT_DIALOG)
-            }
-        }
-
-    @Test
-    fun `top bar new agent shows its shortcut`() =
-        runComposeUiTest {
-            with(world) {
-                window()
-                await(WindowTags.NEW_AGENT_BUTTON)
-
-                textIn(WindowTags.NEW_AGENT_BUTTON, "Nowy agent") shouldBe true
-                textIn(WindowTags.NEW_AGENT_BUTTON, "⌘N") shouldBe true
-            }
-        }
-
-    @Test
-    fun `top bar new agent is off without projects`() =
-        runComposeUiTest {
-            with(TopBarWorld(root, projects = emptyList())) {
-                window()
-
-                await(WindowTags.NEW_AGENT_BUTTON).assertIsNotEnabled()
-            }
-        }
-
-    @Test
-    fun `top bar new agent is on with projects and off while the palette is open`() =
-        runComposeUiTest {
-            with(world) {
-                val palette = window()
-                await(WindowTags.NEW_AGENT_BUTTON).assertIsEnabled()
-
-                runOnIdle { palette.open() }
-
-                waitUntil { runCatching { onNodeWithTag(WindowTags.NEW_AGENT_BUTTON).assertIsNotEnabled() }.isSuccess }
-            }
-        }
-
-    @Test
-    fun `top bar new agent never takes focus`() =
-        runComposeUiTest {
-            with(world) {
-                window()
-                await(WindowTags.NEW_AGENT_BUTTON)
-                onNodeWithTag(WindowTags.KEYS).performSemanticsAction(SemanticsActions.RequestFocus)
-
-                // The button is the only control of the top bar that could take the focus: one Tab would land on it
-                press(Key.Tab)
-
-                onNodeWithTag(WindowTags.NEW_AGENT_BUTTON).assert(NOT_FOCUSED)
-            }
-        }
 
     @Test
     fun `search field opens the palette`() =
@@ -291,7 +222,7 @@ class TopBarWindowTest {
         }
 
     @Test
-    fun `top bar sits above the rail in terminal mode and ends with new agent`() =
+    fun `top bar sits above the rail in terminal mode and has no new agent button`() =
         runComposeUiTest {
             with(world) {
                 window()
@@ -299,11 +230,10 @@ class TopBarWindowTest {
 
                 val bar = await(WindowTags.TOP_BAR).fetchSemanticsNode().boundsInRoot
                 val rail = await(WindowTags.RAIL).fetchSemanticsNode().boundsInRoot
-                val newAgent = await(WindowTags.NEW_AGENT_BUTTON).fetchSemanticsNode().boundsInRoot
 
                 bar.bottom shouldBeLessThanOrEqualTo rail.top
-                // "Nowy agent" is the last control at the right edge of the bar
-                (bar.right - newAgent.right) shouldBeLessThanOrEqualTo 24f
+                // the button moved to the page title (AM-310); in terminal mode only ⌘N is left
+                has(WindowTags.NEW_AGENT_BUTTON) shouldBe false
             }
         }
 
@@ -316,9 +246,4 @@ class TopBarWindowTest {
                 texts + node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
             }.flatMap { Regex("\\d+").findAll(it).map { match -> match.value }.toList() }
             .distinct()
-
-    private companion object {
-        val NOT_FOCUSED =
-            SemanticsMatcher("is not focused") { it.config.getOrElse(SemanticsProperties.Focused) { false } != true }
-    }
 }

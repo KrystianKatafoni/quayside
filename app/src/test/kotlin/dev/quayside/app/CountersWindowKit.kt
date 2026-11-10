@@ -77,9 +77,10 @@ internal fun ComposeUiTest.counters(tag: String): Map<String, Int> =
 private val COUNTER_TEXT = Regex("(czeka|pracuje|gotowe|błąd): (\\d+)")
 
 /**
- * Waits until the row [tag] (a sidebar row or a row of the group overview) has exactly the chips of the non-zero counts
- * (a count of 0 means no chip; there is no "done" chip). Pass a row that has at least one chip when the aim is to prove
- * a row empty after loading: with all three at 0 this returns at once.
+ * Waits until the row [tag] (a sidebar row or a row of the group overview) has exactly the chips of the non-zero
+ * counts (a count of 0 means no chip; [done] is only for rows of the group overview, the sidebar has no "done" chip).
+ * Pass a row that has at least one chip when the aim is to prove a row empty after loading: with all four at 0 this
+ * returns at once.
  */
 @OptIn(ExperimentalTestApi::class)
 internal fun ComposeUiTest.awaitChips(
@@ -87,8 +88,10 @@ internal fun ComposeUiTest.awaitChips(
     waiting: Int = 0,
     working: Int = 0,
     failed: Int = 0,
+    done: Int = 0,
 ) {
-    val expected = mapOf("czeka" to waiting, "pracuje" to working, "błąd" to failed).filterValues { it != 0 }
+    val expected =
+        mapOf("czeka" to waiting, "pracuje" to working, "gotowe" to done, "błąd" to failed).filterValues { it != 0 }
     waitUntil(timeoutMillis = COUNTERS_WAIT_MS) { counters(tag) == expected }
 }
 

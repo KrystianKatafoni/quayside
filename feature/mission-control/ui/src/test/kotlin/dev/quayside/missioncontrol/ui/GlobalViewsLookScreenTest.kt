@@ -84,6 +84,29 @@ internal class GlobalViewsLookScreenTest {
         }
 
     @Test
+    fun `done entry is described, shows zero and has the selected frame`() =
+        runComposeUiTest {
+            // Given no done session and the "Gotowe" view shown
+            val controller = showScripted(snapshot(), scaled = true) { GlobalViews(it) }
+            awaitTag(MissionControlTags.view(GlobalView.DONE))
+            runOnIdle { controller.onIntent(MissionControlIntent.ShowView(GlobalView.DONE)) }
+            waitForIdle()
+            val entry = MissionControlTags.view(GlobalView.DONE)
+
+            // Then the zero is still announced: "Gotowe: 0"
+            onAllNodes(hasContentDescription(description(GlobalView.DONE, 0)) and inTag(entry), true)
+                .fetchSemanticsNodes()
+                .size shouldBe 1
+            description(GlobalView.DONE, 0) shouldBe "Gotowe: 0"
+            // And the entry has the accent frame and the sel fill, and the icon in the ok tone
+            val pixels = awaitTag(entry).pixelMap()
+            pixels.topEdgeColor(container) shouldBe colors.content.accent.argb()
+            awaitTag(entry).argbColors() shouldContain colors.surfaces.sel.argb()
+            awaitTag(entry).argbColors() shouldContain colors.status.ok.argb()
+            awaitTag(MissionControlTags.view(GlobalView.WORKING)).argbColors() shouldNotContain colors.status.ok.argb()
+        }
+
+    @Test
     fun `clicking a view entry still shows the view`() =
         runComposeUiTest {
             val controller = showScripted(snapshot()) { GlobalViews(it) }

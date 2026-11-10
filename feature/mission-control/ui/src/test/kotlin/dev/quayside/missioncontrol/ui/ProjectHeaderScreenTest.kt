@@ -2,7 +2,6 @@ package dev.quayside.missioncontrol.ui
 
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
@@ -49,15 +48,6 @@ internal class ProjectHeaderScreenTest {
             // the segments follow one another and the last one ends at the right edge of the cards
             finished.left shouldBeGreaterThanOrEqualTo all.right
             finished.right.shouldBe(failed.right.plusOrMinus(2f))
-        }
-
-    @Test
-    fun `header has no new agent button`() =
-        runComposeUiTest {
-            showMc(sessions(), MissionControlHandlers(keyCaps = SessionKeyCaps("⏎", "r", "x", "j", "k", "␣")))
-            awaitTag(MissionControlTags.HEADER)
-
-            onAllNodes(hasText("Nowy agent", substring = true)).fetchSemanticsNodes().size shouldBe 0
         }
 
     @Test

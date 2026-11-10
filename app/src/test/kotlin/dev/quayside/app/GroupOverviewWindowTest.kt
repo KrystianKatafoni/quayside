@@ -239,13 +239,14 @@ class GroupOverviewWindowTest {
             await(WindowTags.overviewRow("docs"))
 
             // Then the overview shows the subfolder rows with their own numbers ...
-            // (in the order waiting, working, failed; the finished session of "soft" has no chip)
+            // (in the order waiting, working, done, failed; the finished session of "soft" has the green chip)
             awaitChips(WindowTags.overviewRow("docs"), waiting = 1)
-            awaitChips(WindowTags.overviewRow("soft"), working = 1, failed = 1)
+            awaitChips(WindowTags.overviewRow("soft"), working = 1, done = 1, failed = 1)
             // ... and no row "folder główny": the sessions of the directory and of unchecked folders have none
             onAllNodes(hasText("folder główny") and hasAnyAncestor(hasTestTag(WindowTags.OVERVIEW)))
                 .assertCountEquals(0)
             // ... while the sidebar group row still counts them
+            // (and has no "done" chip, though two sessions are done)
             awaitChips(WindowTags.projectRow("project0001"), waiting = 1, working = 2, failed = 1)
         }
 }

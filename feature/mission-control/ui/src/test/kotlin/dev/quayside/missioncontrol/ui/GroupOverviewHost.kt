@@ -65,8 +65,8 @@ internal fun ComposeUiTest.overviewRow(name: String): SemanticsNodeInteraction =
     awaitTag(MissionControlTags.overviewRow(SubfolderName(name)))
 
 /**
- * The descriptions of the chips (`czeka: 2`, `pracuje: 1`, `błąd: 3`; AM-310) announced inside the node tagged [tag],
- * from left to right. A state at zero has no chip, and there is none for finished sessions.
+ * The descriptions of the chips (`czeka: 2`, `pracuje: 1`, `gotowe: 3`, `błąd: 4`; AM-310) announced inside the node
+ * tagged [tag], from left to right. A state at zero has no chip.
  */
 @OptIn(ExperimentalTestApi::class)
 internal fun ComposeUiTest.counterTexts(tag: String): List<String> =
@@ -84,7 +84,7 @@ internal fun ComposeUiTest.counterNode(
 ): SemanticsNodeInteraction =
     onAllNodes(hasContentDescription(description) and inTag(tag), useUnmergedTree = true).onFirst()
 
-/** "czeka: N", "pracuje: N" or "błąd: N", also "gotowe: N" so that a chip for finished sessions would show up. */
+/** "czeka: N", "pracuje: N", "gotowe: N" or "błąd: N". */
 private val COUNTER_TEXT = Regex("(czeka|pracuje|gotowe|błąd): \\d+")
 
 /** True when a node tagged [tag] exists. */

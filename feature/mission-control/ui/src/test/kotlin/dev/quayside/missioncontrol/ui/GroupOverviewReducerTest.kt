@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZoneOffset
 
-/** The overview on the group page of the reducer (FR-P8, FR-S9, AM-307, AM-310: the root row is always there). */
+/** The overview on the group page of the reducer (FR-P8, FR-S9, AM-307, AM-310: no root row). */
 internal class GroupOverviewReducerTest {
     private val now: Instant = T0.plusSeconds(600)
 
@@ -54,11 +54,6 @@ internal class GroupOverviewReducerTest {
                 "bob" to Counts(failed = 1),
                 "Anna" to Counts(working = 1, done = 1),
             )
-        screen.overview
-            .shouldNotBeNull()
-            .rest
-            .shouldNotBeNull()
-            .counts() shouldBe Counts(working = 1)
         screen.overview.shouldNotBeNull().project shouldBe OVERVIEW_GROUP.id
     }
 
@@ -105,18 +100,5 @@ internal class GroupOverviewReducerTest {
                 "bob" to Counts(failed = 1),
                 "Anna" to Counts(working = 1, done = 1),
             )
-    }
-
-    @Test
-    fun `root row is part of the overview when nothing outside the subfolders runs`() {
-        val quiet = sessions.filter { it.cwd != OVERVIEW_DIR }
-
-        val screen = page(snapshot = fresh(*quiet.toTypedArray()))
-
-        screen.overview
-            .shouldNotBeNull()
-            .rest
-            .shouldNotBeNull()
-            .counts() shouldBe Counts()
     }
 }

@@ -33,7 +33,7 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
 
-/** Look of the sidebar (AM-816): counters as circles, the selected row, the section label, "Dodaj projekt z dysku…". */
+/** Look of the sidebar (AM-816): count chips, the selected row, the section label, "Dodaj projekt z dysku…". */
 @OptIn(ExperimentalTestApi::class)
 internal class ProjectsSidebarLookTest {
     private val busy = aProject(id = "project0001", dir = A_PROJECT_DIR, displayName = "Busy")
@@ -57,7 +57,7 @@ internal class ProjectsSidebarLookTest {
     }
 
     @Test
-    fun `project row shows counters as circles with descriptions`() =
+    fun `project row shows count chips as pills with descriptions`() =
         runComposeUiTest {
             // Given a project with 2 waiting and 3 working sessions, drawn at 4 px per dp
             showProjects(world(*busySessions().toTypedArray())) { Scaled4 { ProjectsSidebar(it) } }
@@ -71,11 +71,10 @@ internal class ProjectsSidebarLookTest {
             val bounds = counter.fetchSemanticsNode().boundsInRoot
             val pixels = counter.pixelMap()
 
-            // Then it is a circle of at least 22 dp in the warn tone, and the number is not read apart from it
+            // Then it is a pill (wider than high) in the warn tone, and the number is not read apart from it
             // (checked in the merged tree: the unmerged one still holds the text node that the description clears)
-            bounds.width shouldBe bounds.height
-            (bounds.width >= 22 * SCALE) shouldBe true
-            pixels.diagonalOnset(container).shouldNotBeNull().shouldBeInRange(12..14)
+            (bounds.width > bounds.height) shouldBe true
+            pixels.diagonalOnset(container).shouldNotBeNull()
             pixels.argbAt(2 * SCALE, pixels.height / 2) shouldBe colors.status.warnBg.argb()
             onAllNodes(hasText("2") and inTag(row)).fetchSemanticsNodes().size shouldBe 0
         }

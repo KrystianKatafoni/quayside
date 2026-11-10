@@ -32,13 +32,12 @@ import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.quayside.core.designsystem.AmCounter
+import dev.quayside.core.designsystem.AmChip
 import dev.quayside.core.designsystem.AmIcon
 import dev.quayside.core.designsystem.AmKeyCap
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.IconKind
-import dev.quayside.core.designsystem.StatusTone
 import dev.quayside.core.designsystem.markColor
 import dev.quayside.core.designsystem.toColor
 import dev.quayside.projects.api.Project
@@ -107,38 +106,29 @@ private fun RowCells(
         AmIcon(IconKind.FOLDER, null, Modifier.size(20.dp), projectTone(state.statuses.active).markColor())
         Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
             AmText(project.displayName, Modifier.clearAndSetSemantics {})
-            Counters(state.statuses, state.selected)
+            Counters(state.statuses)
         }
         RowMenu(project, actions)
     }
 }
 
-/**
- * The four counters of a row: waiting (warn, it needs the user), working, done, failed. A non-zero one is an
- * `AmCounter`, a zero one a ring over the background of the row ([selected] picks sel or panel).
- */
+/** Chips of a project row: waiting, working and failed with the icon of the state; none for a state at zero. */
 @Composable
-internal fun Counters(
-    counts: StatusCounts,
-    selected: Boolean,
-) {
+internal fun Counters(counts: StatusCounts) {
+    val badges = CountBadges.of(counts)
+    if (badges.isEmpty()) return
     Row(horizontalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-        CountBadges.of(counts).forEach { badge ->
-            val number = badge.args.first().toInt()
-            val tone = COUNTER_TONES.getValue(badge.key)
-            val description = ProjectsStrings.format(badge)
-            if (number == 0) ZeroCounter(tone, description, selected) else AmCounter(number, tone, description)
+        badges.forEach { badge ->
+            val description = ProjectsStrings.format(badge.text)
+            AmChip(
+                label = badge.text.args.first(),
+                tone = badge.tone,
+                icon = badge.icon,
+                description = description,
+            )
         }
     }
 }
-
-private val COUNTER_TONES =
-    mapOf(
-        CountBadges.WAITING_KEY to StatusTone.WARN,
-        "row.working" to StatusTone.WORK,
-        "row.done" to StatusTone.OK,
-        "row.failed" to StatusTone.ERR,
-    )
 
 /**
  * "Dodaj projekt z dysku…" with its shortcut [keyCap] (none when null): a dashed button under the project list. It

@@ -64,7 +64,6 @@ internal object MissionControlTags {
     const val DETAILS_STATE = "missionControl.details.state"
     const val DETAILS_SUMMARY = "missionControl.details.summary"
     const val OVERVIEW = "missionControl.overview"
-    const val OVERVIEW_ROOT = "missionControl.overview.root"
 
     /** The stat card of [kind]: `waiting`, `working`, `done` or `failed`. */
     fun stat(kind: String): String = "missionControl.stat.$kind"

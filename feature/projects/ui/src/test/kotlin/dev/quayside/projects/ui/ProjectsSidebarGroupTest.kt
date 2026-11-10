@@ -36,7 +36,7 @@ import java.nio.file.Path
 
 /**
  * A project with subfolders in the sidebar (FR-P7, AM-306) on fakes: the group row with its chevron, the subfolder
- * rows with their own counters, selecting a subfolder. Names (`Anna`, `bob`, `plant-puls`) differ from fixed texts.
+ * rows (without chips), selecting a subfolder. Names (`Anna`, `bob`, `plant-puls`) differ from fixed texts.
  */
 @OptIn(ExperimentalTestApi::class)
 class ProjectsSidebarGroupTest {
@@ -95,7 +95,7 @@ class ProjectsSidebarGroupTest {
     private val bobRow get() = ProjectsTags.subfolderRow(plant.id, bob)
 
     @Test
-    fun `group row shows subfolder rows with counters`() =
+    fun `group row shows subfolder rows without chips and the chips of the group`() =
         runComposeUiTest {
             // Given a group with sessions in its subfolders and in its directory
             show()
@@ -112,16 +112,11 @@ class ProjectsSidebarGroupTest {
                 .onFirst()
                 .assertExists()
 
-            // And each subfolder counts only its own sessions, the group row counts the whole project
-            awaitChip(annaRow, "czeka: 1")
-            awaitChip(bobRow, "pracuje: 1")
-            hasChip(annaRow, "pracuje: 1") shouldBe false
-            hasChip(bobRow, "czeka: 1") shouldBe false
-            // (AM-310: the other counters of a subfolder row are there too, at zero)
-            awaitChip(annaRow, "pracuje: 0")
-            awaitChip(bobRow, "czeka: 0")
+            // And the group row counts the whole project, while the subfolder rows have no chips at all
             awaitChip(ProjectsTags.row(plant.id), "czeka: 1")
             awaitChip(ProjectsTags.row(plant.id), "pracuje: 2")
+            hasChip(annaRow, ": ") shouldBe false
+            hasChip(bobRow, ": ") shouldBe false
         }
 
     @Test

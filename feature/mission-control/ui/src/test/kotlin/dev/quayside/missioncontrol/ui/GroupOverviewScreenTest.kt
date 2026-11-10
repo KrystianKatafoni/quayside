@@ -1,16 +1,15 @@
 package dev.quayside.missioncontrol.ui
 
 import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -31,9 +30,9 @@ import org.junit.jupiter.api.Test
 import java.util.Locale
 
 /**
- * The "Podfoldery" overview on the group page (FR-P8, AM-307, AM-310): rows, order, the four counters, the root row
- * "folder główny" and the way the rows take clicks and keys. Subfolders are `bob`, `Carl`, `Anna`; none is named
- * like a fixed text.
+ * The "Podfoldery" overview on the group page (FR-P8, AM-307, AM-310): rows, order, the chips of waiting, working and
+ * failed, no row for the main folder, and the way the rows take clicks and keys. Subfolders are `bob`, `Carl`, `Anna`;
+ * none is named like a fixed text.
  */
 @OptIn(ExperimentalTestApi::class)
 internal class GroupOverviewScreenTest {
@@ -49,7 +48,7 @@ internal class GroupOverviewScreenTest {
         )
 
     @Test
-    fun `group page shows a row per subfolder with its counters`() =
+    fun `group page shows a row per subfolder with chips of its non-zero states`() =
         runComposeUiTest {
             // Given a group where Carl waits and works, bob failed and Anna has only a finished session
             showGroup(busy())
@@ -60,23 +59,20 @@ internal class GroupOverviewScreenTest {
             listOf("Anna", "bob", "Carl").forEach { overviewRow(it).assertExists() }
             textUnder(rowsOfCarl, "Carl").assertExists()
 
-            // And each row has all four counters, in the order waiting, working, done, failed (zeros included)
-            counterTexts(rowsOfCarl) shouldBe listOf("czeka: 2", "pracuje: 1", "gotowe: 0", "błąd: 0")
-            counterTexts(MissionControlTags.overviewRow(sub("bob"))) shouldBe
-                listOf("czeka: 0", "pracuje: 0", "gotowe: 0", "błąd: 1")
-            counterTexts(MissionControlTags.overviewRow(sub("Anna"))) shouldBe
-                listOf("czeka: 0", "pracuje: 0", "gotowe: 1", "błąd: 0")
+            // And each row has chips only for its states above zero; Anna, with a finished session only, has none
+            counterTexts(rowsOfCarl) shouldBe listOf("czeka: 2", "pracuje: 1")
+            counterTexts(MissionControlTags.overviewRow(sub("bob"))) shouldBe listOf("błąd: 1")
+            counterTexts(MissionControlTags.overviewRow(sub("Anna"))) shouldBe emptyList()
         }
 
     @Test
-    fun `counters describe count and state`() =
+    fun `chips describe count and state for a screen reader`() =
         runComposeUiTest {
             showGroup(busy())
             overviewRow("Carl")
 
             counterNode(rowsOfCarl, "czeka: 2").assertExists()
             counterNode(rowsOfCarl, "pracuje: 1").assertExists()
-            counterNode(MissionControlTags.overviewRow(sub("Anna")), "gotowe: 1").assertExists()
             counterNode(MissionControlTags.overviewRow(sub("bob")), "błąd: 1").assertExists()
         }
 
@@ -103,52 +99,23 @@ internal class GroupOverviewScreenTest {
         }
 
     @Test
-    fun `root row shows the sessions outside the subfolders and has no click action`() =
+    fun `sessions outside the subfolders get no row in the overview`() =
         runComposeUiTest {
-            // Given sessions in the group directory and in a folder that is no subfolder
-            val clicks = mutableListOf<ProjectFocus>()
+            // Given sessions in the group directory and in a folder that is no subfolder, next to one in Anna
             showGroup(
                 listOf(
                     groupSession("r1", "", SessionState.AwaitingInput("q"), 1),
                     groupSession("r2", "marketing", SessionState.Working, 2),
-                ),
-                MissionControlHandlers(onOpenSubfolder = { clicks += it }),
-            )
-
-            // Then the root row says what is going on there and cannot be clicked
-            val root = awaitTag(MissionControlTags.OVERVIEW_ROOT)
-            textUnder(MissionControlTags.OVERVIEW_ROOT, mcText("overview.root")).assertExists()
-            counterTexts(MissionControlTags.OVERVIEW_ROOT) shouldBe
-                listOf("czeka: 1", "pracuje: 1", "gotowe: 0", "błąd: 0")
-            root.assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
-            root.performClick()
-            waitForIdle()
-            clicks shouldBe emptyList()
-            // and it is the last one
-            val rootTop = root.fetchSemanticsNode().boundsInRoot.top
-            listOf("Anna", "bob", "Carl").forEach {
-                (overviewRow(it).fetchSemanticsNode().boundsInRoot.top < rootTop) shouldBe
-                    true
-            }
-        }
-
-    @Test
-    fun `root row is there when nothing outside the subfolders waits works or failed`() =
-        runComposeUiTest {
-            // Given only a finished and a stopped session outside the subfolders (AM-310: the row is always shown)
-            showGroup(
-                listOf(
-                    groupSession("r1", "", SessionState.Done, 1),
-                    groupSession("r2", "marketing", SessionState.Stopped, 2),
                     groupSession("a", "Anna", SessionState.Working, 3),
                 ),
             )
             overviewRow("Anna")
 
-            // Then the root row exists, shows the finished session, and ignores the stopped one
-            awaitTag(MissionControlTags.OVERVIEW_ROOT)
-            counterTexts(MissionControlTags.OVERVIEW_ROOT) shouldBe
-                listOf("czeka: 0", "pracuje: 0", "gotowe: 1", "błąd: 0")
+            // Then the overview has only the subfolder rows, and Anna counts only her own session
+            counterTexts(MissionControlTags.overviewRow(sub("Anna"))) shouldBe listOf("pracuje: 1")
+            onAllNodes(hasText(mcText("row.place.root")) and inTag(MissionControlTags.OVERVIEW), useUnmergedTree = true)
+                .assertCountEquals(0)
+            listOf("Anna", "bob", "Carl").forEach { overviewRow(it).assertExists() }
         }
 
     @Test

@@ -105,7 +105,6 @@ private fun SubfolderCells(
         AmIcon(IconKind.FOLDER, null, Modifier.size(16.dp), projectTone(state.statuses.active).markColor())
         Column(modifier = Modifier.weight(weight = 1f), verticalArrangement = Arrangement.spacedBy(space = 4.dp)) {
             AmText(name.value, Modifier.clearAndSetSemantics {})
-            Counters(state.statuses, state.selected)
         }
     }
 }
@@ -119,7 +118,7 @@ internal class RowActions(
     val toggleGroup: () -> Unit,
 )
 
-/** What a row shows besides its name: selection, the four counters, and for a group row whether it is collapsed. */
+/** What a row shows besides its name: selection, the counters, and for a group row whether it is collapsed. */
 internal data class RowState(
     val selected: Boolean,
     val statuses: StatusCounts,

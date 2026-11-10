@@ -115,9 +115,8 @@ class SessionsViewTest {
                 fresh,
             )
 
-        // Finished sessions are not "active" (no entry in counts) but the main row counts them as done
-        SessionsView.of(listOf(outer, lone), snapshot) shouldBe
-            SessionsView(emptyMap(), fresh = true, statuses = mapOf(ProjectFocus(outer.id) to StatusCounts(done = 1)))
+        // Finished sessions are neither "active" nor shown on a chip: no entry in counts, none in statuses
+        SessionsView.of(listOf(outer, lone), snapshot) shouldBe SessionsView(emptyMap(), fresh = true)
     }
 
     companion object {

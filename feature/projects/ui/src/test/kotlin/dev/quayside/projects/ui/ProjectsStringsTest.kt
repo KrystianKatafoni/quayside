@@ -56,7 +56,6 @@ class ProjectsStringsTest {
                 "row.rename",
                 "row.waiting",
                 "row.working",
-                "row.done",
                 "row.failed",
                 "banner.dismiss",
                 "add.title",
@@ -103,7 +102,6 @@ class ProjectsStringsTest {
                     UiText("remove.activeSessions", listOf("3")),
                     UiText("row.waiting", listOf("2")),
                     UiText("row.working", listOf("5")),
-                    UiText("row.done", listOf("3")),
                     UiText("row.failed", listOf("1")),
                 )
 
@@ -117,7 +115,6 @@ class ProjectsStringsTest {
                 arguments("rename.save", "Zapisz"),
                 arguments("row.waiting", "czeka: {0}"),
                 arguments("row.working", "pracuje: {0}"),
-                arguments("row.done", "gotowe: {0}"),
                 arguments("row.failed", "błąd: {0}"),
                 arguments("add.inspecting", "Sprawdzanie…"),
                 arguments("add.confirm", "Dodaj"),

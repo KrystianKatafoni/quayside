@@ -78,18 +78,18 @@ class ProjectsControllerSessionsTest {
         }
 
     @Test
-    fun `statuses follow the snapshot and count finished sessions`() =
+    fun `statuses follow the snapshot and do not count finished sessions`() =
         runTest {
             val world = world(working, blocked, done, sibling)
             val controller = start(world)
             val main = ProjectFocus(project.id)
             controller.state.value.sessions
-                .at(main) shouldBe StatusCounts(waiting = 1, working = 1, done = 1)
+                .at(main) shouldBe StatusCounts(waiting = 1, working = 1)
 
             world.sessions.setState(working.id, SessionState.Failed)
             runCurrent()
             controller.state.value.sessions
-                .at(main) shouldBe StatusCounts(waiting = 1, done = 1, failed = 1)
+                .at(main) shouldBe StatusCounts(waiting = 1, failed = 1)
             // the remove dialog still counts the active sessions only
             controller.state.value.sessions.counts[project.id] shouldBe SessionCounts(working = 0, waiting = 1)
         }

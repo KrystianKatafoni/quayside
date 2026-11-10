@@ -18,15 +18,14 @@ internal data class OverviewCase(
     val title: String,
     val sessions: List<Session>,
     val rows: List<Pair<String, Counts>>,
-    val rest: Counts,
 ) {
     override fun toString(): String = title
 }
 
 /**
  * The pure overview of a group (FR-P8, AM-307, AM-310): counters per subfolder, tiers waiting > failed > working > the
- * rest, [dev.quayside.projects.api.ProjectGroups.order] inside a tier. The root row ("folder główny": sessions outside
- * every subfolder) is always there, with zeros when nothing runs; `done` is counted but does not lift a row's tier.
+ * rest, [dev.quayside.projects.api.ProjectGroups.order] inside a tier. Sessions outside every subfolder have no row;
+ * `done` is counted but does not lift a row's tier.
  */
 internal class GroupOverviewsTest {
     @ParameterizedTest(name = "{0}")
@@ -36,17 +35,27 @@ internal class GroupOverviewsTest {
 
         overview.project shouldBe OVERVIEW_GROUP.id
         overview.rows.map { it.name.value to it.stats.counts() } shouldBe case.rows
-        overview.rest.counts() shouldBe case.rest
     }
 
     @Test
-    fun `root row is always there with zeros`() {
-        // Nothing runs anywhere, or only ended sessions in a subfolder: the root row is still part of the overview
-        val empty = GroupOverviews.of(OVERVIEW_GROUP, emptyList()).shouldNotBeNull()
-        val inFolder = GroupOverviews.of(OVERVIEW_GROUP, listOf(works("a", "bob"))).shouldNotBeNull()
+    fun `sessions outside the subfolders make no row and leave the subfolder counters alone`() {
+        val inFolders = listOf(works("a", "bob"), waits("b", "Anna"))
+        val outside =
+            listOf(
+                works("c", ""),
+                fails("d", "marketing"),
+                waits("e", "bobx"),
+                groupSession("f", "", SessionState.Done),
+            )
 
-        empty.rest.shouldNotBeNull().counts() shouldBe Counts()
-        inFolder.rest.shouldNotBeNull().counts() shouldBe Counts()
+        val without = GroupOverviews.of(OVERVIEW_GROUP, inFolders).shouldNotBeNull()
+        val with = GroupOverviews.of(OVERVIEW_GROUP, inFolders + outside).shouldNotBeNull()
+
+        with.rows.map { it.name.value } shouldBe listOf("Anna", "bob", "Carl")
+        with.rows.map { it.name.value to it.stats.counts() } shouldBe
+            without.rows.map { it.name.value to it.stats.counts() }
+        with.rows.map { it.stats.counts() } shouldBe
+            listOf(Counts(waiting = 1), Counts(working = 1), Counts())
     }
 
     @Test
@@ -66,8 +75,7 @@ internal class GroupOverviewsTest {
             title: String,
             sessions: List<Session>,
             rows: List<Pair<String, Counts>>,
-            rest: Counts = zero,
-        ) = Arguments.of(OverviewCase(title, sessions, rows, rest))
+        ) = Arguments.of(OverviewCase(title, sessions, rows))
 
         private fun waits(
             id: String,
@@ -148,25 +156,22 @@ internal class GroupOverviewsTest {
         private fun scopeCases(): List<Arguments> =
             listOf(
                 case(
-                    "root row counts the root and unchecked subdirectories",
+                    "the root and unchecked subdirectories are not counted",
                     listOf(waits("a", ""), works("b", "marketing")),
                     zeros(*sorted.toTypedArray()),
-                    rest = Counts(waiting = 1, working = 1),
                 ),
                 case(
-                    "a failed session outside the subfolders is in the root row",
+                    "a failed session outside the subfolders is not counted",
                     listOf(fails("a", "marketing")),
                     zeros(*sorted.toTypedArray()),
-                    rest = Counts(failed = 1),
                 ),
                 case(
-                    "a folder named like a subfolder prefix is the root row",
+                    "a folder named like a subfolder prefix is not counted",
                     listOf(waits("a", "bobx")),
                     zeros(*sorted.toTypedArray()),
-                    rest = Counts(waiting = 1),
                 ),
                 case(
-                    "done is counted in the root row, stopped never",
+                    "done and stopped outside the subfolders are not counted",
                     listOf(
                         groupSession("a", "bob", SessionState.Stopped),
                         groupSession("b", "", SessionState.Done),
@@ -174,7 +179,6 @@ internal class GroupOverviewsTest {
                         groupSession("d", "marketing", SessionState.Done),
                     ),
                     zeros(*sorted.toTypedArray()),
-                    rest = Counts(done = 2),
                 ),
                 case(
                     "a session of a nested project is not counted",

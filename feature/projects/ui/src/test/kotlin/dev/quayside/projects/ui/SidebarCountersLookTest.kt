@@ -1,29 +1,36 @@
 package dev.quayside.projects.ui
 
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.PixelMap
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.SkikoComposeUiTest
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
-import androidx.compose.ui.test.performMouseInput
+import androidx.compose.ui.test.v2.runSkikoComposeUiTest
+import dev.quayside.core.designsystem.AmChip
+import dev.quayside.core.designsystem.IconKind
 import dev.quayside.core.designsystem.StatusTone
-import dev.quayside.core.designtokens.ColorTokens
-import dev.quayside.core.designtokens.Rgba
 import dev.quayside.core.designtokens.SampleTokens
-import dev.quayside.core.designtokens.mix
-import dev.quayside.core.designtokens.over
-import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.testing.aSessionId
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.SubfolderName
@@ -33,40 +40,78 @@ import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.WorldSession
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
+import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.Arguments.arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.nio.file.Path
+import kotlin.math.abs
 
 /**
- * The four counters of the sidebar rows read from pixels at 4 px per dp (FR-P6, FR-P7, NFR-6, AM-310): a zero counter
- * is a ring in the status token with the number in muted, filled opaquely with the background of its row. Rows: the
- * group `plant` with the subfolders `Anna` and `bob`, and the plain project `plain`. Names differ from fixed texts.
+ * The chips of the sidebar rows read from pixels at 4 px per dp (FR-P6, FR-P7, NFR-6, AM-310 as reduced): a project row
+ * draws a chip (icon and number) for waiting, working and failed, only for a non-zero count; a subfolder row draws none
+ * but still tints its folder icon. Rows: the group `plant` with the subfolders `Anna`, `bob` and `cara`, the project
+ * `plain` under test, and the project `marker` whose chip tells that the sessions have loaded. Names differ from fixed
+ * texts.
  */
 @OptIn(ExperimentalTestApi::class)
 internal class SidebarCountersLookTest {
     private val plantDir = Path.of("/Users/test/projects/plant-puls")
     private val plant =
-        aProject(id = "project0001", dir = plantDir, displayName = "Plant", subfolders = subfolderNames("bob", "Anna"))
+        aProject(
+            id = "project0001",
+            dir = plantDir,
+            displayName = "Plant",
+            subfolders = subfolderNames("bob", "Anna", "cara"),
+        )
     private val plain = aProject(id = "project0002", dir = Path.of("/Users/test/projects/plain"), displayName = "Plain")
+    private val marker =
+        aProject(id = "project0003", dir = Path.of("/Users/test/projects/marker"), displayName = "Marker")
     private val colors = SampleTokens.colors()
     private val groupRow = ProjectsTags.row(plant.id)
     private val annaRow = ProjectsTags.subfolderRow(plant.id, SubfolderName("Anna"))
     private val bobRow = ProjectsTags.subfolderRow(plant.id, SubfolderName("bob"))
+    private val caraRow = ProjectsTags.subfolderRow(plant.id, SubfolderName("cara"))
     private val plainRow = ProjectsTags.row(plain.id)
+    private val markerRow = ProjectsTags.row(marker.id)
 
     private fun world(vararg sessions: WorldSession) =
-        ControllerWorld(projects = FakeProjectsApi(initial = listOf(plant, plain)), running = sessions.toList())
+        ControllerWorld(
+            projects = FakeProjectsApi(initial = listOf(plant, plain, marker)),
+            running = sessions.toList() + WorldSession(aSessionId("marker"), marker.dir, SessionState.Working),
+        )
 
-    private fun ComposeUiTest.show(on: ControllerWorld = world()) {
-        showProjects(on) { Scaled4 { ProjectsSidebar(it) } }
+    private fun plainSessions(vararg states: SessionState) =
+        states.mapIndexed { i, state -> WorldSession(aSessionId("p$i"), plain.dir, state) }.toTypedArray()
+
+    private fun ComposeUiTest.show(
+        on: ControllerWorld,
+        extra: @Composable () -> Unit = {},
+    ) {
+        showProjects(on) {
+            Scaled4 {
+                Row {
+                    extra()
+                    ProjectsSidebar(it)
+                }
+            }
+        }
     }
 
-    private fun ComposeUiTest.counter(
+    /** The descriptions of the chips of [row] ("czeka: 1"), left to right. */
+    private fun ComposeUiTest.chipTexts(row: String): List<String> =
+        onAllNodes(hasContentDescription(": ", substring = true) and hasAnyAncestor(hasTestTag(row)), true)
+            .fetchSemanticsNodes()
+            .sortedBy { it.boundsInRoot.left }
+            .flatMap { it.config[SemanticsProperties.ContentDescription] }
+
+    /** Waits for the chip of the marker project: from then on the sessions are listed and zeros really mean zero. */
+    private fun ComposeUiTest.awaitLoaded() = waitUntil { chipTexts(markerRow) == listOf("pracuje: 1") }
+
+    private fun ComposeUiTest.chip(
         row: String,
         description: String,
     ): SemanticsNodeInteraction {
@@ -75,189 +120,188 @@ internal class SidebarCountersLookTest {
         return onAllNodes(matcher, useUnmergedTree = true).onFirst()
     }
 
-    private fun ComposeUiTest.countersIn(row: String): Int =
-        onAllNodes(hasContentDescription(": ", substring = true) and hasAnyAncestor(hasTestTag(row)), true)
-            .fetchSemanticsNodes()
-            .size
-
-    private fun ComposeUiTest.select(row: String) {
-        awaitTag(row).performClick()
-        waitForIdle()
+    /** Colours of the strip with the folder icon, [from] to [to] dp from the left edge of the row. */
+    private fun SemanticsNodeInteraction.iconStrip(
+        from: Int,
+        to: Int,
+    ): Set<Int> {
+        val pixels = pixelMap()
+        return (from * SCALE until to * SCALE).flatMapTo(HashSet()) { x ->
+            (0 until pixels.height).map { pixels.argbAt(x, it) }
+        }
     }
 
-    private fun ring(
-        tone: StatusTone,
-        tokens: ColorTokens = colors,
-    ): Rgba =
-        when (tone) {
-            StatusTone.WARN -> tokens.status.warn
-            StatusTone.WORK -> tokens.status.work
-            StatusTone.OK -> tokens.status.ok
-            else -> tokens.status.err
+    /** The reference chips, the way the design system draws them, over the fill of an unselected row. */
+    @Composable
+    private fun References() {
+        Column {
+            REFERENCES.forEach { ref ->
+                Box(
+                    Modifier.testTag(ref.tag).background(panelColor()),
+                ) {
+                    AmChip(
+                        label = ref.number,
+                        tone = ref.tone,
+                        icon = ref.icon,
+                        description = "ref ${ref.tag}",
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Pixels of [a] that differ visibly from [b] (more than [TOLERANCE] in a channel): the edge of a pill that sits on
+     * a fraction of a pixel is anti-aliased a little differently, an icon or a tone of another kind is not.
+     */
+    private fun differences(
+        a: PixelMap,
+        b: PixelMap,
+    ): Int {
+        if (a.width != b.width || a.height != b.height) return Int.MAX_VALUE
+        return (0 until a.width).sumOf { x -> (0 until a.height).count { y -> apart(a.argbAt(x, y), b.argbAt(x, y)) } }
+    }
+
+    private fun apart(
+        p: Int,
+        q: Int,
+    ): Boolean =
+        (0..SHIFT_MAX step BYTE).any { shift ->
+            abs(((p shr shift) and MASK) - ((q shr shift) and MASK)) >
+                TOLERANCE
         }
 
-    @ParameterizedTest(name = "{1} on {0}")
-    @MethodSource("zeroCounters")
-    fun `zero counters show the muted number and the ring of each tone`(
-        row: String,
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("states")
+    fun `chip of a state is drawn as the design system chip with that tone and icon`(
+        tag: String,
         description: String,
-        tone: StatusTone,
-    ) = runTallTest {
-        // Given a sidebar without any session: every row has four zero counters
-        show()
+    ) = runWideTest {
+        // Given a project with 1 waiting, 2 working and 3 failed sessions
+        val sessions =
+            plainSessions(
+                SessionState.AwaitingInput(null),
+                SessionState.Working,
+                SessionState.Working,
+                SessionState.Failed,
+                SessionState.Failed,
+                SessionState.Failed,
+            )
+        show(world(*sessions)) { References() }
+        awaitLoaded()
 
-        // When the counter is drawn at 4 px per dp
-        val counter = counter(row, description)
-        val pixels = counter.pixelMap()
-        val bounds = counter.fetchSemanticsNode().boundsInRoot
+        // When the chip is drawn at 4 px per dp
+        val drawn = chip(plainRow, description).pixelMap()
 
-        // Then it is a circle of at least 22 dp with a 1 dp ring in the status token (4 px at the left edge)
-        bounds.width shouldBe bounds.height
-        (bounds.width >= 22 * SCALE) shouldBe true
-        pixels.argbAt(2, pixels.height / 2) shouldBe ring(tone).argb()
-        // and inside the ring the background of the row, nothing else
-        pixels.argbAt(2 * SCALE, pixels.height / 2) shouldBe colors.surfaces.panel.argb()
-        // and the number is muted, not the plain text colour
-        counter.argbColors() shouldContain colors.content.muted.argb()
-        counter.argbColors() shouldNotContain colors.content.text.argb()
+        // Then it is pixel for pixel the AmChip of that state: tone fill, icon and number
+        differences(drawn, onNodeWithTag(tag).pixelMap()) shouldBe 0
+        // (the three states are drawn differently, so the match above is not by accident)
+        REFERENCES.filter { it.tag != tag }.forEach { other ->
+            (differences(drawn, onNodeWithTag(other.tag).pixelMap()) > 0) shouldBe true
+        }
     }
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("rows")
-    fun `zero counter on a selected row is filled with sel`(row: String) =
+    @MethodSource("chipCases")
+    fun `only states with sessions have a chip and they come waiting working failed`(
+        @Suppress("UNUSED_PARAMETER") name: String,
+        states: List<SessionState>,
+        expected: List<String>,
+    ) = runTallTest {
+        // Given a project with these sessions (done and stopped ones among them)
+        show(world(*plainSessions(*states.toTypedArray())))
+        awaitLoaded()
+
+        // Then its chips are exactly the expected ones, in that order
+        chipTexts(plainRow) shouldBe expected
+    }
+
+    @Test
+    fun `project with only zero counts has no row of chips`() =
         runTallTest {
-            show()
-            select(row)
+            // Given a project with a done and a stopped session only, next to one with a working session
+            show(world(*plainSessions(SessionState.Done, SessionState.Stopped)))
+            awaitLoaded()
 
-            ZERO_TONES.forEach { (description, tone) ->
-                val pixels = counter(row, description).pixelMap()
-
-                pixels.argbAt(2, pixels.height / 2) shouldBe ring(tone).argb()
-                pixels.argbAt(2 * SCALE, pixels.height / 2) shouldBe colors.surfaces.sel.argb()
-            }
-            counter(row, "czeka: 0").argbColors() shouldContain colors.content.muted.argb()
+            // Then it has no chip, and its row is lower than the row with a chip (no empty row of chips)
+            chipTexts(plainRow) shouldBe emptyList()
+            val quiet = onNodeWithTag(plainRow).fetchSemanticsNode().boundsInRoot.height
+            val busy = onNodeWithTag(markerRow).fetchSemanticsNode().boundsInRoot.height
+            quiet shouldBeLessThan busy
         }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("rows")
-    fun `hovered row keeps the opaque fill of a zero counter`(row: String) =
+    private fun groupSessions() =
+        arrayOf(
+            WorldSession(aSessionId("asks"), plantDir.resolve("Anna/x"), SessionState.AwaitingInput(null)),
+            WorldSession(aSessionId("fin"), plantDir.resolve("Anna"), SessionState.Done),
+            WorldSession(aSessionId("works"), plantDir.resolve("bob"), SessionState.Working),
+            WorldSession(aSessionId("rooted"), plantDir, SessionState.Working),
+        )
+
+    @Test
+    fun `subfolder rows have no chips and the group row sums the whole group`() =
         runTallTest {
-            // Given the sidebar and a counter at rest
-            show()
-            val node = awaitTag(row)
-            val atRest = node.pixelMap()
-            val topMiddle = atRest.width / 2
+            // Given sessions in Anna (waiting, done), in bob (working) and in the project directory (working)
+            show(world(*groupSessions()))
+            awaitLoaded()
 
-            // When the mouse moves over the row (on its left padding, away from the counters)
-            node.performMouseInput { moveTo(Offset(3f * SCALE, atRest.height / 2f)) }
-            waitForIdle()
-
-            // Then the click layer does draw its overlay over the row (the premise of the test) ...
-            node.pixelMap().argbAt(topMiddle, 2) shouldNotBe atRest.argbAt(topMiddle, 2)
-            // ... and the counters, filled opaquely, do not show it through
-            ZERO_TONES.forEach { (description, tone) ->
-                val pixels = counter(row, description).pixelMap()
-                pixels.argbAt(2 * SCALE, pixels.height / 2) shouldBe colors.surfaces.panel.argb()
-                pixels.argbAt(2, pixels.height / 2) shouldBe ring(tone).argb()
+            // Then the group row has chips for waiting and working only (done is not shown) ...
+            chipTexts(groupRow) shouldBe listOf("czeka: 1", "pracuje: 2")
+            // ... and no subfolder row has a chip, whatever its sessions
+            listOf(annaRow, bobRow, caraRow).forEach { row ->
+                awaitTag(row)
+                chipTexts(row) shouldBe emptyList()
             }
         }
 
     @Test
-    fun `non zero counter keeps its tone fill`() =
+    fun `subfolder folder icon keeps the tone of its sessions`() =
         runTallTest {
-            // Given a project with one session of each kind
-            val dir = plain.dir
-            show(
-                world(
-                    WorldSession(aSessionId("w"), dir, SessionState.AwaitingInput(null)),
-                    WorldSession(aSessionId("k"), dir, SessionState.Working),
-                    WorldSession(aSessionId("d"), dir, SessionState.Done),
-                    WorldSession(aSessionId("f"), dir, SessionState.Failed),
-                ),
-            )
+            // Given the same group: Anna waits, bob works, cara has nothing
+            show(world(*groupSessions()))
+            awaitLoaded()
 
-            // Then each counter is filled with the tint of its tone and has no ring of the status token
-            val tint = { token: Rgba ->
-                colors.surfaces.panel
-                    .over(colors.surfaces.bg)
-                    .mix(token, TINT)
-            }
-            listOf(
-                Triple("czeka: 1", colors.status.warnBg, colors.status.warn),
-                Triple("pracuje: 1", tint(colors.status.work), colors.status.work),
-                Triple("gotowe: 1", tint(colors.status.ok), colors.status.ok),
-                Triple("błąd: 1", tint(colors.status.err), colors.status.err),
-            ).forEach { (description, fill, token) ->
-                val pixels = counter(plainRow, description).pixelMap()
-                pixels.argbAt(2, pixels.height / 2) shouldBe fill.argb()
-                pixels.argbAt(2 * SCALE, pixels.height / 2) shouldBe fill.argb()
-                (fill == token) shouldBe false
-            }
-        }
+            // When the folder icons (16 dp after 28 dp of indent) are drawn
+            val warn = colors.status.warn.argb()
+            val work = colors.status.work.argb()
+            val anna = awaitTag(annaRow).iconStrip(from = 28, to = 44)
+            val bob = awaitTag(bobRow).iconStrip(from = 28, to = 44)
+            val cara = awaitTag(caraRow).iconStrip(from = 28, to = 44)
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("rows")
-    fun `counters read czeka 0 pracuje 0 gotowe 0 błąd 0`(row: String) =
-        runTallTest {
-            show()
-
-            // The four descriptions, once each, from left to right in the order of the roadmap
-            val lefts =
-                ZERO_TONES.map { (description, _) -> counter(row, description).fetchSemanticsNode().boundsInRoot.left }
-            lefts shouldBe lefts.sorted()
-            lefts.toSet().size shouldBe 4
-            countersIn(row) shouldBe 4
+            // Then waiting gives warn, working gives work, and none gives neither
+            anna shouldContain warn
+            anna shouldNotContain work
+            bob shouldContain work
+            bob shouldNotContain warn
+            cara shouldNotContain warn
+            cara shouldNotContain work
         }
 
     @Test
-    fun `group row sums the group and the subfolder row only its own`() =
-        runTallTest {
-            // Given sessions in the project directory, in Anna, in bob and in a directory that is no subfolder
-            show(
-                world(
-                    WorldSession(aSessionId("root"), plantDir, SessionState.Working),
-                    WorldSession(aSessionId("asks"), plantDir.resolve("Anna/x"), SessionState.AwaitingInput(null)),
-                    WorldSession(aSessionId("fin1"), plantDir.resolve("bob"), SessionState.Done),
-                    WorldSession(aSessionId("fin2"), plantDir.resolve("bob"), SessionState.Done),
-                    WorldSession(aSessionId("bad1"), plantDir.resolve("bob/y"), SessionState.Failed),
-                    WorldSession(aSessionId("bad2"), plantDir.resolve("marketing/z"), SessionState.Failed),
-                ),
-            )
-
-            // Then the group row counts all of them and the subfolder rows only their own
-            listOf("czeka: 1", "pracuje: 1", "gotowe: 2", "błąd: 2").forEach { counter(groupRow, it) }
-            listOf("czeka: 1", "pracuje: 0", "gotowe: 0", "błąd: 0").forEach { counter(annaRow, it) }
-            listOf("czeka: 0", "pracuje: 0", "gotowe: 2", "błąd: 1").forEach { counter(bobRow, it) }
-            // and the plain project is unaffected
-            listOf("czeka: 0", "pracuje: 0", "gotowe: 0", "błąd: 0").forEach { counter(plainRow, it) }
-        }
-
-    @Test
-    fun `counters are drawn at zero while the sessions load`() =
+    fun `no chips while the sessions load`() =
         runTallTest {
             // Given sessions that are running, but a monitor that has not listed yet
-            val running = WorldSession(aSessionId("w"), plantDir, SessionState.Working)
-            val loading =
-                ControllerWorld(
-                    projects = FakeProjectsApi(initial = listOf(plant, plain)),
-                    running = listOf(running),
-                ).also { it.monitor = LoadingSessionMonitor() }
+            val loading = world(*plainSessions(SessionState.Working)).also { it.monitor = LoadingSessionMonitor() }
 
             show(loading)
+            awaitTag(plainRow)
+            awaitTag(groupRow)
+            awaitTag(markerRow)
+            waitForIdle()
 
-            // Then every row has its four counters, all at zero
-            listOf(groupRow, annaRow, plainRow).forEach { row ->
-                listOf("czeka: 0", "pracuje: 0", "gotowe: 0", "błąd: 0").forEach { counter(row, it) }
-            }
+            // Then no row has a chip
+            listOf(groupRow, plainRow, markerRow, annaRow).forEach { chipTexts(it) shouldBe emptyList() }
         }
 
     @Test
-    fun `counters never take focus and are not clickable`() =
+    fun `chips never take focus and are not clickable`() =
         runTallTest {
-            // Given the sidebar with a click on a counter's row
-            show()
-            counter(groupRow, "czeka: 0")
-            select(groupRow)
+            // Given the sidebar with a click on a row that has chips
+            show(world(*groupSessions()))
+            awaitLoaded()
+            chip(groupRow, "czeka: 1")
+            awaitTag(groupRow).performClick()
+            waitForIdle()
 
             // When Tab walks through the window
             repeat(times = 6) {
@@ -267,38 +311,77 @@ internal class SidebarCountersLookTest {
                 }
                 waitForIdle()
 
-                // Then no row, counter or button of the sidebar holds the focus
+                // Then no row, chip or button of the sidebar holds the focus
                 onAllNodes(
                     hasAnyAncestor(hasTestTag(ProjectsTags.SIDEBAR)) and
                         SemanticsMatcher.expectValue(SemanticsProperties.Focused, true),
                     useUnmergedTree = true,
                 ).assertCountEquals(0)
             }
-            // and a counter has no click action of its own
-            counter(groupRow, "czeka: 0")
+            // and a chip has no click action of its own
+            chip(groupRow, "czeka: 1")
                 .fetchSemanticsNode()
                 .config
                 .contains(SemanticsActions.OnClick) shouldBe false
-            countersIn(groupRow) shouldBe 4
+            chipTexts(groupRow).size shouldBe 2
         }
 
+    /** Like [runTallTest], but wide enough for the sidebar (260 dp) and the reference chips beside it. */
+    private fun runWideTest(block: suspend SkikoComposeUiTest.() -> Unit) =
+        runSkikoComposeUiTest(size = Size(width = 1400f, height = 1500f), block = block)
+
+    private data class Reference(
+        val tag: String,
+        val number: String,
+        val tone: StatusTone,
+        val icon: IconKind,
+    )
+
     companion object {
-        private const val TINT = 15
-        private val ZERO_TONES =
+        private const val TOLERANCE = 8
+        private const val BYTE = 8
+        private const val SHIFT_MAX = 16
+        private const val MASK = 0xFF
+
+        private val REFERENCES =
             listOf(
-                "czeka: 0" to StatusTone.WARN,
-                "pracuje: 0" to StatusTone.WORK,
-                "gotowe: 0" to StatusTone.OK,
-                "błąd: 0" to StatusTone.ERR,
+                Reference("ref-waiting", "1", StatusTone.WARN, IconKind.WAITING),
+                Reference("ref-working", "2", StatusTone.WORK, IconKind.WORKING),
+                Reference("ref-failed", "3", StatusTone.ERR, IconKind.FAILED),
             )
-        private val group = ProjectsTags.row(ProjectId("project0001"))
-        private val sub = ProjectsTags.subfolderRow(ProjectId("project0001"), SubfolderName("Anna"))
+
+        private val ASKING = SessionState.AwaitingInput(null)
 
         @JvmStatic
-        fun rows(): List<Arguments> = listOf(arguments(group), arguments(sub))
+        fun states(): List<Arguments> =
+            listOf(
+                arguments("ref-waiting", "czeka: 1"),
+                arguments("ref-working", "pracuje: 2"),
+                arguments("ref-failed", "błąd: 3"),
+            )
 
         @JvmStatic
-        fun zeroCounters(): List<Arguments> =
-            listOf(group, sub).flatMap { row -> ZERO_TONES.map { (text, tone) -> arguments(row, text, tone) } }
+        fun chipCases(): List<Arguments> =
+            listOf(
+                arguments("none", emptyList<SessionState>(), emptyList<String>()),
+                arguments(
+                    "done and stopped only",
+                    listOf(SessionState.Done, SessionState.Stopped),
+                    emptyList<String>(),
+                ),
+                arguments("working only", listOf(SessionState.Working), listOf("pracuje: 1")),
+                arguments("failed only", listOf(SessionState.Failed), listOf("błąd: 1")),
+                arguments("waiting by permission", listOf(SessionState.AwaitingPermission("Bash")), listOf("czeka: 1")),
+                arguments(
+                    "failed and waiting, input order reversed",
+                    listOf(SessionState.Failed, SessionState.Failed, ASKING),
+                    listOf("czeka: 1", "błąd: 2"),
+                ),
+                arguments(
+                    "all three with done between",
+                    listOf(SessionState.Failed, SessionState.Done, SessionState.Working, ASKING, ASKING, ASKING),
+                    listOf("czeka: 3", "pracuje: 1", "błąd: 1"),
+                ),
+            )
     }
 }

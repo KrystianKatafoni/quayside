@@ -173,10 +173,8 @@ internal class MissionControlStringsTest {
                 "row.place.root",
                 "row.place.subfolder",
                 "overview.title",
-                "overview.root",
                 "overview.count.waiting",
                 "overview.count.working",
-                "overview.count.done",
                 "overview.count.failed",
             )
 
@@ -238,7 +236,6 @@ internal class MissionControlStringsTest {
                     UiText("row.place.subfolder", listOf("soft")),
                     UiText("overview.count.waiting", listOf("1")),
                     UiText("overview.count.working", listOf("2")),
-                    UiText("overview.count.done", listOf("3")),
                     UiText("overview.count.failed", listOf("4")),
                 )
 

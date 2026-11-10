@@ -14,17 +14,14 @@ internal class GroupOverviewMessagesTest {
     @Test
     fun `section row and counter texts`() {
         mcText("overview.title") shouldBe "Podfoldery"
-        mcText("overview.root") shouldBe "folder główny"
         mcText("overview.count.waiting", "1") shouldBe "czeka: 1"
         mcText("overview.count.working", "1") shouldBe "pracuje: 1"
-        mcText("overview.count.done", "1") shouldBe "gotowe: 1"
         mcText("overview.count.failed", "1") shouldBe "błąd: 1"
     }
 
     @Test
-    fun `the place badge and the root row of the overview say the same`() {
+    fun `the place badge says folder główny`() {
         mcText("row.place.root") shouldBe "folder główny"
-        mcText("row.place.root") shouldBe mcText("overview.root")
         mcText("row.place.subfolder", "soft") shouldBe "folder: soft"
     }
 
@@ -33,6 +30,8 @@ internal class GroupOverviewMessagesTest {
         val old =
             listOf(
                 "overview.rest",
+                "overview.root",
+                "overview.count.done",
                 "overview.idle",
                 "overview.failed",
                 "overview.waiting.one",
@@ -51,7 +50,6 @@ internal class GroupOverviewMessagesTest {
     fun `counters do not inflect`(count: Int) {
         mcText("overview.count.waiting", "$count") shouldBe "czeka: $count"
         mcText("overview.count.working", "$count") shouldBe "pracuje: $count"
-        mcText("overview.count.done", "$count") shouldBe "gotowe: $count"
         mcText("overview.count.failed", "$count") shouldBe "błąd: $count"
     }
 }

@@ -24,9 +24,6 @@ import java.nio.file.Path
 
 internal const val COUNTERS_WAIT_MS = 5_000L
 
-/** The four counter kinds in the order of the roadmap (AM-310): the part of a description before the colon. */
-internal val COUNTER_KINDS = listOf("czeka", "pracuje", "gotowe", "błąd")
-
 /**
  * The group of the AM-310 window tests on fakes: `plant-puls` with the subfolders `docs` and `soft`, and a plain
  * project `other`. Directories are created in [root]; sessions are named after where they run.
@@ -79,16 +76,19 @@ internal fun ComposeUiTest.counters(tag: String): Map<String, Int> =
 
 private val COUNTER_TEXT = Regex("(czeka|pracuje|gotowe|błąd): (\\d+)")
 
-/** Waits until the counters under [tag] are exactly [expected], in the order of [COUNTER_KINDS]. */
+/**
+ * Waits until the row [tag] (a sidebar row or a row of the group overview) has exactly the chips of the non-zero counts
+ * (a count of 0 means no chip; there is no "done" chip). Pass a row that has at least one chip when the aim is to prove
+ * a row empty after loading: with all three at 0 this returns at once.
+ */
 @OptIn(ExperimentalTestApi::class)
-internal fun ComposeUiTest.awaitCounters(
+internal fun ComposeUiTest.awaitChips(
     tag: String,
-    waiting: Int,
-    working: Int,
-    done: Int,
-    failed: Int,
+    waiting: Int = 0,
+    working: Int = 0,
+    failed: Int = 0,
 ) {
-    val expected = COUNTER_KINDS.zip(listOf(waiting, working, done, failed)).toMap()
+    val expected = mapOf("czeka" to waiting, "pracuje" to working, "błąd" to failed).filterValues { it != 0 }
     waitUntil(timeoutMillis = COUNTERS_WAIT_MS) { counters(tag) == expected }
 }
 

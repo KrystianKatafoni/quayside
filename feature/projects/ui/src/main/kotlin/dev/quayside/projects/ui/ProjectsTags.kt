@@ -31,6 +31,11 @@ internal object ProjectsTags {
     const val STOP_AND_REMOVE = "projects.dialog.remove.stop"
     const val REMOVE_KEEP_SESSIONS = "projects.dialog.remove.keep"
     const val MESSAGE = "projects.dialog.message"
+
+    /** The question "Znaleziono N starych sesji" after adding a folder and its answers (FR-P9). */
+    const val PAST_DIALOG = "projects.dialog.past"
+    const val PAST_SHOW = "projects.dialog.past.show"
+    const val PAST_LATER = "projects.dialog.past.later"
     const val CANCEL = "projects.dialog.cancel"
 
     /** "Podfoldery…" in the row menu, the dialog, its "Zapisz" and the waiting state before it opens (AM-306). */
@@ -41,6 +46,11 @@ internal object ProjectsTags {
 
     const val RAIL = "projects.rail"
     const val RAIL_ADD = "projects.rail.add"
+
+    /** The choice of the age limit [age] and of the count limit [limit] (enum names) in the add dialog (FR-P9). */
+    fun historyAge(age: String): String = "projects.dialog.add.historyAge.$age"
+
+    fun historyLimit(limit: String): String = "projects.dialog.add.historyLimit.$limit"
 
     /** The rail button of project [id]. */
     fun railButton(id: ProjectId): String = "projects.rail.${id.value}"

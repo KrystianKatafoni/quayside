@@ -4,6 +4,8 @@ import dev.quayside.core.domain.ProjectId
 import dev.quayside.projects.api.DirectoryReport
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.SubfolderName
+import dev.quayside.sessions.api.HistoryAge
+import dev.quayside.sessions.api.HistoryLimit
 import dev.quayside.sessions.api.SessionCounts
 
 /**
@@ -54,6 +56,16 @@ internal sealed interface Dialog {
     data class ConfirmAdd(
         val report: DirectoryReport,
         val error: UiText? = null,
+        val history: HistoryChoice? = null,
+    ) : Dialog
+
+    /**
+     * "Znaleziono N starych sesji. Pokazać?" after adding [project] (FR-P9): "Pokaż" is [SidebarEvent.ShowPastSessions],
+     * "Nie teraz" is [SidebarEvent.Dismiss]. Nothing is stored per project.
+     */
+    data class PastSessions(
+        val project: Project,
+        val counts: PastCounts,
     ) : Dialog
 
     /** Remove confirmation; [active] = counts frozen when the dialog opened, null = the snapshot was not fresh. */
@@ -147,6 +159,19 @@ internal sealed interface SidebarEvent {
 
     /** "Add" in [Dialog.ConfirmAdd]. */
     data object ConfirmAdd : SidebarEvent
+
+    /** "Pokaż" in [Dialog.PastSessions]: selects the project and the filter "Zakończone", closes the dialog. */
+    data object ShowPastSessions : SidebarEvent
+
+    /** A choice of the age limit in [Dialog.ConfirmAdd]; saved as the global setting at once. */
+    data class ChooseHistoryAge(
+        val age: HistoryAge,
+    ) : SidebarEvent
+
+    /** A choice of the count limit in [Dialog.ConfirmAdd]; saved as the global setting at once. */
+    data class ChooseHistoryLimit(
+        val limit: HistoryLimit,
+    ) : SidebarEvent
 
     /** "Stop sessions and remove" in [Dialog.ConfirmRemove] with active sessions. */
     data object StopAndRemove : SidebarEvent

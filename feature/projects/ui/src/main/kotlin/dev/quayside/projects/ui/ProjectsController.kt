@@ -55,6 +55,7 @@ public class ProjectsController(
 
     private val removal = RemoveFlow(ui, commands, hooks, ::begin)
     private val subfolders = SubfolderFlow(ui, projects, inspector, logger, ::begin)
+    private val past = ports.past?.let { PastSessionsFlow(ui, projects, sessions.monitor.snapshot, it, scope) }
 
     /** The running step of a dialog flow, kept only to cancel an inspection or a listing. */
     private var running: Job? = null
@@ -133,9 +134,16 @@ public class ProjectsController(
         val dialog = ui.value.dialog
         when {
             event == SidebarEvent.Dismiss -> dismiss(dialog)
+
             event == SidebarEvent.ConfirmAdd && dialog is Dialog.ConfirmAdd -> confirmAdd(dialog)
+
             event == SidebarEvent.ConfirmRename && dialog is Dialog.Rename -> confirmRename(dialog)
-            removal.handle(event, dialog) || subfolders.handle(event, dialog) -> Unit
+
+            removal.handle(
+                event,
+                dialog,
+            ) || subfolders.handle(event, dialog) || past?.handle(event, dialog) == true -> Unit
+
             else -> ui.update { it.reduce(event) }
         }
     }
@@ -199,6 +207,7 @@ public class ProjectsController(
             is Outcome.Ok -> {
                 logger.info("project added", "projectId" to added.value.id.value)
                 ui.update { it.copy(selected = added.value.id, dialog = null) }
+                past?.expect(added.value)
             }
 
             is Outcome.Err -> {
@@ -212,7 +221,7 @@ public class ProjectsController(
     private fun offer(report: DirectoryReport) {
         val existing = report.alreadyAdded
         if (existing == null) {
-            ui.update { it.copy(dialog = Dialog.ConfirmAdd(report)) }
+            ui.update { it.copy(dialog = Dialog.ConfirmAdd(report, history = past?.choices())) }
         } else {
             val message = Dialog.Message(ProjectMessages.of(ProjectError.AlreadyAdded(existing)))
             ui.update { it.copy(selected = existing, dialog = message) }

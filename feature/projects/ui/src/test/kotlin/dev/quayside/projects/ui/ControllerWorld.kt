@@ -9,11 +9,13 @@ import dev.quayside.projects.api.FakeProjectInspector
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.InspectionWorld
 import dev.quayside.projects.api.PathKind
+import dev.quayside.sessions.api.FakeSessionHistorySettings
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.SessionCounts
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.sessions.api.SessionsWorld
+import dev.quayside.sessions.api.WorldPastSession
 import dev.quayside.sessions.api.WorldProject
 import dev.quayside.sessions.api.WorldSession
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +31,7 @@ import java.nio.file.Path
  * [sessions] knows the projects [projects] starts with plus [extraProjects] (for projects the test adds later)
  * and runs [running]; which project a session belongs to follows from its directory.
  */
+@Suppress("LongParameterList")
 internal class ControllerWorld(
     val projects: FakeProjectsApi = FakeProjectsApi(),
     inspection: InspectionWorld = InspectionWorld(),
@@ -36,20 +39,31 @@ internal class ControllerWorld(
     gatedInspection: Boolean = false,
     running: List<WorldSession> = emptyList(),
     extraProjects: List<WorldProject> = emptyList(),
+    past: PastFiles? = null,
 ) {
+    /** Projects whose answer "Pokaż" reached the `app` callback of [PastSessionsPorts], in order. */
+    val shown = mutableListOf<ProjectId>()
+
     /** What the sidebar reads the snapshot from; default [sessions]. A monitor that never lists gives `Loading`. */
     var monitor: SessionMonitor? = null
 
     /** What is inside a directory, for the subfolders dialog; set before the controller starts (default: nothing). */
     var disk: (Path) -> List<DirEntry> = { emptyList() }
 
+    /** The global settings of the disk sessions, behind the choices of the add dialog (only with [past]). */
+    val historySettings = FakeSessionHistorySettings()
+
     val sessions =
         FakeSessions(
             SessionsWorld(
                 projects = projects.projects.value.map { WorldProject(it.id, it.dir) } + extraProjects,
                 sessions = running,
+                pastSessions = past?.files.orEmpty(),
             ),
+            historySettings = historySettings,
+            startPaused = past?.paused == true,
         )
+    private val pastPorts = past?.let { PastSessionsPorts(historySettings) { id -> shown += id } }
     val picker = FakeDirectoryPicker()
     val hooks = FakeProjectHooks()
     val inspector =
@@ -64,11 +78,20 @@ internal class ControllerWorld(
             projects,
             inspector,
             SessionsApi(monitor ?: sessions, sessions),
-            ProjectsPorts(picker, hooks),
+            ProjectsPorts(picker, hooks, pastPorts),
             scope,
             logger,
         )
 }
+
+/**
+ * Session files on the disk of a [ControllerWorld] (FR-P9): the add flow gets the ports of the disk sessions; with
+ * [paused] the first scan is held back until `world.sessions.resumeScan()`.
+ */
+internal class PastFiles(
+    val files: List<WorldPastSession> = emptyList(),
+    val paused: Boolean = true,
+)
 
 /** The controller of [world] running in `backgroundScope`, after it has read the initial state. */
 internal fun TestScope.start(world: ControllerWorld): ProjectsController =

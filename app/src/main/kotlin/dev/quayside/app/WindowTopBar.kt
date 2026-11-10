@@ -31,13 +31,15 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * What the top bar and the status bar of the window need besides the controllers (AM-816): [onNewAgent] and whether it
  * is [newAgentEnabled] (as the menu item), the [notifications] behind the voice chip and the status text, and the
- * [supervisor] version of Claude Code (null while unknown or without Claude Code).
+ * [supervisor] version of Claude Code (null while unknown or without Claude Code), and [onHistorySettings], the link
+ * "Zmień limit" of the list of sessions (FR-P9) that opens the window "Stare sesje z dysku".
  */
 internal class WindowChrome(
     val onNewAgent: () -> Unit = {},
     val newAgentEnabled: Boolean = true,
     val notifications: NotificationChrome? = null,
     val supervisor: String? = null,
+    val onHistorySettings: () -> Unit = {},
 )
 
 /** The notification settings of the window and what a click on the voice chip does. */

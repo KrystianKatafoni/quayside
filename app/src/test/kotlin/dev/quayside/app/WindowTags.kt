@@ -166,4 +166,28 @@ internal object WindowTags {
     fun missionRow(sessionId: String): String = "missionControl.row.$sessionId"
 
     fun missionRowMenuButton(sessionId: String): String = "missionControl.rowMenuButton.$sessionId"
+
+    // Disk sessions (FR-P9, AM-312): the names the window gives its nodes; the tests are the contract.
+
+    /** The "z dysku" badge of a row. */
+    fun rowDisk(sessionId: String): String = "missionControl.rowDisk.$sessionId"
+
+    /** The last row of the list: "jeszcze N starszych" and its link "Zmień limit". */
+    const val OLDER_ROW = "missionControl.older"
+    const val OLDER_CHANGE = "missionControl.older.change"
+
+    /** Palette command id and dialog of "Stare sesje z dysku…"; [age], [limit] are enum names. */
+    const val HISTORY_COMMAND = "sessions.history"
+    const val HISTORY_DIALOG = "history.settings"
+
+    fun historyAge(age: String): String = "history.settings.age.$age"
+
+    fun historyLimit(limit: String): String = "history.settings.limit.$limit"
+
+    /** The question after adding a folder, its answers, and the age choice in the add dialog. */
+    const val PAST_DIALOG = "projects.dialog.past"
+    const val PAST_SHOW = "projects.dialog.past.show"
+    const val PAST_LATER = "projects.dialog.past.later"
+
+    fun addHistoryAge(age: String): String = "projects.dialog.add.historyAge.$age"
 }

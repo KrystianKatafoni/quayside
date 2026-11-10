@@ -109,6 +109,7 @@ private fun handlersOf(
         keyCaps = keyCaps,
         onOpenSubfolder = { projects.onIntent(ProjectsIntent.Select(it.project, it.subfolder)) },
         newAgent = NewAgentAction(chrome.onNewAgent, chrome.newAgentEnabled, keyCapOf(AppShortcuts.NEW_AGENT)),
+        onChangeHistoryLimit = chrome.onHistorySettings,
     )
 
 private val LIST_ONLY: StateFlow<WindowMode> = MutableStateFlow(WindowMode.LIST)

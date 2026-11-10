@@ -9,6 +9,7 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
 import dev.quayside.projects.api.ProjectInspector
 import dev.quayside.projects.api.ProjectsApi
+import dev.quayside.sessions.api.SessionHistorySettingsRepo
 import dev.quayside.sessions.api.SessionsApi
 import dev.quayside.summaries.api.SummarySettingsRepo
 import dev.quayside.terminal.api.TerminalApi
@@ -27,11 +28,15 @@ internal class AppModules(
     val appearance: AppearanceDeps,
 )
 
-/** The notification module, the summaries switch and the window layout: what the dialogs and the split work on. */
+/**
+ * The notification module, the summaries switch, the window layout and the settings of the disk sessions: what the
+ * dialogs and the split work on.
+ */
 internal class SettingsDeps(
     val notifications: NotificationDeps,
     val summaries: SummarySettingsRepo,
     val layout: WindowLayoutDeps,
+    val history: SessionHistorySettingsRepo,
 )
 
 /**

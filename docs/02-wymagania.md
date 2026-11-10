@@ -13,7 +13,7 @@ Priorytety: **M** = must (MVP), **S** = should (1.0), **C** = could (później).
 | FR-P3 | Usunięcie projektu z narzędzia (menu ⋯, ⌘⌫, komenda w palecie). Pliki, transkrypty i worktree **zostają na dysku** | M |
 | FR-P4 | Jeśli w usuwanym projekcie działają sesje: wybór „zatrzymaj sesje i usuń” albo „usuń z listy, sesje działają dalej” | M |
 | FR-P5 | Import projektów z historii `~/.claude/projects/` | C |
-| FR-P6 | Zmiana nazwy wyświetlanej projektu, licznik sesji czekających, pracujących, gotowych i z błędem w sidebarze | S |
+| FR-P6 | Zmiana nazwy wyświetlanej projektu, plakietki sesji czekających, pracujących i z błędem (z ikoną stanu) przy projekcie w sidebarze | S |
 | FR-P7 | Grupa projektu: projekt z podfolderami (np. `plant-puls/` z `soft/`, `marketing/`) pokazany w sidebarze jako grupa z podpozycjami, filtr sesji po podfolderze, liczniki per podfolder | S |
 | FR-P8 | Przegląd grupy projektu: po wybraniu grupy widok z każdym podprojektem i liczbą agentów, którzy na mnie czekają (oraz pracujących i z błędem), klik w podprojekt otwiera jego sesje | S |
 

@@ -18,6 +18,7 @@ import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionError
+import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionPermissionMode
 import dev.quayside.sessions.api.SessionState
 import java.nio.file.Path
@@ -75,12 +76,14 @@ internal class RuntimeSessionCommands(
 
     override suspend fun respawn(id: SessionId): Outcome<Unit, SessionError> =
         checked("respawn", id) { session ->
+            if (session.origin == SessionOrigin.DISK) return@checked Outcome.Err(SessionError.UnknownSession(id))
             if (session.state.isActive) return@checked Outcome.Err(SessionError.SessionActive(id))
             runtime.respawn(id).then("respawn", id) { Expected.Moves(id, session.phase(), RuntimePhase.WORKING, it) }
         }
 
     override suspend fun remove(id: SessionId): Outcome<Unit, SessionError> =
         checked("remove", id) { session ->
+            if (session.origin == SessionOrigin.DISK) return@checked state.hide(id)
             if (session.state.isActive) return@checked Outcome.Err(SessionError.SessionActive(id))
             runtime.remove(id).then("remove", id) { Expected.Disappears(id, it) }
         }

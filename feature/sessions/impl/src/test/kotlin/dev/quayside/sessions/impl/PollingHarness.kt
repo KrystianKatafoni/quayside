@@ -2,6 +2,7 @@
 
 package dev.quayside.sessions.impl
 
+import dev.quayside.agentruntime.api.ConversationId
 import dev.quayside.agentruntime.api.FakeAgentEventSource
 import dev.quayside.agentruntime.api.FakeAgentRuntime
 import dev.quayside.agentruntime.api.RuntimePhase
@@ -114,7 +115,7 @@ internal fun WorldSession.toRuntime(): RuntimeSession {
     val (phase, waitingFor) = state.toRuntimePhase()
     return RuntimeSession(
         id = id,
-        conversationId = null,
+        conversationId = conversationId?.let(::ConversationId),
         name = name,
         cwd = cwd,
         phase = phase,

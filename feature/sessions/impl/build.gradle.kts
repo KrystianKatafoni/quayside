@@ -17,6 +17,8 @@ dependencies {
     implementation(project(":core:domain"))
     // GitBranch: the branch of a session directory (AM-818).
     implementation(project(":core:process"))
+    // JsonStorage and StoreSpec for session-history.json (AM-312, ADR 0032).
+    implementation(project(":core:storage"))
     // Tree parsing of the transcript tail only (Json.parseToJsonElement); no compiler plugin needed.
     implementation(libs.kotlinx.serialization.json)
 

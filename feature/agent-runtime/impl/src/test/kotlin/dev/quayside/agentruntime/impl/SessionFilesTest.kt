@@ -22,6 +22,7 @@ internal class SessionFilesTest {
             lastActivityAt = at(LAST_TIME),
             cwdChanged = false,
             title = "hello",
+            lastPrompt = "hello",
         )
 
     // --- 1. parse: the start directory and the timestamps ---
@@ -79,7 +80,7 @@ internal class SessionFilesTest {
 
         val result = summaryOf(SessionFiles.parse(SESSION_ID, head, tail, headIsWhole = false))
 
-        result shouldBe usual
+        result shouldBe usual.copy(lastPrompt = null) // the tail holds no user message
     }
 
     @Test

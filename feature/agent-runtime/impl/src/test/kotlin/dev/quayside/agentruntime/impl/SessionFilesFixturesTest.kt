@@ -80,7 +80,17 @@ internal class SessionFilesFixturesTest {
                     lastActivityAt = lastActivityAt?.let(::at),
                     cwdChanged = cwdChanged,
                     title = title,
+                    lastPrompt = title,
                 ),
+            )
+
+        /** The expected summary with the name from the file and the last prompt (when it is not the title). */
+        private fun Outcome<SessionFileSummary, SessionFileProblem>.named(
+            customTitle: String?,
+            lastPrompt: String? = null,
+        ): Outcome<SessionFileSummary, SessionFileProblem> =
+            Outcome.Ok(
+                summaryOf(this).let { it.copy(customTitle = customTitle, lastPrompt = lastPrompt ?: it.lastPrompt) },
             )
 
         private fun at10(minute: Int): String = "2026-01-01T10:%02d:00Z".format(Locale.ROOT, minute)
@@ -99,7 +109,8 @@ internal class SessionFilesFixturesTest {
                 ),
                 arguments(
                     "cwd-changes.jsonl",
-                    ok(at10(0), at10(6), "Start in the project root", cwdChanged = true),
+                    ok(at10(0), at10(6), "Start in the project root", cwdChanged = true)
+                        .named(customTitle = null, lastPrompt = "Now work in the subfolder"),
                 ),
                 arguments("starts-with-command.jsonl", ok(at10(0), at10(2), "Write the README")),
                 arguments("sidechain.jsonl", Outcome.Err(SessionFileProblem.SIDECHAIN)),
@@ -108,7 +119,18 @@ internal class SessionFilesFixturesTest {
                     ok(at10(0), at10(1), "Work only in soft", startCwd = quayside.resolve("soft")),
                 ),
                 arguments("no-user-message.jsonl", ok(at10(0), at10(0), null)),
-                arguments("leading-metadata.jsonl", ok(at10(0), at10(3), "Refactor the parser")),
+                arguments(
+                    "leading-metadata.jsonl",
+                    ok(at10(0), at10(3), "Refactor the parser").named(customTitle = "redacted"),
+                ),
+                arguments(
+                    "custom-title.jsonl",
+                    ok(at10(0), at10(3), "Plan the release").named("Release prep", lastPrompt = "Final check"),
+                ),
+                arguments(
+                    "conversation-mixed.jsonl",
+                    ok(at10(0), null, "First question").named("Mixed chat", lastPrompt = "Third question"),
+                ),
                 arguments("not-jsonl.txt", Outcome.Err(SessionFileProblem.NOT_JSONL)),
             )
     }

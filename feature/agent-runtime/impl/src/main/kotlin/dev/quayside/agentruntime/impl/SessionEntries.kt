@@ -17,18 +17,17 @@ internal object SessionEntries {
     private val commandPrefixes = listOf("<command-", "<local-command-")
     private val blanks = Regex("\\s+")
 
-    fun entriesOf(text: String): List<JsonObject> =
-        text
-            .lineSequence()
-            .mapNotNull { line ->
-                try {
-                    Json.parseToJsonElement(line) as? JsonObject
-                } catch (ignored: SerializationException) {
-                    null
-                } catch (ignored: IllegalArgumentException) {
-                    null
-                }
-            }.toList()
+    fun entriesOf(text: String): List<JsonObject> = text.lineSequence().mapNotNull(::objectOf).toList()
+
+    /** The JSON object on [line], or null for anything else (broken JSON, an array, a literal). */
+    fun objectOf(line: String): JsonObject? =
+        try {
+            Json.parseToJsonElement(line) as? JsonObject
+        } catch (ignored: SerializationException) {
+            null
+        } catch (ignored: IllegalArgumentException) {
+            null
+        }
 
     fun text(
         entry: JsonObject,
@@ -60,12 +59,20 @@ internal object SessionEntries {
         return line?.takeIf { it.isNotEmpty() && commandPrefixes.none { prefix -> it.startsWith(prefix) } }?.let(::cut)
     }
 
-    private fun cut(line: String): String =
-        if (line.codePointCount(0, line.length) <= TITLE_MAX_CODE_POINTS) {
-            line
+    /** `customTitle` of a `custom-title` entry: trimmed, at most 80 code points; null when absent or blank. */
+    fun customTitleOf(entry: JsonObject): String? =
+        if (text(entry, "type") == "custom-title") {
+            text(entry, "customTitle")?.trim()?.takeIf { it.isNotEmpty() }?.let(::cut)
         } else {
-            line.substring(0, line.offsetByCodePoints(0, TITLE_MAX_CODE_POINTS))
+            null
         }
+
+    /** The first [max] code points of [line] (all of it when shorter). */
+    fun cut(
+        line: String,
+        max: Int = TITLE_MAX_CODE_POINTS,
+    ): String =
+        if (line.codePointCount(0, line.length) <= max) line else line.substring(0, line.offsetByCodePoints(0, max))
 
     private fun firstText(content: JsonElement?): String? =
         when (content) {

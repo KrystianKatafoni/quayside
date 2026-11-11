@@ -1,5 +1,7 @@
 package dev.quayside.agentruntime.impl
 
+import dev.quayside.agentruntime.api.ConversationMessage
+import dev.quayside.agentruntime.api.ConversationRole
 import dev.quayside.agentruntime.api.PastConversation
 import kotlinx.serialization.json.JsonPrimitive
 import java.nio.file.Files
@@ -62,3 +64,33 @@ internal fun fingerprint(root: Path): Map<String, Pair<String, Instant>> =
                 root.relativize(file).toString() to (hash to Files.getLastModifiedTime(file).toInstant())
             }
     }
+
+/** One `user` or `assistant` line per message of [messages], in order, with [id], [cwd] and the time of the message. */
+internal fun conversationText(
+    id: String,
+    cwd: String,
+    messages: List<ConversationMessage>,
+): String =
+    messages.joinToString("") { message ->
+        val type = if (message.role == ConversationRole.USER) "user" else "assistant"
+        sessionEntry(type, id, cwd, message.at?.toString(), JsonPrimitive(message.text)) + "\n"
+    }
+
+/** Writes the file of [conv] with exactly [messages] and sets its `mtime`. */
+internal fun writeConversationFile(
+    claudeHome: Path,
+    conv: PastConversation,
+    messages: List<ConversationMessage>,
+    mtime: Instant = conv.modifiedAt,
+): Path =
+    writeRaw(
+        claudeHome,
+        conv.startCwd,
+        conv.conversationId.value,
+        conversationText(conv.conversationId.value, conv.startCwd.toString(), messages),
+        mtime,
+    )
+
+/** A `user` line of about [bytes] bytes that carries only a `tool_result`, as the fillers of big files do. */
+internal fun fillerLine(bytes: Int): String =
+    sessionEntry("user", content = parts(TOOL_RESULT)).replace("tool output", "x".repeat(bytes))

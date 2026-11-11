@@ -43,6 +43,7 @@ class SessionFileReaderTest {
 
             summaryOf(result) shouldBe
                 SessionFileSummary(SESSION_ID, Path.of("/p"), at(FIRST_TIME), at(LAST_TIME), false, "hello")
+                    .copy(lastPrompt = "hello")
         }
 
     @Test

@@ -21,8 +21,12 @@ internal data class SessionFileSummary(
     val cwdChanged: Boolean,
     /** First real user message, at most 80 code points; null when none in the head. */
     val title: String?,
+    /** `customTitle` of the last `custom-title` entry (tail wins over head), at most 80 code points; user data. */
+    val customTitle: String? = null,
+    /** Last real user message of the tail (of the whole file when it is read whole), at most 80 code points. */
+    val lastPrompt: String? = null,
 ) {
-    /** Without [title]: it is user data (ENG-C8) and must not reach logs through string templates. */
+    /** Without [title], [customTitle] and [lastPrompt]: user data (ENG-C8) that must not reach logs. */
     override fun toString(): String =
         "SessionFileSummary(sessionId=$sessionId, startCwd=$startCwd, startedAt=$startedAt, " +
             "lastActivityAt=$lastActivityAt, cwdChanged=$cwdChanged, title=<redacted>)"
@@ -62,6 +66,8 @@ internal object SessionFiles {
                 lastActivityAt = lastStamp?.let(SessionEntries::instantOf),
                 cwdChanged = cwds.toSet().size > 1,
                 title = headEntries.firstNotNullOfOrNull(SessionEntries::titleOf),
+                customTitle = all.mapNotNull(SessionEntries::customTitleOf).lastOrNull(),
+                lastPrompt = tailEntries.mapNotNull(SessionEntries::titleOf).lastOrNull(),
             ),
         )
     }

@@ -24,3 +24,5 @@ nie zawierają danych osobowych oraz że `SessionFiles` daje dla każdego oczeki
 | `synthetic/no-user-message.jsonl` | synthetic | Tylko migawka plików i wpis `assistant`: poprawna sesja bez tytułu. |
 | `synthetic/not-jsonl.txt` | synthetic | Tekst bez linii JSON. |
 | `synthetic/leading-metadata.jsonl` | synthetic | Kształt z pomiaru M1 (2.1.322): sześć wpisów bez `cwd` (`last-prompt`, `custom-title`, `agent-name`, `mode`, `permission-mode`, `session-owner`), pierwsze `cwd` i `timestamp` dopiero we wpisie 7. |
+| `synthetic/custom-title.jsonl` | synthetic | AM-315: wpisy `summary` i `agent-name` (nie są nazwą), `custom-title` w środku pliku (`Release prep`), ostatnia wiadomość użytkownika `Final check`. |
+| `synthetic/conversation-mixed.jsonl` | synthetic | AM-315: wszystkie rodzaje wpisów historii rozmowy: tekst jako string i jako części, `thinking`, `tool_use`, `tool_result`, `isMeta`, komenda, `isSidechain`, zły `timestamp`, `summary`, `custom-title`, `last-prompt`. Pięć wiadomości do pokazania (kolejność w pliku). |

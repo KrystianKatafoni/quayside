@@ -63,6 +63,7 @@ public class MissionControlController(
     private val runner = SessionActionRunner(sessions.commands, logger)
     private val ui = MutableStateFlow(ActionUi())
     private val preview = PreviewState(monitor, selection, projects.projects, scope)
+    private val conversation = ConversationState(monitor, selection, projects.projects, scope)
     private val places =
         PlaceFlow(
             ui,
@@ -90,20 +91,20 @@ public class MissionControlController(
             projects.projects,
             selection,
             now,
-            combine(ui, preview.shown, branch, ::Triple),
-        ) { snapshot, list, picked, at, (acting, shown, onBranch) ->
+            combine(ui, preview.shown, branch, conversation.shown, ::Extras),
+        ) { snapshot, list, picked, at, extras ->
             MissionControlReducer
                 .reduce(snapshot, list, picked, at, zone)
-                .withActions(snapshot, picked, acting, list)
-                .copy(preview = shown)
-                .withBranch(onBranch)
+                .withActions(snapshot, picked, extras.acting, list)
+                .copy(preview = extras.preview, conversation = extras.conversation)
+                .withBranch(extras.branch)
         }.stateIn(
             scope,
             SharingStarted.Eagerly,
             MissionControlReducer
                 .reduce(monitor.snapshot.value, projects.projects.value, selection.value, now.value, zone)
                 .withActions(monitor.snapshot.value, selection.value, ui.value, projects.projects.value)
-                .copy(preview = preview.shown.value),
+                .copy(preview = preview.shown.value, conversation = conversation.shown.value),
         )
 
     init {
@@ -145,8 +146,10 @@ public class MissionControlController(
      * Actions of the selected visible session, for the palette (AM-410).
      * [SessionActionsState.canStop], `canRespawn`, `canResume` and `canRemove` are false while an action runs or a
      * dialog is open;
-     * `canPreview` stays true while an action runs and is false only with a dialog open.
-     * `canAttach` behaves like `canPreview` and also needs the project of the session in the project list;
+     * `canPreview` stays true while an action runs and is false only with a dialog open; it holds for a supervisor
+     * session (output) and for a disk session (history, AM-315).
+     * `canAttach` is true only for a supervisor session (a disk session cannot be attached), with no dialog open,
+     * and needs the project of the session in the project list;
      * `canReply` is `canAttach` for a session that waits for the user.
      * The target of a run is read again from the snapshot, so this may lag one step behind.
      */
@@ -193,7 +196,7 @@ public class MissionControlController(
             MissionControlIntent.RespawnSelected -> run(SessionAction.RESPAWN)
             MissionControlIntent.ResumeSelected -> run(SessionAction.RESUME)
             MissionControlIntent.RemoveSelected -> askToRemove()
-            MissionControlIntent.TogglePreview -> togglePreview()
+            MissionControlIntent.TogglePreview -> onEvent(MissionControlEvent.TogglePreview)
             else -> onNavigation(intent)
         }
     }
@@ -217,14 +220,6 @@ public class MissionControlController(
             MissionControlIntent.TogglePreview,
             -> Unit
         }
-    }
-
-    /**
-     * Ignored while a dialog is open; otherwise [PreviewState.toggle] reads the target from fresh data. The guard
-     * protects the [onEvent] path (a click on "Podgląd" or "Zamknij"); [onIntent] already ignores intents then.
-     */
-    private fun togglePreview() {
-        if (ui.value.dialog == null) preview.toggle()
     }
 
     /** Opens the confirmation for the selected inactive session; nothing is called until it is confirmed. */
@@ -298,43 +293,47 @@ public class MissionControlController(
         when (event) {
             is MissionControlEvent.SelectFilter,
             is MissionControlEvent.SelectSession,
-            -> {
-                selection.update { it.after(event) }
-            }
+            -> selection.update { it.after(event) }
 
-            is MissionControlEvent.Run -> {
-                run(event.action)
-            }
+            is MissionControlEvent.Run -> run(event.action)
 
-            is MissionControlEvent.PickPlace -> {
-                places.pick(event.choice)
-            }
+            is MissionControlEvent.PickPlace -> places.pick(event.choice)
 
-            MissionControlEvent.TogglePreview -> {
-                togglePreview()
-            }
+            // Ignored while a dialog is open; otherwise [PreviewState.toggle] reads the target from fresh data. The
+            // guard protects the [onEvent] path (a click on "Podgląd" or "Zamknij"); [onIntent] already ignores
+            // intents then.
+            MissionControlEvent.TogglePreview -> if (ui.value.dialog == null) preview.toggle()
 
-            // Removes the session of the open dialog, not the current selection. Activity is deliberately not checked
-            // again: `remove` answers `SessionActive` for a resumed session and that becomes a [Failure].
-            MissionControlEvent.ConfirmRemove -> {
-                (ui.value.dialog as? SessionDialog.ConfirmRemove)?.let { launchAction(SessionAction.REMOVE, it.id) }
-            }
+            MissionControlEvent.LoadOlder -> conversation.loadOlder()
 
-            MissionControlEvent.Dismiss -> {
-                ui.update { it.copy(dialog = null) }
-            }
+            MissionControlEvent.ConfirmRemove -> confirmRemove()
 
+            MissionControlEvent.Dismiss -> ui.update { it.copy(dialog = null) }
+
+            // `app`'s job, not the controller's: MissionControl routes these to its callbacks (Attach and Reply
+            // open a terminal tab, AM-511; OpenSubfolder selects the subfolder in the sidebar, AM-307).
             MissionControlEvent.Attach,
             MissionControlEvent.Reply,
             MissionControlEvent.ChangeHistoryLimit,
             is MissionControlEvent.OpenSubfolder,
-            -> {
-                // `app`'s job, not the controller's: MissionControl routes these to its callbacks (Attach and Reply
-                // open a terminal tab, AM-511; OpenSubfolder selects the subfolder in the sidebar, AM-307).
-            }
+            -> Unit
         }
     }
+
+    // Removes the session of the open dialog, not the current selection. Activity is deliberately not checked
+    // again: `remove` answers `SessionActive` for a resumed session and that becomes a [Failure].
+    private fun confirmRemove() {
+        (ui.value.dialog as? SessionDialog.ConfirmRemove)?.let { launchAction(SessionAction.REMOVE, it.id) }
+    }
 }
+
+/** What the state adds to the reduced snapshot: the action UI, the preview, the branch and the history (AM-315). */
+private data class Extras(
+    val acting: ActionUi,
+    val preview: PreviewUi?,
+    val branch: String?,
+    val conversation: ConversationUi?,
+)
 
 private fun MissionControlIntent.SelectSession.toSelection() = Selection(project, session = id, subfolder = subfolder)
 
@@ -360,7 +359,7 @@ private fun actionsOf(
         canRemove = SessionAction.REMOVE in available,
         canResume = SessionAction.RESUME in available,
         dialogOpen = acting.dialog != null,
-        canPreview = target?.origin == SessionOrigin.SUPERVISOR && acting.dialog == null,
+        canPreview = target != null && acting.dialog == null,
         previewOpen = previewOpen,
         canAttach = attach != null,
         canReply = attach?.waiting == true,

@@ -61,7 +61,8 @@ public sealed interface MissionControlIntent {
  * @property canRemove the session is not active (or from disk): it can be removed from the list after a confirmation.
  * @property canResume the selected session is a disk session (FR-P9) and nothing runs.
  * @property dialogOpen a dialog of Mission Control is open: `app` offers no palette commands and disables the menu.
- * @property canPreview a visible session is selected and no dialog is open; also while an action runs.
+ * @property canPreview a visible session is selected and no dialog is open; also while an action runs. For a disk
+ *   session the preview shows its history.
  * @property previewOpen the preview is open: the palette offers "Zamknij podgląd".
  * @property canAttach a visible session of a registered project is selected and no dialog is open; also while an
  *   action runs.

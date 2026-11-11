@@ -3,7 +3,9 @@ package dev.quayside.missioncontrol.ui
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.SessionMonitor
+import dev.quayside.sessions.api.SessionOrigin
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +20,9 @@ import kotlin.time.Duration.Companion.seconds
 private val PREVIEW_REFRESH = 3.seconds
 
 /**
- * The output preview of the selected session (AM-411): whether it is open and what it shows. Collects in [scope];
+ * The preview of the selected session (AM-411, AM-315): whether it is open and what it shows. For a supervisor session
+ * the tail of its output, read every few seconds; for a disk session only the marker [PreviewContent.History]
+ * (the messages come from [ConversationState]; the file does not change). Collects in [scope];
  * one collector follows the key of [SessionPreview], so a changed selection cancels the read of the old session
  * and a lost target closes the preview. Logs nothing: the output is user data (ENG-C8).
  */
@@ -67,10 +71,14 @@ internal class PreviewState(
 
     /** Loading, then a read every [PREVIEW_REFRESH]; the old text stays while a read runs, a failure replaces it. */
     private suspend fun follow(id: SessionId) {
-        val name =
+        val session =
             monitor.snapshot.value.sessions
-                .firstOrNull { it.id == id }
-                ?.name ?: return close()
+                .firstOrNull { it.id == id } ?: return close()
+        val name = session.name
+        if (session.origin == SessionOrigin.DISK) {
+            shownFlow.value = PreviewUi(id, name, PreviewContent.History)
+            awaitCancellation()
+        }
         shownFlow.value = PreviewUi(id, name, PreviewContent.Loading)
         while (true) {
             val content = SessionPreview.content(monitor.recentOutput(id))

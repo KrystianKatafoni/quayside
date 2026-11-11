@@ -94,7 +94,7 @@ class PastSessionControllerTest {
         }
 
     @Test
-    fun `attach, reply and preview are not offered for a disk session`() =
+    fun `attach and reply are not offered for a disk session, the history is`() =
         runTest {
             val controller = start(fake())
             select(controller, uuid)
@@ -103,7 +103,7 @@ class PastSessionControllerTest {
 
             actions.canAttach shouldBe false
             actions.canReply shouldBe false
-            actions.canPreview shouldBe false
+            actions.canPreview shouldBe true
             actions.canStop shouldBe false
             actions.canRespawn shouldBe false
             actions.canRemove shouldBe true
@@ -130,7 +130,7 @@ class PastSessionControllerTest {
         }
 
     @Test
-    fun `the preview does not open for a disk session`() =
+    fun `the preview opens for a disk session and reads the history, not the output`() =
         runTest {
             val fake = fake()
             val controller = start(fake)
@@ -139,7 +139,9 @@ class PastSessionControllerTest {
             send(controller, MissionControlIntent.TogglePreview)
 
             controller.state.value.preview
-                .shouldBeNull()
+                ?.id shouldBe uuid
+            controller.state.value.conversation
+                ?.id shouldBe uuid
             fake.outputReads.shouldBeEmpty()
         }
 

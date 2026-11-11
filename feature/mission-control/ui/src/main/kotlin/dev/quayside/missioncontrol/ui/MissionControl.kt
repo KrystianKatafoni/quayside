@@ -57,8 +57,8 @@ private fun ScreenContent(
     when (val screen = state.screen) {
         Screen.NoProjects -> Empty("empty.noProjects", "empty.noProjects.hint")
         Screen.NoSelection -> Empty("empty.noSelection", hint = null)
-        is Screen.Project -> ProjectPage(screen, state.preview, onEvent)
-        is Screen.Global -> GlobalPage(screen, state.preview, onEvent)
+        is Screen.Project -> ProjectPage(screen, state.preview, state.conversation, onEvent)
+        is Screen.Global -> GlobalPage(screen, state.preview, state.conversation, onEvent)
     }
 }
 
@@ -81,10 +81,11 @@ private fun Empty(
 private fun ProjectPage(
     page: Screen.Project,
     preview: PreviewUi?,
+    conversation: ConversationUi?,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
     CompositionLocalProvider(LocalProjectDir provides page.header.path) {
-        val list = PageList(page.banner, page.loading, page.rows, page.details, page.older)
+        val list = PageList(page.banner, page.loading, page.rows, page.details, page.older, conversation)
         SessionPage(list, preview, onEvent) {
             ProjectHeaderView(page.header, page.filter, onEvent)
             StatCards(page.stats)
@@ -93,13 +94,17 @@ private fun ProjectPage(
     }
 }
 
-/** What the list and the details panel of one page show; [older] is the count of the row "jeszcze N starszych". */
+/**
+ * What the list and the details panel of one page show; [older] is the count of the row "jeszcze N starszych",
+ * [conversation] the history of the selected disk session (AM-315).
+ */
 internal data class PageList(
     val banner: UiText?,
     val loading: Boolean,
     val rows: List<SessionRow>,
     val details: SessionDetails?,
     val older: Int = 0,
+    val conversation: ConversationUi? = null,
 )
 
 /** The list and the details panel shared by the project page and the global views. */
@@ -116,24 +121,30 @@ internal fun SessionPage(
             verticalArrangement = Arrangement.spacedBy(space = 12.dp),
         ) {
             header()
-            list.banner?.let {
-                Text(
-                    it,
-                    Modifier.fillMaxWidth().background(color = warnBgColor()),
-                    MissionControlTags.BANNER,
-                )
-            }
+            list.banner?.let { Banner(it) }
             if (list.loading) {
                 Text(UiText("list.loading"), tag = MissionControlTags.LOADING)
             } else {
                 val listWeight = if (preview == null) 1f else LIST_SHARE
                 SessionRows(list.rows, list.details, onEvent, Modifier.weight(weight = listWeight), list.older)
             }
-            preview?.let { SessionPreviewView(it, onEvent, Modifier.weight(weight = 1f - LIST_SHARE)) }
+            preview?.let {
+                SessionPreviewView(
+                    it,
+                    list.conversation,
+                    onEvent,
+                    Modifier.weight(weight = 1f - LIST_SHARE),
+                )
+            }
             KeyHintsBar()
         }
-        Details(list.details, list.rows.firstOrNull { it.id == list.details?.id }?.age, onEvent)
+        Details(list.details, list.rows.firstOrNull { it.id == list.details?.id }?.age, list.conversation, onEvent)
     }
+}
+
+@Composable
+private fun Banner(text: UiText) {
+    Text(text, Modifier.fillMaxWidth().background(color = warnBgColor()), MissionControlTags.BANNER)
 }
 
 @Composable

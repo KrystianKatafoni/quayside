@@ -8,6 +8,7 @@ import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.aSession
+import dev.quayside.sessions.api.pastSession
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
@@ -50,6 +51,14 @@ internal class SessionPreviewTest {
             emptyList(),
         ) shouldBe
             SessionId("working")
+    }
+
+    @Test
+    fun `disk session has a preview`() {
+        val disk = pastSession(id = "00000000-0000-4000-8000-000000000001", project = project)
+
+        SessionPreview.key(true, listOf(disk), Selection(project = project, session = disk.id), emptyList()) shouldBe
+            disk.id
     }
 
     @Test

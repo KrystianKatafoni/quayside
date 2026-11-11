@@ -49,4 +49,37 @@ class FakeSessionHistoryTest {
             fake.conversations shouldBe emptyList()
             fake.list(listOf(Path.of("/")), null) shouldBe Outcome.Ok(emptyList())
         }
+
+    @Test
+    fun `conversation calls are recorded with their arguments, also the failed ones`() =
+        runTest {
+            val fake = FakeSessionHistory(listOf(aPastConversation()))
+            val id = aPastConversation().conversationId
+            fake.failNextConversation(ConversationError.UNREADABLE)
+
+            fake.conversation(id, A_PROJECT_DIR, null, 20) shouldBe Outcome.Err(ConversationError.UNREADABLE)
+            fake.conversation(id, A_PROJECT_DIR, HistoryCursor(0), 5)
+
+            fake.conversationCalls shouldBe
+                listOf(
+                    ConversationCall(id, A_PROJECT_DIR, null, 20),
+                    ConversationCall(id, A_PROJECT_DIR, HistoryCursor(0), 5),
+                )
+        }
+
+    @Test
+    fun `a listed conversation without scripted messages is an empty page, an unlisted one is not found`() =
+        runTest {
+            val fake = FakeSessionHistory(listOf(aPastConversation()))
+
+            fake.conversation(aPastConversation().conversationId, A_PROJECT_DIR, null, 20) shouldBe
+                Outcome.Ok(ConversationPage(emptyList(), null))
+            fake.conversation(aConversationId("00000000-0000-4000-8000-000000000009"), A_PROJECT_DIR, null, 20) shouldBe
+                Outcome.Err(ConversationError.NOT_FOUND)
+        }
+
+    @Test
+    fun `ConversationMessage toString hides the text`() {
+        aConversationMessage(text = "secret words").toString().contains("secret") shouldBe false
+    }
 }

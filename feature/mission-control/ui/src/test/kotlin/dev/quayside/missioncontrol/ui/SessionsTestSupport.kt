@@ -3,6 +3,7 @@ package dev.quayside.missioncontrol.ui
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.FakeSessions
+import dev.quayside.sessions.api.PlaceAssignment
 import dev.quayside.sessions.api.RecentOutput
 import dev.quayside.sessions.api.ResumedSession
 import dev.quayside.sessions.api.SessionCommands
@@ -15,7 +16,7 @@ import kotlinx.coroutines.CompletableDeferred
 internal fun FakeSessions.api(): SessionsApi = SessionsApi(monitor = this, commands = this)
 
 /**
- * Commands that stay "in progress" until the test opens [gate]: stop, respawn, resume and remove record the call in [started],
+ * Commands that stay "in progress" until the test opens [gate]: stop, respawn, resume, remove and assignPlace record the call in [started],
  * wait for the gate and then delegate to [inner]. Gives the "action runs" state without a real clock.
  */
 internal class GatedCommands(
@@ -46,6 +47,15 @@ internal class GatedCommands(
         started += "remove ${id.value}"
         gate.await()
         return inner.remove(id)
+    }
+
+    override suspend fun assignPlace(
+        id: SessionId,
+        place: PlaceAssignment?,
+    ): Outcome<Unit, SessionError> {
+        started += "assignPlace ${id.value}"
+        gate.await()
+        return inner.assignPlace(id, place)
     }
 }
 

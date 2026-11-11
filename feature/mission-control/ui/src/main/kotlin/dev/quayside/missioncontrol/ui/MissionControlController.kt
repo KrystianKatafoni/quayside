@@ -7,6 +7,7 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
+import dev.quayside.sessions.api.PlaceAssignment
 import dev.quayside.sessions.api.ResumedSession
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionOrigin
@@ -33,8 +34,9 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * State holder of Mission Control (MVI, docs/11 §1) for the project selected in the sidebar or a global view.
  * Collects in [scope] (the window scope, Main dispatcher; not thread-safe) and re-reads [clock] every [tick]
- * for session ages. Never throws; runs only the stop, respawn, resume and remove commands of [sessions] (attach is
- * a query, [attachTarget]), one at a time, and logs them with session ids and fixed categories (ENG-C8).
+ * for session ages. Never throws; runs only the stop, respawn, resume, remove and assign-place commands of
+ * [sessions] (attach is a query, [attachTarget]), one at a time, and logs them with session ids and fixed categories
+ * (ENG-C8).
  * Shows only [SessionMonitor.snapshot].
  * @throws IllegalArgumentException if [tick] is not positive.
  */
@@ -61,6 +63,12 @@ public class MissionControlController(
     private val runner = SessionActionRunner(sessions.commands, logger)
     private val ui = MutableStateFlow(ActionUi())
     private val preview = PreviewState(monitor, selection, projects.projects, scope)
+    private val places =
+        PlaceFlow(
+            ui,
+            { SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value) },
+            { projects.projects.value },
+        ) { id, place -> launchAction(SessionAction.ASSIGN_PLACE, id, place) }
 
     private val shownProject = selection.map { if (it.view == null) it.project else null }.distinctUntilChanged()
 
@@ -229,24 +237,39 @@ public class MissionControlController(
     }
 
     /**
-     * Runs [action] on the selected visible session read now from the snapshot, not from [state]. [ui] is set before
-     * the launch, so a second call before the coroutine starts is ignored.
+     * Runs [action] on the selected visible session read now from the snapshot, not from [state]; "Usuń" and "Przypisz
+     * do podfolderu…" only open their dialog. [ui] is set before the launch, so a second call before the coroutine
+     * starts is ignored.
      */
     private fun run(action: SessionAction) {
-        val target = SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value)
-        if (ui.value.busy != null || ui.value.dialog != null || target == null) return
-        if (action !in SessionActions.available(target.state, busy = false, target.origin)) return
-        launchAction(action, target.id)
+        when (action) {
+            SessionAction.REMOVE -> {
+                askToRemove()
+            }
+
+            SessionAction.ASSIGN_PLACE -> {
+                places.open()
+            }
+
+            else -> {
+                val target =
+                    SessionActions.target(monitor.snapshot.value.sessions, selection.value, projects.projects.value)
+                if (ui.value.busy != null || ui.value.dialog != null || target == null) return
+                if (action !in SessionActions.availableFor(target, projects.projects.value, busy = false)) return
+                launchAction(action, target.id)
+            }
+        }
     }
 
     private fun launchAction(
         action: SessionAction,
         id: SessionId,
+        place: PlaceAssignment? = null,
     ) {
         ui.value = ActionUi(busy = id to action)
         scope.launch {
             var resumed: ResumedSession? = null
-            val reason = runner.run(action, id) { resumed = it }
+            val reason = runner.run(action, id, place) { resumed = it }
             // The user may have moved on while the command ran: then nothing jumps (AM-313 plan, point 7).
             val followed = resumed?.takeIf { selection.value.session == id }
             ui.value =
@@ -273,16 +296,18 @@ public class MissionControlController(
     /** Handles a click in the filter or the session list. */
     internal fun onEvent(event: MissionControlEvent) {
         when (event) {
-            is MissionControlEvent.SelectFilter -> {
-                selection.update { it.withFilter(event.filter) }
-            }
-
-            is MissionControlEvent.SelectSession -> {
-                selection.update { it.copy(session = event.id) }
+            is MissionControlEvent.SelectFilter,
+            is MissionControlEvent.SelectSession,
+            -> {
+                selection.update { it.after(event) }
             }
 
             is MissionControlEvent.Run -> {
-                if (event.action == SessionAction.REMOVE) askToRemove() else run(event.action)
+                run(event.action)
+            }
+
+            is MissionControlEvent.PickPlace -> {
+                places.pick(event.choice)
             }
 
             MissionControlEvent.TogglePreview -> {
@@ -328,7 +353,7 @@ private fun actionsOf(
     val target = SessionActions.target(snapshot.sessions, picked, projects)
     val attach = SessionAttach.targetOf(target, projects, acting.dialog != null)
     val blocked = acting.busy != null || acting.dialog != null
-    val available = target?.let { SessionActions.available(it.state, blocked, it.origin) }.orEmpty()
+    val available = target?.let { SessionActions.availableFor(it, projects, blocked) }.orEmpty()
     return SessionActionsState(
         canStop = SessionAction.STOP in available,
         canRespawn = SessionAction.RESPAWN in available,
@@ -347,3 +372,11 @@ private fun actionsOf(
  * through `stateIn`); it has no visible effect in the UI.
  */
 private fun Selection.withFilter(filter: SessionFilter): Selection = if (view == null) copy(filter = filter) else this
+
+/** The selection after a click on a filter or a session; any other event leaves it as it is. */
+private fun Selection.after(event: MissionControlEvent): Selection =
+    when (event) {
+        is MissionControlEvent.SelectFilter -> withFilter(event.filter)
+        is MissionControlEvent.SelectSession -> copy(session = event.id)
+        else -> this
+    }

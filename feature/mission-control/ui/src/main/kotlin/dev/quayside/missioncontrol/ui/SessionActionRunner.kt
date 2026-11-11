@@ -5,13 +5,15 @@ import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
+import dev.quayside.sessions.api.PlaceAssignment
 import dev.quayside.sessions.api.ResumedSession
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionError
 
 /**
  * Runs one action, logs the session id and a fixed category only (ENG-C8); null = success. A successful resume
- * is handed to `onResumed` before `run` returns, since the live session has a new id.
+ * is handed to `onResumed` before `run` returns, since the live session has a new id. [place] is the target of
+ * [SessionAction.ASSIGN_PLACE] (null = "Automatycznie") and is ignored by the other actions.
  */
 internal class SessionActionRunner(
     private val commands: SessionCommands,
@@ -20,9 +22,10 @@ internal class SessionActionRunner(
     suspend fun run(
         action: SessionAction,
         id: SessionId,
+        place: PlaceAssignment? = null,
         onResumed: (ResumedSession) -> Unit = {},
     ): UiText? =
-        when (val outcome = execute(action, id, onResumed)) {
+        when (val outcome = execute(action, id, place, onResumed)) {
             is Outcome.Ok -> {
                 logger.info(action.doneMessage(), "sessionId" to id.value)
                 null
@@ -38,6 +41,7 @@ internal class SessionActionRunner(
     private suspend fun execute(
         action: SessionAction,
         id: SessionId,
+        place: PlaceAssignment?,
         onResumed: (ResumedSession) -> Unit,
     ): Outcome<Any, SessionError> =
         when (action) {
@@ -45,6 +49,7 @@ internal class SessionActionRunner(
             SessionAction.RESPAWN -> commands.respawn(id)
             SessionAction.RESUME -> commands.resume(id).also { (it as? Outcome.Ok)?.value?.let(onResumed) }
             SessionAction.REMOVE -> commands.remove(id)
+            SessionAction.ASSIGN_PLACE -> commands.assignPlace(id, place)
         }
 }
 
@@ -54,6 +59,7 @@ private fun SessionAction.doneMessage(): String =
         SessionAction.RESPAWN -> "session respawned"
         SessionAction.RESUME -> "session resumed"
         SessionAction.REMOVE -> "session removed"
+        SessionAction.ASSIGN_PLACE -> "session place assigned"
     }
 
 /** Fixed texts and log categories of a failed action (plan, table 2); never the id, the name or a path. */

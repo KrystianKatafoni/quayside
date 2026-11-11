@@ -7,8 +7,8 @@ import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 
-/** Actions of the details panel and the palette (AM-410). */
-internal enum class SessionAction { STOP, RESPAWN, RESUME, REMOVE }
+/** Actions of the details panel and the row menu (AM-410); the place assignment (AM-314) is not in the palette. */
+internal enum class SessionAction { STOP, RESPAWN, RESUME, ASSIGN_PLACE, REMOVE }
 
 /** Why [action] on session [id] failed; [reason] is a fixed text without the id, the name or a path. */
 internal data class Failure(
@@ -37,6 +37,16 @@ internal sealed interface SessionDialog {
         val name: String,
         val fromDisk: Boolean = false,
     ) : SessionDialog
+
+    /**
+     * The list of places for session [id] (FR-P9, AM-314): [choices] in order, [current] the id of the one that holds
+     * now.
+     */
+    data class AssignPlace(
+        val id: SessionId,
+        val choices: List<PlaceChoice>,
+        val current: String,
+    ) : SessionDialog
 }
 
 /** Which actions apply to which session (plan, table 1). */
@@ -50,19 +60,34 @@ internal object SessionActions {
 
     /**
      * Active sessions can be stopped, the others respawned or removed; a disk session ([SessionOrigin.DISK]) can be
-     * resumed or removed (hidden, FR-P9); nothing while an action or a dialog is open.
+     * resumed or removed (hidden, FR-P9); nothing while an action or a dialog is open. A session of a group
+     * ([inGroup]: its project has subfolders) can also be assigned to a place, in any state and origin (AM-314).
      */
     fun available(
         state: SessionState,
         busy: Boolean,
         origin: SessionOrigin = SessionOrigin.SUPERVISOR,
-    ): Set<SessionAction> =
-        when {
-            busy -> emptySet()
-            origin == SessionOrigin.DISK -> setOf(SessionAction.RESUME, SessionAction.REMOVE)
-            state.isActive -> setOf(SessionAction.STOP)
-            else -> setOf(SessionAction.RESPAWN, SessionAction.REMOVE)
-        }
+        inGroup: Boolean = false,
+    ): Set<SessionAction> {
+        val own =
+            when {
+                busy -> emptySet()
+                origin == SessionOrigin.DISK -> setOf(SessionAction.RESUME, SessionAction.REMOVE)
+                state.isActive -> setOf(SessionAction.STOP)
+                else -> setOf(SessionAction.RESPAWN, SessionAction.REMOVE)
+            }
+        return if (inGroup && !busy) own + SessionAction.ASSIGN_PLACE else own
+    }
+
+    /** [available] for [session], with `inGroup` read from the project of the session in [projects]. */
+    fun availableFor(
+        session: Session,
+        projects: List<Project>,
+        busy: Boolean,
+    ): Set<SessionAction> {
+        val inGroup = projects.any { it.id == session.project && it.subfolders.isNotEmpty() }
+        return available(session.state, busy, session.origin, inGroup)
+    }
 }
 
 /** The details of the selected session with the actions that apply now, the running one and its failure. */
@@ -82,11 +107,7 @@ internal fun MissionControlUiState.withActions(
             canAttach = attach != null,
             canReply = attach?.waiting == true,
             actions =
-                SessionActions.available(
-                    target.state,
-                    busy = acting.busy != null || acting.dialog != null,
-                    origin = target.origin,
-                ),
+                SessionActions.availableFor(target, projects, busy = acting.busy != null || acting.dialog != null),
             busy = acting.busy?.takeIf { it.first == details.id }?.second,
             failure = acting.failure?.takeIf { it.id == details.id },
             notice = UiText("action.resume.copyNotice").takeIf { acting.copied == details.id },

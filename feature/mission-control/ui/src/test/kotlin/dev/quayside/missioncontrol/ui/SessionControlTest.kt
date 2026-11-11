@@ -53,11 +53,11 @@ internal class SessionControlTest {
     }
 
     @Test
-    fun `row menu order keeps the old controls and puts resume before remove`() {
+    fun `row menu order keeps the old controls, puts resume before the place and the place before remove`() {
         val all = details(SessionState.AwaitingInput("q"), SessionAction.entries.toSet(), canReply = true)
 
         all.allControls().map { it.id } shouldBe
-            listOf("attach", "reply", "stop", "respawn", "resume", "remove", "preview")
+            listOf("attach", "reply", "stop", "respawn", "resume", "assign_place", "remove", "preview")
     }
 
     @Test
@@ -71,6 +71,7 @@ internal class SessionControlTest {
                 "stop" to IconKind.STOP,
                 "respawn" to IconKind.RESPAWN,
                 "resume" to IconKind.RESUME,
+                "assign_place" to IconKind.FOLDER,
                 "remove" to IconKind.REMOVE,
             )
     }

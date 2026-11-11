@@ -66,11 +66,14 @@ private fun inPage(
         selection.filter.matches(session.state) &&
         session.isIn(projects.find { it.id == project }, selection.subfolder)
 
-/** True without a [subfolder]; with one, when the session directory is in that subfolder of [project] (FR-P7). */
+/**
+ * True without a [subfolder]; with one, when the place of the session ([Session.placeDir]) is in that subfolder of
+ * [project] (FR-P7).
+ */
 internal fun Session.isIn(
     project: Project?,
     subfolder: SubfolderName?,
-): Boolean = subfolder == null || (project != null && ProjectGroups.subfolderOf(project, cwd) == subfolder)
+): Boolean = subfolder == null || (project != null && ProjectGroups.subfolderOf(project, placeDir) == subfolder)
 
 /** The selection after the sidebar reports [id]: another project starts a fresh page, `null` keeps a global view. */
 internal fun Selection.onProject(id: ProjectId?): Selection =

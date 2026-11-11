@@ -6,7 +6,7 @@ import dev.quayside.projects.api.ProjectGroups
 import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.Session
 
-/** One subfolder row: [stats] count the sessions of the group whose directory is in [name] (FR-P8). */
+/** One subfolder row: [stats] count the sessions of the group whose place (`placeDir`) is [name] (FR-P8). */
 internal data class SubfolderStats(
     val name: SubfolderName,
     val stats: SessionStats,
@@ -33,10 +33,7 @@ internal object GroupOverviews {
         if (project.subfolders.isEmpty()) return null
         val bySubfolder =
             sessions.filter { it.project == project.id }.groupBy {
-                ProjectGroups.subfolderOf(
-                    project,
-                    it.cwd,
-                )
+                ProjectGroups.subfolderOf(project, it.placeDir)
             }
         val rows =
             project.subfolders

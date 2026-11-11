@@ -46,9 +46,17 @@ internal sealed interface MissionControlEvent {
     /** "Podgląd" in the details panel and "Zamknij" in the preview panel. */
     data object TogglePreview : MissionControlEvent
 
-    /** A click on Stop, Respawn or Remove in the details panel; Remove opens the confirmation. */
+    /**
+     * A click on a [SessionAction] in the details panel; Remove opens the confirmation, the place assignment the
+     * list of places.
+     */
     data class Run(
         val action: SessionAction,
+    ) : MissionControlEvent
+
+    /** A choice in the open list of places (AM-314); [choice] is a [PlaceChoice.id]. */
+    data class PickPlace(
+        val choice: String,
     ) : MissionControlEvent
 
     /** "Attach" in the details panel or the row menu, or a double click on a row (AM-511); `app` handles it. */
@@ -190,6 +198,7 @@ internal data class SessionDetails(
     val canReply: Boolean = false,
     val fromDisk: Boolean = false,
     val notice: UiText? = null,
+    val place: UiText? = null,
 )
 
 /** @property waiting @property working counted over the sessions of every project. */

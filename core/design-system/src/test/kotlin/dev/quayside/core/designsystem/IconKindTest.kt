@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 
-/** Path data of the 22 icons: parses, is distinct and stays on the 24 grid (geometry table of the plan). */
+/** Path data of the 23 icons: parses, is distinct and stays on the 24 grid (geometry table of the plan). */
 class IconKindTest {
     private val statusIcons =
         listOf(
@@ -22,8 +22,8 @@ class IconKindTest {
         )
 
     @Test
-    fun `there are 22 icons`() {
-        IconKind.entries.size shouldBe 22
+    fun `there are 23 icons`() {
+        IconKind.entries.size shouldBe 23
     }
 
     @ParameterizedTest(name = "{0}")

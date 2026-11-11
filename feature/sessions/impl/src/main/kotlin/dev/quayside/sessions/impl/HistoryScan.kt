@@ -1,5 +1,6 @@
 package dev.quayside.sessions.impl
 
+import dev.quayside.agentruntime.api.HistoryError
 import dev.quayside.agentruntime.api.PastConversation
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.SessionHistory
@@ -13,6 +14,7 @@ import dev.quayside.core.domain.map
 import dev.quayside.core.domain.warn
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.HistorySettingsError
+import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionHistorySettingsRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -60,6 +62,15 @@ internal class HistoryScan(
         val dirs = scanned.dirs.filter { (id, dir) -> current[id] == dir }
         return DiskSessions.merge(scanned.past, supervisor, dirs, settings.settings.value)
     }
+
+    /**
+     * Whether the session file of the disk session [disk] is still there: a fresh `SessionHistory.list` of its start
+     * directory (no age limit) holds its UUID with the same start directory. [HistoryError] when listing fails.
+     */
+    suspend fun stillOnDisk(disk: Session): Outcome<Boolean, HistoryError> =
+        history.list(listOf(disk.cwd), since = null).map { past ->
+            past.any { it.conversationId.value == disk.id.value && it.startCwd == disk.cwd }
+        }
 
     /** Adds [id] to the hidden sessions and saves; the session file stays on disk (ADR 0032). */
     suspend fun hide(id: SessionId): Outcome<Unit, HistorySettingsError> =

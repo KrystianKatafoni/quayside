@@ -4,6 +4,7 @@ package dev.quayside.sessions.impl
 
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.api.FakeAgentRuntime
+import dev.quayside.agentruntime.api.ResumeSpec
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.RuntimeWorld
@@ -39,7 +40,7 @@ import kotlin.time.Duration
  * After every successful command: the first listing fails with [failAfterCommand] when set, then [lag]
  * listings still show the supervisor as it was before the command, then listings are live again.
  * [failListings] fails every listing while set. [fail] scripts the result of one command call.
- * [commandCalls] records every command call (not listings), e.g. `start`, `stop aaaa0001`.
+ * [commandCalls] records every command call (not listings), e.g. `start`, `resume`, `stop aaaa0001`.
  */
 internal class LaggingRuntime(
     val fake: FakeAgentRuntime,
@@ -101,6 +102,9 @@ internal class LaggingRuntime(
         command("start", null) {
             fake.start(spec)
         }
+
+    override suspend fun resume(spec: ResumeSpec): Outcome<SessionId, RuntimeError> =
+        command("resume", null) { fake.resume(spec) }
 
     override suspend fun stop(id: SessionId): Outcome<Unit, RuntimeError> = command("stop", id) { fake.stop(id) }
 

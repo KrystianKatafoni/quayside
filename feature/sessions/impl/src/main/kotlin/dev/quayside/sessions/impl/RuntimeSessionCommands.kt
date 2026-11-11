@@ -15,6 +15,7 @@ import dev.quayside.core.domain.getOrElse
 import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
 import dev.quayside.sessions.api.NewSessionSpec
+import dev.quayside.sessions.api.ResumedSession
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionError
@@ -39,6 +40,9 @@ internal class RuntimeSessionCommands(
     private val clock: Clock,
     private val logger: Logger,
 ) : SessionCommands {
+    private val resumeCommand = ResumeCommand(runtime, dirs, state, clock, logger)
+    private val stopAll = StopAll(runtime, state, logger)
+
     override suspend fun start(
         project: ProjectId,
         spec: NewSessionSpec,
@@ -81,6 +85,9 @@ internal class RuntimeSessionCommands(
             runtime.respawn(id).then("respawn", id) { Expected.Moves(id, session.phase(), RuntimePhase.WORKING, it) }
         }
 
+    override suspend fun resume(id: SessionId): Outcome<ResumedSession, SessionError> =
+        checked("resume", id) { session -> resumeCommand.run(session) }
+
     override suspend fun remove(id: SessionId): Outcome<Unit, SessionError> =
         checked("remove", id) { session ->
             if (session.origin == SessionOrigin.DISK) return@checked state.hide(id)
@@ -94,51 +101,16 @@ internal class RuntimeSessionCommands(
             is Outcome.Err -> failed("stopAllIn", null, listed.error)
 
             // Same targets as SessionsSnapshot.countsFor: the project's active sessions, overlay included.
-            is Outcome.Ok -> stopAll(listed.value.sessions.filter { it.project == project && it.state.isActive })
+            is Outcome.Ok -> stopAll.run(listed.value.sessions.filter { it.project == project && it.state.isActive })
         }
-    }
-
-    /** Stops [targets] and publishes the stopped ones over one fresh listing. */
-    private suspend fun stopAll(targets: List<Session>): Outcome<Int, SessionError> {
-        if (targets.isEmpty()) return Outcome.Ok(0)
-        val (moves, failed) = stopEach(targets)
-        state.refresh(moves)
-        logger.info("Sessions of a project stopped", "count" to moves.size, "failed" to failed.size)
-        return if (failed.isEmpty()) {
-            Outcome.Ok(moves.size)
-        } else {
-            Outcome.Err(SessionError.StopIncomplete(moves.size, failed))
-        }
-    }
-
-    /** Stops every target: the effects of the stopped ones and the ids of those still running. */
-    private suspend fun stopEach(targets: List<Session>): Pair<List<Expected>, List<SessionId>> {
-        val moves = mutableListOf<Expected>()
-        val failed = mutableListOf<SessionId>()
-        targets.forEach { session ->
-            when (val stopped = runtime.stop(session.id)) {
-                is Outcome.Ok -> {
-                    moves += Expected.Moves(session.id, session.phase(), RuntimePhase.STOPPED, state.expiry())
-                }
-
-                is Outcome.Err -> {
-                    // Gone meanwhile: not active any more, so nothing to stop.
-                    if (stopped.error !is RuntimeError.UnknownSession) {
-                        logger.commandFailed("stop", session.id, stopped.error)
-                        failed += session.id
-                    }
-                }
-            }
-        }
-        return moves to failed
     }
 
     /** Runs [run] for [command] on [id] as a fresh listing shows it; a failed listing or an unknown id ends here. */
-    private suspend fun checked(
+    private suspend fun <T> checked(
         command: String,
         id: SessionId,
-        run: suspend (Session) -> Outcome<Unit, SessionError>,
-    ): Outcome<Unit, SessionError> =
+        run: suspend (Session) -> Outcome<T, SessionError>,
+    ): Outcome<T, SessionError> =
         when (val listed = state.refresh()) {
             is Outcome.Err -> {
                 failed(command, id, listed.error)
@@ -190,7 +162,7 @@ internal class RuntimeSessionCommands(
 }
 
 /** ENG-C8: the command, the session id and the fixed problem only, never the error's details. */
-private fun Logger.commandFailed(
+internal fun Logger.commandFailed(
     command: String,
     id: SessionId?,
     error: RuntimeError,
@@ -218,7 +190,7 @@ private fun SessionPermissionMode.toRuntime(): PermissionMode =
     }
 
 /** The supervisor phase [Session.state] comes from (inverse of [toSessionState]); the `from` of a move. */
-private fun Session.phase(): RuntimePhase =
+internal fun Session.phase(): RuntimePhase =
     when (state) {
         SessionState.Working -> RuntimePhase.WORKING
         is SessionState.AwaitingInput, is SessionState.AwaitingPermission -> RuntimePhase.BLOCKED

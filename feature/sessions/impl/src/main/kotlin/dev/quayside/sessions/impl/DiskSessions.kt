@@ -22,7 +22,7 @@ internal data class DiskMerge(
 /** Pure rules that turn [PastConversation]s into disk sessions (FR-P9, ADR 0032). No IO. */
 internal object DiskSessions {
     /** Length of the short supervisor id: the start of the conversation UUID. */
-    private const val SHORT_ID = 8
+    const val SHORT_ID = 8
 
     /**
      * Leaves out conversations the supervisor knows ([RuntimeSession.conversationId] = UUID, or [RuntimeSession.id]

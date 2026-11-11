@@ -12,7 +12,7 @@ import java.nio.file.Path
 /** Where a start runs (AM-308). [isDirectory] = `Files.isDirectory(p, NOFOLLOW_LINKS)` on `io`. */
 internal class StartDirs(
     private val projects: ProjectsApi,
-    private val isDirectory: suspend (Path) -> Boolean,
+    val isDirectory: suspend (Path) -> Boolean,
 ) {
     fun has(project: ProjectId): Boolean = projects.projects.value.any { it.id == project }
 

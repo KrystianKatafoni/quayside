@@ -197,7 +197,7 @@ Plik źródłowy odwołuje się do `docs/screenshots/light_01_nordic_slate.png` 
 
 Źródło: mockupy z 2026-11-04 (A · Mission Control, B · terminal po Attach, C · ikony, przyciski, statusy). Geometrię ikon przejmujemy z arkusza C; kolory i promienie zawsze z tokenów motywu, nie z hexów mockupu.
 
-**Ikony.** 22 ikony liniowe w kodzie (`IconKind`), siatka 24 × 24, kreska 1,8, zaokrąglone końce i złącza, bez wypełnień. Cztery ikony narysowano w repo w tym samym stylu, bo mockup ich nie ma: `STOPPED`, `REMOVE`, `MORE`, `BACK`. Status nigdy nie jest tylko kolorem (NFR-6): ikony statusów różnią się kształtem, pigułki i kafelki mają tekst albo opis.
+**Ikony.** 23 ikony liniowe w kodzie (`IconKind`), siatka 24 × 24, kreska 1,8, zaokrąglone końce i złącza, bez wypełnień. Cztery ikony narysowano w repo w tym samym stylu, bo mockup ich nie ma: `STOPPED`, `REMOVE`, `MORE`, `BACK`. Status nigdy nie jest tylko kolorem (NFR-6): ikony statusów różnią się kształtem, pigułki i kafelki mają tekst albo opis.
 
 **Tony.** Tło pigułki lub kafelka to `tinted(c) = panel.over(bg).mix(c, 15 %)`; ta sama reguła daje `warnBg` w `plex`.
 

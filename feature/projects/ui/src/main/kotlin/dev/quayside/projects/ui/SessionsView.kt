@@ -16,7 +16,7 @@ import dev.quayside.sessions.api.SnapshotStatus
  * [counts] holds the active sessions of a project (the rail and the remove dialog); [statuses] the counters of
  * every sidebar row (only a project row draws them; a subfolder row uses them for its icon tone). Key
  * `ProjectFocus(id)` = every session with `project == id` (the whole group, like the session list);
- * `ProjectFocus(id, name)` = those whose directory is in that subfolder. A missing key = all zero.
+ * `ProjectFocus(id, name)` = those whose place (`placeDir`) is that subfolder. A missing key = all zero.
  */
 internal data class SessionsView(
     val counts: Map<ProjectId, SessionCounts>,
@@ -45,8 +45,9 @@ internal data class SessionsView(
         ): SessionsView = SessionsView(activeCounts(projects, snapshot), fresh, statusCounts(projects, snapshot))
 
         /**
-         * Only sessions the project owns (`Session.project`) count; the subfolder comes from their directory. All-zero
-         * entries are dropped (hygiene): tests compare views with `==` against the empty [SessionsView].
+         * Only sessions the project owns (`Session.project`) count; the subfolder comes from their place
+         * (`Session.placeDir`). All-zero entries are dropped (hygiene): tests compare views with `==` against the
+         * empty [SessionsView].
          */
         private fun statusCounts(
             projects: List<Project>,
@@ -55,7 +56,7 @@ internal data class SessionsView(
             projects
                 .flatMap { project ->
                     val owned = snapshot.sessions.filter { it.project == project.id }
-                    val bySubfolder = owned.groupBy { ProjectGroups.subfolderOf(project, it.cwd) }
+                    val bySubfolder = owned.groupBy { ProjectGroups.subfolderOf(project, it.placeDir) }
                     listOf(ProjectFocus(project.id) to owned) +
                         bySubfolder.mapNotNull { (name, sessions) ->
                             name?.let { ProjectFocus(project.id, it) to sessions }

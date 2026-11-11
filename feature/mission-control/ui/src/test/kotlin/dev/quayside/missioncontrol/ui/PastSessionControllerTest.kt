@@ -28,7 +28,7 @@ import kotlin.time.Duration.Companion.hours
 
 /**
  * The controller on a disk session (FR-P9) over `FakeSessions`, which passes the same contract as the real system:
- * only "Usuń" works and it hides the session; the keys of the other actions do nothing and call nothing.
+ * "Wznów" (AM-313, see SessionResumeControllerTest) and "Usuń" work; the keys of the other actions do nothing.
  */
 class PastSessionControllerTest {
     private val project = aProject(displayName = "Quayside")
@@ -83,13 +83,13 @@ class PastSessionControllerTest {
         state.value.screen.shouldBeInstanceOf<Screen.Project>()
 
     @Test
-    fun `a disk session is selected like any other and shows only remove`() =
+    fun `a disk session is selected like any other and shows resume and remove`() =
         runTest {
             val controller = start(fake())
 
             select(controller, uuid)
 
-            controller.page().details?.actions shouldBe setOf(SessionAction.REMOVE)
+            controller.page().details?.actions shouldBe setOf(SessionAction.RESUME, SessionAction.REMOVE)
             controller.page().details?.name shouldBe "Old chat"
         }
 
@@ -107,6 +107,7 @@ class PastSessionControllerTest {
             actions.canStop shouldBe false
             actions.canRespawn shouldBe false
             actions.canRemove shouldBe true
+            actions.canResume shouldBe true
             controller.attachTarget().shouldBeNull()
         }
 

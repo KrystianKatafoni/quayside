@@ -25,22 +25,33 @@ internal fun SessionActionsView(
     onEvent: (MissionControlEvent) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(space = 6.dp)) {
-        details.busy?.let {
-            Box(Modifier.testTag(MissionControlTags.DETAILS_BUSY)) {
-                AmText(MissionControlStrings["action.${it.name.lowercase()}.busy"], color = mutedColor())
-            }
-        }
-        details.failure?.let {
-            Column(Modifier.testTag(MissionControlTags.DETAILS_FAILURE)) {
-                AmText(MissionControlStrings["action.${it.action.name.lowercase()}.failed"], color = Tone.ERR.tint())
-                AmText(MissionControlStrings.format(it.reason), color = Tone.ERR.tint())
-            }
-        }
+        ActionStatus(details)
         val controls = details.detailsControls()
         val firstDanger = controls.firstOrNull { it.kind == ButtonKind.DANGER }
         controls.forEach { control ->
             if (control === firstDanger) Spacer(Modifier.height(8.dp))
             ControlButton(control, onEvent, Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/** The "in progress" text, the failure and the notice of a resumed copy; each only when it applies. */
+@Composable
+private fun ActionStatus(details: SessionDetails) {
+    details.busy?.let {
+        Box(Modifier.testTag(MissionControlTags.DETAILS_BUSY)) {
+            AmText(MissionControlStrings["action.${it.name.lowercase()}.busy"], color = mutedColor())
+        }
+    }
+    details.failure?.let {
+        Column(Modifier.testTag(MissionControlTags.DETAILS_FAILURE)) {
+            AmText(MissionControlStrings["action.${it.action.name.lowercase()}.failed"], color = Tone.ERR.tint())
+            AmText(MissionControlStrings.format(it.reason), color = Tone.ERR.tint())
+        }
+    }
+    details.notice?.let {
+        Box(Modifier.testTag(MissionControlTags.DETAILS_NOTICE)) {
+            AmText(MissionControlStrings.format(it), color = mutedColor())
         }
     }
 }

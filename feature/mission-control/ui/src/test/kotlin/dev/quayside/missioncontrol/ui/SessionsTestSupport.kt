@@ -4,6 +4,7 @@ import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.FakeSessions
 import dev.quayside.sessions.api.RecentOutput
+import dev.quayside.sessions.api.ResumedSession
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionMonitor
@@ -14,7 +15,7 @@ import kotlinx.coroutines.CompletableDeferred
 internal fun FakeSessions.api(): SessionsApi = SessionsApi(monitor = this, commands = this)
 
 /**
- * Commands that stay "in progress" until the test opens [gate]: stop, respawn and remove record the call in [started],
+ * Commands that stay "in progress" until the test opens [gate]: stop, respawn, resume and remove record the call in [started],
  * wait for the gate and then delegate to [inner]. Gives the "action runs" state without a real clock.
  */
 internal class GatedCommands(
@@ -33,6 +34,12 @@ internal class GatedCommands(
         started += "respawn ${id.value}"
         gate.await()
         return inner.respawn(id)
+    }
+
+    override suspend fun resume(id: SessionId): Outcome<ResumedSession, SessionError> {
+        started += "resume ${id.value}"
+        gate.await()
+        return inner.resume(id)
     }
 
     override suspend fun remove(id: SessionId): Outcome<Unit, SessionError> {

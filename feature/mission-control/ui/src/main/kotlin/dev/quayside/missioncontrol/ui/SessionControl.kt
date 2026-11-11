@@ -22,7 +22,9 @@ internal fun SessionDetails.openControls(): List<SessionControl> =
 /** Everything the row menu offers: [openControls], then [otherControls]. */
 internal fun SessionDetails.allControls(): List<SessionControl> = openControls() + otherControls()
 
-/** Stop, Respawn and Remove when they apply now, then "Podgląd" (not for a disk session, which has no output). */
+/**
+ * Stop, Respawn, Resume and Remove when they apply now, then "Podgląd" (not for a disk session, which has no output).
+ */
 internal fun SessionDetails.otherControls(): List<SessionControl> =
     SessionAction.entries.filter { it in actions }.map {
         SessionControl(it.name.lowercase(), "action.${it.name.lowercase()}", MissionControlEvent.Run(it), it.icon())
@@ -35,6 +37,7 @@ private fun SessionAction.icon(): IconKind =
     when (this) {
         SessionAction.STOP -> IconKind.STOP
         SessionAction.RESPAWN -> IconKind.RESPAWN
+        SessionAction.RESUME -> IconKind.RESUME
         SessionAction.REMOVE -> IconKind.REMOVE
     }
 

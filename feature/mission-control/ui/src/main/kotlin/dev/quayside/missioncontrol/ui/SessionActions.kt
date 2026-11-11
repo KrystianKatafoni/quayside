@@ -8,7 +8,7 @@ import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsSnapshot
 
 /** Actions of the details panel and the palette (AM-410). */
-internal enum class SessionAction { STOP, RESPAWN, REMOVE }
+internal enum class SessionAction { STOP, RESPAWN, RESUME, REMOVE }
 
 /** Why [action] on session [id] failed; [reason] is a fixed text without the id, the name or a path. */
 internal data class Failure(
@@ -17,11 +17,13 @@ internal data class Failure(
     val reason: UiText,
 )
 
-/** The running action ([busy]: which session and action), the last [failure] and the open [dialog]. */
+/** The running action ([busy]: which session and action), the last [failure], the open [dialog] and the live session
+ *  [copied] by the last resume (docs/compat.md R4), whose details show the copy notice. */
 internal data class ActionUi(
     val busy: Pair<SessionId, SessionAction>? = null,
     val failure: Failure? = null,
     val dialog: SessionDialog? = null,
+    val copied: SessionId? = null,
 )
 
 /** A dialog of Mission Control over the window (AM-410). */
@@ -47,8 +49,8 @@ internal object SessionActions {
     ): Session? = SessionScope.visible(sessions, selection, projects).find { it.id == selection.session }
 
     /**
-     * Active sessions can be stopped, the others respawned or removed; a disk session ([SessionOrigin.DISK]) can only
-     * be removed (hidden, FR-P9); nothing while an action or a dialog is open.
+     * Active sessions can be stopped, the others respawned or removed; a disk session ([SessionOrigin.DISK]) can be
+     * resumed or removed (hidden, FR-P9); nothing while an action or a dialog is open.
      */
     fun available(
         state: SessionState,
@@ -57,7 +59,7 @@ internal object SessionActions {
     ): Set<SessionAction> =
         when {
             busy -> emptySet()
-            origin == SessionOrigin.DISK -> setOf(SessionAction.REMOVE)
+            origin == SessionOrigin.DISK -> setOf(SessionAction.RESUME, SessionAction.REMOVE)
             state.isActive -> setOf(SessionAction.STOP)
             else -> setOf(SessionAction.RESPAWN, SessionAction.REMOVE)
         }
@@ -87,6 +89,7 @@ internal fun MissionControlUiState.withActions(
                 ),
             busy = acting.busy?.takeIf { it.first == details.id }?.second,
             failure = acting.failure?.takeIf { it.id == details.id },
+            notice = UiText("action.resume.copyNotice").takeIf { acting.copied == details.id },
         )
     return withDialog.copy(screen = screen.withDetails(shown))
 }

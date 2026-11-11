@@ -171,6 +171,8 @@ internal data class SessionRow(
  * @property canAttach `⏎` and the "Attach" controls apply ([SessionActionsState.canAttach]).
  * @property canReply [canAttach] and the session waits for the user ([SessionActionsState.canReply]).
  * @property fromDisk read from a session file only (FR-P9): no "Podgląd", no output to read.
+ * @property notice a fixed hint under the buttons; `action.resume.copyNotice` for a resumed copy of a conversation
+ *   that was open elsewhere (docs/compat.md R4), null otherwise.
  */
 internal data class SessionDetails(
     val id: SessionId,
@@ -187,6 +189,7 @@ internal data class SessionDetails(
     val canAttach: Boolean = false,
     val canReply: Boolean = false,
     val fromDisk: Boolean = false,
+    val notice: UiText? = null,
 )
 
 /** @property waiting @property working counted over the sessions of every project. */

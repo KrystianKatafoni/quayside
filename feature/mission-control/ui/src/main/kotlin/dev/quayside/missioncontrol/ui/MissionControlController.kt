@@ -7,6 +7,7 @@ import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
+import dev.quayside.sessions.api.ResumedSession
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionsApi
@@ -32,7 +33,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * State holder of Mission Control (MVI, docs/11 §1) for the project selected in the sidebar or a global view.
  * Collects in [scope] (the window scope, Main dispatcher; not thread-safe) and re-reads [clock] every [tick]
- * for session ages. Never throws; runs only the stop, respawn and remove commands of [sessions] (attach is
+ * for session ages. Never throws; runs only the stop, respawn, resume and remove commands of [sessions] (attach is
  * a query, [attachTarget]), one at a time, and logs them with session ids and fixed categories (ENG-C8).
  * Shows only [SessionMonitor.snapshot].
  * @throws IllegalArgumentException if [tick] is not positive.
@@ -104,8 +105,8 @@ public class MissionControlController(
         }
         // A failure is shown until the next action or until another session is selected (plan, decision 4).
         scope.launch {
-            selection.map { Triple(it.project, it.view, it.session) }.distinctUntilChanged().collect {
-                ui.update { shown -> shown.copy(failure = null) }
+            selection.map { Triple(it.project, it.view, it.session) }.distinctUntilChanged().collect { (_, _, s) ->
+                ui.update { shown -> shown.copy(failure = null, copied = shown.copied.takeIf { it == s }) }
             }
         }
         // Ages tick only while a project or a global view is shown (plan, decision 5).
@@ -134,7 +135,8 @@ public class MissionControlController(
 
     /**
      * Actions of the selected visible session, for the palette (AM-410).
-     * [SessionActionsState.canStop], `canRespawn` and `canRemove` are false while an action runs or a dialog is open;
+     * [SessionActionsState.canStop], `canRespawn`, `canResume` and `canRemove` are false while an action runs or a
+     * dialog is open;
      * `canPreview` stays true while an action runs and is false only with a dialog open.
      * `canAttach` behaves like `canPreview` and also needs the project of the session in the project list;
      * `canReply` is `canAttach` for a session that waits for the user.
@@ -179,15 +181,33 @@ public class MissionControlController(
 
     private fun onSessionIntent(intent: MissionControlIntent) {
         when (intent) {
-            MissionControlIntent.NextSession -> moveCursor(SessionCursor::next)
-            MissionControlIntent.PreviousSession -> moveCursor(SessionCursor::previous)
             MissionControlIntent.StopSelected -> run(SessionAction.STOP)
             MissionControlIntent.RespawnSelected -> run(SessionAction.RESPAWN)
+            MissionControlIntent.ResumeSelected -> run(SessionAction.RESUME)
             MissionControlIntent.RemoveSelected -> askToRemove()
-            is MissionControlIntent.SelectFilter -> Unit
-            is MissionControlIntent.SelectSession -> selection.value = intent.toSelection()
             MissionControlIntent.TogglePreview -> togglePreview()
+            else -> onNavigation(intent)
+        }
+    }
+
+    /** Rows, sessions and views; the intents of [onSessionIntent] are listed to keep `when` exhaustive. */
+    private fun onNavigation(intent: MissionControlIntent) {
+        when (intent) {
+            MissionControlIntent.NextSession -> moveCursor(SessionCursor::next)
+
+            MissionControlIntent.PreviousSession -> moveCursor(SessionCursor::previous)
+
+            is MissionControlIntent.SelectSession -> selection.value = intent.toSelection()
+
             is MissionControlIntent.ShowView -> selection.update { it.copy(view = intent.view, session = null) }
+
+            is MissionControlIntent.SelectFilter,
+            MissionControlIntent.StopSelected,
+            MissionControlIntent.RespawnSelected,
+            MissionControlIntent.ResumeSelected,
+            MissionControlIntent.RemoveSelected,
+            MissionControlIntent.TogglePreview,
+            -> Unit
         }
     }
 
@@ -209,15 +229,6 @@ public class MissionControlController(
     }
 
     /**
-     * Removes the session of the open dialog, not the current selection. Activity is deliberately not checked
-     * again: `remove` answers `SessionActive` for a resumed session and that becomes a [Failure] (plan, decision 4).
-     */
-    private fun confirmRemove() {
-        val dialog = ui.value.dialog as? SessionDialog.ConfirmRemove ?: return
-        launchAction(SessionAction.REMOVE, dialog.id)
-    }
-
-    /**
      * Runs [action] on the selected visible session read now from the snapshot, not from [state]. [ui] is set before
      * the launch, so a second call before the coroutine starts is ignored.
      */
@@ -234,8 +245,16 @@ public class MissionControlController(
     ) {
         ui.value = ActionUi(busy = id to action)
         scope.launch {
-            val reason = runner.run(action, id)
-            ui.value = ActionUi(failure = reason?.let { Failure(id, action, it) })
+            var resumed: ResumedSession? = null
+            val reason = runner.run(action, id) { resumed = it }
+            // The user may have moved on while the command ran: then nothing jumps (AM-313 plan, point 7).
+            val followed = resumed?.takeIf { selection.value.session == id }
+            ui.value =
+                ActionUi(
+                    failure = reason?.let { Failure(id, action, it) },
+                    copied = followed?.takeIf { it.copy }?.id,
+                )
+            followed?.let { live -> selection.update { it.copy(session = live.id, filter = SessionFilter.ALL) } }
         }
     }
 
@@ -254,25 +273,40 @@ public class MissionControlController(
     /** Handles a click in the filter or the session list. */
     internal fun onEvent(event: MissionControlEvent) {
         when (event) {
-            is MissionControlEvent.SelectFilter -> selection.update { it.withFilter(event.filter) }
+            is MissionControlEvent.SelectFilter -> {
+                selection.update { it.withFilter(event.filter) }
+            }
 
-            is MissionControlEvent.SelectSession -> selection.update { it.copy(session = event.id) }
+            is MissionControlEvent.SelectSession -> {
+                selection.update { it.copy(session = event.id) }
+            }
 
-            is MissionControlEvent.Run -> if (event.action == SessionAction.REMOVE) askToRemove() else run(event.action)
+            is MissionControlEvent.Run -> {
+                if (event.action == SessionAction.REMOVE) askToRemove() else run(event.action)
+            }
 
-            MissionControlEvent.TogglePreview -> togglePreview()
+            MissionControlEvent.TogglePreview -> {
+                togglePreview()
+            }
 
-            MissionControlEvent.ConfirmRemove -> confirmRemove()
+            // Removes the session of the open dialog, not the current selection. Activity is deliberately not checked
+            // again: `remove` answers `SessionActive` for a resumed session and that becomes a [Failure].
+            MissionControlEvent.ConfirmRemove -> {
+                (ui.value.dialog as? SessionDialog.ConfirmRemove)?.let { launchAction(SessionAction.REMOVE, it.id) }
+            }
 
-            MissionControlEvent.Dismiss -> ui.update { it.copy(dialog = null) }
+            MissionControlEvent.Dismiss -> {
+                ui.update { it.copy(dialog = null) }
+            }
 
-            // `app`'s job, not the controller's: MissionControl routes these to its callbacks (Attach and Reply open
-            // a terminal tab, AM-511; OpenSubfolder selects the subfolder in the sidebar, AM-307).
             MissionControlEvent.Attach,
             MissionControlEvent.Reply,
             MissionControlEvent.ChangeHistoryLimit,
             is MissionControlEvent.OpenSubfolder,
-            -> Unit
+            -> {
+                // `app`'s job, not the controller's: MissionControl routes these to its callbacks (Attach and Reply
+                // open a terminal tab, AM-511; OpenSubfolder selects the subfolder in the sidebar, AM-307).
+            }
         }
     }
 }
@@ -299,6 +333,7 @@ private fun actionsOf(
         canStop = SessionAction.STOP in available,
         canRespawn = SessionAction.RESPAWN in available,
         canRemove = SessionAction.REMOVE in available,
+        canResume = SessionAction.RESUME in available,
         dialogOpen = acting.dialog != null,
         canPreview = target?.origin == SessionOrigin.SUPERVISOR && acting.dialog == null,
         previewOpen = previewOpen,

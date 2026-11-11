@@ -214,16 +214,25 @@ interface ProjectInspector {
 
 ```kotlin
 // agent-runtime:api — tylko odczyt plików sesji `<claudeHome>/projects/*/<uuid>.jsonl` (FR-P9, ADR 0032)
-fun interface SessionHistory {
+interface SessionHistory {
     suspend fun list(dirs: List<Path>, since: Instant?): Outcome<List<PastConversation>, HistoryError>  // najnowsze pierwsze; błąd tylko UNREADABLE
+    // AM-315, ADR 0034: najwyżej limit (1..100) wiadomości przed kursorem (null = koniec pliku), od najstarszej;
+    // plik czytany od końca porcjami 64 KiB (nigdy w całości), linia > 1 MiB pominięta; odczyt jednego wywołania ≤ 8 MiB + 1 MiB + 64 KiB (linia < 1 MiB na granicy budżetu doczytana do końca)
+    suspend fun conversation(conversation: ConversationId, startCwd: Path, before: HistoryCursor?, limit: Int):
+        Outcome<ConversationPage, ConversationError>  // NOT_FOUND (też id spoza małych liter UUID), UNREADABLE
 }
 data class PastConversation(val conversationId: ConversationId, val startCwd: Path, val startedAt: Instant?,
-    val lastActivityAt: Instant?, val modifiedAt: Instant, val cwdChanged: Boolean, val title: String?)  // title: dane użytkownika, toString go ukrywa
+    val lastActivityAt: Instant?, val modifiedAt: Instant, val cwdChanged: Boolean, val title: String?,
+    val name: String? = null, val lastPrompt: String? = null)  // title, name, lastPrompt: dane użytkownika, toString ich nie pokazuje
+data class HistoryCursor(val offset: Long)  // pozycja w pliku (bajty): zwykle początek linii wiadomości, bywa początek linii bez wiadomości albo środek pomijanej linii; ważny, gdy plik tylko rośnie
+data class ConversationPage(val messages: List<ConversationMessage>, val older: HistoryCursor?)  // older = null: początek pliku
+data class ConversationMessage(val role: ConversationRole, val text: String, val at: Instant?, val truncated: Boolean)  // text ≤ 4 000 code pointów, toString go ukrywa
 
 // sessions:api — odczyt i komendy rozdzielone (ENG-I2)
 // Session.origin: SUPERVISOR | DISK (FR-P9). Sesja z dysku jest zawsze Stopped, jej id to UUID rozmowy;
 // SessionsSnapshot.history: Map<ProjectId, ProjectHistory(shown, older)> — klucz dla każdego zeskanowanego projektu.
-// Dla DISK: respawn/recentOutput = UnknownSession, stop = Ok, remove = ukrycie na stałe (hidden w session-history.json),
+// Session.name dla DISK: customTitle z pliku, potem pierwsza wiadomość, potem 8 znaków UUID; Session.summary: pierwsza
+// albo „pierwsza → ostatnia” wiadomość użytkownika (AM-315). Dla DISK: respawn/recentOutput = UnknownSession, stop = Ok, remove = ukrycie na stałe (hidden w session-history.json),
 // resume = wznowienie w katalogu startu (AM-313); dla SUPERVISOR resume = UnknownSession (tam jest respawn).
 // Session.assignedDir (AM-314, ADR 0033): katalog wybrany ręcznie (korzeń projektu albo jeden z Project.subfolders),
 // null = miejsce wynika z cwd. Session.placeDir = assignedDir ?: cwd; UI liczy podfolder zawsze z placeDir.
@@ -232,6 +241,9 @@ interface SessionMonitor {
     val snapshot: StateFlow<SessionsSnapshot>
     val events: Flow<SessionEvent>                 // przejścia stanów, konsumowane m.in. przez powiadomienia
     suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError>  // ogon wyjścia (`claude logs`), odczyt na żądanie (AM-411)
+    // AM-315: najwyżej 20 wiadomości sesji DISK przed kursorem (null = najnowsze), od najstarszej, odczyt na żądanie;
+    // SUPERVISOR, ukryta lub brak pliku = UnknownSession, błąd odczytu = Runtime(COMMAND_FAILED)
+    suspend fun conversation(id: SessionId, before: MessageCursor?): Outcome<SessionMessagePage, SessionError>
 }
 sealed interface SessionState {
     data object Working : SessionState

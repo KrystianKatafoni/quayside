@@ -40,6 +40,7 @@ public abstract class AgentRuntimeContract {
             pid = 4343L,
         )
     private val unknown = SessionId("deadbeef")
+    private val conversation = aConversationId("5e2a9c41-0000-4000-8000-0000000000aa")
 
     private suspend fun AgentRuntime.listed(): List<RuntimeSession> = listSessions().getOrNull().shouldNotBeNull()
 
@@ -100,6 +101,53 @@ public abstract class AgentRuntimeContract {
             a shouldNotBe b
             a shouldNotBe first.id
             b shouldNotBe first.id
+        }
+
+    @Test
+    public fun `resume lists the conversation under its short id waiting for input`(): Unit =
+        runTest {
+            val runtime = create(RuntimeWorld())
+
+            val id = runtime.resume(ResumeSpec(conversation, startCwd)).getOrNull().shouldNotBeNull()
+
+            id shouldBe SessionId(conversation.value.take(SHORT_ID_LENGTH))
+            assertSoftly(runtime.find(id).shouldNotBeNull()) {
+                phase shouldBe RuntimePhase.BLOCKED
+                waitingFor shouldBe WaitingFor.Input
+                conversationId shouldBe conversation
+            }
+        }
+
+    @Test
+    public fun `resumed job runs in the spec directory`(): Unit =
+        runTest {
+            val runtime = create(RuntimeWorld())
+            val cwd = startCwd
+
+            val id = runtime.resume(ResumeSpec(conversation, cwd)).getOrNull().shouldNotBeNull()
+
+            runtime.find(id)?.cwd shouldBe cwd
+        }
+
+    @Test
+    public fun `resume of an open conversation returns a copy id`(): Unit =
+        runTest {
+            val runtime = create(RuntimeWorld(openElsewhere = setOf(conversation)))
+
+            val id = runtime.resume(ResumeSpec(conversation, startCwd)).getOrNull().shouldNotBeNull()
+
+            id shouldNotBe SessionId(conversation.value.take(SHORT_ID_LENGTH))
+            runtime.find(id)?.phase shouldBe RuntimePhase.BLOCKED
+        }
+
+    @Test
+    public fun `resume of an unknown conversation lists a failed job`(): Unit =
+        runTest {
+            val runtime = create(RuntimeWorld(missingConversations = setOf(conversation)))
+
+            val id = runtime.resume(ResumeSpec(conversation, startCwd)).getOrNull().shouldNotBeNull()
+
+            runtime.find(id)?.phase shouldBe RuntimePhase.FAILED
         }
 
     @Test
@@ -178,6 +226,7 @@ public abstract class AgentRuntimeContract {
             assertSoftly {
                 runtime.listSessions() shouldBe expected
                 runtime.start(aStartSpec(cwd = startCwd)) shouldBe expected
+                runtime.resume(ResumeSpec(conversation, startCwd)) shouldBe expected
                 runtime.stop(first.id) shouldBe expected
                 runtime.respawn(first.id) shouldBe expected
                 runtime.remove(first.id) shouldBe expected
@@ -185,3 +234,5 @@ public abstract class AgentRuntimeContract {
             }
         }
 }
+
+private const val SHORT_ID_LENGTH = 8

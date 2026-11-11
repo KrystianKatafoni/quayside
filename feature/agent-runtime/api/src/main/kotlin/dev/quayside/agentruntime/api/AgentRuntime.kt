@@ -36,6 +36,16 @@ public interface AgentRuntime {
     /** Starts a background agent (`claude --bg`) described by [spec] and returns the supervisor's short id. */
     public suspend fun start(spec: StartSpec): Outcome<SessionId, RuntimeError>
 
+    /**
+     * Resumes a conversation the supervisor does not know (`claude --bg --resume <uuid>`, no prompt, no flags) in
+     * [ResumeSpec.cwd]; returns the id from `backgrounded · <id>`. The id is the first 8 characters of the UUID
+     * when the same conversation woke; any other id is a copy with a new UUID (conversation open in another Claude
+     * Code process, docs/compat.md R4). Does not check that the conversation exists: the CLI answers 0 for an
+     * unknown UUID and the job turns [RuntimePhase.FAILED] later. Errors: [RuntimeError.WorkspaceNotTrusted], [RuntimeError.CommandFailed],
+     * [RuntimeError.Unparseable], [RuntimeError.Timeout], [RuntimeError.NotInstalled].
+     */
+    public suspend fun resume(spec: ResumeSpec): Outcome<SessionId, RuntimeError>
+
     /** Stops the session; it stays on the list as [RuntimePhase.STOPPED]. */
     public suspend fun stop(id: SessionId): Outcome<Unit, RuntimeError>
 
@@ -142,6 +152,17 @@ public data class StartSpec(
     override fun toString(): String =
         "StartSpec(cwd=$cwd, prompt=***, name=$name, agent=$agent, model=$model, permissionMode=$permissionMode)"
 }
+
+/**
+ * What to resume. A data class so that a prompt or an account can be added without breaking callers.
+ *
+ * @property conversation conversation UUID of the session file.
+ * @property cwd directory the conversation started in; `claude` runs there.
+ */
+public data class ResumeSpec(
+    val conversation: ConversationId,
+    val cwd: Path,
+)
 
 /** Claude Code permission mode an agent starts with. */
 public enum class PermissionMode {

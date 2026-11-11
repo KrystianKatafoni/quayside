@@ -8,6 +8,8 @@ import dev.quayside.core.domain.SessionId
  *
  * @property sessions sessions the supervisor already knows about.
  * @property outputs `claude logs` output per session.
+ * @property missingConversations conversations without a session file: `resume` answers Ok and the job fails later.
+ * @property openElsewhere conversations open in another Claude Code process: `resume` starts a copy (R4).
  * @property installed false = no `claude` binary at all.
  * @property version raw `claude --version` result when [installed].
  * @property agentViewEnabled whether Agent View (background sessions) is switched on.
@@ -15,6 +17,8 @@ import dev.quayside.core.domain.SessionId
 public data class RuntimeWorld(
     val sessions: List<RuntimeSession> = emptyList(),
     val outputs: Map<SessionId, String> = emptyMap(),
+    val missingConversations: Set<ConversationId> = emptySet(),
+    val openElsewhere: Set<ConversationId> = emptySet(),
     val installed: Boolean = true,
     val version: String = RuntimeRequirements.MIN_CLAUDE_VERSION,
     val agentViewEnabled: Boolean = true,

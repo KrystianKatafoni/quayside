@@ -1,6 +1,7 @@
 package dev.quayside.sessions.api
 
 import dev.quayside.core.domain.Outcome
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
@@ -67,5 +68,24 @@ public abstract class SessionHistorySettingsContract {
             val repo = create()
 
             repo.update { it } shouldBe Outcome.Ok(SessionHistorySettings())
+        }
+
+    @Test
+    public fun `places round trip through update`(): Unit =
+        runTest {
+            val repo = create()
+            val places =
+                mapOf(
+                    SessionId("0b6f0000-0000-4000-8000-000000000000") to
+                        StoredPlace(ProjectId("p1"), PlaceAssignment.Subfolder("soft")),
+                    SessionId("7c5dcf5d") to StoredPlace(ProjectId("p1"), PlaceAssignment.ProjectRoot),
+                )
+
+            val result = repo.update { it.copy(places = places) }
+
+            result shouldBe Outcome.Ok(SessionHistorySettings(places = places))
+            repo.settings.value.places shouldBe places
+            repo.update { it.copy(maxAge = HistoryAge.DAYS_7) }
+            repo.settings.value.places shouldBe places
         }
 }

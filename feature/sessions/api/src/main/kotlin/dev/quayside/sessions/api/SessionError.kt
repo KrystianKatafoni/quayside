@@ -13,7 +13,8 @@ public sealed interface SessionError {
     /**
      * The supervisor does not know session [id]; also the answer for a command that does not apply to a
      * [SessionOrigin.DISK] session (respawn, output), for [SessionCommands.resume] of a [SessionOrigin.SUPERVISOR]
-     * session and for a disk session that is hidden or gone.
+     * session and for a disk session that is hidden or gone. [SessionCommands.assignPlace] answers it also for a
+     * session outside every project.
      */
     public data class UnknownSession(
         val id: SessionId,
@@ -30,7 +31,7 @@ public sealed interface SessionError {
         val failed: List<SessionId>,
     ) : SessionError
 
-    /** The subfolder of a start cannot be used; never carries its name (ENG-C8). */
+    /** The subfolder of a start or of a place cannot be used; never carries its name (ENG-C8). */
     public data class SubfolderUnavailable(
         val project: ProjectId,
         val problem: SubfolderProblem,

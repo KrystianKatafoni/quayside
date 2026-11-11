@@ -41,7 +41,7 @@ public class FakeSessions(
 ) : SessionMonitor,
     SessionCommands {
     private val projectDirs: Map<ProjectId, Path> = world.projects.associate { it.id to it.dir }
-    private val worldProjects: Map<ProjectId, WorldProject> = world.projects.associateBy { it.id }
+    private val places = FakePlaces(world.projects, historySettings)
     private val state =
         MutableStateFlow(SessionsSnapshot(ordered(world.sessions.map(::toSession)), SnapshotStatus.Fresh(clock.now())))
     private val transitions = MutableSharedFlow<SessionEvent>(extraBufferCapacity = EVENT_BUFFER)
@@ -66,7 +66,10 @@ public class FakeSessions(
     private val missingDirs = MutableStateFlow(emptySet<Path>())
 
     init {
-        historySettings.onSaved { publishDisk() }
+        historySettings.onSaved {
+            publishDisk()
+            applyPlaces()
+        }
         publishDisk()
     }
 
@@ -144,7 +147,7 @@ public class FakeSessions(
         if (before.state == state) return
         val after = before.copy(state = state, lastActivityAt = clock.now())
         replace(after)
-        eventFor(after)?.let { transitions.emit(it) }
+        FakeSessionRules.eventFor(after)?.let { transitions.emit(it) }
     }
 
     /**
@@ -165,7 +168,7 @@ public class FakeSessions(
      */
     public fun runtimeAvailable(available: Boolean) {
         runtimeDown.value = !available
-        state.update { it.copy(status = statusAfter(it.status, available)) }
+        state.update { it.copy(status = FakeSessionRules.statusAfter(it.status, available, clock.now())) }
     }
 
     /** Every later stop of [id] fails with [RuntimeProblem.COMMAND_FAILED] and leaves it running. */
@@ -188,7 +191,7 @@ public class FakeSessions(
     ): Outcome<SessionId, SessionError> {
         begin("start ${project.value}")?.let { return Outcome.Err(it) }
         val projectDir = projectDirs[project] ?: return Outcome.Err(SessionError.UnknownProject(project))
-        val dir = startDir(project, projectDir, spec.subfolder).getOrElse { return Outcome.Err(it) }
+        val dir = places.startDir(project, projectDir, spec.subfolder).getOrElse { return Outcome.Err(it) }
         val id = SessionId(ID_FORMAT.format(lastId.incrementAndGet()))
         val now = clock.now()
         val owner = SessionRules.projectFor(dir, projectDirs) ?: project
@@ -224,6 +227,7 @@ public class FakeSessions(
                 lastActivityAt = now,
                 origin = SessionOrigin.SUPERVISOR,
             )
+        places.resumed(live, id)
         insert(session)
         publishDisk()
         transitions.emit(SessionEvent.BecameBlocked(session))
@@ -266,21 +270,28 @@ public class FakeSessions(
         return Outcome.Ok(Unit)
     }
 
-    /** [projectDir], or its subfolder [name] when it is one of the project's and not [WorldProject.missing]. */
-    private fun startDir(
+    /**
+     * Same rules as `sessions:impl` (ADR 0033): any visible session of a project, in any state; saved in
+     * [historySettings] under the conversation, so the place survives a [resume]; never needs the runtime, so it works
+     * while [runtimeAvailable] is false. A save that fails ([FakeSessionHistorySettings.failNext]) is
+     * `Runtime(COMMAND_FAILED)` and changes nothing.
+     */
+    override suspend fun assignPlace(
+        id: SessionId,
+        place: PlaceAssignment?,
+    ): Outcome<Unit, SessionError> {
+        recorded.update { it + "assignPlace ${id.value}" }
+        pendingFailure.getAndUpdate { null }?.let { return Outcome.Err(it) }
+        return places.assign(id, find(id), place, conversations.value)
+    }
+
+    /** The subfolders of [project] become [names] (a folder added to or removed from the group); places follow. */
+    public fun setSubfolders(
         project: ProjectId,
-        projectDir: Path,
-        name: String?,
-    ): Outcome<Path, SessionError> {
-        if (name == null) return Outcome.Ok(projectDir)
-        val registered = worldProjects.getValue(project)
-        val problem =
-            when {
-                name !in registered.subfolders -> SubfolderProblem.NOT_IN_PROJECT
-                name in registered.missing -> SubfolderProblem.MISSING
-                else -> return Outcome.Ok(projectDir.resolve(name))
-            }
-        return Outcome.Err(SessionError.SubfolderUnavailable(project, problem))
+        names: List<String>,
+    ) {
+        places.setSubfolders(project, names)
+        applyPlaces()
     }
 
     /** Records [call] and returns the pending failure, if any, else the runtime failure, if any. */
@@ -322,12 +333,18 @@ public class FakeSessions(
             val (disk, history) = FakeDiskScan.scan(pastFiles.value, known, projectDirs, settings, since)
             current.copy(sessions = ordered(supervisor + disk), history = history)
         }
+        applyPlaces()
+    }
+
+    private fun applyPlaces() {
+        state.update { it.copy(sessions = places.applied(it.sessions, conversations.value)) }
     }
 
     private fun find(id: SessionId): Session? = state.value.sessions.firstOrNull { it.id == id }
 
     private fun insert(session: Session) {
         state.update { it.copy(sessions = ordered(it.sessions + session)) }
+        applyPlaces()
     }
 
     private fun replace(session: Session) {
@@ -337,6 +354,7 @@ public class FakeSessions(
                     current.sessions.map { if (it.id == session.id) session else it },
             )
         }
+        applyPlaces()
     }
 
     private fun toSession(session: WorldSession): Session =
@@ -352,31 +370,6 @@ public class FakeSessions(
             meta = session.meta,
         )
 
-    private fun statusAfter(
-        status: SnapshotStatus,
-        available: Boolean,
-    ): SnapshotStatus =
-        when {
-            available && status is SnapshotStatus.Fresh -> {
-                status
-            }
-
-            available -> {
-                SnapshotStatus.Fresh(clock.now())
-            }
-
-            status is SnapshotStatus.Stale -> {
-                status
-            }
-
-            else -> {
-                SnapshotStatus.Stale(
-                    lastFreshAt = (status as? SnapshotStatus.Fresh)?.at,
-                    RuntimeProblem.NOT_INSTALLED,
-                )
-            }
-        }
-
     private companion object {
         const val ID_FORMAT = "%08d"
         const val UUID_PREFIX = 8
@@ -384,13 +377,5 @@ public class FakeSessions(
 
         fun ordered(sessions: List<Session>): List<Session> =
             sessions.sortedWith(compareBy<Session>({ it.startedAt }, { it.id.value }))
-
-        fun eventFor(session: Session): SessionEvent? =
-            when (session.state) {
-                is SessionState.AwaitingInput, is SessionState.AwaitingPermission -> SessionEvent.BecameBlocked(session)
-                SessionState.Done -> SessionEvent.TurnFinished(session)
-                SessionState.Failed -> SessionEvent.Failed(session)
-                SessionState.Working, SessionState.Stopped -> null
-            }
     }
 }

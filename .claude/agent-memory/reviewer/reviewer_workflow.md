@@ -29,5 +29,6 @@ Mutacje rób wyłącznie w kopii: `rsync -a --exclude .git --exclude build --exc
 - Mutacja „wywołanie bez skutku” przez `call().takeIf { false }` nie jest mutacją — wywołanie i tak się wykonuje; zastąp całą lambdę `{ }`. Mutacje w module `ui` z logiką używaną przez `app` (np. `names` dla okruszków) puszczaj też na `:app:test`.
 - `Modifier.border` rysuje PO treści (`onDrawWithContent { drawContent(); … }`, foundation-desktop 1.12.2), więc przy `compose.interop.blending=true` ramka leży nad `SwingPanel`; wcięcie widżetu wystarcza do łuku zewnętrznego, nie trzeba doliczać grubości ramki.
 - Scratchpad potrafi zniknąć po przerwie sesji (limit użycia, AM-306): wyniki mutacji notuj w odpowiedzi/raporcie na bieżąco, a po wznowieniu odtwórz kopię rsync i puść tylko brakujące mutacje.
+- Nieużywane importy: skrypt Pythona po `git ls-files -o` + `git diff main --name-only` (regex prostej nazwy w treści bez linii `import`) — ktlint i kompilator ich nie zgłaszają. Mutacji nie przerywaj `pkill` (SIGTERM pomija `finally`, kopia zostaje zmutowana — dotyczy tylko kopii, ale przed kolejną serią zrób świeży rsync). Druga kopia (`mut2`) z tym samym skryptem pozwala puścić połowę mutacji równolegle (moduł `mission-control:ui` ok. 3 min na mutację).
 
 Powiązane: [[recurring-review-findings]]

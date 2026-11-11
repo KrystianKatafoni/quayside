@@ -21,6 +21,10 @@
 
 Sesje Claude Code z plików `<claudeHome>/projects/*/<uuid>.jsonl`, których nie zna supervisor (interaktywne i stare), są na liście sesji projektu jako zatrzymane, z neutralną plakietką „z dysku” (tekst i etykieta dla czytnika „Stara sesja odczytana z pliku na dysku”, obok plakietki miejsca). Są w filtrach „Wszystkie” i „Zakończone”, nigdy w „Aktywne”, w widokach globalnych, kafelkach liczników ani plakietkach paska bocznego. W panelu szczegółów mają „Wznów” i „Usuń z listy” (ukrywa sesję na stałe w `session-history.json`, plik sesji zostaje na dysku); nie mają Attach, Odpowiedz, Respawn, Zatrzymaj ani Podglądu. „Wznów” (AM-313, także komenda palety „Wznów sesję”) uruchamia `claude --bg --resume <uuid>` w katalogu, w którym rozmowa się zaczęła, bez promptu i pojedynczo (nigdy zbiorczo); w trakcie panel mówi „Wznawianie…”. Po sukcesie wiersz z dysku znika, zaznaczenie przechodzi na żywą sesję (czeka na prompt) i filtr na „Wszystkie”, o ile użytkownik w międzyczasie nie zaznaczył czego innego. Gdy rozmowa była otwarta w innym oknie Claude Code, działa jej kopia pod nowym id, wiersz z dysku zostaje, a panel kopii mówi o tym stałym zdaniem do zmiany zaznaczenia. Brak pliku sesji albo katalogu startu daje stały tekst błędu (bez nazwy i ścieżki), a wiersz zostaje. Gdy limit liczby na projekt ucina listę, ostatni wiersz strony grupy mówi „jeszcze N starszych” (odmiana jak liczniki) i ma link „Zmień limit”, który otwiera okno „Stare sesje z dysku…” (menu Widok i paleta): wiek 7 / 30 / 90 dni lub bez limitu (domyślnie 30) i liczba na projekt 50 / 200 / 1000 (domyślnie 200); wybór zapisuje się od razu, bez przycisku „Zapisz”. Te same dwa wybory są w oknie „Dodać projekt?”. Po dodaniu folderu, gdy pierwszy skan znajdzie stare sesje, pasek boczny pyta „Znaleziono N starych sesji (podfolder: n, folder główny: m). Pokazać…”; podział widać tylko dla projektu z podfolderami, „Pokaż” zaznacza projekt i filtr „Zakończone”, „Nie teraz” nic nie zapisuje.
 
+## Ręczne miejsce sesji (FR-P9, AM-314)
+
+Miejsce sesji w grupie projektu (podfolder albo „folder główny”) wynika z katalogu, w którym sesja działa; sesja z dysku zaczęta w katalogu głównym, która przeszła do podfolderu, trafia więc do „folderu głównego”. Użytkownik może to poprawić: „Przypisz do podfolderu…” (menu wiersza i panel szczegółów, tylko dla sesji projektu z podfolderami, żywej i z dysku, w każdym stanie) otwiera okno z listą „Automatycznie” (miejsce wg katalogu), „folder główny” i podfolderów w kolejności listy podfolderów; bieżący wybór jest zaznaczony i ma fokus startowy, klik wybiera, Esc i „Anuluj” zamykają bez zmian. Przypisanie nie zmienia projektu sesji, tylko stronę podfolderu, plakietkę miejsca, przegląd grupy (liczniki podfolderów) i ton ikony wiersza podfolderu w pasku bocznym; liczniki na wierszu grupy w pasku się nie zmieniają. Panel szczegółów pokazuje „Miejsce: soft (ręcznie)”. Wybór zapisuje się w `session-history.json` pod UUID rozmowy, więc przetrwa restart i wznowienie sesji; „Automatycznie” usuwa wpis. Błąd zapisu daje stały tekst bez nazwy podfolderu, a miejsce zostaje jak było. Wpis, którego podfolder zniknął z grupy, nie działa i wraca, gdy podfolder wróci do tego samego projektu ([ADR 0033](adr/0033-reczne-przypisanie-sesji-do-podfolderu.md)).
+
 ## Stany sesji
 
 | Glif | Stan w UI | Kolor | `state` / `waitingFor` z `--json` | Hook |
@@ -40,8 +44,8 @@ Każdą akcję da się wykonać bez klawiatury ([ADR 0015](adr/0015-skroty-jako-
 | --- | --- |
 | Klik w wiersz | Zaznaczenie i panel szczegółów |
 | Dwuklik w wiersz | Attach w terminalu |
-| Prawy klik lub ⋯ w wierszu | Menu: Odpowiedz, Attach, Podgląd, Respawn, Zatrzymaj, Wznów (tylko sesja z dysku), Usuń |
-| Przyciski w panelu szczegółów | Odpowiedz, Attach, Respawn, Wznów (tylko sesja z dysku), Zatrzymaj |
+| Prawy klik lub ⋯ w wierszu | Menu: Odpowiedz, Attach, Podgląd, Respawn, Zatrzymaj, Wznów (tylko sesja z dysku), Przypisz do podfolderu… (sesja projektu z podfolderami), Usuń |
+| Przyciski w panelu szczegółów | Odpowiedz, Attach, Respawn, Wznów (tylko sesja z dysku), Przypisz do podfolderu… (sesja projektu z podfolderami), Zatrzymaj |
 | Pole palety w nagłówku | Paleta komend (to samo co ⌘K) |
 
 ## Skróty klawiszowe

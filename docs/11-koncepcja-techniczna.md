@@ -33,7 +33,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 | --- | --- | --- | --- |
 | `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller`, `WorkspaceTrust`, `SessionHistory` (tylko odczyt plików sesji) | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller`, `ClaudeJsonTrust`, `FileSessionHistory` | – |
 | `projects` | `ProjectsApi` | `JsonProjectStore`, `DirectoryInspector` (git, `CLAUDE.md`, hooki) | sidebar, dialogi dodaj/usuń |
-| `sessions` | `SessionMonitor`, `SessionCommands`, `SessionHistorySettingsRepo` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami, `DiskSessions` (czyste scalanie sesji z dysku) i `HistoryScan` (kiedy skanować) | okno „Stare sesje z dysku” (w `mission-control:ui`) |
+| `sessions` | `SessionMonitor`, `SessionCommands`, `SessionHistorySettingsRepo` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami, `DiskSessions` (czyste scalanie sesji z dysku), `HistoryScan` (kiedy skanować) i `SessionPlaces` (czyste reguły ręcznego miejsca sesji, AM-314) | okno „Stare sesje z dysku” i okno „Przypisz do podfolderu…” (w `mission-control:ui`) |
 | `summaries` | `Summarizer`, `SummariesApi`, `SummarySettingsRepo` | `LastMessageSummary` (czysty) z `last_assistant_message`; model Haiku przez `claude -p` w części B (ADR 0019) | okno „Ustawienia podsumowań” |
 | `notifications` | `NotificationCenter`, `NotificationSettingsRepo` | `NotificationPolicy` (czysta), `MacSayAdapter`, `SoundAdapter`, `DockBadgeAdapter` | okna popupów, ekran ustawień |
 | `terminal` | `TerminalApi`, `TerminalSession` | JediTerm + pty4j, profile powłoki, OSC 133 | karty, panele, szukanie |
@@ -225,6 +225,9 @@ data class PastConversation(val conversationId: ConversationId, val startCwd: Pa
 // SessionsSnapshot.history: Map<ProjectId, ProjectHistory(shown, older)> — klucz dla każdego zeskanowanego projektu.
 // Dla DISK: respawn/recentOutput = UnknownSession, stop = Ok, remove = ukrycie na stałe (hidden w session-history.json),
 // resume = wznowienie w katalogu startu (AM-313); dla SUPERVISOR resume = UnknownSession (tam jest respawn).
+// Session.assignedDir (AM-314, ADR 0033): katalog wybrany ręcznie (korzeń projektu albo jeden z Project.subfolders),
+// null = miejsce wynika z cwd. Session.placeDir = assignedDir ?: cwd; UI liczy podfolder zawsze z placeDir.
+// assignedDir nie zmienia Session.project. sessions:impl liczy go przy każdej publikacji z wpisu `places` (SessionPlaces.resolve).
 interface SessionMonitor {
     val snapshot: StateFlow<SessionsSnapshot>
     val events: Flow<SessionEvent>                 // przejścia stanów, konsumowane m.in. przez powiadomienia
@@ -246,6 +249,8 @@ sealed interface SessionEvent {
     data class PullRequestReady(override val session: Session) : SessionEvent
     data class RunningLong(override val session: Session, val duration: Duration) : SessionEvent
 }
+sealed interface PlaceAssignment { data object ProjectRoot; data class Subfolder(val name: String) }  // nazwa niepusta, toString ją ukrywa
+data class StoredPlace(val project: ProjectId, val place: PlaceAssignment)  // SessionHistorySettings.places: Map<SessionId, StoredPlace>
 data class ResumedSession(val id: SessionId, val copy: Boolean)     // id żywej sesji; copy: rozmowa była otwarta gdzie indziej, oryginał zostaje na liście (compat R4)
 
 interface SessionCommands {
@@ -255,6 +260,7 @@ interface SessionCommands {
     suspend fun respawn(id: SessionId): Outcome<Unit, SessionError>
     suspend fun resume(id: SessionId): Outcome<ResumedSession, SessionError>  // tylko sesja DISK (FR-P9); ResumeUnavailable(FILE_MISSING | DIRECTORY_MISSING) przed wywołaniem claude
     suspend fun remove(id: SessionId): Outcome<Unit, SessionError>
+    suspend fun assignPlace(id: SessionId, place: PlaceAssignment?): Outcome<Unit, SessionError>  // FR-P9, AM-314; null = „Automatycznie” (wg katalogu); każda sesja projektu, bez wywołania claude; UnknownSession, SubfolderUnavailable(NOT_IN_PROJECT), Runtime(COMMAND_FAILED) przy nieudanym zapisie
     suspend fun reply(id: SessionId, text: String): Outcome<Unit, SessionError>  // AM-506; strategia: otwarta kwestia (09)
 }
 
@@ -503,7 +509,7 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 | `projects.json` | `projects:impl` |
 | `notifications.json` | `notifications:impl` (schemat 2: `channels` tylko z odstępstwami od `defaultChannels`, brak klucza = bieżąca domyślna; [ADR 0024](adr/0024-format-notifications-json.md)) |
 | `terminal.json` | `terminal:impl` |
-| `session-history.json` | `sessions:impl` (`maxAge` 7 / 90 dni / bez limitu, `maxPerProject` 50 / 1000, `hidden` posortowane UUID ukrytych sesji z dysku; zapisywane tylko odstępstwa od domyślnych 30 dni i 200, brak klucza = domyślna; plik sesji Claude Code nigdy nie jest zmieniany; [ADR 0032](adr/0032-odczyt-plikow-sesji-i-session-history-json.md)) |
+| `session-history.json` | `sessions:impl` (`maxAge` 7 / 90 dni / bez limitu, `maxPerProject` 50 / 1000, `hidden` posortowane UUID ukrytych sesji z dysku; `places` ręczne miejsca sesji: klucz = UUID rozmowy (a bez niego krótkie id), wartość `{project, subfolder?}` (brak `subfolder` = folder główny), posortowane po kluczu, wpis nieważny jest pomijany i zostaje w pliku (AM-314, [ADR 0033](adr/0033-reczne-przypisanie-sesji-do-podfolderu.md)); zapisywane tylko odstępstwa od domyślnych 30 dni i 200, brak klucza = domyślna; plik sesji Claude Code nigdy nie jest zmieniany; [ADR 0032](adr/0032-odczyt-plikow-sesji-i-session-history-json.md)) |
 | `summaries.json` | `summaries:impl` (`{"useModel": false}`: streszczenia modelem Haiku, domyślnie wyłączone; brak lub uszkodzony plik = wyłączone) |
 | `theme.json` | `appearance:impl` |
 | `hook-offer.json` | `app` (`{"dismissed": true}`: użytkownik pominął propozycję instalacji hooków albo je odinstalował; brak lub uszkodzony plik = nie odrzucono; [ADR 0020](adr/0020-format-hook-offer-json.md)) |

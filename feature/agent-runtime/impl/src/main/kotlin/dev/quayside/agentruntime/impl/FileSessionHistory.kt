@@ -1,6 +1,9 @@
 package dev.quayside.agentruntime.impl
 
+import dev.quayside.agentruntime.api.ConversationError
 import dev.quayside.agentruntime.api.ConversationId
+import dev.quayside.agentruntime.api.ConversationPage
+import dev.quayside.agentruntime.api.HistoryCursor
 import dev.quayside.agentruntime.api.HistoryError
 import dev.quayside.agentruntime.api.PastConversation
 import dev.quayside.agentruntime.api.SessionHistory
@@ -51,6 +54,49 @@ internal class FileSessionHistory(
             report(read.map { it.second })
             Outcome.Ok(conversations(read, wanted))
         }
+
+    override suspend fun conversation(
+        conversation: ConversationId,
+        startCwd: Path,
+        before: HistoryCursor?,
+        limit: Int,
+    ): Outcome<ConversationPage, ConversationError> =
+        withContext(io) {
+            pageOf(conversation, startCwd, before, limit).also(::reportPage)
+        }
+
+    /** Never reaches the disk for an id that is not a lowercase UUID: the id becomes part of a path. */
+    private fun pageOf(
+        conversation: ConversationId,
+        startCwd: Path,
+        before: HistoryCursor?,
+        limit: Int,
+    ): Outcome<ConversationPage, ConversationError> {
+        if (!UUID_PATTERN.matches(conversation.value)) return Outcome.Err(ConversationError.NOT_FOUND)
+        val file = projects.resolve(SessionFiles.dirNameOf(startCwd)).resolve(conversation.value + SUFFIX)
+        return when {
+            !Files.isRegularFile(file) -> {
+                Outcome.Err(ConversationError.NOT_FOUND)
+            }
+
+            else -> {
+                try {
+                    ConversationFile.page(file, before, limit)
+                } catch (ignored: IOException) {
+                    Outcome.Err(ConversationError.UNREADABLE)
+                }
+            }
+        }
+    }
+
+    private fun reportPage(outcome: Outcome<ConversationPage, ConversationError>) {
+        val fields =
+            when (outcome) {
+                is Outcome.Ok -> mapOf("messages" to outcome.value.messages.size)
+                is Outcome.Err -> mapOf("error" to outcome.error.name)
+            }
+        logger.log(LogLevel.DEBUG, "Conversation page read", fields)
+    }
 
     /** Names of the subdirectories of `projects`; empty when it is missing, null when it cannot be listed. */
     private fun directoryNames(): List<String>? =
@@ -121,6 +167,8 @@ internal class FileSessionHistory(
                     modifiedAt = stamp.modifiedAt,
                     cwdChanged = summary.cwdChanged,
                     title = summary.title,
+                    name = summary.customTitle,
+                    lastPrompt = summary.lastPrompt,
                 )
             }.sortedWith(compareByDescending<PastConversation> { it.modifiedAt }.thenBy { it.conversationId.value })
 
@@ -135,5 +183,6 @@ internal class FileSessionHistory(
 
     private companion object {
         const val SUFFIX = ".jsonl"
+        val UUID_PATTERN = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     }
 }

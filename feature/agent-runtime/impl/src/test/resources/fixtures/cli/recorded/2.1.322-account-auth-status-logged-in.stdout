@@ -1,0 +1,15 @@
+{
+  "loggedIn": true,
+  "authMethod": "claude.ai",
+  "apiProvider": "firstParty",
+  "analyticsDisabled": false,
+  "projectsDirectory": "~/.claude-quayside/spike/projects",
+  "configDirectory": "~/.claude-quayside/spike",
+  "loginExpiresAt": "2026-12-09T14:03:00.545Z",
+  "email": "user@example.com",
+  "orgId": "UUID-REDACTED",
+  "orgName": "Example Organization",
+  "subscriptionType": "pro",
+  "storedClaudeAiLogin": true,
+  "planTier": "pro"
+}

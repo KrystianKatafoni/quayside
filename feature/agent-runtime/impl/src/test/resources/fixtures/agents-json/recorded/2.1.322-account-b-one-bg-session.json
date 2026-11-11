@@ -1,0 +1,13 @@
+[
+  {
+    "pid": 11813,
+    "id": "00000001",
+    "cwd": "/private/var/folders/xx/T/tmp.REDACTED",
+    "kind": "background",
+    "startedAt": 1794424894155,
+    "sessionId": "UUID-REDACTED",
+    "name": "spike-b",
+    "status": "idle",
+    "state": "done"
+  }
+]

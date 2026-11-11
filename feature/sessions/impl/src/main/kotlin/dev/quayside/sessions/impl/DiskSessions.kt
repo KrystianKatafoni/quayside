@@ -59,6 +59,20 @@ internal object DiskSessions {
         return DiskMerge(sessions, kept.mapValues { (_, pair) -> ProjectHistory(pair.first.size, pair.second) })
     }
 
+    /**
+     * Summary of a disk session: [title] alone, or [lastPrompt] alone, or "title → lastPrompt" when both exist and
+     * differ; null when neither does.
+     */
+    fun summaryOf(
+        title: String?,
+        lastPrompt: String?,
+    ): String? =
+        when {
+            title == null || title == lastPrompt -> title ?: lastPrompt
+            lastPrompt == null -> title
+            else -> "$title \u2192 $lastPrompt"
+        }
+
     private val newestFirst =
         compareByDescending<PastConversation> { it.modifiedAt }.thenBy { it.conversationId.value }
 
@@ -66,12 +80,12 @@ internal object DiskSessions {
         Session(
             id = SessionId(conversationId.value),
             project = project,
-            name = title ?: conversationId.value.take(SHORT_ID),
+            name = name ?: title ?: conversationId.value.take(SHORT_ID),
             cwd = startCwd,
             state = SessionState.Stopped,
             startedAt = startedAt ?: modifiedAt,
             lastActivityAt = lastActivityAt ?: modifiedAt,
-            summary = null,
+            summary = summaryOf(title, lastPrompt),
             meta = SessionMeta(),
             origin = SessionOrigin.DISK,
         )

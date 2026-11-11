@@ -15,6 +15,10 @@ import dev.quayside.sessions.api.pastSession
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.Arguments.arguments
+import org.junit.jupiter.params.provider.MethodSource
 import java.nio.file.Path
 
 /** `DiskSessions.merge` (FR-P9, ADR 0032): the table of the AM-312 plan. Pure, so no coroutines. */
@@ -137,7 +141,7 @@ class DiskSessionsTest {
     }
 
     @Test
-    fun `a disk session is stopped, from disk, without summary or meta`() {
+    fun `a disk session is stopped, from disk, with the first message as summary and without meta`() {
         val session = merge(past(3, cwd = softDir, modified = 60, started = 10)).sessions.single()
 
         session shouldBe
@@ -148,6 +152,7 @@ class DiskSessionsTest {
                 name = "title 3",
                 startedAt = T0.plusSeconds(10),
                 lastActivityAt = T0.plusSeconds(60),
+                summary = "title 3",
             )
     }
 
@@ -168,7 +173,48 @@ class DiskSessionsTest {
         merge(past(1), past(1)).sessions.size shouldBe 1
     }
 
+    @Test
+    fun `custom name wins over the first message`() {
+        val session = merge(past(1, title = "First message").copy(name = "Named in the file")).sessions.single()
+
+        session.name shouldBe "Named in the file"
+        session.summary shouldBe "First message"
+    }
+
+    @Test
+    fun `without a custom name the first message is the name, without it 8 characters of the UUID`() {
+        merge(past(1, title = "First message")).sessions.single().name shouldBe "First message"
+        merge(past(2, title = null).copy(lastPrompt = "Last")).sessions.single().name shouldBe "00000000"
+    }
+
+    @Test
+    fun `the summary of a session is built from the title and the last prompt`() {
+        val session = merge(past(1, title = "First").copy(lastPrompt = "Last")).sessions.single()
+
+        session.summary shouldBe "First \u2192 Last"
+    }
+
+    @ParameterizedTest(name = "title {0}, last prompt {1}")
+    @MethodSource("summaries")
+    fun `summaryOf gives the first message, the last or both`(
+        title: String?,
+        lastPrompt: String?,
+        expected: String?,
+    ) {
+        DiskSessions.summaryOf(title, lastPrompt) shouldBe expected
+    }
+
     private companion object {
         const val LIMIT = 50
+
+        @JvmStatic
+        fun summaries(): List<Arguments> =
+            listOf(
+                arguments(null, null, null),
+                arguments("A", null, "A"),
+                arguments(null, "B", "B"),
+                arguments("A", "A", "A"),
+                arguments("A", "B", "A \u2192 B"),
+            )
     }
 }

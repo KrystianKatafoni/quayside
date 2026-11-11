@@ -60,7 +60,7 @@ internal class SessionsState(
     private val hookLead: Duration = HOOK_LEAD,
     private val summaries: TurnSummaries = TurnSummaries(null),
     private val metas: SessionMetaSource = NoSessionMetas,
-    private val disk: HistoryScan? = null,
+    val disk: HistoryScan? = null,
     settings: SessionHistorySettingsRepo? = null,
 ) {
     private val places = PlaceAssignments(settings ?: disk?.settings ?: InMemoryHistorySettings(), projects)

@@ -38,6 +38,8 @@ internal fun conversation(
     n: Int,
     cwd: Path = P1_DIR,
     title: String? = "title $n",
+    name: String? = null,
+    lastPrompt: String? = null,
 ): PastConversation =
     aPastConversation(
         conversationId = aConversationId(uuidOf(n)),
@@ -46,6 +48,8 @@ internal fun conversation(
         lastActivityAt = T0.minusSeconds(n * MINUTE),
         modifiedAt = T0.minusSeconds(n * MINUTE),
         title = title,
+        name = name,
+        lastPrompt = lastPrompt,
     )
 
 internal fun uuidOf(n: Int): String = "00000000-0000-4000-8000-${n.toString().padStart(12, '0')}"

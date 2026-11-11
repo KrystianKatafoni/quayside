@@ -126,7 +126,7 @@ class SessionCommandsTest {
 
             respawn.title shouldBe "Respawn sesji"
             respawn.group shouldBe CommandGroup.SESSION
-            respawn.keywords shouldBe listOf("respawn", "wznów")
+            respawn.keywords shouldBe listOf("respawn")
             respawn.shortcut shouldBe null
 
             respawn.run()

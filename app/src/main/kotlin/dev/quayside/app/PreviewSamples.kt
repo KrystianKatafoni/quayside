@@ -15,6 +15,7 @@ import dev.quayside.projects.api.StorageIssue
 import dev.quayside.projects.api.SubfolderName
 import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.RecentOutput
+import dev.quayside.sessions.api.ResumedSession
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionCommands
@@ -66,6 +67,8 @@ private object RefusingCommands : SessionCommands {
     override suspend fun stopAllIn(project: ProjectId): Outcome<Int, SessionError> = Outcome.Err(REFUSED)
 
     override suspend fun respawn(id: SessionId): Outcome<Unit, SessionError> = Outcome.Err(REFUSED)
+
+    override suspend fun resume(id: SessionId): Outcome<ResumedSession, SessionError> = Outcome.Err(REFUSED)
 
     override suspend fun remove(id: SessionId): Outcome<Unit, SessionError> = Outcome.Err(REFUSED)
 }

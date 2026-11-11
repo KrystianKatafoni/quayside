@@ -10,6 +10,7 @@ import dev.quayside.missioncontrol.ui.MissionControlIntent.NextSession
 import dev.quayside.missioncontrol.ui.MissionControlIntent.PreviousSession
 import dev.quayside.missioncontrol.ui.MissionControlIntent.RemoveSelected
 import dev.quayside.missioncontrol.ui.MissionControlIntent.RespawnSelected
+import dev.quayside.missioncontrol.ui.MissionControlIntent.ResumeSelected
 import dev.quayside.missioncontrol.ui.MissionControlIntent.SelectFilter
 import dev.quayside.missioncontrol.ui.MissionControlIntent.ShowView
 import dev.quayside.missioncontrol.ui.MissionControlIntent.StopSelected
@@ -53,7 +54,7 @@ private fun sessionCommand(
     onIntent: (MissionControlIntent) -> Unit,
 ): Command = Command(CommandId(id), Strings[titleKey], CommandGroup.SESSION, emptyList(), shortcut) { onIntent(intent) }
 
-/** Stop, Respawn, Remove and the preview of the selected session, offered by what the session allows now (AM-410). */
+/** Stop, the commands that bring a session back or remove it, and the preview of the selected session (AM-410). */
 private fun selectedSessionActions(
     actions: SessionActionsState,
     onIntent: (MissionControlIntent) -> Unit,
@@ -66,13 +67,29 @@ private fun selectedSessionActions(
             StopSelected,
             onIntent,
         ).copy(keywords = listOf("stop")).takeIf { actions.canStop },
+    ) + lifecycleCommands(actions, onIntent) +
+        listOfNotNull(previewCommand(actions, onIntent).takeIf { actions.canPreview || actions.previewOpen })
+
+/** Respawn of a supervisor session, "Wznów sesję" of a disk session (FR-P9) and removing a session from the list. */
+private fun lifecycleCommands(
+    actions: SessionActionsState,
+    onIntent: (MissionControlIntent) -> Unit,
+): List<Command> =
+    listOfNotNull(
         sessionCommand(
             "sessions.respawn",
             "command.respawnSession",
             null,
             RespawnSelected,
             onIntent,
-        ).copy(keywords = listOf("respawn", "wznów")).takeIf { actions.canRespawn },
+        ).copy(keywords = listOf("respawn")).takeIf { actions.canRespawn },
+        sessionCommand(
+            "sessions.resume",
+            "command.resumeSession",
+            null,
+            ResumeSelected,
+            onIntent,
+        ).copy(keywords = listOf("resume", "wznów")).takeIf { actions.canResume },
         sessionCommand(
             "sessions.remove",
             "command.removeSession",
@@ -80,7 +97,6 @@ private fun selectedSessionActions(
             RemoveSelected,
             onIntent,
         ).copy(keywords = listOf("remove", "rm", "usuń")).takeIf { actions.canRemove },
-        previewCommand(actions, onIntent).takeIf { actions.canPreview || actions.previewOpen },
     )
 
 /** `space`: opens the output preview of the selected session, or closes the open one (AM-411). */

@@ -15,6 +15,7 @@ import dev.quayside.core.domain.getOrElse
 import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
 import dev.quayside.sessions.api.NewSessionSpec
+import dev.quayside.sessions.api.PlaceAssignment
 import dev.quayside.sessions.api.ResumedSession
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionCommands
@@ -94,6 +95,29 @@ internal class RuntimeSessionCommands(
             if (session.state.isActive) return@checked Outcome.Err(SessionError.SessionActive(id))
             runtime.remove(id).then("remove", id) { Expected.Disappears(id, it) }
         }
+
+    override suspend fun assignPlace(
+        id: SessionId,
+        place: PlaceAssignment?,
+    ): Outcome<Unit, SessionError> {
+        val result = state.assign(id, place)
+        val kind = place.kind()
+        when (result) {
+            is Outcome.Ok -> {
+                logger.info("Session place assigned", "session" to id.value, "kind" to kind)
+            }
+
+            is Outcome.Err -> {
+                logger.warn(
+                    "Session place not assigned",
+                    "session" to id.value,
+                    "kind" to kind,
+                    "problem" to result.error::class.simpleName,
+                )
+            }
+        }
+        return result
+    }
 
     override suspend fun stopAllIn(project: ProjectId): Outcome<Int, SessionError> {
         if (!dirs.has(project)) return Outcome.Err(SessionError.UnknownProject(project))
@@ -197,4 +221,12 @@ internal fun Session.phase(): RuntimePhase =
         SessionState.Done -> RuntimePhase.DONE
         SessionState.Failed -> RuntimePhase.FAILED
         SessionState.Stopped -> RuntimePhase.STOPPED
+    }
+
+/** ENG-C8: the kind of a place for the logs, never its subfolder name. */
+private fun PlaceAssignment?.kind(): String =
+    when (this) {
+        null -> "auto"
+        PlaceAssignment.ProjectRoot -> "root"
+        is PlaceAssignment.Subfolder -> "subfolder"
     }

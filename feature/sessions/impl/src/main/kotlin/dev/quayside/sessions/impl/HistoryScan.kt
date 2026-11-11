@@ -45,7 +45,7 @@ private data class ScanResult(
  */
 internal class HistoryScan(
     private val history: SessionHistory,
-    private val settings: SessionHistorySettingsRepo,
+    val settings: SessionHistorySettingsRepo,
     private val projects: ProjectsApi,
     private val clock: Clock,
     private val logger: Logger,

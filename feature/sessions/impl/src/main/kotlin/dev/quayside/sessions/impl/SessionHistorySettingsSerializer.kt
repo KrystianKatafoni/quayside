@@ -27,7 +27,8 @@ internal fun sessionHistorySettingsSpec(): StoreSpec<SessionHistorySettings> =
 
 /**
  * Wire form of [SessionHistorySettings]: only deviations from the defaults are written (ADR 0024). `maxAge` is the
- * name of a [HistoryAge], `maxPerProject` the number of a [HistoryLimit], `hidden` the sorted conversation UUIDs.
+ * name of a [HistoryAge], `maxPerProject` the number of a [HistoryLimit], `hidden` the sorted conversation UUIDs,
+ * `places` the entries `{project, subfolder?}` by sorted key (ADR 0033; no `subfolder` = the project root).
  * Unknown keys are skipped; a value we do not know or of the wrong type throws [SerializationException], so
  * `JsonStore` moves the file aside. Messages are fixed categories and never quote the input (ENG-C8).
  */
@@ -35,6 +36,7 @@ internal object SessionHistorySettingsSerializer : KSerializer<SessionHistorySet
     private const val MAX_AGE = "maxAge"
     private const val MAX_PER_PROJECT = "maxPerProject"
     private const val HIDDEN = "hidden"
+    private const val PLACES = "places"
     private val defaults = SessionHistorySettings()
 
     override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor
@@ -64,6 +66,7 @@ internal object SessionHistorySettingsSerializer : KSerializer<SessionHistorySet
                     ),
                 )
             }
+            if (value.places.isNotEmpty()) put(PLACES, SessionPlacesJson.encode(value.places))
         }
 
     override fun deserialize(decoder: Decoder): SessionHistorySettings {
@@ -73,6 +76,7 @@ internal object SessionHistorySettingsSerializer : KSerializer<SessionHistorySet
             maxAge = root[MAX_AGE]?.let(::age) ?: defaults.maxAge,
             maxPerProject = root[MAX_PER_PROJECT]?.let(::limit) ?: defaults.maxPerProject,
             hidden = root[HIDDEN]?.let(::hidden) ?: defaults.hidden,
+            places = root[PLACES]?.let(SessionPlacesJson::decode) ?: defaults.places,
         )
     }
 

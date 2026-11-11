@@ -11,10 +11,12 @@ import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.map
 import dev.quayside.projects.api.ProjectsApi
+import dev.quayside.sessions.api.PlaceAssignment
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionHistorySettingsRepo
 import dev.quayside.sessions.api.SessionMeta
 import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionsSnapshot
@@ -44,6 +46,10 @@ import kotlin.time.toJavaDuration
  * The optional collaborators ([metas], AM-818, and [disk], AM-312) are named at every call site. With [disk] the
  * published sessions also hold the disk sessions of the last scan (FR-P9): they are merged after the reduction, so
  * the reducer never sees them and they emit no events.
+ *
+ * The places picked by the user (FR-P9, AM-314, ADR 0033) are laid over every published session as
+ * [Session.assignedDir], also over the sessions of the events; they come from [settings], else from the settings of
+ * [disk], else from settings kept in memory.
  */
 @Suppress("LongParameterList")
 internal class SessionsState(
@@ -55,7 +61,9 @@ internal class SessionsState(
     private val summaries: TurnSummaries = TurnSummaries(null),
     private val metas: SessionMetaSource = NoSessionMetas,
     private val disk: HistoryScan? = null,
+    settings: SessionHistorySettingsRepo? = null,
 ) {
+    private val places = PlaceAssignments(settings ?: disk?.settings ?: InMemoryHistorySettings(), projects)
     private val mutex = Mutex()
     private val current = MutableStateFlow(SessionsSnapshot.Initial)
     private val emitted = MutableSharedFlow<SessionEvent>(extraBufferCapacity = EVENT_BUFFER)
@@ -134,15 +142,13 @@ internal class SessionsState(
         val previous = current.value.withoutDisk()
         val reduction = SessionStateReducer.reduce(previous, input, dirs, now, hooks)
         val reduced = if (status == null) reduction.snapshot else reduction.snapshot.copy(status = status)
-        val snapshot = withDisk(reduced, (input as? Outcome.Ok)?.value ?: lastListing.orEmpty())
+        val listed = (input as? Outcome.Ok)?.value ?: lastListing.orEmpty()
+        val snapshot = places.placed(withDisk(reduced, listed), listed)
+        val events = places.placed(reduction.events, snapshot)
         current.value = snapshot
-        reduction.events.forEach { emitted.emit(it) }
-        return reduction.copy(snapshot = snapshot)
+        events.forEach { emitted.emit(it) }
+        return reduction.copy(snapshot = snapshot, events = events)
     }
-
-    /** The snapshot as the reducer must see it: only the supervisor's sessions, so disk sessions never double. */
-    private fun SessionsSnapshot.withoutDisk(): SessionsSnapshot =
-        copy(sessions = sessions.filter { it.origin == SessionOrigin.SUPERVISOR })
 
     /**
      * Lays the sessions of the last scan over [reduced]; the supervisor's [listing] decides which conversations
@@ -191,6 +197,29 @@ internal class SessionsState(
         }
     }
 
+    /**
+     * Saves [place] for session [id] (null = back to the place by its directory) and publishes it before returning
+     * (FR-P9, AM-314). The session is looked up in the current snapshot and the supervisor is not called; the errors
+     * and the rules are those of [PlaceAssignments.save]. A failed save changes nothing.
+     */
+    suspend fun assign(
+        id: SessionId,
+        place: PlaceAssignment?,
+    ): Outcome<Unit, SessionError> {
+        val session = current.value.sessions.firstOrNull { it.id == id }
+        val conversation = mutex.withLock { lastListing?.firstOrNull { it.id == id }?.conversationId }
+        return when (val saved = places.save(id, session, conversation, place)) {
+            is Outcome.Ok -> {
+                if (saved.value) republishDisk()
+                Outcome.Ok(Unit)
+            }
+
+            is Outcome.Err -> {
+                Outcome.Err(saved.error)
+            }
+        }
+    }
+
     /** Whether the session file of the disk session [disk] is still there; without a history source it is not. */
     suspend fun stillOnDisk(disk: Session): Outcome<Boolean, HistoryError> =
         this.disk?.stillOnDisk(disk) ?: Outcome.Ok(false)
@@ -229,3 +258,7 @@ internal class SessionsState(
         const val EVENT_BUFFER = 64
     }
 }
+
+/** The snapshot as the reducer must see it: only the supervisor's sessions, so disk sessions never double. */
+private fun SessionsSnapshot.withoutDisk(): SessionsSnapshot =
+    copy(sessions = sessions.filter { it.origin == SessionOrigin.SUPERVISOR })

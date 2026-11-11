@@ -47,12 +47,23 @@ internal object FakeDiskScan {
         Session(
             id = file.id,
             project = project,
-            name = file.title ?: file.id.value.take(UUID_PREFIX),
+            name = file.name ?: file.title ?: file.id.value.take(UUID_PREFIX),
             cwd = file.cwd,
             state = SessionState.Stopped,
             startedAt = file.startedAt ?: file.modifiedAt,
             lastActivityAt = file.lastActivityAt ?: file.modifiedAt,
-            summary = null,
+            summary = summaryOf(file.title, file.lastPrompt),
             origin = SessionOrigin.DISK,
         )
+
+    /** The summary of a disk session: the first message, or "first → last" when the last one differs (AM-315). */
+    fun summaryOf(
+        title: String?,
+        lastPrompt: String?,
+    ): String? =
+        when {
+            title == null -> lastPrompt
+            lastPrompt == null || lastPrompt == title -> title
+            else -> "$title \u2192 $lastPrompt"
+        }
 }

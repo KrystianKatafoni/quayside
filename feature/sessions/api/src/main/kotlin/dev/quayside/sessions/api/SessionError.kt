@@ -3,7 +3,10 @@ package dev.quayside.sessions.api
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 
-/** Why a [SessionCommands] operation or [SessionMonitor.recentOutput] failed. Never carries input text (ENG-C8). */
+/**
+ * Why a [SessionCommands] operation, [SessionMonitor.recentOutput] or [SessionMonitor.conversation] failed.
+ * Never carries input text (ENG-C8).
+ */
 public sealed interface SessionError {
     /** No registered project has [id]. */
     public data class UnknownProject(
@@ -12,8 +15,9 @@ public sealed interface SessionError {
 
     /**
      * The supervisor does not know session [id]; also the answer for a command that does not apply to a
-     * [SessionOrigin.DISK] session (respawn, output), for [SessionCommands.resume] of a [SessionOrigin.SUPERVISOR]
-     * session and for a disk session that is hidden or gone. [SessionCommands.assignPlace] answers it also for a
+     * [SessionOrigin.DISK] session (respawn, output), for [SessionMonitor.conversation] of a [SessionOrigin.SUPERVISOR]
+     * session, for [SessionCommands.resume] of a [SessionOrigin.SUPERVISOR] session and for a disk session that is
+     * hidden or gone. [SessionCommands.assignPlace] answers it also for a
      * session outside every project.
      */
     public data class UnknownSession(

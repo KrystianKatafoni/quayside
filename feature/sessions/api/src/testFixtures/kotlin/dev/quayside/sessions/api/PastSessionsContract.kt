@@ -72,6 +72,7 @@ public abstract class PastSessionsContract {
                         name = "Fix the login bug",
                         startedAt = T0.minusSeconds(2 * HOUR),
                         lastActivityAt = T0.minusSeconds(HOUR + MINUTES_30),
+                        summary = "Fix the login bug",
                     ),
                 )
         }

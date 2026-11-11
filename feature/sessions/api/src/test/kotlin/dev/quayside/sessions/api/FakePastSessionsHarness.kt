@@ -38,4 +38,15 @@ internal class FakePastSessionsHarness(
     override fun failNextSettingsSave() {
         fake.historySettings.failNext(HistorySettingsError.WRITE_FAILED)
     }
+
+    override suspend fun givenConversation(
+        id: SessionId,
+        messages: List<SessionMessage>,
+    ) {
+        fake.conversationFiles.set(id, messages)
+    }
+
+    override fun failNextConversationRead() {
+        fake.conversationFiles.failNext()
+    }
 }

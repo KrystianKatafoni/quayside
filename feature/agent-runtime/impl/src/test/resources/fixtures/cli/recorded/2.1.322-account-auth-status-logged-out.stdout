@@ -1,0 +1,9 @@
+{
+  "loggedIn": false,
+  "authMethod": "none",
+  "apiProvider": "firstParty",
+  "analyticsDisabled": false,
+  "projectsDirectory": "~/.claude-quayside/spike/projects",
+  "configDirectory": "~/.claude-quayside/spike",
+  "loginExpiresAt": null
+}

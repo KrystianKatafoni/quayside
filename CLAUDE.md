@@ -167,3 +167,5 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Akcja „Pokaż” z innego okna musi ustawić projekt i filtr jednym krokiem (`MissionControlController.showFinished`): osobne `SelectFilter` po zmianie projektu przegrywa z resetem filtra przy nowym focusie (`onFocus`).
 - Fake i impl muszą mapować błąd zapisu (np. ukrycie sesji `hidden`) tą samą kategorią `SessionError`; kontrakt w `testFixtures` przypina to na obu, inaczej fake ukrywa rozjazd.
 - Test „komunikat znika po zmianie zaznaczenia” musi wrócić na element, do którego komunikat jest przypięty, inaczej jest zawsze zielony (mutacja bez zerowania stanu przeżywa).
+- Klucz z zapasowym odczytem (UUID, a bez niego krótkie id) wymaga testu „wpis pod starym kluczem, zapis pod nowym, potem Automatycznie”: bez usuwania starego wpisu przy zapisie „Automatycznie” przywraca stare miejsce, a odczyt UUID-first to zasłania.
+- Rozmiar klasy (ENG-C2, detekt `LargeClass`) licz do jej zamykającej klamry `^}`, nie do końca pliku: funkcje najwyższego poziomu po klasie nie wliczają się do limitu 300.

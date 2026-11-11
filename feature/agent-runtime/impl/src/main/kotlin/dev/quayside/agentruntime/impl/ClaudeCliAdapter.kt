@@ -1,6 +1,7 @@
 package dev.quayside.agentruntime.impl
 
 import dev.quayside.agentruntime.api.AgentRuntime
+import dev.quayside.agentruntime.api.ResumeSpec
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeHealth
 import dev.quayside.agentruntime.api.RuntimeSession
@@ -30,7 +31,7 @@ import kotlin.time.Duration
  * @property executable `claude` on the login-shell PATH, or an absolute path.
  * @property commandTimeout limit of `agents`, `logs`, `stop`, `respawn`, `rm` and of each health command.
  * @property startTimeout limit of `--bg`.
- * @property hookTokens when set, `start` and `respawn` put its token in `AM_HOOK_TOKEN` (NFR-4, ADR 0004).
+ * @property hookTokens when set, `start`, `resume` and `respawn` put its token in `AM_HOOK_TOKEN` (NFR-4, ADR 0004).
  */
 internal data class CliConfig(
     val homeDir: Path,
@@ -49,6 +50,7 @@ internal class ClaudeCliAdapter(
 ) : AgentRuntime {
     private val exe: String get() = config.executable
     private val healthCheck = ClaudeHealthCheck(process, logger, config)
+    private val background = BackgroundStart(process, logger, config)
 
     /**
      * Filters on the client by path components ([isUnder]); [under] must be a real path (no symbolic
@@ -57,19 +59,11 @@ internal class ClaudeCliAdapter(
     override suspend fun listSessions(under: Path?): Outcome<List<RuntimeSession>, RuntimeError> =
         list().map { sessions -> if (under == null) sessions else sessions.filter { it.isUnder(under) } }
 
-    override suspend fun start(spec: StartSpec): Outcome<SessionId, RuntimeError> {
-        val env = config.hookTokens.hookEnv(logger)
-        val argv = ClaudeCommands.start(exe, spec)
-        return process.exec(argv, spec.cwd, config.startTimeout, env = env).flatMap { result ->
-            val id = BgOutput.sessionId(result.stdout)
-            when {
-                !result.isSuccess && BgOutput.untrusted(result.stderr) -> Outcome.Err(RuntimeError.WorkspaceNotTrusted)
-                !result.isSuccess -> Outcome.Err(commandFailed(result, secrets = listOf(spec.prompt)))
-                id == null -> Outcome.Err(RuntimeError.Unparseable(NO_ID))
-                else -> Outcome.Ok(id).also { logger.debug("claude started", "sessionId" to id.value) }
-            }
-        }
-    }
+    override suspend fun start(spec: StartSpec): Outcome<SessionId, RuntimeError> =
+        background.run(ClaudeCommands.start(exe, spec), spec.cwd, secrets = listOf(spec.prompt))
+
+    override suspend fun resume(spec: ResumeSpec): Outcome<SessionId, RuntimeError> =
+        background.run(ClaudeCommands.resume(exe, spec), spec.cwd, secrets = emptyList())
 
     override suspend fun stop(id: SessionId): Outcome<Unit, RuntimeError> = byId("stop", id).map { }
 
@@ -129,18 +123,17 @@ internal class ClaudeCliAdapter(
                 env,
             )
         val result = (ran as? Outcome.Ok)?.value
-        return when {
-            result == null || result.isSuccess -> ran
-            isListed(id) == false -> Outcome.Err(RuntimeError.UnknownSession(id))
-            else -> Outcome.Err(commandFailed(result, secrets = emptyList()))
+        if (result == null || result.isSuccess) return ran
+        // A failed list says nothing about the id: the command's own failure is returned then.
+        val listed = (list() as? Outcome.Ok)?.value
+        return if (listed != null && listed.none { it.id == id }) {
+            Outcome.Err(RuntimeError.UnknownSession(id))
+        } else {
+            Outcome.Err(commandFailed(result, secrets = emptyList()))
         }
     }
-
-    /** Null when the list itself is not available. */
-    private suspend fun isListed(id: SessionId): Boolean? = (list() as? Outcome.Ok)?.value?.any { it.id == id }
 }
 
-private const val NO_ID = "bg-output:no-id"
 private const val DEFAULT_MAX_BYTES = 1024 * 1024
 private const val LOGS_MAX_BYTES = 4 * 1024 * 1024
 

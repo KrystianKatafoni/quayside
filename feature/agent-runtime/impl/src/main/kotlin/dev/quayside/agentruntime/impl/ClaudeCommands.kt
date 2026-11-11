@@ -2,6 +2,7 @@ package dev.quayside.agentruntime.impl
 
 import dev.quayside.agentruntime.api.PermissionMode
 import dev.quayside.agentruntime.api.PromptRequest
+import dev.quayside.agentruntime.api.ResumeSpec
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.StartSpec
 import dev.quayside.core.domain.SessionId
@@ -39,6 +40,12 @@ internal object ClaudeCommands {
             add("--")
             add(spec.prompt)
         }
+
+    /** `[exe, --bg, --resume, uuid]`: no prompt, no `--`, no other flag (docs/compat.md R5). */
+    fun resume(
+        executable: String,
+        spec: ResumeSpec,
+    ): List<String> = listOf(executable, "--bg", "--resume", spec.conversation.value)
 
     /**
      * `[exe, -p, --model, m, --output-format, json, --settings, {"disableAllHooks":true},

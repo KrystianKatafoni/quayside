@@ -1,11 +1,14 @@
 package dev.quayside.agentruntime.impl
 
 import dev.quayside.agentruntime.api.AgentRuntime
+import dev.quayside.agentruntime.api.ConversationId
 import dev.quayside.agentruntime.api.PermissionMode
+import dev.quayside.agentruntime.api.ResumeSpec
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeWorld
 import dev.quayside.agentruntime.api.StartSpec
 import dev.quayside.core.domain.Outcome
+import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.errorOrNull
 import dev.quayside.core.domain.getOrNull
 import dev.quayside.core.process.LoginShellProcessRunner
@@ -114,6 +117,27 @@ class ClaudeCliAdapterIntegrationTest {
                     .shouldNotBeNull()
                     .single()
             started.cwd shouldBe soft
+        }
+
+    @Test
+    fun `resume runs the fake claude in the start directory`() =
+        runTest {
+            val runtime = runtime()
+            val uuid = ConversationId("5e2a9c41-0000-4000-8000-0000000000aa")
+            val soft = project.resolve("soft").createDirectories().toRealPath()
+
+            val id = runtime.resume(ResumeSpec(uuid, soft)).getOrNull().shouldNotBeNull()
+
+            claude.calls().single() shouldBe listOf("--bg", "--resume", uuid.value)
+            id shouldBe SessionId("5e2a9c41")
+            val listed =
+                runtime
+                    .listSessions()
+                    .getOrNull()
+                    .shouldNotBeNull()
+                    .single()
+            listed.cwd shouldBe soft
+            logger.entries.toString() shouldNotContain soft.toString()
         }
 
     @Test

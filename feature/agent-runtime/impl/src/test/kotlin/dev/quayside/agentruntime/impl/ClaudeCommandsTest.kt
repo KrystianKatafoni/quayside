@@ -1,7 +1,9 @@
 package dev.quayside.agentruntime.impl
 
+import dev.quayside.agentruntime.api.ConversationId
 import dev.quayside.agentruntime.api.PermissionMode
 import dev.quayside.agentruntime.api.PromptRequest
+import dev.quayside.agentruntime.api.ResumeSpec
 import dev.quayside.agentruntime.api.StartSpec
 import dev.quayside.core.domain.SessionId
 import io.kotest.matchers.shouldBe
@@ -83,6 +85,15 @@ class ClaudeCommandsTest {
         val spec = StartSpec(cwd = cwd, prompt = "Fix it", permissionMode = PermissionMode.DEFAULT)
 
         ClaudeCommands.start(exe, spec) shouldBe listOf(exe, "--bg", "--", "Fix it")
+    }
+
+    @Test
+    fun `resume argv is exe bg resume uuid and nothing else`() {
+        val spec = ResumeSpec(ConversationId("5e2a9c41-0000-4000-8000-0000000000aa"), cwd)
+
+        // No `--`, no prompt, no --model/--name/--permission-mode: a flag makes the CLI start a copy (compat R5).
+        ClaudeCommands.resume(exe, spec) shouldBe
+            listOf(exe, "--bg", "--resume", "5e2a9c41-0000-4000-8000-0000000000aa")
     }
 
     @Test

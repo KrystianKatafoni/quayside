@@ -6,7 +6,7 @@ Quayside steruje supervisorem sesji Claude Code (Agent View, research preview). 
 | --- | --- |
 | Minimalna wersja (Agent View, `claude agents`) | 2.1.139 |
 | Wersja, na której oparto dokumentację | 2.1.290 (dokumentacja Agent View, październik 2026) |
-| Ostatnio przetestowana ręcznie | 2.1.322 (2026-11-10, macOS; pliki sesji na dysku i `claude --bg --resume`, pomiar AM-311); wcześniej 2.1.302 (2026-10-18, Linux; tylko `claude agents --json [--all]` z sesją interaktywną, bez sesji w tle) |
+| Ostatnio przetestowana ręcznie | 2.1.322 (2026-11-11, macOS; dwa katalogi konfiguracji, pomiar AM-1001; 2026-11-10: pliki sesji na dysku i `claude --bg --resume`, pomiar AM-311); wcześniej 2.1.302 (2026-10-18, Linux; tylko `claude agents --json [--all]` z sesją interaktywną, bez sesji w tle) |
 | Ostatni automatyczny przegląd | — |
 
 ## Elementy, od których zależymy
@@ -59,8 +59,25 @@ Pomiar na Macu, Claude Code 2.1.322, 2026-11-10: 104 katalogi projektów, 132 pl
 - **AM-314 (ręczne przypisanie).** Potrzebne tylko dla sesji z `cwdChanged`; ze zmierzonych 132 plików dotyczy to 5.
 - **Rozjazd z AM-818 (do `/triage`, osobne zadanie).** `FileSessionMetaSource` koduje nazwę regexem Javy `[^A-Za-z0-9]`, który działa na punktach kodowych, więc emoji daje jeden `-` zamiast dwóch, i nie zna obcinania powyżej 200 znaków z hashem. Dla zwykłych ścieżek wynik jest taki sam.
 
+## Wiele kont: `CLAUDE_CONFIG_DIR` (pomiar AM-1001)
+
+Pomiar na Macu, Claude Code 2.1.322, 2026-11-11, konto domyślne (`~/.claude`) i konto testowe w `~/.claude-quayside/spike` (plan Pro, osobny e-mail). Skrypt: `scripts/spike/am-1001-konta.sh` (fazy `status`, `daemon`, `bg`). Nagrania `2.1.322-account-*` w `fixtures/cli/recorded/` i `fixtures/agents-json/recorded/` są zredagowane (e-mail, organizacja, UUID, ścieżka domowa). Numery to punkty z ADR 0029, „Do ręcznego sprawdzenia na Macu”.
+
+| Punkt | Wynik 2.1.322 | Skutek dla AM-1002/1003/1007 |
+| --- | --- | --- |
+| 1 · osobny demon i lista sesji | `CLAUDE_CONFIG_DIR=X claude --bg` startuje własnego demona konta (`X/daemon/`, `X/jobs/`, `X/sessions/`, `X/daemon.status.json`). `claude agents --json --all` z `X` widzi tylko sesje `X`, a z konta domyślnego tylko jego sesje. Wyjście `--bg` bez zmian (`backgrounded · <id> · <name>`, baner na stderr). `claude agents --json` sam demona nie startuje i bez demona zwraca `[]`. | `agent-runtime` tworzy osobnego supervisora na konto; lista sesji to suma list, klucz (konto, `id`). |
+| **Konto domyślne** | Z `CLAUDE_CONFIG_DIR=~/.claude` Claude Code szuka `~/.claude/.claude.json` (zamiast `~/.claude.json`), nie znajduje go i zgłasza `loggedIn: false`. Bez zmiennej działa poprawnie. | **Konta domyślnego nie wolno uruchamiać ze zmienną `CLAUDE_CONFIG_DIR`**; zmienną ustawiamy tylko dla kont dodatkowych (`~/.claude-quayside/<nazwa>/`). |
+| 2 · `claude auth status` | Zalogowane: kod 0, JSON z `loggedIn: true`, `authMethod`, `email`, `orgId`, `orgName`, `subscriptionType`, `planTier`, `loginExpiresAt`, `configDirectory`, `projectsDirectory`. Niezalogowane: kod 1, JSON `loggedIn: false`, `authMethod: none`, `loginExpiresAt: null`; z `--text` linia `Not logged in. Run claude auth login to authenticate.`. Wygasły login niezmierzony. | Stan logowania = kod wyjścia plus `loggedIn`; e-mail do wyświetlenia z `email`. |
+| Zaufanie katalogu | Plik zaufania jest per konto: `<CLAUDE_CONFIG_DIR>/.claude.json`, klucz `projects[<realpath>].hasTrustDialogAccepted` (ADR 0031 działa bez zmian). Konto bez wpisu: `Workspace not trusted…`, kod 1. | `ClaudeJsonTrust` dostaje ścieżkę pliku konta; zaufanie trzeba nadać na każdym koncie osobno. |
+| 5 · `--resume` na innym koncie | Przy wspólnym `projects/` (dowiązanie symboliczne `X/projects` → `~/.claude/projects`) `claude --bg --resume <uuid>` z konta domyślnego wznowiło rozmowę zaczętą na koncie `X`: ten sam `sessionId` i `id`, transkrypt dopisany do tego samego pliku (w katalogu pierwotnego `cwd`), nazwa zadania zmieniona przez Claude Code. Zadanie dostało `cwd` katalogu, z którego wywołano `--resume`, a w transkrypcie pojawiły się wpisy z drugim `cwd` (patrz „Pliki sesji na dysku”). Wywołanie z katalogu, który nie jest zaufany na koncie docelowym, kończy się `Workspace not trusted…` (kod 1). Bez wspólnego `projects/` rozmowa nie jest widoczna dla drugiego konta (niezmierzone osobno; `claude agents` konta nie widzi cudzych zadań). Worktree, `todos` i `file-history` niezmierzone. | AM-1007: wznowienie wymaga wspólnego `projects/` albo kopii transkryptu; trzeba nadać zaufanie katalogowi na koncie docelowym albo wołać `--resume` z zaufanego katalogu (wtedy `cwd` zadania się zmienia). Worktree: do osobnego spike. |
+| 6 · kolizje demonów | Brak: gniazda w osobnych katalogach `/tmp/cc-daemon-501/<hash>/control.sock` (hash zależy od katalogu konfiguracji), oba demony działały jednocześnie. | Można trzymać po jednym supervisorze na konto. |
+| 7 · wspólne `projects/` | Dowiązanie `X/projects` → `~/.claude/projects` przetrwało start sesji w tle: konto `X` zapisało transkrypt w `~/.claude/projects/<katalog>/`, a konto domyślne go dopisało. Zapisy były kolejne, nie równoległe. Pamięć automatyczna (`memory/`) powstała w katalogu projektu; jej odczyt na obu kontach niezmierzony. `claude rm` na koncie `X` przy aktywnym dowiązaniu zostawił w `~/.claude/projects` stub (`cost-state`, 2 KB) dla usuniętej sesji. | AM-1002: dowiązanie działa, ale nie ma dowodu na bezpieczne zapisy równoległe; sprzątanie po `rm` może zostawiać stub. |
+| 8 · `statusLine` w sesji w tle | Niezmierzone. | Zostaje w AM-1008. |
+| 3, 4 · `StopFailure` z `rate_limit`, zachowanie po limicie | Niezmierzone: limitu nie da się wywołać na żądanie. Nagranie dopisać przy pierwszym naturalnym limicie. | AM-1006 opiera się na dokumentacji (docs/03), nie na nagraniu. |
+
 ## Historia przeglądów
 
 | Data | Wersja Claude Code | Wynik | Issue |
 | --- | --- | --- | --- |
+| 2026-11-11 | 2.1.322 | pomiar AM-1001: dwa katalogi konfiguracji (`CLAUDE_CONFIG_DIR`), `claude auth status`, `--bg` i `--resume` między kontami, wspólne `projects/`; limity (`StopFailure`) i `statusLine` niezmierzone | #143 |
 | 2026-11-10 | 2.1.322 | pomiar AM-311: pliki sesji na dysku (M1–M8) i `claude --bg --resume` (R1–R5) | #169 |

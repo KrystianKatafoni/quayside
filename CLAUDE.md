@@ -173,3 +173,4 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - `collectLatest` czeka na koniec poprzedniego bloku, więc strażnik „licznik wyborów” wewnątrz bloku jest martwy — użyj `currentCoroutineContext().isActive` i testu z opóźnionym odczytem.
 - Budżet odczytu pliku sprawdzany tylko na granicy linii nie ogranicza długiej linii — sprawdzaj go w `refill` i testuj linią dłuższą niż budżet oraz zwykłą linią przecinającą budżet.
 - `ConversationId` i inne ID z publicznym konstruktorem: waliduj przed `Path.resolve` (NUL rzuca `InvalidPathException`).
+- Konta dodatkowe uruchamiaj z CLAUDE_CONFIG_DIR, ale konta domyślnego nigdy ze zmienną (szuka ~/.claude/.claude.json i zgłasza loggedIn: false); zaufanie katalogu jest per konto w <configDir>/.claude.json.

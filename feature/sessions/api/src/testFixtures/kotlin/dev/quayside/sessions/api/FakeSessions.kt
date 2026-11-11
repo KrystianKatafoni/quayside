@@ -83,6 +83,9 @@ public class FakeSessions(
     /** Sessions whose output was read so far, in order. Reads are not [calls]. */
     public val outputReads: List<SessionId> get() = reads.value
 
+    /** The session files' messages ([FakeConversations.set]), the reads of [conversation] and its scripted failure. */
+    public val conversationFiles: FakeConversations = FakeConversations()
+
     /** Adds the session file [file] to the disk, as if it had been written outside the app; shown by the next scan. */
     public fun addPastSession(file: WorldPastSession) {
         pastFiles.update { it.filterNot { old -> old.id == file.id } + file }
@@ -183,6 +186,14 @@ public class FakeSessions(
         val session = find(id)
         if (session == null || session.origin == SessionOrigin.DISK) return Outcome.Err(SessionError.UnknownSession(id))
         return Outcome.Ok(RecentOutput(outputs.value[id].orEmpty()))
+    }
+
+    override suspend fun conversation(
+        id: SessionId,
+        before: MessageCursor?,
+    ): Outcome<SessionMessagePage, SessionError> {
+        val visible = find(id)?.takeIf { it.origin == SessionOrigin.DISK && pastFiles.value.any { f -> f.id == id } }
+        return conversationFiles.read(id, before, visible != null)
     }
 
     override suspend fun start(

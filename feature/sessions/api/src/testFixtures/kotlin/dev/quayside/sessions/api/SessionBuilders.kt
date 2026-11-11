@@ -57,6 +57,7 @@ public fun pastSession(
     startedAt: Instant = T0,
     lastActivityAt: Instant = startedAt,
     assignedDir: Path? = null,
+    summary: String? = null,
 ): Session =
     Session(
         SessionId(id),
@@ -66,8 +67,17 @@ public fun pastSession(
         SessionState.Stopped,
         startedAt,
         lastActivityAt,
-        summary = null,
+        summary = summary,
         meta = SessionMeta(),
         origin = SessionOrigin.DISK,
         assignedDir = assignedDir,
     )
+
+/** A message of a disk conversation; the text is "message N" when only [n] is given, the role alternates. */
+public fun aSessionMessage(
+    n: Int = 1,
+    role: MessageRole = if (n % 2 == 1) MessageRole.USER else MessageRole.ASSISTANT,
+    text: String = "message $n",
+    at: Instant? = T0.plusSeconds(n.toLong()),
+    truncated: Boolean = false,
+): SessionMessage = SessionMessage(role, text, at, truncated)

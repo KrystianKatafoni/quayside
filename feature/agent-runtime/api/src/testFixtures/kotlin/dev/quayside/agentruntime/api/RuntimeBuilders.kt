@@ -47,5 +47,26 @@ public fun aPastConversation(
     modifiedAt: Instant = T0.plusSeconds(60),
     cwdChanged: Boolean = false,
     title: String? = "Fix the login bug",
+    name: String? = null,
+    lastPrompt: String? = null,
 ): PastConversation =
-    PastConversation(conversationId, startCwd, startedAt, lastActivityAt, modifiedAt, cwdChanged, title)
+    PastConversation(
+        conversationId,
+        startCwd,
+        startedAt,
+        lastActivityAt,
+        modifiedAt,
+        cwdChanged,
+        title,
+        name,
+        lastPrompt,
+    )
+
+/** A message of a conversation; [text] "message N" when only [n] is given. */
+public fun aConversationMessage(
+    n: Int = 1,
+    role: ConversationRole = if (n % 2 == 1) ConversationRole.USER else ConversationRole.ASSISTANT,
+    text: String = "message $n",
+    at: Instant? = T0.plusSeconds(n.toLong()),
+    truncated: Boolean = false,
+): ConversationMessage = ConversationMessage(role, text, at, truncated)

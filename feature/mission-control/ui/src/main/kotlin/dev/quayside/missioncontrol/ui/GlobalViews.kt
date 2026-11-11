@@ -115,9 +115,11 @@ private fun lookOf(view: GlobalView): Pair<IconKind, StatusTone> =
 internal fun GlobalPage(
     page: Screen.Global,
     preview: PreviewUi?,
+    conversation: ConversationUi?,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
-    SessionPage(PageList(page.banner, page.loading, page.rows, page.details), preview, onEvent) {
+    val list = PageList(page.banner, page.loading, page.rows, page.details, conversation = conversation)
+    SessionPage(list, preview, onEvent) {
         GlobalHeader(page)
     }
 }

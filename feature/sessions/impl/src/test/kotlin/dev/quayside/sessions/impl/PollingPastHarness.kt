@@ -2,7 +2,10 @@
 
 package dev.quayside.sessions.impl
 
+import dev.quayside.agentruntime.api.ConversationError
 import dev.quayside.agentruntime.api.ConversationId
+import dev.quayside.agentruntime.api.ConversationMessage
+import dev.quayside.agentruntime.api.ConversationRole
 import dev.quayside.agentruntime.api.FakeAgentEventSource
 import dev.quayside.agentruntime.api.FakeAgentRuntime
 import dev.quayside.agentruntime.api.FakeSessionHistory
@@ -16,9 +19,11 @@ import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.subfolderNames
 import dev.quayside.sessions.api.FakeSessionHistorySettings
 import dev.quayside.sessions.api.HistorySettingsError
+import dev.quayside.sessions.api.MessageRole
 import dev.quayside.sessions.api.PlaceHarness
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionHistorySettingsRepo
+import dev.quayside.sessions.api.SessionMessage
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsWorld
@@ -71,6 +76,27 @@ internal class PollingPastHarness(
         history.put(file.toConversation())
     }
 
+    override suspend fun givenConversation(
+        id: SessionId,
+        messages: List<SessionMessage>,
+    ) {
+        history.putMessages(
+            ConversationId(id.value),
+            messages.map {
+                ConversationMessage(
+                    if (it.role == MessageRole.USER) ConversationRole.USER else ConversationRole.ASSISTANT,
+                    it.text,
+                    it.at,
+                    it.truncated,
+                )
+            },
+        )
+    }
+
+    override fun failNextConversationRead() {
+        history.failNextConversation(ConversationError.UNREADABLE)
+    }
+
     override fun removeSessionFile(id: SessionId) {
         history.delete(ConversationId(id.value))
     }
@@ -120,4 +146,14 @@ internal class PollingPastHarness(
 }
 
 private fun WorldPastSession.toConversation(): PastConversation =
-    PastConversation(ConversationId(id.value), cwd, startedAt, lastActivityAt, modifiedAt, cwdChanged = false, title)
+    PastConversation(
+        ConversationId(id.value),
+        cwd,
+        startedAt,
+        lastActivityAt,
+        modifiedAt,
+        cwdChanged = false,
+        title = title,
+        name = name,
+        lastPrompt = lastPrompt,
+    )

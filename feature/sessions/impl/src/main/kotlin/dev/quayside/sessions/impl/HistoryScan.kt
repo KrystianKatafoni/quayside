@@ -1,5 +1,9 @@
 package dev.quayside.sessions.impl
 
+import dev.quayside.agentruntime.api.ConversationError
+import dev.quayside.agentruntime.api.ConversationId
+import dev.quayside.agentruntime.api.ConversationPage
+import dev.quayside.agentruntime.api.HistoryCursor
 import dev.quayside.agentruntime.api.HistoryError
 import dev.quayside.agentruntime.api.PastConversation
 import dev.quayside.agentruntime.api.RuntimeSession
@@ -71,6 +75,14 @@ internal class HistoryScan(
         history.list(listOf(disk.cwd), since = null).map { past ->
             past.any { it.conversationId.value == disk.id.value && it.startCwd == disk.cwd }
         }
+
+    /** One page of the messages of the disk session [disk] from its session file (ADR 0034). */
+    suspend fun conversation(
+        disk: Session,
+        before: HistoryCursor?,
+        limit: Int,
+    ): Outcome<ConversationPage, ConversationError> =
+        history.conversation(ConversationId(disk.id.value), disk.cwd, before, limit)
 
     /** Adds [id] to the hidden sessions and saves; the session file stays on disk (ADR 0032). */
     suspend fun hide(id: SessionId): Outcome<Unit, HistorySettingsError> =

@@ -217,7 +217,7 @@ class SessionCommandsTest {
         val closed = commands(actions = canPreview).byId("sessions.preview")
         val open = commands(actions = previewOpen).byId("sessions.preview")
 
-        closed.title shouldBe "Podgląd outputu"
+        closed.title shouldBe "Podgląd"
         open.title shouldBe "Zamknij podgląd"
         listOf(closed, open).forEach {
             it.group shouldBe CommandGroup.SESSION

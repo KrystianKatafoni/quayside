@@ -1,5 +1,6 @@
 package dev.quayside.agentruntime.impl
 
+import dev.quayside.agentruntime.api.ConversationMessage
 import dev.quayside.agentruntime.api.PastConversation
 import dev.quayside.agentruntime.api.SessionHistory
 import dev.quayside.agentruntime.api.SessionHistoryContract
@@ -16,6 +17,14 @@ class FileSessionHistoryContractTest : SessionHistoryContract() {
 
     override fun create(conversations: List<PastConversation>): SessionHistory {
         conversations.forEach { writeSessionFile(dir, it) }
+        return sessionHistoryModule(dir, Dispatchers.IO, NoOpLogger)
+    }
+
+    override fun createWith(
+        conversation: PastConversation,
+        messages: List<ConversationMessage>,
+    ): SessionHistory {
+        writeConversationFile(dir, conversation, messages)
         return sessionHistoryModule(dir, Dispatchers.IO, NoOpLogger)
     }
 }

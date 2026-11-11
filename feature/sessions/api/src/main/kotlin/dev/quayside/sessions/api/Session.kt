@@ -10,19 +10,21 @@ import java.time.Instant
  *
  * [summary] (FR-S7), [cwd] and [name] are user data: log them at DEBUG level only (ENG-C8).
  * `toString` shows [summary] as `***` but, like `RuntimeSession`, prints [cwd] and [name], so log
- * a whole [Session] at DEBUG level only. For [SessionOrigin.DISK] the [name] is the first user message of the
- * conversation (or the start of its UUID): conversation content, so also DEBUG only.
+ * a whole [Session] at DEBUG level only. For [SessionOrigin.DISK] the [name] is the name from the session file
+ * (`custom-title`), else the first user message, else the start of the UUID: conversation content, so also DEBUG only.
  *
  * @property id short supervisor id, e.g. `7c5dcf5d`; for [SessionOrigin.DISK] the conversation UUID.
  * @property project the deepest registered project whose directory contains [cwd], compared by path
  *   components (see [SessionRules.projectFor]); null when no project contains it. The place inside the group
  *   of the project comes from [placeDir], not from [cwd] alone.
- * @property name display name of the session.
+ * @property name display name of the session; for [SessionOrigin.DISK]: the name from the file, then the first user
+ *   message, then 8 characters of the UUID.
  * @property cwd working directory the agent runs in.
  * @property state what the agent is doing now.
  * @property startedAt when the session was started.
  * @property lastActivityAt last state change or hook event (FR-S1).
- * @property summary short summary of the session; null when unknown.
+ * @property summary short summary of the session; null when unknown. For [SessionOrigin.DISK]: the first user
+ *   message, or "first → last" user message when they differ; null for a file without a user message.
  * @property meta model, permission mode and git branch (FR-S8); every part may be unknown.
  * @property origin where the session comes from (FR-P9).
  * @property assignedDir directory the user put the session in (FR-P9, AM-314, ADR 0033): the directory of its

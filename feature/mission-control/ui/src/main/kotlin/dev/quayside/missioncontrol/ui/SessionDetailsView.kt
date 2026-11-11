@@ -18,11 +18,12 @@ import dev.quayside.core.designsystem.AmChip
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.TextRole
 
-/** The panel of the selected session; [age] is the age text of its row. */
+/** The panel of the selected session; [age] is the age text of its row, [conversation] the history of a disk one. */
 @Composable
 internal fun Details(
     details: SessionDetails?,
     age: UiText?,
+    conversation: ConversationUi?,
     onEvent: (MissionControlEvent) -> Unit,
 ) {
     val panel =
@@ -43,9 +44,12 @@ internal fun Details(
     ) {
         AmText(details.name, role = TextRole.NAME)
         StateChip(details.glyph, age)
-        details.summary?.let { Summary(it) }
+        shownSummary(details)?.let { Summary(it) }
         DetailsFields(details)
+        // guard against a delayed stateIn: the history of the previous selection may be there for one frame
+        if (details.fromDisk) ConversationExcerpt(conversation?.takeIf { it.id == details.id })
         Spacer(Modifier.weight(weight = 1f))
+        if (details.fromDisk) HistoryButton(onEvent)
         SessionActionsView(details, onEvent)
     }
 }
@@ -65,6 +69,10 @@ private fun StateChip(
         glyph.icon,
     )
 }
+
+/** The summary; a disk session without one says so in a fixed text (AM-315). */
+private fun shownSummary(details: SessionDetails): String? =
+    details.summary ?: MissionControlStrings["conversation.empty"].takeIf { details.fromDisk }
 
 @Composable
 private fun Summary(summary: String) {

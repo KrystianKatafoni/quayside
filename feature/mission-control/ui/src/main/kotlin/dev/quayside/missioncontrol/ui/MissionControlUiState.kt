@@ -47,6 +47,11 @@ internal sealed interface MissionControlEvent {
     data object TogglePreview : MissionControlEvent
 
     /**
+     * "Wczytaj starsze" above the messages of a disk session (AM-315): reads the page before the oldest shown.
+     */
+    data object LoadOlder : MissionControlEvent
+
+    /**
      * A click on a [SessionAction] in the details panel; Remove opens the confirmation, the place assignment the
      * list of places.
      */
@@ -92,6 +97,7 @@ internal data class MissionControlUiState(
     val dialog: SessionDialog? = null,
     val views: List<ViewEntry> = emptyList(),
     val preview: PreviewUi? = null,
+    val conversation: ConversationUi? = null,
 )
 
 /** An entry of the global views: its [count] of sessions of every project and whether it is shown. */
@@ -178,7 +184,7 @@ internal data class SessionRow(
  * FR-S8, only the fields `sessions:api` has. [worktree] is the session cwd.
  * @property canAttach `⏎` and the "Attach" controls apply ([SessionActionsState.canAttach]).
  * @property canReply [canAttach] and the session waits for the user ([SessionActionsState.canReply]).
- * @property fromDisk read from a session file only (FR-P9): no "Podgląd", no output to read.
+ * @property fromDisk read from a session file only (FR-P9): no output to read, "Pokaż historię" instead of "Podgląd".
  * @property notice a fixed hint under the buttons; `action.resume.copyNotice` for a resumed copy of a conversation
  *   that was open elsewhere (docs/compat.md R4), null otherwise.
  */

@@ -11,9 +11,11 @@ import dev.quayside.core.domain.info
 import dev.quayside.core.domain.warn
 import dev.quayside.projects.api.Project
 import dev.quayside.projects.api.ProjectsApi
+import dev.quayside.sessions.api.MessageCursor
 import dev.quayside.sessions.api.RecentOutput
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionMessagePage
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionOrigin
 import dev.quayside.sessions.api.SessionsSnapshot
@@ -45,6 +47,7 @@ internal class PollingSessionMonitor(
     private val hooks: AgentEventSource,
 ) : SessionMonitor {
     private val wakeups = Channel<Unit>(Channel.CONFLATED)
+    private val conversations = DiskConversations(state, logger)
 
     override val snapshot: StateFlow<SessionsSnapshot> get() = state.snapshot
 
@@ -56,6 +59,11 @@ internal class PollingSessionMonitor(
         } else {
             reader.read(id)
         }
+
+    override suspend fun conversation(
+        id: SessionId,
+        before: MessageCursor?,
+    ): Outcome<SessionMessagePage, SessionError> = conversations.page(id, before)
 
     /**
      * Starts the project watcher, the hook collector and the loop; all stop when [scope] is cancelled. The

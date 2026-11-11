@@ -1,0 +1,7 @@
+{"type":"summary","sessionId":"00000000-0000-4000-8000-000000000001","summary":"redacted","leafUuid":"00000000-0000-4000-8000-000000000101"}
+{"type":"agent-name","sessionId":"00000000-0000-4000-8000-000000000001","agentName":"redacted"}
+{"type":"user","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/test/projects/quayside","timestamp":"2026-01-01T10:00:00Z","uuid":"00000000-0000-4000-8000-000000000201","version":"2.1.322","isSidechain":false,"message":{"role":"user","content":"Plan the release"}}
+{"type":"assistant","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/test/projects/quayside","timestamp":"2026-01-01T10:01:00Z","uuid":"00000000-0000-4000-8000-000000000202","version":"2.1.322","isSidechain":false,"message":{"role":"assistant","content":"redacted"}}
+{"type":"custom-title","sessionId":"00000000-0000-4000-8000-000000000001","customTitle":"Release prep"}
+{"type":"user","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/test/projects/quayside","timestamp":"2026-01-01T10:02:00Z","uuid":"00000000-0000-4000-8000-000000000203","version":"2.1.322","isSidechain":false,"message":{"role":"user","content":"Final check"}}
+{"type":"assistant","sessionId":"00000000-0000-4000-8000-000000000001","cwd":"/Users/test/projects/quayside","timestamp":"2026-01-01T10:03:00Z","uuid":"00000000-0000-4000-8000-000000000204","version":"2.1.322","isSidechain":false,"message":{"role":"assistant","content":"redacted"}}

@@ -39,6 +39,8 @@ public data class WorldSession(
  * cut by the count limit and not a conversation of a supervisor session.
  *
  * @property title first user message; null = none (the session is then named by 8 characters of [id]).
+ * @property name the name from the file (`custom-title`, AM-315); it wins over [title] as the session name.
+ * @property lastPrompt the last user message of the file; with [title] it makes the summary of the session.
  * @property startedAt null = unknown (the session then starts at [modifiedAt]).
  * @property lastActivityAt null = unknown (the session then was last active at [modifiedAt]).
  * @property modifiedAt modification time of the file; age and the count limit are judged by it.
@@ -50,6 +52,8 @@ public data class WorldPastSession(
     val title: String? = "Fix the login bug",
     val startedAt: Instant? = null,
     val lastActivityAt: Instant? = null,
+    val name: String? = null,
+    val lastPrompt: String? = null,
 )
 
 /**

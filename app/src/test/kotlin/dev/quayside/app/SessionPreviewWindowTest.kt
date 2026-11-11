@@ -152,7 +152,7 @@ class SessionPreviewWindowTest {
             selectSession("fix-login")
             runOnIdle { palette.open() }
 
-            // Then "Podgląd outputu" is offered and picking it opens the preview
+            // Then "Podgląd" is offered and picking it opens the preview
             await(WindowTags.paletteRow("sessions.preview")).performClick()
             assertPreviewShows("out of fix-login")
 

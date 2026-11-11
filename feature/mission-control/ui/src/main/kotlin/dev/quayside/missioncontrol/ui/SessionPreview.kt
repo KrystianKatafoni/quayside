@@ -6,12 +6,14 @@ import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.RecentOutput
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionError
-import dev.quayside.sessions.api.SessionOrigin
 
 /** What the preview panel shows (AM-411). */
 internal sealed interface PreviewContent {
     /** The first read is running. */
     data object Loading : PreviewContent
+
+    /** A disk session: the messages of its session file come from [ConversationState], not from this state. */
+    data object History : PreviewContent
 
     /** The output tail; `toString` hides it (ENG-C8). */
     data class Text(
@@ -39,8 +41,8 @@ internal data class PreviewUi(
 /** Pure rules of the preview (AM-411 plan, decision 3 and table 1). */
 internal object SessionPreview {
     /**
-     * The id of the session whose output is read: the target of [selection] when [open], else null; a disk session
-     * has no output.
+     * The id of the session shown in the preview: the target of [selection] when [open], else null. A disk session
+     * is previewed too: its history, not an output (AM-315).
      */
     fun key(
         open: Boolean,
@@ -49,10 +51,7 @@ internal object SessionPreview {
         projects: List<Project>,
     ): SessionId? =
         if (open) {
-            SessionActions
-                .target(sessions, selection, projects)
-                ?.takeIf { it.origin == SessionOrigin.SUPERVISOR }
-                ?.id
+            SessionActions.target(sessions, selection, projects)?.id
         } else {
             null
         }

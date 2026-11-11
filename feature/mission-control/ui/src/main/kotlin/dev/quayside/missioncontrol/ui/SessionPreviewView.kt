@@ -23,10 +23,14 @@ import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
 import dev.quayside.core.designsystem.TextRole
 
-/** The output preview ("peek") under the session list: title, "Zamknij" and the tail of the output (AM-411). */
+/**
+ * The preview ("peek") under the session list: title, "Zamknij" and the tail of the output (AM-411), or for a disk
+ * session its messages from [conversation] (AM-315).
+ */
 @Composable
 internal fun SessionPreviewView(
     preview: PreviewUi,
+    conversation: ConversationUi?,
     onEvent: (MissionControlEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -46,7 +50,12 @@ internal fun SessionPreviewView(
             AmText(MissionControlStrings.format(UiText("preview.title", listOf(preview.name))))
             CloseButton { onEvent(MissionControlEvent.TogglePreview) }
         }
-        PreviewBody(preview.content)
+        if (preview.content == PreviewContent.History) {
+            // guard against a delayed stateIn: the history of the previous selection may be there for one frame
+            ConversationView(conversation?.takeIf { it.id == preview.id }, onEvent)
+        } else {
+            PreviewBody(preview.content)
+        }
     }
 }
 
@@ -84,6 +93,10 @@ private fun PreviewBody(content: PreviewContent) {
 
         is PreviewContent.Text -> {
             OutputText(content.text)
+        }
+
+        PreviewContent.History -> {
+            // drawn by ConversationView
         }
     }
 }

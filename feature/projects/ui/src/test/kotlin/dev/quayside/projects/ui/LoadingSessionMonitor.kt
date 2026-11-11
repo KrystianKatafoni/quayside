@@ -2,9 +2,11 @@ package dev.quayside.projects.ui
 
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
+import dev.quayside.sessions.api.MessageCursor
 import dev.quayside.sessions.api.RecentOutput
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionMessagePage
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionsSnapshot
 import kotlinx.coroutines.flow.Flow
@@ -19,4 +21,9 @@ internal class LoadingSessionMonitor : SessionMonitor {
     override val events: Flow<SessionEvent> = emptyFlow()
 
     override suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError> = Outcome.Ok(RecentOutput(""))
+
+    override suspend fun conversation(
+        id: SessionId,
+        before: MessageCursor?,
+    ): Outcome<SessionMessagePage, SessionError> = Outcome.Err(SessionError.UnknownSession(id))
 }

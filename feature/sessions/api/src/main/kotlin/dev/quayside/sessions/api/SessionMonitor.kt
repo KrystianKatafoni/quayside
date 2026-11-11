@@ -30,8 +30,19 @@ public interface SessionMonitor {
      * Tail of the output of session [id] (`claude logs`), already cleaned and truncated by the runtime
      * (no ANSI, at most about 200 lines). Reads on demand: never changes [snapshot], emits no [events].
      * Any dispatcher; never blocks, never throws except CancellationException (ENG-I4, ENG-I5).
-     * A [SessionOrigin.DISK] session has no supervisor output: `UnknownSession`.
+     * A [SessionOrigin.DISK] session has no supervisor output: `UnknownSession`; read it with [conversation].
      * Errors: [SessionError.UnknownSession], [SessionError.Runtime].
      */
     public suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError>
+
+    /**
+     * Up to 20 messages of the [SessionOrigin.DISK] session [id] before [before] (null = the newest), oldest first,
+     * read from its session file on demand (FR-P9, ADR 0034); never changes [snapshot], emits no [events].
+     * A [SessionOrigin.SUPERVISOR] session, a hidden one or a missing file: [SessionError.UnknownSession];
+     * a read failure: [SessionError.Runtime] with [RuntimeProblem.COMMAND_FAILED].
+     */
+    public suspend fun conversation(
+        id: SessionId,
+        before: MessageCursor?,
+    ): Outcome<SessionMessagePage, SessionError>
 }

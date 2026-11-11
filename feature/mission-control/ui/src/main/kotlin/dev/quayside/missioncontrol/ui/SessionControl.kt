@@ -24,7 +24,7 @@ internal fun SessionDetails.allControls(): List<SessionControl> = openControls()
 
 /**
  * Stop, Respawn, Resume, the place assignment and Remove when they apply now, then "Podgląd" (not for a disk
- * session, which has no output).
+ * session: it has no output, and the panel has its own "Pokaż historię").
  */
 internal fun SessionDetails.otherControls(): List<SessionControl> =
     SessionAction.entries.filter { it in actions }.map {

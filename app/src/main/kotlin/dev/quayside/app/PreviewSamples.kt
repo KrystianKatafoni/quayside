@@ -13,6 +13,7 @@ import dev.quayside.projects.api.ProjectFocus
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.projects.api.StorageIssue
 import dev.quayside.projects.api.SubfolderName
+import dev.quayside.sessions.api.MessageCursor
 import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.PlaceAssignment
 import dev.quayside.sessions.api.RecentOutput
@@ -22,6 +23,7 @@ import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SessionEvent
+import dev.quayside.sessions.api.SessionMessagePage
 import dev.quayside.sessions.api.SessionMonitor
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SessionsApi
@@ -55,6 +57,11 @@ private class PreviewMonitor(
 
     override suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError> =
         Outcome.Err(SessionError.UnknownSession(id))
+
+    override suspend fun conversation(
+        id: SessionId,
+        before: MessageCursor?,
+    ): Outcome<SessionMessagePage, SessionError> = Outcome.Err(SessionError.UnknownSession(id))
 }
 
 private object RefusingCommands : SessionCommands {

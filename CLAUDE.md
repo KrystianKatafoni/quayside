@@ -169,3 +169,7 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Test „komunikat znika po zmianie zaznaczenia” musi wrócić na element, do którego komunikat jest przypięty, inaczej jest zawsze zielony (mutacja bez zerowania stanu przeżywa).
 - Klucz z zapasowym odczytem (UUID, a bez niego krótkie id) wymaga testu „wpis pod starym kluczem, zapis pod nowym, potem Automatycznie”: bez usuwania starego wpisu przy zapisie „Automatycznie” przywraca stare miejsce, a odczyt UUID-first to zasłania.
 - Rozmiar klasy (ENG-C2, detekt `LargeClass`) licz do jej zamykającej klamry `^}`, nie do końca pliku: funkcje najwyższego poziomu po klasie nie wliczają się do limitu 300.
+- Spotless zamienia `else -> Unit`/`-> Unit` w `when` na blok `{ Unit }`, co przy `-Werror` daje „Expression is unused” — gałęzie jednolinijkowe we wszystkich wpisach albo blok z samym komentarzem.
+- `collectLatest` czeka na koniec poprzedniego bloku, więc strażnik „licznik wyborów” wewnątrz bloku jest martwy — użyj `currentCoroutineContext().isActive` i testu z opóźnionym odczytem.
+- Budżet odczytu pliku sprawdzany tylko na granicy linii nie ogranicza długiej linii — sprawdzaj go w `refill` i testuj linią dłuższą niż budżet oraz zwykłą linią przecinającą budżet.
+- `ConversationId` i inne ID z publicznym konstruktorem: waliduj przed `Path.resolve` (NUL rzuca `InvalidPathException`).

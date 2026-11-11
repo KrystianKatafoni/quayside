@@ -6,7 +6,7 @@ package dev.quayside.sessions.api
  * Both sides may be used from any dispatcher (ENG-I1).
  *
  * @property monitor read side: snapshot and events.
- * @property commands write side: start, stop, respawn, remove and stopAllIn.
+ * @property commands write side: start, stop, respawn, resume, remove and stopAllIn.
  */
 public data class SessionsApi(
     val monitor: SessionMonitor,

@@ -48,8 +48,9 @@ public enum class SessionOrigin {
     SUPERVISOR,
 
     /**
-     * Read from a session file only; always [SessionState.Stopped], [Session.id] is the conversation UUID, and every
-     * command except [SessionCommands.remove] and [SessionCommands.stop] gives [SessionError.UnknownSession].
+     * Read from a session file only; always [SessionState.Stopped], [Session.id] is the conversation UUID, and only
+     * [SessionCommands.remove] (hides it) and [SessionCommands.resume] apply; every other command gives
+     * [SessionError.UnknownSession], except that [SessionCommands.stop] answers `Ok` without a call.
      */
     DISK,
 }

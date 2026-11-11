@@ -62,6 +62,8 @@ public class FakeSessions(
                 }.toMap(),
         )
     private val scanPaused = MutableStateFlow(startPaused)
+    private val openElsewhere = MutableStateFlow(emptySet<SessionId>())
+    private val missingDirs = MutableStateFlow(emptySet<Path>())
 
     init {
         historySettings.onSaved { publishDisk() }
@@ -82,6 +84,26 @@ public class FakeSessions(
     public fun addPastSession(file: WorldPastSession) {
         pastFiles.update { it.filterNot { old -> old.id == file.id } + file }
         publishDisk()
+    }
+
+    /**
+     * The session file [id] is deleted outside the app. The disk session stays listed until the next scan (a change
+     * of the files or settings), as in the app; [resume] looks at the files and fails with
+     * [ResumeProblem.FILE_MISSING].
+     */
+    public fun removePastSession(id: SessionId) {
+        pastFiles.update { it.filterNot { old -> old.id == id } }
+    }
+
+    /** The directory [dir] is gone: [resume] of a session started in it fails with [ResumeProblem.DIRECTORY_MISSING]. */
+    public fun removeDirectory(dir: Path) {
+        // `Path` is an `Iterable<Path>`: `set + dir` would add its name components, not the path
+        missingDirs.update { it + setOf(dir) }
+    }
+
+    /** The conversation [id] is open in another Claude Code process: its next [resume] runs a copy (R4). */
+    public fun opensElsewhere(id: SessionId) {
+        openElsewhere.update { it + id }
     }
 
     /** The scan holds back its result: [SessionsSnapshot.history] and the disk sessions stay as they are. */
@@ -174,6 +196,40 @@ public class FakeSessions(
         return Outcome.Ok(id)
     }
 
+    /**
+     * Same rules as `sessions:impl`: only a visible [SessionOrigin.DISK] session; its file must still exist
+     * ([ResumeProblem.FILE_MISSING]) and its start directory too ([ResumeProblem.DIRECTORY_MISSING]). The live session
+     * keeps the project of the disk one and waits for input (emits [SessionEvent.BecameBlocked]); a conversation
+     * open elsewhere ([opensElsewhere]) runs as a copy under a new id and the disk session stays.
+     */
+    override suspend fun resume(id: SessionId): Outcome<ResumedSession, SessionError> {
+        begin("resume ${id.value}")?.let { return Outcome.Err(it) }
+        val disk =
+            find(id)?.takeIf { it.origin == SessionOrigin.DISK } ?: return Outcome.Err(SessionError.UnknownSession(id))
+        val problem =
+            when {
+                pastFiles.value.none { it.id == id } -> ResumeProblem.FILE_MISSING
+                disk.cwd in missingDirs.value -> ResumeProblem.DIRECTORY_MISSING
+                else -> null
+            }
+        if (problem != null) return Outcome.Err(SessionError.ResumeUnavailable(id, problem))
+        val copy = id in openElsewhere.value
+        val live = SessionId(if (copy) ID_FORMAT.format(lastId.incrementAndGet()) else id.value.take(UUID_PREFIX))
+        val now = clock.now()
+        val session =
+            disk.copy(
+                id = live,
+                state = SessionState.AwaitingInput(null),
+                startedAt = now,
+                lastActivityAt = now,
+                origin = SessionOrigin.SUPERVISOR,
+            )
+        insert(session)
+        publishDisk()
+        transitions.emit(SessionEvent.BecameBlocked(session))
+        return Outcome.Ok(ResumedSession(live, copy))
+    }
+
     override suspend fun stop(id: SessionId): Outcome<Unit, SessionError> {
         begin("stop ${id.value}")?.let { return Outcome.Err(it) }
         val session = find(id) ?: return Outcome.Err(SessionError.UnknownSession(id))
@@ -261,52 +317,12 @@ public class FakeSessions(
         val settings = historySettings.settings.value
         state.update { current ->
             val supervisor = current.sessions.filter { it.origin == SessionOrigin.SUPERVISOR }
-            val (disk, history) = scan(supervisor, settings)
+            val known = supervisor.map { it.id } + conversations.value.values.map(::SessionId)
+            val since = settings.maxAge.days?.let { clock.now().minus(it.toLong(), ChronoUnit.DAYS) }
+            val (disk, history) = FakeDiskScan.scan(pastFiles.value, known, projectDirs, settings, since)
             current.copy(sessions = ordered(supervisor + disk), history = history)
         }
     }
-
-    private fun scan(
-        supervisor: List<Session>,
-        settings: SessionHistorySettings,
-    ): Pair<List<Session>, Map<ProjectId, ProjectHistory>> {
-        val since = settings.maxAge.days?.let { clock.now().minus(it.toLong(), ChronoUnit.DAYS) }
-        val known = supervisor.map { it.id.value.take(UUID_PREFIX) }.toSet() + conversations.value.values
-        val byProject =
-            pastFiles.value
-                .filter { it.id !in settings.hidden && (since == null || it.modifiedAt >= since) }
-                .filter { it.id.value !in known && it.id.value.take(UUID_PREFIX) !in known }
-                .groupBy { SessionRules.projectFor(it.cwd, projectDirs) }
-        val shown =
-            projectDirs.keys.associateWith { project ->
-                byProject[project].orEmpty().sortedByDescending { it.modifiedAt }
-            }
-        val kept = shown.mapValues { (_, files) -> files.take(settings.maxPerProject.count) }
-        val history =
-            shown.mapValues { (project, files) ->
-                ProjectHistory(
-                    kept.getValue(project).size,
-                    files.size - kept.getValue(project).size,
-                )
-            }
-        return kept.flatMap { (project, files) -> files.map { toDiskSession(it, project) } } to history
-    }
-
-    private fun toDiskSession(
-        file: WorldPastSession,
-        project: ProjectId,
-    ): Session =
-        Session(
-            id = file.id,
-            project = project,
-            name = file.title ?: file.id.value.take(UUID_PREFIX),
-            cwd = file.cwd,
-            state = SessionState.Stopped,
-            startedAt = file.startedAt ?: file.modifiedAt,
-            lastActivityAt = file.lastActivityAt ?: file.modifiedAt,
-            summary = null,
-            origin = SessionOrigin.DISK,
-        )
 
     private fun find(id: SessionId): Session? = state.value.sessions.firstOrNull { it.id == id }
 

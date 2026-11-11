@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.ZoneOffset
 
-/** What a disk session offers in the details panel (FR-P9): only "Usuń", nothing that needs a runtime. */
+/** What a disk session offers in the details panel (FR-P9, AM-313): "Wznów" and "Usuń", nothing else. */
 internal class PastSessionActionsTest {
     private val project = aProject(id = "project0001", displayName = "Quayside")
     private val projects = listOf(project)
@@ -39,8 +39,8 @@ internal class PastSessionActionsTest {
     }
 
     @Test
-    fun `disk session offers only remove`() {
-        details(disk.id).actions shouldBe setOf(SessionAction.REMOVE)
+    fun `disk session offers resume and remove`() {
+        details(disk.id).actions shouldBe setOf(SessionAction.RESUME, SessionAction.REMOVE)
     }
 
     @Test

@@ -20,7 +20,14 @@ public class FakeAgentRuntime(
     private val world: RuntimeWorld = RuntimeWorld(),
     private val clock: Clock = TestClock(),
 ) : AgentRuntime {
-    private val state = AtomicReference(FakeRuntimeState(sessions = world.sessions))
+    private val state =
+        AtomicReference(
+            FakeRuntimeState(
+                sessions = world.sessions,
+                missing = world.missingConversations,
+                openElsewhere = world.openElsewhere,
+            ),
+        )
 
     /** Operations called so far, in order, e.g. `listSessions`, `start`, `stop 7c5dcf5d`. */
     public val calls: List<String> get() = state.get().calls
@@ -42,6 +49,16 @@ public class FakeAgentRuntime(
         }
     }
 
+    /** From now on `resume` of [conversation] starts a copy under a new id, as when another process has it open. */
+    public fun opensElsewhere(conversation: ConversationId) {
+        state.updateAndGet { it.copy(openElsewhere = it.openElsewhere + conversation) }
+    }
+
+    /** From now on `resume` of [conversation] answers Ok and lists a [RuntimePhase.FAILED] job (no session file). */
+    public fun loses(conversation: ConversationId) {
+        state.updateAndGet { it.copy(missing = it.missing + conversation) }
+    }
+
     /** Makes the next `suspend` operation except [health] return [error]; later calls work again. */
     public fun failNext(error: RuntimeError) {
         state.updateAndGet { it.copy(nextFailure = error) }
@@ -60,6 +77,38 @@ public class FakeAgentRuntime(
                 RuntimeSession(id, null, spec.name ?: id.value, spec.cwd, RuntimePhase.WORKING, null, startedAt, null)
             current.copy(sessions = current.sessions + session, startedCount = current.startedCount + 1) to
                 Outcome.Ok(id)
+        }
+    }
+
+    /**
+     * Records `resume <uuid>`. A known conversation wakes under the first 8 characters of its UUID, waiting for input
+     * in [ResumeSpec.cwd]; one open elsewhere starts a copy under a new `fakeNNNN` id; a missing one lists a failed job.
+     */
+    override suspend fun resume(spec: ResumeSpec): Outcome<SessionId, RuntimeError> {
+        val startedAt = clock.now()
+        val uuid = spec.conversation
+        return transact("resume ${uuid.value}") { current ->
+            val short = SessionId(uuid.value.take(SHORT_ID_LENGTH))
+            val copyId = SessionId("fake%04d".format(current.startedCount + 1))
+            val isCopy = uuid in current.openElsewhere
+            val id = if (isCopy) copyId else short
+            val failed = uuid in current.missing
+            val old = current.sessions.find { it.id == id }
+            val session =
+                RuntimeSession(
+                    id = id,
+                    conversationId = uuid.takeUnless { isCopy || failed },
+                    name = old?.name ?: id.value,
+                    cwd = spec.cwd,
+                    phase = if (failed) RuntimePhase.FAILED else RuntimePhase.BLOCKED,
+                    waitingFor = WaitingFor.Input.takeUnless { failed },
+                    startedAt = startedAt,
+                    pid = null,
+                )
+            current.copy(
+                sessions = current.sessions.filterNot { it.id == id } + session,
+                startedCount = current.startedCount + if (isCopy) 1 else 0,
+            ) to Outcome.Ok(id)
         }
     }
 
@@ -119,6 +168,8 @@ private data class FakeRuntimeState(
     val calls: List<String> = emptyList(),
     val nextFailure: RuntimeError? = null,
     val startedCount: Int = 0,
+    val missing: Set<ConversationId> = emptySet(),
+    val openElsewhere: Set<ConversationId> = emptySet(),
 ) {
     fun withSession(
         id: SessionId,
@@ -131,6 +182,8 @@ private data class FakeRuntimeState(
     ): Pair<FakeRuntimeState, Outcome<T, RuntimeError>> =
         if (sessions.any { it.id == id }) operation() else this to Outcome.Err(RuntimeError.UnknownSession(id))
 }
+
+private const val SHORT_ID_LENGTH = 8
 
 private fun fakeHealth(world: RuntimeWorld): RuntimeHealth {
     val version = world.version.takeIf { world.installed }

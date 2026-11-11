@@ -27,6 +27,7 @@ public enum class IconKind(
     ATTACH("$FRAME M7 9l3 3-3 3M13 15h4"),
     REPLY("M4 5h16v11H9l-5 4z"),
     RESPAWN("M20 11a8 8 0 1 0-2 5.5M20 5v6h-6"),
+    RESUME("M8 5l11 7-11 7z"),
     STOP(SQUARE),
     REMOVE("M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"),
     SEARCH("M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0 M16 16l4 4"),

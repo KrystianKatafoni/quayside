@@ -12,7 +12,8 @@ public sealed interface SessionError {
 
     /**
      * The supervisor does not know session [id]; also the answer for a command that does not apply to a
-     * [SessionOrigin.DISK] session (respawn, output) and for a disk session that is hidden or gone.
+     * [SessionOrigin.DISK] session (respawn, output), for [SessionCommands.resume] of a [SessionOrigin.SUPERVISOR]
+     * session and for a disk session that is hidden or gone.
      */
     public data class UnknownSession(
         val id: SessionId,
@@ -33,6 +34,12 @@ public sealed interface SessionError {
     public data class SubfolderUnavailable(
         val project: ProjectId,
         val problem: SubfolderProblem,
+    ) : SessionError
+
+    /** The disk session [id] cannot be resumed; never carries a path (ENG-C8). */
+    public data class ResumeUnavailable(
+        val id: SessionId,
+        val problem: ResumeProblem,
     ) : SessionError
 
     /** The Claude Code runtime failed with [problem]. */
@@ -72,4 +79,13 @@ public enum class SubfolderProblem {
 
     /** One of them, but not a directory on disk (missing, a file or a symlink). */
     MISSING,
+}
+
+/** Why a disk session cannot be resumed (FR-P9). */
+public enum class ResumeProblem {
+    /** The session file is gone. */
+    FILE_MISSING,
+
+    /** The start directory is gone. */
+    DIRECTORY_MISSING,
 }

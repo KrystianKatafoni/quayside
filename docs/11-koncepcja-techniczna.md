@@ -106,6 +106,7 @@ enum class PluralForm(val key: String) {                       // ONE ("one"), F
 interface AgentRuntime {
     suspend fun listSessions(under: Path? = null): Outcome<List<RuntimeSession>, RuntimeError>  // cwd == under lub poniżej
     suspend fun start(spec: StartSpec): Outcome<SessionId, RuntimeError>    // claude --bg
+    suspend fun resume(spec: ResumeSpec): Outcome<SessionId, RuntimeError>  // claude --bg --resume <uuid>, bez promptu i flag; id z `backgrounded · <id>` (kopia: inne niż 8 znaków UUID, R4)
     suspend fun stop(id: SessionId): Outcome<Unit, RuntimeError>
     suspend fun respawn(id: SessionId): Outcome<Unit, RuntimeError>
     suspend fun remove(id: SessionId): Outcome<Unit, RuntimeError>          // nigdy nie usuwa plików projektu
@@ -113,6 +114,8 @@ interface AgentRuntime {
     fun attachCommand(id: SessionId): ShellCommand          // czysta funkcja; uruchamiane przez terminal w PTY
     suspend fun health(): RuntimeHealth                     // nigdy nie zawodzi: problemy są w RuntimeHealth
 }
+
+data class ResumeSpec(val conversation: ConversationId, val cwd: Path)   // cwd = katalog startu rozmowy (AM-313)
 
 data class RuntimeSession(
     val id: SessionId, val conversationId: ConversationId?, val name: String, val cwd: Path,
@@ -220,7 +223,8 @@ data class PastConversation(val conversationId: ConversationId, val startCwd: Pa
 // sessions:api — odczyt i komendy rozdzielone (ENG-I2)
 // Session.origin: SUPERVISOR | DISK (FR-P9). Sesja z dysku jest zawsze Stopped, jej id to UUID rozmowy;
 // SessionsSnapshot.history: Map<ProjectId, ProjectHistory(shown, older)> — klucz dla każdego zeskanowanego projektu.
-// Dla DISK: respawn/recentOutput = UnknownSession, stop = Ok, remove = ukrycie na stałe (hidden w session-history.json).
+// Dla DISK: respawn/recentOutput = UnknownSession, stop = Ok, remove = ukrycie na stałe (hidden w session-history.json),
+// resume = wznowienie w katalogu startu (AM-313); dla SUPERVISOR resume = UnknownSession (tam jest respawn).
 interface SessionMonitor {
     val snapshot: StateFlow<SessionsSnapshot>
     val events: Flow<SessionEvent>                 // przejścia stanów, konsumowane m.in. przez powiadomienia
@@ -242,11 +246,14 @@ sealed interface SessionEvent {
     data class PullRequestReady(override val session: Session) : SessionEvent
     data class RunningLong(override val session: Session, val duration: Duration) : SessionEvent
 }
+data class ResumedSession(val id: SessionId, val copy: Boolean)     // id żywej sesji; copy: rozmowa była otwarta gdzie indziej, oryginał zostaje na liście (compat R4)
+
 interface SessionCommands {
     suspend fun start(project: ProjectId, spec: NewSessionSpec): Outcome<SessionId, SessionError>  // spec.subfolder: podfolder grupy (AM-308); SessionError.SubfolderUnavailable
     suspend fun stop(id: SessionId): Outcome<Unit, SessionError>
     suspend fun stopAllIn(project: ProjectId): Outcome<Int, SessionError>
     suspend fun respawn(id: SessionId): Outcome<Unit, SessionError>
+    suspend fun resume(id: SessionId): Outcome<ResumedSession, SessionError>  // tylko sesja DISK (FR-P9); ResumeUnavailable(FILE_MISSING | DIRECTORY_MISSING) przed wywołaniem claude
     suspend fun remove(id: SessionId): Outcome<Unit, SessionError>
     suspend fun reply(id: SessionId, text: String): Outcome<Unit, SessionError>  // AM-506; strategia: otwarta kwestia (09)
 }

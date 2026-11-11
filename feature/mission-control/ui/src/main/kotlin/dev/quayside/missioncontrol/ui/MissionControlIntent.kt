@@ -23,6 +23,12 @@ public sealed interface MissionControlIntent {
     /** Palette and panel: respawns the selected visible session when it is not active; otherwise ignored. */
     public data object RespawnSelected : MissionControlIntent
 
+    /**
+     * Palette and panel: resumes the selected visible disk session (FR-P9) and, when it succeeds, selects the live
+     * session on the filter "Wszystkie"; ignored for any other session.
+     */
+    public data object ResumeSelected : MissionControlIntent
+
     /** Palette and panel: asks to confirm removing the selected inactive session from the list; otherwise ignored. */
     public data object RemoveSelected : MissionControlIntent
 
@@ -51,8 +57,9 @@ public sealed interface MissionControlIntent {
  * checks again when it runs one.
  *
  * @property canStop the session is active.
- * @property canRespawn the session is not active.
- * @property canRemove the session is not active, so it can be removed from the list (after a confirmation).
+ * @property canRespawn a supervisor session that is not active.
+ * @property canRemove the session is not active (or from disk): it can be removed from the list after a confirmation.
+ * @property canResume the selected session is a disk session (FR-P9) and nothing runs.
  * @property dialogOpen a dialog of Mission Control is open: `app` offers no palette commands and disables the menu.
  * @property canPreview a visible session is selected and no dialog is open; also while an action runs.
  * @property previewOpen the preview is open: the palette offers "Zamknij podgląd".
@@ -69,4 +76,5 @@ public data class SessionActionsState(
     val previewOpen: Boolean = false,
     val canAttach: Boolean = false,
     val canReply: Boolean = false,
+    val canResume: Boolean = false,
 )

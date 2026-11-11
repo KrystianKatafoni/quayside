@@ -14,7 +14,7 @@ import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.Project
 import dev.quayside.sessions.api.FakeSessionHistorySettings
 import dev.quayside.sessions.api.HistorySettingsError
-import dev.quayside.sessions.api.PastSessionsHarness
+import dev.quayside.sessions.api.ResumeHarness
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionHistorySettingsRepo
 import dev.quayside.sessions.api.SessionMonitor
@@ -27,14 +27,14 @@ import kotlinx.coroutines.test.TestScope
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * [PastSessionsHarness] over `sessionsModule` with a [FakeSessionHistory] and a [FakeSessionHistorySettings]: the
+ * [ResumeHarness] over `sessionsModule` with a [FakeSessionHistory] and a [FakeSessionHistorySettings]: the
  * files of the world are conversations, [settle] advances virtual time by 61 s (more than one scan interval and many
  * polls). Built on `sessionsModule` itself, so the contract also covers the wiring of the factory.
  */
 internal class PollingPastHarness(
     private val scope: TestScope,
     world: SessionsWorld,
-) : PastSessionsHarness {
+) : ResumeHarness {
     private val fake =
         FakeAgentRuntime(RuntimeWorld(sessions = world.sessions.map { it.toRuntime() }, outputs = world.outputs))
     private val runtime = SwitchableRuntime(fake, now = { scope.testScheduler.currentTime })
@@ -64,6 +64,14 @@ internal class PollingPastHarness(
 
     override suspend fun givenPastSession(file: WorldPastSession) {
         history.put(file.toConversation())
+    }
+
+    override fun removeSessionFile(id: SessionId) {
+        history.delete(ConversationId(id.value))
+    }
+
+    override fun openElsewhere(id: SessionId) {
+        fake.opensElsewhere(ConversationId(id.value))
     }
 
     override fun failNextSettingsSave() {

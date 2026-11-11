@@ -15,6 +15,8 @@
 #   daemon        running | stopped | absent: answer of `claude daemon status` (absent = older CLI)
 #   mode          normal | garbage | hang | fail <code> <stderr...> | bg-child | untrusted
 #                 (untrusted: `--bg` refuses the cwd like 2.1.302 in a workspace without trust)
+#   conversations.tsv  conversations that `--bg --resume` treats specially: uuid, `missing` | `open` (any other uuid
+#                 wakes under its first 8 characters; `missing`: exit 0, the job turns failed; `open`: a copy, R4)
 #   print-result  raw stdout of a print-mode call (`claude -p`, AM-604); a default success JSON when absent
 #   print-cwd     working directory of the latest print-mode call
 #   calls.log     argv of every call: arguments end with \037, calls end with \036
@@ -256,6 +258,55 @@ start_bg() {
     printf '  claude stop %s      stop this session\n' "$id"
 }
 
+# `claude --bg --resume <uuid>` of 2.1.322 (fixtures/cli/recorded/2.1.322-bg-resume-*): no prompt, exit 0 even for an
+# unknown uuid. Any flag besides `--bg` and `--resume <uuid>` is rejected, so a stray `--` or prompt fails a test.
+resume_bg() {
+    [ $# -eq 3 ] && [ "$1" = --bg ] && [ "$2" = --resume ] || die "resume expects exactly: --bg --resume <uuid>" 2
+    uuid=$3
+    [ "$mode" != untrusted ] ||
+        die_raw "Workspace not trusted. Run \`claude\` in $(pwd -P) once and accept the trust prompt, then retry."
+    short=$(printf '%s' "$uuid" | cut -c 1-8)
+    kind=
+    [ -f "$state/conversations.tsv" ] &&
+        kind=$(awk -F "$TAB" -v u="$uuid" '$1 == u { print $2 }' "$state/conversations.tsv")
+    cwd=$(pwd -P)
+    now=$(cat "$state/now")
+    case $kind in
+    open)
+        n=$(cat "$state/counter" 2>/dev/null || printf 0)
+        while :; do
+            n=$((n + 1))
+            id=$(printf '%08x' "$n")
+            has_session "$id" || break
+        done
+        printf '%s\n' "$n" >"$state/counter"
+        printf '%s\t-\t%s\t%s\tblocked\tinput needed\t%s\t-\n' "$id" "$id" "$cwd" "$now" >>"$sessions"
+        ;;
+    missing)
+        id=$short
+        awk -F "$TAB" -v id="$id" '$1 != id' "$sessions" >"$sessions.tmp"
+        mv "$sessions.tmp" "$sessions"
+        printf '%s\t-\t%s\t%s\tfailed\t-\t%s\t-\n' "$id" "$id" "$cwd" "$now" >>"$sessions"
+        ;;
+    *)
+        id=$short
+        awk -F "$TAB" -v id="$id" '$1 != id' "$sessions" >"$sessions.tmp"
+        mv "$sessions.tmp" "$sessions"
+        printf '%s\t%s\t%s\t%s\tblocked\tinput needed\t%s\t-\n' "$id" "$uuid" "$id" "$cwd" "$now" >>"$sessions"
+        ;;
+    esac
+    printf 'Starting background service…\n' >&2
+    printf 'backgrounded · %s (idle — send a prompt to start)\n' "$id"
+    printf '  claude agents             list sessions\n'
+    printf '  claude attach %s    open in this terminal\n' "$id"
+    printf '  claude logs %s      show recent output\n' "$id"
+    printf '  claude stop %s      stop this session\n' "$id"
+    if [ "$kind" = open ]; then
+        printf 'note: session %s is open in another Claude Code process, so this started a copy as %s.\n' \
+            "$short" "$id" >&2
+    fi
+}
+
 # `claude daemon status` of 2.1.302; without --json, which the CLI ignores with a warning.
 daemon_cmd() {
     [ "$daemon" != absent ] || die "unknown command daemon" 2
@@ -326,6 +377,11 @@ attach)
     printf 'fake-claude: attached %s\n' "$2"
     ;;
 *)
+    for arg in "$@"; do
+        [ "$arg" = --resume ] || continue
+        resume_bg "$@"
+        exit 0
+    done
     for arg in "$@"; do
         case $arg in
         --) break ;;

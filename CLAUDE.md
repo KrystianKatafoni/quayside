@@ -153,7 +153,7 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Gradle w sesji w chmurze wymaga `LC_ALL=C.UTF-8` i `-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8` w `JAVA_TOOL_OPTIONS`, inaczej `InvalidPathException` od nazw testów z polskimi znakami.
 - Dekoracyjny `Image(contentDescription = null)` ma w drzewie niescalonym neutralny węzeł z `Shape` — test dostępności sprawdza brak właściwości (opis, rola, akcje), nie brak dzieci.
 - `Json.parseToJsonElement` bez `isLenient` przyjmuje nieopakowane literały spoza JSON (`NaN`, `abc`, `01`) — przy przepisywaniu cudzego pliku przez `JsonUnquotedLiteral` waliduj każdy literał gramatyką liczby JSON, inaczej niepoprawny plik zostaje zapisany mimo reguły „nie-JSON → bez zapisu”.
-- Kotest `shouldBe` na `List<Path>` spłaszcza `Path` (jest `Iterable<Path>`), a `list + path` dołącza elementy ścieżki — porównuj `map(Path::toString)`.
+- Kotest `shouldBe` na `List<Path>` spłaszcza `Path` (jest `Iterable<Path>`), a `list + path` i `set + path` dołączają składniki ścieżki — porównuj `map(Path::toString)`, a do zbioru dodawaj `set + setOf(path)`.
 - Przy powtórnym review sprawdzaj wszystkie wcześniejsze uwagi blokujące, nie tylko te wskazane w zleceniu (raport implementera o zmianie KDoc okazał się błędny, bo replace trafił w inny tekst).
 - Gdy zmiana pozwala na `cwd` inny niż `Project.dir`, fake `SessionCommands.start` musi przypisywać projekt przez `SessionRules.projectFor`, jak impl; inaczej kontrakt z projektem zagnieżdżonym rozjeżdża fake i impl.
 - Po wyborze opcji z `AmDropdown` fokus zostaje na liście, więc test okna nie czeka na fokus pola promptu (`awaitFocus` da `ComposeTimeoutException`).
@@ -166,3 +166,4 @@ Krótkie wnioski z review i błędów agenta, dopisywane przez PR (jedna linia k
 - Limit 400 linii pliku testowego i 5 parametrów funkcji nie są łapane przez detekt — sprawdzaj `wc -l` i sygnatury ręcznie przed oddaniem.
 - Akcja „Pokaż” z innego okna musi ustawić projekt i filtr jednym krokiem (`MissionControlController.showFinished`): osobne `SelectFilter` po zmianie projektu przegrywa z resetem filtra przy nowym focusie (`onFocus`).
 - Fake i impl muszą mapować błąd zapisu (np. ukrycie sesji `hidden`) tą samą kategorią `SessionError`; kontrakt w `testFixtures` przypina to na obu, inaczej fake ukrywa rozjazd.
+- Test „komunikat znika po zmianie zaznaczenia” musi wrócić na element, do którego komunikat jest przypięty, inaczej jest zawsze zielony (mutacja bez zerowania stanu przeżywa).

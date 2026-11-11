@@ -20,6 +20,7 @@ internal object MissionControlTags {
     const val CONFIRM_REMOVE_CANCEL = "missionControl.confirmRemove.cancel"
     const val DETAILS_BUSY = "missionControl.details.busy"
     const val DETAILS_FAILURE = "missionControl.details.failure"
+    const val DETAILS_NOTICE = "missionControl.details.notice"
     const val PREVIEW = "missionControl.preview"
     const val PREVIEW_TEXT = "missionControl.preview.text"
     const val PREVIEW_CLOSE = "missionControl.preview.close"

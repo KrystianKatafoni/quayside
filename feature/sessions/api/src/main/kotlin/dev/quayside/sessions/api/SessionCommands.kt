@@ -49,10 +49,19 @@ public interface SessionCommands {
     /**
      * Brings a [SessionState.Stopped], [SessionState.Done] or [SessionState.Failed] session back as
      * [SessionState.Working]. A [SessionOrigin.DISK] session is not the supervisor's: `UnknownSession`, the
-     * supervisor is not called. Errors: [SessionError.UnknownSession], [SessionError.SessionActive],
+     * supervisor is not called; use [resume] for it. Errors: [SessionError.UnknownSession], [SessionError.SessionActive],
      * [SessionError.Runtime].
      */
     public suspend fun respawn(id: SessionId): Outcome<Unit, SessionError>
+
+    /**
+     * Resumes one [SessionOrigin.DISK] session in its start directory ([Session.cwd], FR-P9); never several at once.
+     * Before `resume` returns, the snapshot shows the live session under [ResumedSession.id] (waiting for a prompt) and
+     * no longer the disk one, unless it is a copy. A [SessionOrigin.SUPERVISOR] session: [SessionError.UnknownSession],
+     * use [respawn]. Checks before Claude Code is called: the session file is still on the disk, the start directory
+     * exists. Errors: [SessionError.UnknownSession], [SessionError.ResumeUnavailable], [SessionError.Runtime].
+     */
+    public suspend fun resume(id: SessionId): Outcome<ResumedSession, SessionError>
 
     /**
      * Removes an inactive session from the list; never deletes project files. A [SessionOrigin.DISK] session is
@@ -63,6 +72,18 @@ public interface SessionCommands {
      */
     public suspend fun remove(id: SessionId): Outcome<Unit, SessionError>
 }
+
+/**
+ * Result of [SessionCommands.resume].
+ *
+ * @property id the live session.
+ * @property copy true: the conversation was open elsewhere, a copy runs and the disk session stays on the list
+ *   unchanged (docs/compat.md R4).
+ */
+public data class ResumedSession(
+    val id: SessionId,
+    val copy: Boolean,
+)
 
 /**
  * What to start (FR-S3). Optional texts are either absent or not blank; a blank [prompt] or a blank

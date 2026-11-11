@@ -2,6 +2,7 @@ package dev.quayside.projects.ui
 
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
+import dev.quayside.sessions.api.ResumeProblem
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SubfolderProblem
@@ -38,6 +39,7 @@ class StopMessagesTest {
                 SessionError.SessionActive(secret),
                 SessionError.UnknownProject(ProjectId("secret-project")),
                 SessionError.SubfolderUnavailable(ProjectId("secret-project"), SubfolderProblem.NOT_IN_PROJECT),
+                SessionError.ResumeUnavailable(secret, ResumeProblem.FILE_MISSING),
             )
         errors.forEach { error ->
             val text = StopMessages.of(error)
@@ -79,6 +81,15 @@ class StopMessagesTest {
                     "sessionActive",
                 ),
             ) +
+                // `stopAllIn` never returns it (AM-313), but the sealed `when` must answer with a fixed text, no id
+                ResumeProblem.entries.map { problem ->
+                    arguments(
+                        "resume $problem",
+                        SessionError.ResumeUnavailable(SessionId("a"), problem),
+                        "remove.stopFailed",
+                        "resumeUnavailable",
+                    )
+                } +
                 SubfolderProblem.entries.map { problem ->
                     arguments(
                         "subfolder $problem",

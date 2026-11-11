@@ -4,6 +4,7 @@ package dev.quayside.sessions.impl
 
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.api.FakeAgentRuntime
+import dev.quayside.agentruntime.api.ResumeSpec
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.StartSpec
@@ -88,6 +89,9 @@ internal class SwitchableRuntime(
 
     override suspend fun start(spec: StartSpec): Outcome<SessionId, RuntimeError> =
         if (down.get()) Outcome.Err(RuntimeError.NotInstalled) else fake.start(spec)
+
+    override suspend fun resume(spec: ResumeSpec): Outcome<SessionId, RuntimeError> =
+        if (down.get()) Outcome.Err(RuntimeError.NotInstalled) else fake.resume(spec)
 
     override suspend fun stop(id: SessionId): Outcome<Unit, RuntimeError> =
         when {

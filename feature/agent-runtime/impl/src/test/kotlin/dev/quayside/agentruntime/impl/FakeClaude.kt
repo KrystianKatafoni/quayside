@@ -131,6 +131,10 @@ internal class FakeClaude private constructor(
             val logs = state.resolve("logs").createDirectories()
             state.resolve("sessions.tsv").writeText(world.sessions.joinToString("") { tsvLine(it) + "\n" })
             world.outputs.forEach { (id, output) -> logs.resolve(id.value).writeText(output) }
+            val conversations =
+                world.missingConversations.map { "${it.value}\tmissing" } +
+                    world.openElsewhere.map { "${it.value}\topen" }
+            state.resolve("conversations.tsv").writeText(conversations.joinToString("") { "$it\n" })
             state.resolve("counter").writeText("0\n")
             state.resolve("now").writeText("${now.toEpochMilli()}\n")
             state.resolve("version").writeText("${world.version}\n")

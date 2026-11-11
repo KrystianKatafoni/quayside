@@ -3,6 +3,7 @@ package dev.quayside.sessions.impl
 import dev.quayside.agentruntime.api.AgentEvent
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.api.ConversationId
+import dev.quayside.agentruntime.api.HistoryError
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.core.domain.Clock
@@ -189,6 +190,10 @@ internal class SessionsState(
             }
         }
     }
+
+    /** Whether the session file of the disk session [disk] is still there; without a history source it is not. */
+    suspend fun stillOnDisk(disk: Session): Outcome<Boolean, HistoryError> =
+        this.disk?.stillOnDisk(disk) ?: Outcome.Ok(false)
 
     /**
      * Publishes the model summary [text] of [turn] without an event, but only when [turn] is still the newest of

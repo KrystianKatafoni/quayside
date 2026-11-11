@@ -58,7 +58,8 @@ import kotlin.time.Duration.Companion.seconds
  * @param history the session files of Claude Code (ADR 0032); with [historySettings] the snapshot also lists them as
  * disk sessions (FR-P9), scanned at start, after a change of the project dirs or of the settings, and every 60 s;
  * null = no disk sessions and an empty [dev.quayside.sessions.api.SessionsSnapshot.history].
- * @param historySettings age and count limit and the hidden sessions; null together with [history] = defaults.
+ * @param historySettings age and count limit, the hidden sessions and the places picked by the user (FR-P9, AM-314),
+ * shared by the scan and by `assignPlace`; null together with [history] = defaults, kept in memory.
  * @throws IllegalArgumentException if [pollInterval] is not positive or [maxRetryInterval] is shorter.
  */
 @Suppress("LongParameterList")
@@ -77,7 +78,8 @@ public fun sessionsModule(
     history: SessionHistory? = null,
     historySettings: SessionHistorySettingsRepo? = null,
 ): SessionsApi {
-    val scan = history?.let { HistoryScan(it, historySettings ?: InMemoryHistorySettings(), projects, clock, logger) }
+    val settings = historySettings ?: InMemoryHistorySettings()
+    val scan = history?.let { HistoryScan(it, settings, projects, clock, logger) }
     val refinement = summaries?.refiner?.let { SummaryRefinement(it, scope, logger) }
     val state =
         SessionsState(
@@ -88,6 +90,7 @@ public fun sessionsModule(
             summaries = TurnSummaries(summaries?.summarizer, refinement),
             metas = io?.let { FileSessionMetaSource(claudeHome, it) } ?: NoSessionMetas,
             disk = scan,
+            settings = settings,
         )
     val monitor =
         PollingSessionMonitor(

@@ -15,7 +15,8 @@ import java.time.Instant
  *
  * @property id short supervisor id, e.g. `7c5dcf5d`; for [SessionOrigin.DISK] the conversation UUID.
  * @property project the deepest registered project whose directory contains [cwd], compared by path
- *   components (see [SessionRules.projectFor]); null when no project contains it.
+ *   components (see [SessionRules.projectFor]); null when no project contains it. The place inside the group
+ *   of the project comes from [placeDir], not from [cwd] alone.
  * @property name display name of the session.
  * @property cwd working directory the agent runs in.
  * @property state what the agent is doing now.
@@ -24,6 +25,8 @@ import java.time.Instant
  * @property summary short summary of the session; null when unknown.
  * @property meta model, permission mode and git branch (FR-S8); every part may be unknown.
  * @property origin where the session comes from (FR-P9).
+ * @property assignedDir directory the user put the session in (FR-P9, AM-314, ADR 0033): the directory of its
+ *   project or one of `Project.subfolders`; null = the place follows [cwd]. Never changes [project]. User data.
  */
 public data class Session(
     val id: SessionId,
@@ -36,10 +39,15 @@ public data class Session(
     val summary: String?,
     val meta: SessionMeta = SessionMeta(),
     val origin: SessionOrigin = SessionOrigin.SUPERVISOR,
+    val assignedDir: Path? = null,
 ) {
+    /** Directory that decides the place of the session inside its project's group: [assignedDir], else [cwd]. */
+    val placeDir: Path get() = assignedDir ?: cwd
+
     override fun toString(): String =
         "Session(id=$id, project=$project, name=$name, cwd=$cwd, state=$state, startedAt=$startedAt, " +
-            "lastActivityAt=$lastActivityAt, summary=${summary?.let { HIDDEN }}, meta=$meta)"
+            "lastActivityAt=$lastActivityAt, summary=${summary?.let { HIDDEN }}, meta=$meta, " +
+            "assignedDir=$assignedDir)"
 }
 
 /** Where a [Session] comes from (FR-P9, ADR 0032). */
@@ -49,7 +57,8 @@ public enum class SessionOrigin {
 
     /**
      * Read from a session file only; always [SessionState.Stopped], [Session.id] is the conversation UUID, and only
-     * [SessionCommands.remove] (hides it) and [SessionCommands.resume] apply; every other command gives
+     * [SessionCommands.remove] (hides it), [SessionCommands.resume] and [SessionCommands.assignPlace] apply; every
+     * other command gives
      * [SessionError.UnknownSession], except that [SessionCommands.stop] answers `Ok` without a call.
      */
     DISK,

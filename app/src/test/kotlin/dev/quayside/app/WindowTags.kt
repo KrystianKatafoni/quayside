@@ -78,6 +78,18 @@ internal object WindowTags {
 
     fun overviewRow(name: String): String = "missionControl.overview.row.$name"
 
+    /** The manual place (AM-314, `internal` in `mission-control:ui`): action, row menu item, list, mark. */
+    const val DETAILS_ASSIGN_PLACE = "missionControl.details.assign_place"
+    const val ROW_MENU_ASSIGN_PLACE = "missionControl.rowMenu.assign_place"
+    const val PLACE_DIALOG = "missionControl.place.dialog"
+    const val PLACE_CANCEL = "missionControl.place.cancel"
+    const val DETAILS_PLACE = "missionControl.details.place"
+
+    fun menuItem(id: String): String = "missionControl.rowMenu.$id"
+
+    /** A line of the list of places by position (`auto`, `root`, `sub.0`, …), never by name. */
+    fun placeChoice(id: String): String = "missionControl.place.choice.$id"
+
     /** The place badge of a session row (`internal`). */
     fun rowPlace(sessionId: String): String = "missionControl.rowPlace.$sessionId"
 

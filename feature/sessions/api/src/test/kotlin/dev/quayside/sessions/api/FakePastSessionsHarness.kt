@@ -2,6 +2,7 @@
 
 package dev.quayside.sessions.api
 
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -11,7 +12,7 @@ import kotlinx.coroutines.test.runCurrent
 internal class FakePastSessionsHarness(
     private val fake: FakeSessions,
     scope: TestScope,
-) : ResumeHarness,
+) : PlaceHarness,
     SessionsHarness by FakeSessionsHarness(fake, scope) {
     override val settings: SessionHistorySettingsRepo get() = fake.historySettings
 
@@ -25,6 +26,13 @@ internal class FakePastSessionsHarness(
 
     override fun openElsewhere(id: SessionId) {
         fake.opensElsewhere(id)
+    }
+
+    override suspend fun setSubfolders(
+        project: ProjectId,
+        names: List<String>,
+    ) {
+        fake.setSubfolders(project, names)
     }
 
     override fun failNextSettingsSave() {

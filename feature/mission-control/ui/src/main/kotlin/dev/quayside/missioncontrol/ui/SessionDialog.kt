@@ -56,6 +56,7 @@ internal fun SessionDialogView(
         ) {
             when (dialog) {
                 is SessionDialog.ConfirmRemove -> ConfirmRemove(dialog, onEvent)
+                is SessionDialog.AssignPlace -> PlaceDialog(dialog, onEvent)
             }
         }
     }
@@ -92,7 +93,7 @@ private fun ConfirmRemove(
     }
 }
 
-private fun escape(
+internal fun escape(
     event: KeyEvent,
     onEvent: (MissionControlEvent) -> Unit,
 ): Boolean {

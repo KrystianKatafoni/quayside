@@ -3,7 +3,6 @@ package dev.quayside.sessions.impl
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.projects.api.Project
-import dev.quayside.projects.api.ProjectGroups
 import dev.quayside.projects.api.ProjectsApi
 import dev.quayside.sessions.api.SessionError
 import dev.quayside.sessions.api.SubfolderProblem
@@ -35,20 +34,13 @@ internal class StartDirs(
         project: Project,
         subfolder: String,
     ): Outcome<Path, SessionError> {
-        val name = project.subfolders.firstOrNull { it.value == subfolder }
-        val dir = name?.let { ProjectGroups.dirOf(project, it) }
+        val dir = SessionPlaces.subfolderDir(project, subfolder)
         val problem =
             when {
-                dir == null || !isDirectChild(project, dir) -> SubfolderProblem.NOT_IN_PROJECT
+                dir == null -> SubfolderProblem.NOT_IN_PROJECT
                 !isDirectory(dir) -> SubfolderProblem.MISSING
                 else -> return Outcome.Ok(dir)
             }
         return Outcome.Err(SessionError.SubfolderUnavailable(project.id, problem))
     }
-
-    /** Second guard (no disk access): a listed name such as `..` or `a/b` must not leave the project dir. */
-    private fun isDirectChild(
-        project: Project,
-        dir: Path,
-    ): Boolean = dir.normalize().parent == project.dir.normalize()
 }

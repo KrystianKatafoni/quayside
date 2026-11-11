@@ -3,6 +3,7 @@ package dev.quayside.app
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.NewSessionSpec
+import dev.quayside.sessions.api.PlaceAssignment
 import dev.quayside.sessions.api.SessionState
 import dev.quayside.sessions.api.SnapshotStatus
 import io.kotest.matchers.collections.shouldContainExactly
@@ -81,6 +82,8 @@ class PreviewSamplesTest {
                     sessions.commands.stopAllIn(PREVIEW_PROJECT.id),
                     sessions.commands.respawn(id),
                     sessions.commands.remove(id),
+                    sessions.commands.assignPlace(id, PlaceAssignment.ProjectRoot),
+                    sessions.commands.assignPlace(id, null),
                 )
 
             results.forEach { it.shouldBeInstanceOf<Outcome.Err<*>>() }

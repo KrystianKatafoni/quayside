@@ -55,8 +55,8 @@ internal data class PastCounts(
 internal object PastSessionCounts {
     /**
      * Counts the disk sessions of [project] in [sessions]; supervisor sessions and other projects are ignored. A
-     * project with subfolders also gets the split: those that started in a checked subfolder or below it, and the
-     * rest (the project directory and unchecked folders).
+     * project with subfolders also gets the split: those whose place (`Session.placeDir`) is in a checked subfolder
+     * or below it, and the rest (the project directory and unchecked folders).
      */
     fun of(
         project: Project,
@@ -64,7 +64,7 @@ internal object PastSessionCounts {
     ): PastCounts {
         val mine = sessions.filter { it.origin == SessionOrigin.DISK && it.project == project.id }
         if (project.subfolders.isEmpty()) return PastCounts(mine.size, inSubfolders = null, inRoot = null)
-        val inSubfolders = mine.count { ProjectGroups.subfolderOf(project, it.cwd) != null }
+        val inSubfolders = mine.count { ProjectGroups.subfolderOf(project, it.placeDir) != null }
         return PastCounts(mine.size, inSubfolders, mine.size - inSubfolders)
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import dev.quayside.core.designsystem.AmText
 import dev.quayside.core.designsystem.AmTheme
@@ -60,7 +61,19 @@ internal fun DetailsFields(details: SessionDetails) {
         details.meta.model?.let { Field("details.model", it) }
         details.meta.permissionMode?.let { Field("details.permissionMode", it) }
         details.meta.branch?.let { Field("details.branch", it) }
+        details.place?.let { ManualPlace(it) }
     }
+}
+
+/** "Miejsce: soft (ręcznie)": the session was put in its place by hand (FR-P9, AM-314). */
+@Composable
+private fun ManualPlace(place: UiText) {
+    AmText(
+        MissionControlStrings.format(place),
+        modifier = Modifier.testTag(MissionControlTags.DETAILS_PLACE),
+        role = TextRole.CAPTION,
+        color = mutedColor(),
+    )
 }
 
 @Composable

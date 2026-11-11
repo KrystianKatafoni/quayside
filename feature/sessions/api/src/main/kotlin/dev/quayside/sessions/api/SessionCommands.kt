@@ -71,6 +71,41 @@ public interface SessionCommands {
      * Errors: [SessionError.UnknownSession], [SessionError.SessionActive], [SessionError.Runtime].
      */
     public suspend fun remove(id: SessionId): Outcome<Unit, SessionError>
+
+    /**
+     * Puts session [id] in [place] inside its project, or back to the place by its directory when [place] is null
+     * (FR-P9, ADR 0033). Any origin and state; never calls Claude Code; checks the session in the current snapshot.
+     * Saved under the conversation, so it survives a [resume]; [Session.assignedDir] shows it before `assignPlace`
+     * returns. Null without a saved place writes nothing. Errors: [SessionError.UnknownSession] (also a session
+     * outside every project), [SessionError.SubfolderUnavailable] with [SubfolderProblem.NOT_IN_PROJECT] (not exactly
+     * one of `Project.subfolders`, e.g. `Soft` for `soft` or `../x`), [SessionError.Runtime] with
+     * [RuntimeProblem.COMMAND_FAILED] when saving failed (the place stays as it was).
+     */
+    public suspend fun assignPlace(
+        id: SessionId,
+        place: PlaceAssignment?,
+    ): Outcome<Unit, SessionError>
+}
+
+/** A place the user picks for a session inside its project (AM-314). */
+public sealed interface PlaceAssignment {
+    /** The project directory itself ("folder główny"). */
+    public data object ProjectRoot : PlaceAssignment
+
+    /**
+     * One of `Project.subfolders` by its exact name; not blank. [toString] hides [name] (ENG-C8).
+     *
+     * @throws IllegalArgumentException when [name] is blank (a programmer error, like [NewSessionSpec.subfolder]).
+     */
+    public data class Subfolder(
+        val name: String,
+    ) : PlaceAssignment {
+        init {
+            require(name.isNotBlank()) { "PlaceAssignment.Subfolder name must not be blank" }
+        }
+
+        override fun toString(): String = "Subfolder(name=$HIDDEN)"
+    }
 }
 
 /**

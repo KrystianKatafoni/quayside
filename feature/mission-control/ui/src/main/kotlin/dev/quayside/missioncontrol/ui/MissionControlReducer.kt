@@ -60,7 +60,7 @@ internal object MissionControlReducer {
             view = this,
             sessions = visible.size,
             rows = visible.map { row(it, now, it == picked, names[it.project] ?: UiText("row.noProject")) },
-            details = picked?.let(::details),
+            details = picked?.let { details(it, projects.find { p -> p.id == it.project }) },
             banner = (snapshot.status as? SnapshotStatus.Stale)?.let { Freshness.of(it, zone) },
             loading = snapshot.status == SnapshotStatus.Loading,
         )
@@ -82,7 +82,7 @@ internal object MissionControlReducer {
             header = ProjectHeader(shownName(project, subfolder), shownDir(project, subfolder), mine.size),
             filter = selection.filter,
             rows = visible.map { row(it, now, it == picked, place = place(project, subfolder, it)) },
-            details = picked?.let(::details),
+            details = picked?.let { details(it, project) },
             banner = (snapshot.status as? SnapshotStatus.Stale)?.let { Freshness.of(it, zone) },
             loading = loading,
             stats = SessionStats.of(mine.map { it.state }),
@@ -96,7 +96,7 @@ internal object MissionControlReducer {
         project: Project,
         subfolder: SubfolderName?,
         session: Session,
-    ): UiText? = if (subfolder == null) SessionPlace.of(project, session.cwd) else null
+    ): UiText? = if (subfolder == null) SessionPlace.of(project, session.placeDir) else null
 
     /** "plant-puls / soft" on a subfolder page, else the project name (FR-P7). */
     private fun shownName(
@@ -129,13 +129,32 @@ internal object MissionControlReducer {
             fromDisk = session.origin == SessionOrigin.DISK,
         )
 
-    private fun details(session: Session): SessionDetails =
+    /** The mark "Miejsce: … (ręcznie)" of a session put in a place by hand (FR-P9); null without an assigned dir. */
+    private fun manualPlace(
+        session: Session,
+        project: Project?,
+    ): UiText? {
+        val assigned = session.assignedDir
+        val name = project?.let { p -> p.subfolders.firstOrNull { ProjectGroups.dirOf(p, it) == assigned } }
+        return when {
+            assigned == null || project == null -> null
+            assigned == project.dir -> UiText("details.place.manual.root")
+            name != null -> UiText("details.place.manual.subfolder", listOf(name.value))
+            else -> null
+        }
+    }
+
+    private fun details(
+        session: Session,
+        project: Project?,
+    ): SessionDetails =
         SessionDetails(
             id = session.id,
             name = session.name,
             glyph = StatusLook.of(session.state),
             summary = session.summary,
             worktree = session.cwd,
+            place = manualPlace(session, project),
             startedAt = session.startedAt,
             lastActivityAt = session.lastActivityAt,
             meta = session.meta,

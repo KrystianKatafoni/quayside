@@ -21,7 +21,20 @@ public fun aSession(
     lastActivityAt: Instant = startedAt,
     summary: String? = null,
     meta: SessionMeta = SessionMeta(),
-): Session = Session(SessionId(id), project, name, cwd, state, startedAt, lastActivityAt, summary, meta)
+    assignedDir: Path? = null,
+): Session =
+    Session(
+        SessionId(id),
+        project,
+        name,
+        cwd,
+        state,
+        startedAt,
+        lastActivityAt,
+        summary,
+        meta,
+        assignedDir = assignedDir,
+    )
 
 public fun aNewSessionSpec(
     prompt: String = "Fix the login bug",
@@ -43,6 +56,7 @@ public fun pastSession(
     name: String = "Fix the login bug",
     startedAt: Instant = T0,
     lastActivityAt: Instant = startedAt,
+    assignedDir: Path? = null,
 ): Session =
     Session(
         SessionId(id),
@@ -55,4 +69,5 @@ public fun pastSession(
         summary = null,
         meta = SessionMeta(),
         origin = SessionOrigin.DISK,
+        assignedDir = assignedDir,
     )

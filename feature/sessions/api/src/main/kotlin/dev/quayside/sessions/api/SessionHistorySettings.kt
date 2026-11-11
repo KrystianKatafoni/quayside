@@ -1,6 +1,7 @@
 package dev.quayside.sessions.api
 
 import dev.quayside.core.domain.Outcome
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import kotlinx.coroutines.flow.StateFlow
 
@@ -33,12 +34,22 @@ public enum class HistoryLimit(
  * @property maxAge oldest listed session; default 30 days.
  * @property maxPerProject most listed per project; default 200.
  * @property hidden conversation UUIDs removed from the list by "Usuń"; the session files are never deleted.
+ * @property places places picked by the user, by conversation UUID (short supervisor id when the UUID is unknown).
  */
 public data class SessionHistorySettings(
     val maxAge: HistoryAge = HistoryAge.DAYS_30,
     val maxPerProject: HistoryLimit = HistoryLimit.SESSIONS_200,
     val hidden: Set<SessionId> = emptySet(),
+    val places: Map<SessionId, StoredPlace> = emptyMap(),
 )
+
+/** One saved place: [project] it was picked in, [place] inside it. [toString] hides the subfolder name (ENG-C8). */
+public data class StoredPlace(
+    val project: ProjectId,
+    val place: PlaceAssignment,
+) {
+    override fun toString(): String = "StoredPlace(project=$project, place=$place)"
+}
 
 /** Stored settings of disk sessions (`session-history.json`). Any dispatcher; never throws. */
 public interface SessionHistorySettingsRepo {

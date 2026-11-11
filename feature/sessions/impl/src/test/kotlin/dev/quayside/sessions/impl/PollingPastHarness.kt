@@ -9,12 +9,14 @@ import dev.quayside.agentruntime.api.FakeSessionHistory
 import dev.quayside.agentruntime.api.PastConversation
 import dev.quayside.agentruntime.api.RuntimeWorld
 import dev.quayside.core.domain.NoOpLogger
+import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.FakeProjectsApi
 import dev.quayside.projects.api.Project
+import dev.quayside.projects.api.subfolderNames
 import dev.quayside.sessions.api.FakeSessionHistorySettings
 import dev.quayside.sessions.api.HistorySettingsError
-import dev.quayside.sessions.api.ResumeHarness
+import dev.quayside.sessions.api.PlaceHarness
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionHistorySettingsRepo
 import dev.quayside.sessions.api.SessionMonitor
@@ -34,11 +36,14 @@ import kotlin.time.Duration.Companion.seconds
 internal class PollingPastHarness(
     private val scope: TestScope,
     world: SessionsWorld,
-) : ResumeHarness {
+) : PlaceHarness {
     private val fake =
         FakeAgentRuntime(RuntimeWorld(sessions = world.sessions.map { it.toRuntime() }, outputs = world.outputs))
     private val runtime = SwitchableRuntime(fake, now = { scope.testScheduler.currentTime })
-    private val projects = FakeProjectsApi(world.projects.map { Project(it.id, it.dir, it.id.value) })
+    private val projects =
+        FakeProjectsApi(
+            world.projects.map { Project(it.id, it.dir, it.id.value, subfolderNames(*it.subfolders.toTypedArray())) },
+        )
     private val history = FakeSessionHistory(world.pastSessions.map { it.toConversation() })
     private val fakeSettings = FakeSessionHistorySettings()
 
@@ -72,6 +77,13 @@ internal class PollingPastHarness(
 
     override fun openElsewhere(id: SessionId) {
         fake.opensElsewhere(ConversationId(id.value))
+    }
+
+    override suspend fun setSubfolders(
+        project: ProjectId,
+        names: List<String>,
+    ) {
+        projects.setSubfolders(project, subfolderNames(*names.toTypedArray()))
     }
 
     override fun failNextSettingsSave() {

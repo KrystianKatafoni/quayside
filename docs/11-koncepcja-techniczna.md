@@ -20,7 +20,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 
 | Moduł | Zawartość | Zależności |
 | --- | --- | --- |
-| `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`, `PluralForm` (polska odmiana liczebników). Czysty Kotlin | brak (tylko coroutines-core) |
+| `core:domain` | Typy bazowe: `ProjectId`, `SessionId`, `AccountId`, `Outcome`, `Clock`, `Logger`, `Dispatchers`, `ShellCommand`, `PluralForm` (polska odmiana liczebników). Czysty Kotlin | brak (tylko coroutines-core) |
 | `core:process` | `ProcessRunner`: uruchamianie procesów przez login shell, timeouty, ucinanie wyjścia | `core:domain` |
 | `core:storage` | `JsonStore<T>`: atomowy zapis plików konfiguracji, wersja schematu, migracje | `core:domain` |
 | `core:design-tokens` | Model tokenów wyglądu (`ColorTokens`, `ShapeTokens`, `TypographySpec`, `AnsiColors` — 16 kolorów palety terminala w `TerminalColors.ansi`), bez Compose | brak (dozwolone `core:domain`) |
@@ -31,6 +31,7 @@ Dokument opisuje, jak zbudować Quayside tak, żeby spełnić [wymagania inżyni
 
 | Feature | `api` (kontrakt) | `impl` (implementacja i adaptery) | `ui` |
 | --- | --- | --- | --- |
+| `accounts` | `AccountsRepo` (lista kont, `StateFlow`), `AccountSetup` (nowe konto, wskazanie katalogu, kopia ustawień), czyste `AccountSelector` i `AccountRules`, typy `Account`, `AccountStatus`, `AccountsState` (AM-1002) | `AccountsSerializer`, `JsonAccountsRepo`, `FileAccountSetup` (katalog `~/.claude-quayside/<id>/`, dowiązanie `projects`, kopia z `~/.claude`), `AccountBackups` | – (okno „Konta”: AM-1005) |
 | `agent-runtime` | `AgentRuntime`, `AgentEventSource`, `HookInstaller`, `WorkspaceTrust`, `SessionHistory` (tylko odczyt plików sesji) | `ClaudeCliAdapter`, parser `agents --json`, `KtorHookServer`, `SettingsJsonHookInstaller`, `ClaudeJsonTrust`, `FileSessionHistory` | – |
 | `projects` | `ProjectsApi` | `JsonProjectStore`, `DirectoryInspector` (git, `CLAUDE.md`, hooki) | sidebar, dialogi dodaj/usuń |
 | `sessions` | `SessionMonitor`, `SessionCommands`, `SessionHistorySettingsRepo` | `SessionStateReducer` (czysty), pętla pollingu, scalanie z hookami, `DiskSessions` (czyste scalanie sesji z dysku), `HistoryScan` (kiedy skanować) i `SessionPlaces` (czyste reguły ręcznego miejsca sesji, AM-314) | okno „Stare sesje z dysku” i okno „Przypisz do podfolderu…” (w `mission-control:ui`) |
@@ -526,7 +527,9 @@ Dispatchery i zakresy są wstrzykiwane (`AppDispatchers`), więc testy działaj�
 | `theme.json` | `appearance:impl` |
 | `hook-offer.json` | `app` (`{"dismissed": true}`: użytkownik pominął propozycję instalacji hooków albo je odinstalował; brak lub uszkodzony plik = nie odrzucono; [ADR 0020](adr/0020-format-hook-offer-json.md)) |
 | `window.json` | `app` (`{"terminalHeight": 412.5}`: wysokość panelu terminala w trybie listy w dp; zapisywane tylko odstępstwo od domyślnej 320; brak klucza lub wartość niepoprawna = domyślna; [ADR 0025](adr/0025-format-window-json.md)) |
+| `accounts.json` | `accounts:impl` (lista kont w kolejności automatu i `cooldownMinutes`; zapisywane tylko odstępstwa od domyślnych, wpis `default` bez `configDir` i tylko przy odstępstwie; [ADR 0035](adr/0035-format-accounts-json.md)) |
 | `hooks-backup/*.json` | `agent-runtime:impl` |
+| `accounts-backup/<epochMillis>-<id>/…` | `accounts:impl` (kopie plików konta nadpisanych przez „Skopiuj ustawienia z konta domyślnego”, prawa `rw-------`; przywracanie ręczne) |
 
 - Każdy plik ma **jednego właściciela**. Inne moduły nie czytają cudzych plików.
 - `JsonStore<T>` z `core:storage`: zapis do pliku tymczasowego i `ATOMIC_MOVE`, pole `schemaVersion`, lista migracji `vN → vN+1`. Uszkodzony plik jest odkładany jako `*.broken` i zastępowany domyślnymi wartościami z komunikatem w UI.
@@ -552,8 +555,9 @@ fun main() = application {
     val terminal      = terminalModule(core)
     val appearance    = appearanceModule(core)
     val palette       = commandPaletteModule(core)
+    val accounts      = accountsModule(core.storage, AccountPaths(core.homeDir, backupDir), core.clock, io, core.logger)  // AccountsApi(repo, setup)
 
-    QuaysideApp(projects, sessions, notifications, terminal, appearance, palette, hookInstaller)
+    QuaysideApp(projects, sessions, notifications, terminal, appearance, palette, hookInstaller, accounts)
 }
 ```
 

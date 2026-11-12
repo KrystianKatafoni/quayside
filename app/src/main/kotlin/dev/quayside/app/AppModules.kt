@@ -1,5 +1,6 @@
 package dev.quayside.app
 
+import dev.quayside.accounts.api.AccountsApi
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.api.WorkspaceTrust
 import dev.quayside.appearance.api.AppearanceApi
@@ -26,17 +27,21 @@ internal class AppModules(
     val terminal: TerminalDeps,
     val settings: SettingsDeps,
     val appearance: AppearanceDeps,
-)
+) {
+    /** The stored accounts and the account setup (AM-1002); used by the account features that follow. */
+    val accounts: AccountsApi get() = settings.accounts
+}
 
 /**
- * The notification module, the summaries switch, the window layout and the settings of the disk sessions: what the
- * dialogs and the split work on.
+ * The notification module, the summaries switch, the window layout, the settings of the disk sessions and the
+ * accounts: what the dialogs and the split work on.
  */
 internal class SettingsDeps(
     val notifications: NotificationDeps,
     val summaries: SummarySettingsRepo,
     val layout: WindowLayoutDeps,
     val history: SessionHistorySettingsRepo,
+    val accounts: AccountsApi,
 )
 
 /**

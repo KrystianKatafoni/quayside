@@ -5,6 +5,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import dev.quayside.accounts.api.AccountPaths
+import dev.quayside.accounts.api.AccountsApi
+import dev.quayside.accounts.impl.accountsModule
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.impl.agentRuntimeModule
 import dev.quayside.agentruntime.impl.hookEventSourceModule
@@ -59,15 +62,15 @@ private val WINDOW_ICON_SIZE = 32.dp
  */
 @Suppress("ForbiddenMethodCall")
 fun main() {
-    enableNativeFolderDialog()
-    val core = productionCoreDeps()
-    core.logger.info("app start")
+    val core = startedCore()
     val projects = runBlocking { projectsModule(core.storage, core.dispatchers.io, core.logger) }
     val appScope = CoroutineScope(SupervisorJob() + core.dispatchers.default)
     val appearance = runBlocking { appearanceModule(core.storage, core.process, core.homeDir, appScope, core.logger) }
     val looks = appLooks(appearance, appScope)
     prepareWindowing(core.logger, appearance)
-    val modules = appModules(core, projects, runBlocking { storedSettings(core) }, appearance, looks)
+    val (stored, accounts) = runBlocking { storedSettings(core) to accountsDeps(core) }
+    val look = AppearanceDeps(appearance, looks, themeFilesModule(appearance, core.dispatchers.io, core.logger))
+    val modules = appModules(core, projects, stored, accounts, look)
     val hooks = hookDeps(core, projects)
     val keys = WindowKeys()
     application {
@@ -90,6 +93,12 @@ fun main() {
     }
 }
 
+/** The production dependencies, created after the folder dialog setting and before anything else is opened. */
+private fun startedCore(): CoreDeps {
+    enableNativeFolderDialog()
+    return productionCoreDeps().also { it.logger.info("app start") }
+}
+
 /** Before the first use of AWT: FileDialog then chooses folders, natively on macOS (AwtDirectoryPicker). */
 private fun enableNativeFolderDialog() {
     System.setProperty("apple.awt.fileDialogForDirectories", "true")
@@ -108,13 +117,13 @@ private fun prepareWindowing(
     installDockIcon(amLogoImage(DOCK_ICON_PX), logger)
 }
 
-/** The module graph of the window over the already read [projects] and [stored] settings. */
+/** The module graph of the window over what was read before it opens: projects, stored settings, accounts, looks. */
 private fun appModules(
     core: CoreDeps,
     projects: ProjectsApi,
     stored: StoredSettings,
-    appearance: AppearanceApi,
-    looks: StateFlow<AppLook>,
+    accounts: AccountsApi,
+    appearance: AppearanceDeps,
 ): AppModules {
     val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir, injectHookToken = true)
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
@@ -125,14 +134,14 @@ private fun appModules(
     val registry = commandPaletteModule(CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger)
     val notifications = notificationDeps(core, stored.notifications, sessions, projects)
     val terminal =
-        terminalDeps(core, runtime, stored.terminal, notifications, looks)
+        terminalDeps(core, runtime, stored.terminal, notifications, appearance.looks)
     return AppModules(
         ProjectDeps(projects, inspector, workspaceTrustModule(core.homeDir, core.dispatchers.io, core.logger)),
         sessions,
         registry,
         terminal,
-        SettingsDeps(notifications, stored.summarySettings, stored.layout, stored.history),
-        AppearanceDeps(appearance, looks, themeFilesModule(appearance, core.dispatchers.io, core.logger)),
+        SettingsDeps(notifications, stored.summarySettings, stored.layout, stored.history, accounts),
+        appearance,
     )
 }
 
@@ -203,6 +212,16 @@ private suspend fun storedSettings(core: CoreDeps): StoredSettings {
         sessionHistorySettingsModule(core.storage, core.logger),
     )
 }
+
+/** The accounts module over `accounts.json` and the backup directory `accounts-backup` (AM-1002). */
+private suspend fun accountsDeps(core: CoreDeps): AccountsApi =
+    accountsModule(
+        core.storage,
+        AccountPaths(core.homeDir, appSupportDir(core.homeDir).resolve("accounts-backup")),
+        core.clock,
+        core.dispatchers.io,
+        core.logger,
+    )
 
 /**
  * The terminal module on the login shell over the stored settings, with the colours and font of the applied

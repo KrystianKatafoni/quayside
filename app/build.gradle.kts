@@ -9,6 +9,9 @@ dependencies {
     // ProcessRunner and JsonStorage for the feature modules (AM-304).
     implementation(project(":core:process"))
     implementation(project(":core:storage"))
+    // Accounts: the stored list and the disk side of setup, for the later account features (AM-1002).
+    implementation(project(":feature:accounts:api"))
+    implementation(project(":feature:accounts:impl"))
     // Projects: the list, the inspector and the sidebar (AM-304).
     implementation(project(":feature:projects:api"))
     implementation(project(":feature:projects:impl"))

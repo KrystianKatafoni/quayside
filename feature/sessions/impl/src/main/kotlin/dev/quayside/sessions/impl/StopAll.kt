@@ -1,6 +1,5 @@
 package dev.quayside.sessions.impl
 
-import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimePhase
 import dev.quayside.core.domain.Logger
@@ -12,7 +11,6 @@ import dev.quayside.sessions.api.SessionError
 
 /** `SessionCommands.stopAllIn` after the targets are chosen: stops each one and publishes the stopped ones. */
 internal class StopAll(
-    private val runtime: AgentRuntime,
     private val state: SessionsState,
     private val logger: Logger,
 ) {
@@ -34,6 +32,8 @@ internal class StopAll(
         val moves = mutableListOf<Expected>()
         val failed = mutableListOf<SessionId>()
         targets.forEach { session ->
+            // An account that left meanwhile takes its sessions with it: nothing to stop.
+            val runtime = state.runtimes.of(session.account) ?: return@forEach
             when (val stopped = runtime.stop(session.id)) {
                 is Outcome.Ok -> {
                     moves += Expected.Moves(session.id, session.phase(), RuntimePhase.STOPPED, state.expiry())

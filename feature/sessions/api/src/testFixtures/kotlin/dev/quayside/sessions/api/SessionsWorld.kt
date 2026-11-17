@@ -1,5 +1,6 @@
 package dev.quayside.sessions.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
@@ -21,7 +22,7 @@ public data class WorldProject(
 
 /**
  * A session the supervisor of a [SessionsWorld] knows about. Which project it belongs to follows
- * from [cwd] (see [SessionRules.projectFor]).
+ * from [cwd] (see [SessionRules.projectFor]). [account] is the account whose supervisor reports it (AM-1003).
  */
 public data class WorldSession(
     val id: SessionId,
@@ -31,6 +32,7 @@ public data class WorldSession(
     val startedAt: Instant = T0,
     val meta: SessionMeta = SessionMeta(),
     val conversationId: String? = null,
+    val account: AccountId = AccountId.DEFAULT,
 )
 
 /**
@@ -64,10 +66,13 @@ public data class WorldPastSession(
  * @property sessions sessions the supervisor already runs.
  * @property outputs output tail of sessions by id; a session without an entry has printed nothing yet.
  * @property pastSessions session files on disk (FR-P9), found by the first scan.
+ * @property accounts accounts besides the default one that have a supervisor (AM-1003); a session of [sessions] on
+ *   another account is a mistake of the test. Starting on an account that is not listed here fails.
  */
 public data class SessionsWorld(
     val projects: List<WorldProject> = emptyList(),
     val sessions: List<WorldSession> = emptyList(),
     val outputs: Map<SessionId, String> = emptyMap(),
     val pastSessions: List<WorldPastSession> = emptyList(),
+    val accounts: List<AccountId> = emptyList(),
 )

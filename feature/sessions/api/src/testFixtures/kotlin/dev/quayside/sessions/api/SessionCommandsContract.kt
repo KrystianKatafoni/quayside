@@ -1,5 +1,6 @@
 package dev.quayside.sessions.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
@@ -43,6 +44,45 @@ public abstract class SessionCommandsContract {
             val session = harness.session(id)
             listOf(session.project, session.cwd, session.name, session.state) shouldBe
                 listOf(P1, P1_DIR, "fix-login", SessionState.Working)
+        }
+
+    @Test
+    public fun `start with an account gives a session of that account`(): Unit =
+        runTest {
+            val harness = create(SessionsWorld(projects = registered, accounts = listOf(WORK))).also { it.settle() }
+
+            val id =
+                harness.commands
+                    .start(P1, aNewSessionSpec(account = WORK))
+                    .getOrNull()
+                    .shouldNotBeNull()
+
+            harness.session(id).account shouldBe WORK
+            harness.session(id).state shouldBe SessionState.Working
+        }
+
+    @Test
+    public fun `start without an account gives a session of the default account`(): Unit =
+        runTest {
+            val harness = create(SessionsWorld(projects = registered, accounts = listOf(WORK))).also { it.settle() }
+
+            val id =
+                harness.commands
+                    .start(P1, aNewSessionSpec())
+                    .getOrNull()
+                    .shouldNotBeNull()
+
+            harness.session(id).account shouldBe AccountId.DEFAULT
+        }
+
+    @Test
+    public fun `start on an unknown account is COMMAND_FAILED and adds nothing`(): Unit =
+        runTest {
+            val harness = create(SessionsWorld(projects = registered, accounts = listOf(WORK))).also { it.settle() }
+
+            harness.commands.start(P1, aNewSessionSpec(account = AccountId("gone"))) shouldBe
+                Outcome.Err(SessionError.Runtime(RuntimeProblem.COMMAND_FAILED))
+            harness.listedIds() shouldBe emptyList()
         }
 
     @Test
@@ -283,5 +323,6 @@ public abstract class SessionCommandsContract {
         const val S3 = "aaaa0003"
         const val S4 = "aaaa0004"
         const val S5 = "aaaa0005"
+        val WORK = AccountId("work")
     }
 }

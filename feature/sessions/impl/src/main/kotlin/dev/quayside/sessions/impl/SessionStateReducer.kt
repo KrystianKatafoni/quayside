@@ -123,6 +123,7 @@ internal object SessionStateReducer {
             lastActivityAt = lastActivityAt,
             summary = hooks.summaries[id] ?: before?.summary,
             meta = (before?.meta ?: SessionMeta()).updatedBy(hooks.metas[id]),
+            account = account,
         )
     }
 

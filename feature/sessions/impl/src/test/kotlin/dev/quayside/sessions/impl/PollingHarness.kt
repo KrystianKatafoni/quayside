@@ -9,6 +9,7 @@ import dev.quayside.agentruntime.api.RuntimePhase
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.RuntimeWorld
 import dev.quayside.agentruntime.api.WaitingFor
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.SessionId
 import dev.quayside.projects.api.FakeProjectsApi
@@ -22,6 +23,7 @@ import dev.quayside.sessions.api.SessionsHarness
 import dev.quayside.sessions.api.SessionsWorld
 import dev.quayside.sessions.api.WorldSession
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -36,9 +38,16 @@ internal class PollingHarness(
     world: SessionsWorld,
     private val pollInterval: Duration = 2.seconds,
 ) : SessionsHarness {
-    private val fake =
-        FakeAgentRuntime(RuntimeWorld(sessions = world.sessions.map { it.toRuntime() }, outputs = world.outputs))
-    private val runtime = SwitchableRuntime(fake, now = { scope.testScheduler.currentTime })
+    // One supervisor per account (AM-1003): the default one and one for each account of the world.
+    private val fakes =
+        (listOf(AccountId.DEFAULT) + world.accounts).associateWith { account ->
+            val sessions = world.sessions.filter { it.account == account }.map { it.toRuntime() }
+            FakeAgentRuntime(RuntimeWorld(sessions = sessions, outputs = world.outputs, account = account))
+        }
+    private val runtimes =
+        fakes.mapValues { (_, fake) -> SwitchableRuntime(fake, now = { scope.testScheduler.currentTime }) }
+    private val accountOf = world.sessions.associate { it.id to it.account }.toMutableMap()
+    private val runtime = runtimes.getValue(AccountId.DEFAULT)
     private val projects =
         FakeProjectsApi(
             world.projects.map { Project(it.id, it.dir, it.id.value, subfolderNames(*it.subfolders.toTypedArray())) },
@@ -51,7 +60,21 @@ internal class PollingHarness(
 
     // Hand-wired like `sessionsModule`, which has no seam for the disk check: `missing` of the world is
     // what the check reports as not a directory.
-    private val api: SessionsApi = wired()
+    // A world with extra accounts goes through the module itself: the hand-wiring below knows one runtime only.
+    private val api: SessionsApi = if (world.accounts.isEmpty()) wired() else viaModule()
+
+    private fun viaModule(): SessionsApi =
+        sessionsModule(
+            runtime,
+            FakeAgentEventSource(),
+            projects,
+            scope.backgroundScope,
+            scope.virtualClock(),
+            NoOpLogger,
+            pollInterval,
+            MAX_RETRY,
+            extraRuntimes = MutableStateFlow(runtimes.filterKeys { it != AccountId.DEFAULT }),
+        )
 
     private fun wired(): SessionsApi {
         val clock = scope.virtualClock()
@@ -78,19 +101,20 @@ internal class PollingHarness(
         state: SessionState,
     ) {
         val (phase, waitingFor) = state.toRuntimePhase()
-        fake.setPhase(id, phase, waitingFor)
+        fakes.getValue(accountOf.getValue(id)).setPhase(id, phase, waitingFor)
     }
 
     override suspend fun appear(session: WorldSession) {
-        fake.hasSession(session.toRuntime())
+        accountOf[session.id] = session.account
+        fakes.getValue(session.account).hasSession(session.toRuntime())
     }
 
     override fun runtimeAvailable(available: Boolean) {
-        runtime.available(available)
+        runtimes.values.forEach { it.available(available) }
     }
 
     override fun failStop(id: SessionId) {
-        runtime.failStop(id)
+        runtimes.getValue(accountOf.getValue(id)).failStop(id)
     }
 
     override suspend fun settle() {
@@ -122,5 +146,6 @@ internal fun WorldSession.toRuntime(): RuntimeSession {
         waitingFor = waitingFor,
         startedAt = startedAt,
         pid = null,
+        account = account,
     )
 }

@@ -3,6 +3,7 @@ package dev.quayside.sessions.impl
 import dev.quayside.agentruntime.api.AgentEventSource
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.api.SessionHistory
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Logger
 import dev.quayside.projects.api.ProjectsApi
@@ -15,6 +16,8 @@ import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.summaries.api.SummariesApi
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.nio.file.Files
 import java.nio.file.LinkOption
@@ -60,6 +63,8 @@ import kotlin.time.Duration.Companion.seconds
  * null = no disk sessions and an empty [dev.quayside.sessions.api.SessionsSnapshot.history].
  * @param historySettings age and count limit, the hidden sessions and the places picked by the user (FR-P9, AM-314),
  * shared by the scan and by `assignPlace`; null together with [history] = defaults, kept in memory.
+ * @param extraRuntimes supervisors of the accounts other than the default one, in automation order; a
+ * [AccountId.DEFAULT] key is ignored ([runtime] is the default account). A change lists again at once.
  * @throws IllegalArgumentException if [pollInterval] is not positive or [maxRetryInterval] is shorter.
  */
 @Suppress("LongParameterList")
@@ -77,6 +82,7 @@ public fun sessionsModule(
     io: CoroutineDispatcher? = null,
     history: SessionHistory? = null,
     historySettings: SessionHistorySettingsRepo? = null,
+    extraRuntimes: StateFlow<Map<AccountId, AgentRuntime>> = MutableStateFlow(emptyMap()),
 ): SessionsApi {
     val settings = historySettings ?: InMemoryHistorySettings()
     val scan = history?.let { HistoryScan(it, settings, projects, clock, logger) }
@@ -91,6 +97,8 @@ public fun sessionsModule(
             metas = io?.let { FileSessionMetaSource(claudeHome, it) } ?: NoSessionMetas,
             disk = scan,
             settings = settings,
+            extraRuntimes = extraRuntimes,
+            logger = logger,
         )
     val monitor =
         PollingSessionMonitor(
@@ -98,7 +106,7 @@ public fun sessionsModule(
             state = state,
             schedule = PollSchedule(pollInterval, maxRetryInterval),
             logger = logger,
-            reader = RecentOutputReader(runtime, logger),
+            reader = RecentOutputReader(runtime, logger, extraRuntimes),
             hooks = hooks,
         ).also { it.start(scope) }
     scan?.start(scope, state::republishDisk)

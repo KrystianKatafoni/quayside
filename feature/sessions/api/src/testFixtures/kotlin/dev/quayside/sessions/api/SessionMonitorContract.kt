@@ -1,5 +1,6 @@
 package dev.quayside.sessions.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
@@ -51,6 +52,26 @@ public abstract class SessionMonitorContract {
                     listOf(first, P1, "fix-login", P1_DIR, SessionState.Working, T0),
                     listOf(SessionId("aaaa0002"), P2, "fix-login", P2_DIR.resolve("src"), SessionState.Working, T0),
                 )
+        }
+
+    @Test
+    public fun `sessions of the default runtime belong to the default account`(): Unit =
+        runTest {
+            settled()
+                .monitor.snapshot.value.sessions
+                .map { it.account } shouldBe listOf(AccountId.DEFAULT, AccountId.DEFAULT)
+        }
+
+    @Test
+    public fun `a session of an extra account keeps its account in the snapshot`(): Unit =
+        runTest {
+            val work = AccountId("work")
+            val onWork = sessionIn("bbbb0001", P1_DIR).copy(account = work)
+
+            val harness = settled(world.copy(sessions = world.sessions + onWork, accounts = listOf(work)))
+
+            harness.session(SessionId("bbbb0001")).account shouldBe work
+            harness.session(first).account shouldBe AccountId.DEFAULT
         }
 
     @Test

@@ -1,5 +1,6 @@
 package dev.quayside.sessions.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
@@ -41,6 +42,7 @@ public class FakeSessions(
 ) : SessionMonitor,
     SessionCommands {
     private val projectDirs: Map<ProjectId, Path> = world.projects.associate { it.id to it.dir }
+    private val accounts: Set<AccountId> = world.accounts.toSet() + AccountId.DEFAULT
     private val places = FakePlaces(world.projects, historySettings)
     private val state =
         MutableStateFlow(SessionsSnapshot(ordered(world.sessions.map(::toSession)), SnapshotStatus.Fresh(clock.now())))
@@ -203,10 +205,24 @@ public class FakeSessions(
         begin("start ${project.value}")?.let { return Outcome.Err(it) }
         val projectDir = projectDirs[project] ?: return Outcome.Err(SessionError.UnknownProject(project))
         val dir = places.startDir(project, projectDir, spec.subfolder).getOrElse { return Outcome.Err(it) }
+        // An account without a supervisor: the same category as `sessions:impl` (COMMAND_FAILED), nothing starts.
+        if (spec.account !in accounts) return Outcome.Err(SessionError.Runtime(RuntimeProblem.COMMAND_FAILED))
         val id = SessionId(ID_FORMAT.format(lastId.incrementAndGet()))
         val now = clock.now()
         val owner = SessionRules.projectFor(dir, projectDirs) ?: project
-        insert(Session(id, owner, spec.name ?: id.value, dir, SessionState.Working, now, now, summary = null))
+        insert(
+            Session(
+                id = id,
+                project = owner,
+                name = spec.name ?: id.value,
+                cwd = dir,
+                state = SessionState.Working,
+                startedAt = now,
+                lastActivityAt = now,
+                summary = null,
+                account = spec.account,
+            ),
+        )
         return Outcome.Ok(id)
     }
 
@@ -379,6 +395,7 @@ public class FakeSessions(
             lastActivityAt = session.startedAt,
             summary = null,
             meta = session.meta,
+            account = session.account,
         )
 
     private companion object {

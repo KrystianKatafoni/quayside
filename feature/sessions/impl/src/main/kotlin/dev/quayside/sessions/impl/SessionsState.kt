@@ -6,7 +6,10 @@ import dev.quayside.agentruntime.api.ConversationId
 import dev.quayside.agentruntime.api.HistoryError
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeSession
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Clock
+import dev.quayside.core.domain.Logger
+import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.map
@@ -53,7 +56,7 @@ import kotlin.time.toJavaDuration
  */
 @Suppress("LongParameterList")
 internal class SessionsState(
-    private val runtime: AgentRuntime,
+    runtime: AgentRuntime,
     private val projects: ProjectsApi,
     private val clock: Clock,
     private val overlayTtl: Duration,
@@ -62,7 +65,13 @@ internal class SessionsState(
     private val metas: SessionMetaSource = NoSessionMetas,
     val disk: HistoryScan? = null,
     settings: SessionHistorySettingsRepo? = null,
+    extraRuntimes: StateFlow<Map<AccountId, AgentRuntime>> = MutableStateFlow(emptyMap()),
+    logger: Logger = NoOpLogger,
 ) {
+    /** The supervisors of all accounts; the commands and the polling loop read it. */
+    val runtimes = AccountRuntimes(runtime, extraRuntimes)
+    private val accounts = AccountListing(runtimes, logger)
+
     private val places = PlaceAssignments(settings ?: disk?.settings ?: InMemoryHistorySettings(), projects)
     private val mutex = Mutex()
     private val current = MutableStateFlow(SessionsSnapshot.Initial)
@@ -96,14 +105,14 @@ internal class SessionsState(
     suspend fun refresh(expect: List<Expected> = emptyList()): Outcome<SessionsSnapshot, RuntimeError> =
         mutex.withLock {
             pending = pending + expect
-            val listing = runtime.listSessions(under = null)
+            val (listing, staleAccount) = accounts.list()
             val now = clock.now()
             val overlaid = listing.map { overlay(it, now) }
             if (overlaid is Outcome.Ok) {
                 lastListing = overlaid.value
                 lastMetas = overlaid.value.associate { it.id to metas.read(it) }
             }
-            val reduction = publish(overlaid, now)
+            val reduction = publish(overlaid, now, staleAccount?.let { SnapshotStatus.Stale(now, it.toProblem()) })
             listing.map { reduction.snapshot }
         }
 

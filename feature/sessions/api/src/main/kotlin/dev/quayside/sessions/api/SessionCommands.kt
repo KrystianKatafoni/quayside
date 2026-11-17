@@ -1,5 +1,6 @@
 package dev.quayside.sessions.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
@@ -132,6 +133,8 @@ public data class ResumedSession(
  * @property permissionMode permission mode; the Claude Code default when null.
  * @property subfolder name of one of the project's subfolders (`Project.subfolders`, FR-P7) to start in;
  *  null = the project directory. Not blank. User data: [toString] shows it as `***` (ENG-C8).
+ * @property account account to start on; "Auto" is resolved by the caller (AccountSelector). An account without a
+ *  runtime is [SessionError.Runtime] with [RuntimeProblem.COMMAND_FAILED], nothing starts.
  */
 public data class NewSessionSpec(
     val prompt: String,
@@ -140,6 +143,7 @@ public data class NewSessionSpec(
     val model: String? = null,
     val permissionMode: SessionPermissionMode? = null,
     val subfolder: String? = null,
+    val account: AccountId = AccountId.DEFAULT,
 ) {
     init {
         require(prompt.isNotBlank()) { "NewSessionSpec prompt must not be blank" }

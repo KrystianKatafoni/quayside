@@ -1,5 +1,6 @@
 package dev.quayside.sessions.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import java.nio.file.Path
@@ -42,6 +43,7 @@ public data class Session(
     val meta: SessionMeta = SessionMeta(),
     val origin: SessionOrigin = SessionOrigin.SUPERVISOR,
     val assignedDir: Path? = null,
+    val account: AccountId = AccountId.DEFAULT,
 ) {
     /** Directory that decides the place of the session inside its project's group: [assignedDir], else [cwd]. */
     val placeDir: Path get() = assignedDir ?: cwd
@@ -49,7 +51,7 @@ public data class Session(
     override fun toString(): String =
         "Session(id=$id, project=$project, name=$name, cwd=$cwd, state=$state, startedAt=$startedAt, " +
             "lastActivityAt=$lastActivityAt, summary=${summary?.let { HIDDEN }}, meta=$meta, " +
-            "assignedDir=$assignedDir)"
+            "assignedDir=$assignedDir, account=$account)"
 }
 
 /** Where a [Session] comes from (FR-P9, ADR 0032). */

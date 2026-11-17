@@ -1,5 +1,6 @@
 package dev.quayside.sessions.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
@@ -22,6 +23,7 @@ public fun aSession(
     summary: String? = null,
     meta: SessionMeta = SessionMeta(),
     assignedDir: Path? = null,
+    account: AccountId = AccountId.DEFAULT,
 ): Session =
     Session(
         SessionId(id),
@@ -34,13 +36,15 @@ public fun aSession(
         summary,
         meta,
         assignedDir = assignedDir,
+        account = account,
     )
 
 public fun aNewSessionSpec(
     prompt: String = "Fix the login bug",
     name: String? = "fix-login",
     subfolder: String? = null,
-): NewSessionSpec = NewSessionSpec(prompt = prompt, name = name, subfolder = subfolder)
+    account: AccountId = AccountId.DEFAULT,
+): NewSessionSpec = NewSessionSpec(prompt = prompt, name = name, subfolder = subfolder, account = account)
 
 /** UUID of the default [pastSession]. */
 public const val A_PAST_UUID: String = "0b7e5c1e-3f4a-4d8b-9a51-2c6f0e9d1a77"

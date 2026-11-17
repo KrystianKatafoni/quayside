@@ -2,6 +2,7 @@ package dev.quayside.sessions.impl
 
 import dev.quayside.agentruntime.api.AgentEventSource
 import dev.quayside.agentruntime.api.RuntimeError
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.ProjectId
@@ -53,12 +54,14 @@ internal class PollingSessionMonitor(
 
     override val events: Flow<SessionEvent> get() = state.events
 
-    override suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError> =
-        if (snapshot.value.sessions.any { it.id == id && it.origin == SessionOrigin.DISK }) {
+    override suspend fun recentOutput(id: SessionId): Outcome<RecentOutput, SessionError> {
+        val session = snapshot.value.sessions.firstOrNull { it.id == id }
+        return if (session?.origin == SessionOrigin.DISK) {
             Outcome.Err(SessionError.UnknownSession(id))
         } else {
-            reader.read(id)
+            reader.read(id, session?.account ?: AccountId.DEFAULT)
         }
+    }
 
     override suspend fun conversation(
         id: SessionId,
@@ -76,6 +79,11 @@ internal class PollingSessionMonitor(
             projects.projects
                 .map { it.dirs() }
                 .distinctUntilChanged()
+                .drop(1)
+                .collect { wakeups.trySend(Unit) }
+        }
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            state.runtimes.changes
                 .drop(1)
                 .collect { wakeups.trySend(Unit) }
         }

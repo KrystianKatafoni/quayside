@@ -17,6 +17,7 @@ import dev.quayside.core.domain.warn
 import dev.quayside.sessions.api.NewSessionSpec
 import dev.quayside.sessions.api.PlaceAssignment
 import dev.quayside.sessions.api.ResumedSession
+import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.Session
 import dev.quayside.sessions.api.SessionCommands
 import dev.quayside.sessions.api.SessionError
@@ -35,62 +36,60 @@ import java.time.Instant
  * carry session ids, command names and [dev.quayside.sessions.api.RuntimeProblem] only (ENG-C8).
  */
 internal class RuntimeSessionCommands(
-    private val runtime: AgentRuntime,
+    runtime: AgentRuntime,
     private val dirs: StartDirs,
     private val state: SessionsState,
     private val clock: Clock,
     private val logger: Logger,
 ) : SessionCommands {
     private val resumeCommand = ResumeCommand(runtime, dirs, state, clock, logger)
-    private val stopAll = StopAll(runtime, state, logger)
+    private val stopAll = StopAll(state, logger)
 
     override suspend fun start(
         project: ProjectId,
         spec: NewSessionSpec,
     ): Outcome<SessionId, SessionError> {
         val dir = dirs.resolve(project, spec.subfolder).getOrElse { return Outcome.Err(it) }
-        return when (val started = runtime.start(spec.toStartSpec(dir))) {
+        return when (val started = state.runtimes.of(spec.account)?.start(spec.toStartSpec(dir))) {
+            null -> {
+                // ENG-C8: the account slug only, never its config directory.
+                logger.warn("Session start failed", "problem" to "account-unavailable", "account" to spec.account.value)
+                Outcome.Err(SessionError.Runtime(RuntimeProblem.COMMAND_FAILED))
+            }
+
             is Outcome.Err -> {
                 failed("start", null, started.error)
             }
 
             is Outcome.Ok -> {
-                val id = started.value
-                val session =
-                    RuntimeSession(
-                        id = id,
-                        conversationId = null,
-                        name = spec.name ?: id.value,
-                        cwd = dir,
-                        phase = RuntimePhase.WORKING,
-                        waitingFor = null,
-                        startedAt = clock.now(),
-                        pid = null,
-                    )
-                done("start", id, Expected.Appears(session, state.expiry()))
-                Outcome.Ok(id)
+                done(
+                    "start",
+                    started.value,
+                    Expected.Appears(spec.started(started.value, dir, clock.now()), state.expiry()),
+                )
+                Outcome.Ok(started.value)
             }
         }
     }
 
     override suspend fun stop(id: SessionId): Outcome<Unit, SessionError> =
-        checked("stop", id) { session ->
+        checked("stop", id) { session, runtime ->
             if (!session.state.isActive) return@checked Outcome.Ok(Unit)
             runtime.stop(id).then("stop", id) { Expected.Moves(id, session.phase(), RuntimePhase.STOPPED, it) }
         }
 
     override suspend fun respawn(id: SessionId): Outcome<Unit, SessionError> =
-        checked("respawn", id) { session ->
+        checked("respawn", id) { session, runtime ->
             if (session.origin == SessionOrigin.DISK) return@checked Outcome.Err(SessionError.UnknownSession(id))
             if (session.state.isActive) return@checked Outcome.Err(SessionError.SessionActive(id))
             runtime.respawn(id).then("respawn", id) { Expected.Moves(id, session.phase(), RuntimePhase.WORKING, it) }
         }
 
     override suspend fun resume(id: SessionId): Outcome<ResumedSession, SessionError> =
-        checked("resume", id) { session -> resumeCommand.run(session) }
+        checked("resume", id) { session, _ -> resumeCommand.run(session) }
 
     override suspend fun remove(id: SessionId): Outcome<Unit, SessionError> =
-        checked("remove", id) { session ->
+        checked("remove", id) { session, runtime ->
             if (session.origin == SessionOrigin.DISK) return@checked state.hide(id)
             if (session.state.isActive) return@checked Outcome.Err(SessionError.SessionActive(id))
             runtime.remove(id).then("remove", id) { Expected.Disappears(id, it) }
@@ -129,11 +128,14 @@ internal class RuntimeSessionCommands(
         }
     }
 
-    /** Runs [run] for [command] on [id] as a fresh listing shows it; a failed listing or an unknown id ends here. */
+    /**
+     * Runs [run] for [command] on [id] as a fresh listing shows it, with the runtime of the session account; a failed
+     * listing, an unknown id or an account that has no runtime any more ends here.
+     */
     private suspend fun <T> checked(
         command: String,
         id: SessionId,
-        run: suspend (Session) -> Outcome<T, SessionError>,
+        run: suspend (Session, AgentRuntime) -> Outcome<T, SessionError>,
     ): Outcome<T, SessionError> =
         when (val listed = state.refresh()) {
             is Outcome.Err -> {
@@ -141,10 +143,15 @@ internal class RuntimeSessionCommands(
             }
 
             is Outcome.Ok -> {
-                listed.value.sessions
-                    .firstOrNull { it.id == id }
-                    ?.let { run(it) }
-                    ?: Outcome.Err(SessionError.UnknownSession(id))
+                val session = listed.value.sessions.firstOrNull { it.id == id }
+                val runtime = session?.let { state.runtimes.of(it.account) }
+                if (session == null ||
+                    runtime == null
+                ) {
+                    Outcome.Err(SessionError.UnknownSession(id))
+                } else {
+                    run(session, runtime)
+                }
             }
         }
 
@@ -230,3 +237,21 @@ private fun PlaceAssignment?.kind(): String =
         PlaceAssignment.ProjectRoot -> "root"
         is PlaceAssignment.Subfolder -> "subfolder"
     }
+
+/** The session a successful start of [this] spec in [cwd] shows until the supervisor lists it. */
+private fun NewSessionSpec.started(
+    id: SessionId,
+    cwd: Path,
+    now: Instant,
+): RuntimeSession =
+    RuntimeSession(
+        id = id,
+        conversationId = null,
+        name = name ?: id.value,
+        cwd = cwd,
+        phase = RuntimePhase.WORKING,
+        waitingFor = null,
+        startedAt = now,
+        pid = null,
+        account = account,
+    )

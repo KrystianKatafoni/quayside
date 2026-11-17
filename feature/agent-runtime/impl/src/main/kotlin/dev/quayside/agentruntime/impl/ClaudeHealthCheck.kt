@@ -42,10 +42,23 @@ internal class ClaudeHealthCheck(
         val result = ran.getOrElse { return Outcome.Err(notReady(null, it)) }
         val version = ClaudeVersion.parse(result.stdout)
         return when {
-            !result.isSuccess -> Outcome.Err(notReady(null, commandFailed(result, secrets = emptyList())))
-            version == null -> Outcome.Err(notReady(null, RuntimeError.Unparseable(VERSION_UNPARSEABLE)))
-            version < ClaudeVersion.MINIMUM -> Outcome.Err(notReady(version.toString(), unsupported(version)))
-            else -> Outcome.Ok(version)
+            !result.isSuccess -> {
+                Outcome.Err(
+                    notReady(null, commandFailed(result, secrets = emptyList(), config.accountEnv)),
+                )
+            }
+
+            version == null -> {
+                Outcome.Err(notReady(null, RuntimeError.Unparseable(VERSION_UNPARSEABLE)))
+            }
+
+            version < ClaudeVersion.MINIMUM -> {
+                Outcome.Err(notReady(version.toString(), unsupported(version)))
+            }
+
+            else -> {
+                Outcome.Ok(version)
+            }
         }
     }
 
@@ -80,7 +93,7 @@ internal class ClaudeHealthCheck(
                 when {
                     result.isSuccess -> null
                     AgentViewProbe.isDisabledMessage(result.stderr, result.stdout) -> RuntimeError.AgentViewDisabled
-                    else -> commandFailed(result, secrets = emptyList())
+                    else -> commandFailed(result, secrets = emptyList(), config.accountEnv)
                 }
             },
             onErr = { it },

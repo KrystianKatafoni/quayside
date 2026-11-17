@@ -25,7 +25,7 @@ internal class ClaudePrintAdapter(
                 if (result.isSuccess) {
                     PrintResultParser.parse(result.stdout, result.exitCode)
                 } else {
-                    Outcome.Err(commandFailed(result, secrets = listOf(request.prompt)))
+                    Outcome.Err(commandFailed(result, secrets = listOf(request.prompt), env))
                 }
             }
 

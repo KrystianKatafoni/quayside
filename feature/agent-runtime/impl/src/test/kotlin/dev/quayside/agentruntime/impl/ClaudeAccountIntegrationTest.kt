@@ -15,6 +15,7 @@ import dev.quayside.core.process.LoginShellProcessRunner
 import dev.quayside.core.testing.RecordingLogger
 import dev.quayside.core.testing.TestClock
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
@@ -93,6 +94,7 @@ class ClaudeAccountIntegrationTest {
         runtime.attachCommand(known.id).env shouldBe mapOf("CLAUDE_CONFIG_DIR" to workDir.toString())
     }
 
+    /** Assumes the test process has no `CLAUDE_CONFIG_DIR` of its own: the login shell would pass it on. */
     @Test
     fun `no command of the default account carries CLAUDE_CONFIG_DIR even with configDir`() =
         runTest {
@@ -158,7 +160,7 @@ class ClaudeAccountIntegrationTest {
         runTest {
             val runtime = runtime(work, workDir)
             runtime.useEverything()
-            claude.setMode("fail 3 Error: not logged in")
+            claude.setMode("fail 3 Error: cannot read $workDir/.claude.json")
 
             val errors =
                 listOf(
@@ -170,6 +172,8 @@ class ClaudeAccountIntegrationTest {
             val health = runtime.health()
 
             errors.forEach { it.toString() shouldNotContain workDir.toString() }
+            errors.first().toString() shouldContain "cannot read"
+            errors.first().toString() shouldContain "***/.claude.json"
             health.toString() shouldNotContain workDir.toString()
             logger.entries.toString() shouldNotContain workDir.toString()
             claude.configDirs().distinct() shouldBe listOf(workDir.toString())

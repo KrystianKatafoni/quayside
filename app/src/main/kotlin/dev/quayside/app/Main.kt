@@ -129,7 +129,11 @@ private fun appModules(
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
     // Lives as long as the app, not the window (AM-405 risks).
     val appScope = CoroutineScope(SupervisorJob() + core.dispatchers.io)
-    val extra = AccountRuntimes(accounts.repo.state, appScope) { id, dir -> accountRuntime(core, id, dir) }.runtimes
+    val extra =
+        AccountRuntimeRegistry(
+            accounts.repo.state,
+            appScope,
+        ) { id, dir -> accountRuntime(core, id, dir) }.runtimes
     val sessions = sessionsDeps(core, Supervisors(runtime, extra), projects, stored, appScope)
     // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
     val registry = commandPaletteModule(CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger)

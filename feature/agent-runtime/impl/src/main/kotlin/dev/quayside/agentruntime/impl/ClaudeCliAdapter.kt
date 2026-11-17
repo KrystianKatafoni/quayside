@@ -81,7 +81,12 @@ internal class ClaudeCliAdapter(
             val output = listOf(result.stderr, result.stdout).filter { it.isNotBlank() }.joinToString("\n")
             val kept = output.lineSequence().any { it.trim().startsWith("kept ${id.value}") }
             if (kept) {
-                Outcome.Err(RuntimeError.CommandFailed(result.exitCode, StderrTail.of(output, emptyList())))
+                Outcome.Err(
+                    RuntimeError.CommandFailed(
+                        result.exitCode,
+                        StderrTail.of(output, config.accountEnv.values.toList()),
+                    ),
+                )
             } else {
                 Outcome.Ok(Unit)
             }
@@ -104,7 +109,7 @@ internal class ClaudeCliAdapter(
             .exec(ClaudeCommands.list(exe), config.homeDir, config.commandTimeout, env = config.accountEnv)
             .flatMap { result ->
                 if (!result.isSuccess) {
-                    Outcome.Err(commandFailed(result, secrets = emptyList()))
+                    Outcome.Err(commandFailed(result, secrets = emptyList(), config.accountEnv))
                 } else {
                     AgentsJsonParser.parse(result.stdout, clock.now()).map { listing ->
                         logger.logNotices(listing.notices)
@@ -136,7 +141,7 @@ internal class ClaudeCliAdapter(
         return if (listed != null && listed.none { it.id == id }) {
             Outcome.Err(RuntimeError.UnknownSession(id))
         } else {
-            Outcome.Err(commandFailed(result, secrets = emptyList()))
+            Outcome.Err(commandFailed(result, secrets = emptyList(), config.accountEnv))
         }
     }
 }
@@ -166,11 +171,15 @@ private fun toRuntimeError(error: ProcessError): RuntimeError =
         is ProcessError.IoFailed -> RuntimeError.CommandFailed(-1, "process:io-failed")
     }
 
-/** [RuntimeError.CommandFailed] with the redacted stderr tail of [result]. */
+/**
+ * [RuntimeError.CommandFailed] with the redacted stderr tail of [result]; [env] values (the config dir of an extra
+ * account, which StderrTail does not know as a home path) are masked like [secrets].
+ */
 internal fun commandFailed(
     result: ProcessResult,
     secrets: List<String>,
-): RuntimeError = RuntimeError.CommandFailed(result.exitCode, StderrTail.of(result.stderr, secrets))
+    env: Map<String, String> = emptyMap(),
+): RuntimeError = RuntimeError.CommandFailed(result.exitCode, StderrTail.of(result.stderr, secrets + env.values))
 
 /** Only categories and counts: notices may name sessions, but never carry input text here. */
 private fun Logger.logNotices(notices: List<ParseNotice>) {

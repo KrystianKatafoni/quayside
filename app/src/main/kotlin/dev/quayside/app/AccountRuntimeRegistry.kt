@@ -20,7 +20,7 @@ import java.nio.file.Path
  *
  * @param build creates the runtime of an account from its id and `configDir`.
  */
-internal class AccountRuntimes(
+internal class AccountRuntimeRegistry(
     accounts: StateFlow<AccountsState>,
     scope: CoroutineScope,
     private val build: (AccountId, Path) -> AgentRuntime,

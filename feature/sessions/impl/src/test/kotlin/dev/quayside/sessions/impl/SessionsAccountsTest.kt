@@ -4,10 +4,12 @@ package dev.quayside.sessions.impl
 
 import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.core.domain.AccountId
+import dev.quayside.core.domain.LogLevel
 import dev.quayside.sessions.api.RuntimeProblem
 import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.sessions.impl.MonitorFixtures.S1
 import dev.quayside.sessions.impl.MonitorFixtures.working
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -46,9 +48,11 @@ class SessionsAccountsTest {
             advance(10.seconds)
 
             world.listedIds() shouldBe listOf(S1, onWork)
-            world.api.monitor.snapshot.value.status
-                .shouldBeInstanceOf<SnapshotStatus.Stale>()
-                .problem shouldBe RuntimeProblem.NOT_INSTALLED
+            val stale =
+                world.api.monitor.snapshot.value.status
+                    .shouldBeInstanceOf<SnapshotStatus.Stale>()
+            stale.problem shouldBe RuntimeProblem.NOT_INSTALLED
+            stale.lastFreshAt shouldBe atMillis(0)
             world.default.listedAtMillis shouldBe listOf(0L, 2_000, 4_000, 6_000, 8_000, 10_000)
             world.work.listedAtMillis shouldBe listOf(0L, 2_000, 4_000, 6_000, 8_000, 10_000)
         }
@@ -146,6 +150,18 @@ class SessionsAccountsTest {
             val logged = world.logger.entries.flatMap { entry -> entry.fields.values.map { it.toString() } }
             logged.contains(COLLISIONS.toString()) shouldBe true
             (shared + own + onWork).forEach { world.logger.entries.toString() shouldNotContain it }
+        }
+
+    @Test
+    fun `a standing collision is logged once, not at every listing`() =
+        runTest {
+            val world = accountsWorld(listOf(working(S1)), listOf(working(S1)))
+
+            runCurrent()
+            advance(4.seconds)
+
+            world.default.listedAtMillis shouldBe listOf(0L, 2_000, 4_000)
+            world.logger.entriesAt(LogLevel.WARN) shouldHaveSize 1
         }
 
     private companion object {

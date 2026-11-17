@@ -19,8 +19,8 @@ import kotlin.time.Duration.Companion.seconds
  *   to `claude` as `AM_HOOK_TOKEN`; the hooks from `HookInstaller` need it to authenticate. Off by default.
  * @param account Claude account of this supervisor; [AccountId.DEFAULT] never gets `CLAUDE_CONFIG_DIR`.
  * @param configDir config directory of [account]; ignored for the default account.
- * @throws IllegalArgumentException when a non-default [account] has no [configDir] (programmer error).
  * @param commandTimeout limit of `agents`, `logs`, `stop`, `respawn`, `rm`; [startTimeout] limits `--bg` (docs/11 §6).
+ * @throws IllegalArgumentException when a non-default [account] has no [configDir] (programmer error).
  */
 @Suppress("LongParameterList")
 public fun agentRuntimeModule(

@@ -145,12 +145,9 @@ internal class RuntimeSessionCommands(
             is Outcome.Ok -> {
                 val session = listed.value.sessions.firstOrNull { it.id == id }
                 val runtime = session?.let { state.runtimes.of(it.account) }
-                if (session == null ||
-                    runtime == null
-                ) {
-                    Outcome.Err(SessionError.UnknownSession(id))
-                } else {
-                    run(session, runtime)
+                when {
+                    session == null || runtime == null -> Outcome.Err(SessionError.UnknownSession(id))
+                    else -> run(session, runtime)
                 }
             }
         }

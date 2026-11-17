@@ -562,7 +562,7 @@ fun main() = application {
 }
 ```
 
-Konta (AM-1003): `agentRuntimeModule(..., account, configDir)` buduje supervisora konta; `CLAUDE_CONFIG_DIR=<configDir>` trafia do każdego wywołania `claude` konta dodatkowego (także `attachCommand`), a konta domyślnego nigdy (docs/compat.md). `app` trzyma `AccountRuntimes`: po jednym runtime na konto z `accounts.json` poza domyślnym, wymieniany tylko po zmianie `configDir`. `sessionsModule` dostaje konto domyślne jako `runtime` i resztę jako `extraRuntimes`, scala listy po kluczu (konto, ID) i kieruje polecenia do runtime'u konta sesji (ADR 0036); `attach` wybiera runtime po `Session.account`.
+Konta (AM-1003): `agentRuntimeModule(..., account, configDir)` buduje supervisora konta; `CLAUDE_CONFIG_DIR=<configDir>` trafia do każdego wywołania `claude` konta dodatkowego (także `attachCommand`), a konta domyślnego nigdy (docs/compat.md). `app` trzyma `AccountRuntimeRegistry`: po jednym runtime na konto z `accounts.json` poza domyślnym, wymieniany tylko po zmianie `configDir`. `sessionsModule` dostaje konto domyślne jako `runtime` i resztę jako `extraRuntimes`, scala listy po kluczu (konto, ID) i kieruje polecenia do runtime'u konta sesji (ADR 0036); `attach` wybiera runtime po `Session.account`.
 
 Okno „Hooki Claude Code” obejmuje zakres globalny i każdy dodany projekt (`HookScope.Project`, AM-609); cele dostarcza `ProjectHookTargets` nad `ProjectsApi.projects`.
 

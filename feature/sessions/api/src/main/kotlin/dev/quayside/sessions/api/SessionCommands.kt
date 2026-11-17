@@ -22,6 +22,9 @@ public interface SessionCommands {
      * The session belongs to the deepest registered project that contains its `cwd`: a subfolder that is also
      * registered as a separate project puts the session in that project, not in the group.
      *
+     * The session starts on [NewSessionSpec.account]; an account without a supervisor is
+     * [SessionError.Runtime] with [RuntimeProblem.COMMAND_FAILED] and nothing starts.
+     *
      * @throws IllegalArgumentException never from `start` itself; it comes from building [NewSessionSpec]
      *   when [NewSessionSpec.subfolder] is empty or blank.
      */

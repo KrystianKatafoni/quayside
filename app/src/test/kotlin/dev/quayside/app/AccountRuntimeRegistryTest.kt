@@ -18,8 +18,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
 
-/** [AccountRuntimes]: one runtime per account except the default one, replaced only by a new `configDir` (AM-1003). */
-class AccountRuntimesRegistryTest {
+/** [AccountRuntimeRegistry]: a runtime per non-default account, replaced only by a new `configDir` (AM-1003). */
+class AccountRuntimeRegistryTest {
     private val home = Path.of("/Users/test")
     private val default = Account(AccountId.DEFAULT, null, home.resolve(".claude"))
     private val work = account("work")
@@ -32,15 +32,15 @@ class AccountRuntimesRegistryTest {
         dir: Path = home.resolve(".claude-quayside").resolve(slug),
     ) = Account(AccountId(slug), label, dir)
 
-    private fun TestScope.registry(state: MutableStateFlow<AccountsState>): AccountRuntimes =
-        AccountRuntimes(state, backgroundScope) { id, dir ->
+    private fun TestScope.registry(state: MutableStateFlow<AccountsState>): AccountRuntimeRegistry =
+        AccountRuntimeRegistry(state, backgroundScope) { id, dir ->
             built += id to dir
             FakeAgentRuntime(RuntimeWorld(account = id))
         }
 
     private fun stateOf(vararg accounts: Account) = MutableStateFlow(AccountsState(accounts.toList()))
 
-    private fun AccountRuntimes.runtimeOf(id: AccountId): AgentRuntime = runtimes.value.getValue(id)
+    private fun AccountRuntimeRegistry.runtimeOf(id: AccountId): AgentRuntime = runtimes.value.getValue(id)
 
     @Test
     fun `builds one runtime per non-default account in file order`() =

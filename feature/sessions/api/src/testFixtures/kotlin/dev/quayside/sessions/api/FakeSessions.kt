@@ -45,7 +45,7 @@ public class FakeSessions(
     private val accounts: Set<AccountId> = world.accounts.toSet() + AccountId.DEFAULT
     private val places = FakePlaces(world.projects, historySettings)
     private val state =
-        MutableStateFlow(SessionsSnapshot(ordered(world.sessions.map(::toSession)), SnapshotStatus.Fresh(clock.now())))
+        MutableStateFlow(SessionsSnapshot(world.sessions.toSessions(projectDirs), SnapshotStatus.Fresh(clock.now())))
     private val transitions = MutableSharedFlow<SessionEvent>(extraBufferCapacity = EVENT_BUFFER)
     private val recorded = MutableStateFlow(emptyList<String>())
     private val pendingFailure = MutableStateFlow<SessionError?>(null)
@@ -160,7 +160,7 @@ public class FakeSessions(
      * [SessionEvent.BecameBlocked] (a new request for the user); any other state emits nothing.
      */
     public suspend fun appear(session: WorldSession) {
-        val added = toSession(session)
+        val added = session.toSession(projectDirs)
         session.conversationId?.let { uuid -> conversations.update { it + (session.id to uuid) } }
         insert(added)
         publishDisk()
@@ -384,26 +384,9 @@ public class FakeSessions(
         applyPlaces()
     }
 
-    private fun toSession(session: WorldSession): Session =
-        Session(
-            id = session.id,
-            project = SessionRules.projectFor(session.cwd, projectDirs),
-            name = session.name,
-            cwd = session.cwd,
-            state = session.state,
-            startedAt = session.startedAt,
-            lastActivityAt = session.startedAt,
-            summary = null,
-            meta = session.meta,
-            account = session.account,
-        )
-
     private companion object {
         const val ID_FORMAT = "%08d"
         const val UUID_PREFIX = 8
         const val EVENT_BUFFER = 64
-
-        fun ordered(sessions: List<Session>): List<Session> =
-            sessions.sortedWith(compareBy<Session>({ it.startedAt }, { it.id.value }))
     }
 }

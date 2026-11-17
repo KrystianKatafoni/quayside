@@ -70,7 +70,7 @@ internal class SessionsState(
 ) {
     /** The supervisors of all accounts; the commands and the polling loop read it. */
     val runtimes = AccountRuntimes(runtime, extraRuntimes)
-    private val accounts = AccountListing(runtimes, logger)
+    private val accounts = AccountListing(runtimes, logger, clock)
 
     private val places = PlaceAssignments(settings ?: disk?.settings ?: InMemoryHistorySettings(), projects)
     private val mutex = Mutex()
@@ -105,14 +105,15 @@ internal class SessionsState(
     suspend fun refresh(expect: List<Expected> = emptyList()): Outcome<SessionsSnapshot, RuntimeError> =
         mutex.withLock {
             pending = pending + expect
-            val (listing, staleAccount) = accounts.list()
+            val (listing, staleAccount, staleSince) = accounts.list()
             val now = clock.now()
             val overlaid = listing.map { overlay(it, now) }
             if (overlaid is Outcome.Ok) {
                 lastListing = overlaid.value
                 lastMetas = overlaid.value.associate { it.id to metas.read(it) }
             }
-            val reduction = publish(overlaid, now, staleAccount?.let { SnapshotStatus.Stale(now, it.toProblem()) })
+            val reduction =
+                publish(overlaid, now, staleAccount?.let { SnapshotStatus.Stale(staleSince, it.toProblem()) })
             listing.map { reduction.snapshot }
         }
 

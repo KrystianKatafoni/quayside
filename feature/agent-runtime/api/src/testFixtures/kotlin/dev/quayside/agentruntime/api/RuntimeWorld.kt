@@ -1,5 +1,6 @@
 package dev.quayside.agentruntime.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.SessionId
 
 /**
@@ -13,6 +14,8 @@ import dev.quayside.core.domain.SessionId
  * @property installed false = no `claude` binary at all.
  * @property version raw `claude --version` result when [installed].
  * @property agentViewEnabled whether Agent View (background sessions) is switched on.
+ * @property account account of the runtime under test: every listed session carries it (AM-1003); the adapter
+ *   test gives such a runtime a config directory of its own.
  */
 public data class RuntimeWorld(
     val sessions: List<RuntimeSession> = emptyList(),
@@ -22,4 +25,5 @@ public data class RuntimeWorld(
     val installed: Boolean = true,
     val version: String = RuntimeRequirements.MIN_CLAUDE_VERSION,
     val agentViewEnabled: Boolean = true,
+    val account: AccountId = AccountId.DEFAULT,
 )

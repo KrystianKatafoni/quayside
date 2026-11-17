@@ -26,7 +26,7 @@ internal class BackgroundStart(
         cwd: Path,
         secrets: List<String>,
     ): Outcome<SessionId, RuntimeError> {
-        val env = config.hookTokens.hookEnv(logger)
+        val env = config.accountEnv + config.hookTokens.hookEnv(logger)
         return process.exec(argv, cwd, config.startTimeout, env = env).flatMap { result ->
             val id = BgOutput.sessionId(result.stdout)
             when {

@@ -16,10 +16,11 @@ internal class ClaudePrintAdapter(
     private val process: ProcessRunner,
     private val homeDir: Path,
     private val executable: String,
+    private val env: Map<String, String> = emptyMap(),
 ) : OneShotPrompt {
     override suspend fun ask(request: PromptRequest): Outcome<String, RuntimeError> =
         process
-            .exec(ClaudeCommands.print(executable, request), homeDir, request.timeout, MAX_OUTPUT_BYTES)
+            .exec(ClaudeCommands.print(executable, request), homeDir, request.timeout, MAX_OUTPUT_BYTES, env)
             .flatMap { result ->
                 if (result.isSuccess) {
                     PrintResultParser.parse(result.stdout, result.exitCode)

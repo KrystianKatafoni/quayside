@@ -6,6 +6,7 @@ import dev.quayside.agentruntime.api.RuntimeError
 import dev.quayside.agentruntime.api.RuntimeHealth
 import dev.quayside.agentruntime.api.RuntimeSession
 import dev.quayside.agentruntime.api.StartSpec
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Clock
 import dev.quayside.core.domain.LogLevel
 import dev.quayside.core.domain.Logger
@@ -32,6 +33,8 @@ import kotlin.time.Duration
  * @property commandTimeout limit of `agents`, `logs`, `stop`, `respawn`, `rm` and of each health command.
  * @property startTimeout limit of `--bg`.
  * @property hookTokens when set, `start`, `resume` and `respawn` put its token in `AM_HOOK_TOKEN` (NFR-4, ADR 0004).
+ * @property account account stamped on every listed session.
+ * @property accountEnv environment of every command (`CLAUDE_CONFIG_DIR` of an extra account, see [ClaudeEnv]).
  */
 internal data class CliConfig(
     val homeDir: Path,
@@ -39,6 +42,8 @@ internal data class CliConfig(
     val commandTimeout: Duration,
     val startTimeout: Duration,
     val hookTokens: HookTokenStore? = null,
+    val accountEnv: Map<String, String> = emptyMap(),
+    val account: AccountId = AccountId.DEFAULT,
 )
 
 /** [AgentRuntime] over the `claude` CLI (Agent View, ADR 0002); see docs/plans/AM-203.md. */
@@ -68,7 +73,7 @@ internal class ClaudeCliAdapter(
     override suspend fun stop(id: SessionId): Outcome<Unit, RuntimeError> = byId("stop", id).map { }
 
     override suspend fun respawn(id: SessionId): Outcome<Unit, RuntimeError> =
-        byId("respawn", id, env = config.hookTokens.hookEnv(logger)).map { }
+        byId("respawn", id, env = config.accountEnv + config.hookTokens.hookEnv(logger)).map { }
 
     override suspend fun remove(id: SessionId): Outcome<Unit, RuntimeError> =
         byId("rm", id).flatMap { result ->
@@ -89,29 +94,31 @@ internal class ClaudeCliAdapter(
         }
 
     override fun attachCommand(id: SessionId): ShellCommand =
-        ShellCommand(ClaudeCommands.byId(exe, "attach", id), config.homeDir)
+        ShellCommand(ClaudeCommands.byId(exe, "attach", id), config.homeDir, config.accountEnv)
 
     /** See [ClaudeHealthCheck.run]: version, then supervisor, then Agent View. */
     override suspend fun health(): RuntimeHealth = healthCheck.run()
 
     private suspend fun list(): Outcome<List<RuntimeSession>, RuntimeError> =
-        process.exec(ClaudeCommands.list(exe), config.homeDir, config.commandTimeout).flatMap { result ->
-            if (!result.isSuccess) {
-                Outcome.Err(commandFailed(result, secrets = emptyList()))
-            } else {
-                AgentsJsonParser.parse(result.stdout, clock.now()).map { listing ->
-                    logger.logNotices(listing.notices)
-                    listing.sessions
+        process
+            .exec(ClaudeCommands.list(exe), config.homeDir, config.commandTimeout, env = config.accountEnv)
+            .flatMap { result ->
+                if (!result.isSuccess) {
+                    Outcome.Err(commandFailed(result, secrets = emptyList()))
+                } else {
+                    AgentsJsonParser.parse(result.stdout, clock.now()).map { listing ->
+                        logger.logNotices(listing.notices)
+                        listing.sessions.map { it.copy(account = config.account) }
+                    }
                 }
             }
-        }
 
     /** Runs `claude <verb> <id>`; a failure is [RuntimeError.UnknownSession] when the id is not listed. */
     private suspend fun byId(
         verb: String,
         id: SessionId,
         maxOutputBytes: Int = DEFAULT_MAX_BYTES,
-        env: Map<String, String> = emptyMap(),
+        env: Map<String, String> = config.accountEnv,
     ): Outcome<ProcessResult, RuntimeError> {
         logger.debug("claude command", "verb" to verb, "sessionId" to id.value)
         val ran =

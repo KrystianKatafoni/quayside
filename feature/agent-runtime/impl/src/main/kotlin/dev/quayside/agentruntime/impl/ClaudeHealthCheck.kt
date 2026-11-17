@@ -38,7 +38,7 @@ internal class ClaudeHealthCheck(
 
     /** The supported version, or the final health when the check cannot go on. */
     private suspend fun checkVersion(): Outcome<ClaudeVersion, RuntimeHealth> {
-        val ran = process.exec(ClaudeCommands.version(exe), config.homeDir, config.commandTimeout)
+        val ran = exec(ClaudeCommands.version(exe))
         val result = ran.getOrElse { return Outcome.Err(notReady(null, it)) }
         val version = ClaudeVersion.parse(result.stdout)
         return when {
@@ -62,7 +62,7 @@ internal class ClaudeHealthCheck(
     }
 
     private suspend fun isSupervisorRunning(): Boolean =
-        process.exec(ClaudeCommands.daemonStatus(exe), config.homeDir, config.commandTimeout).fold(
+        exec(ClaudeCommands.daemonStatus(exe)).fold(
             onOk = { DaemonStatus.isRunning(it.exitCode, it.stdout) },
             onErr = { error ->
                 logger.debug("claude daemon status failed", "problem" to error.category())
@@ -70,9 +70,12 @@ internal class ClaudeHealthCheck(
             },
         )
 
+    private suspend fun exec(argv: List<String>) =
+        process.exec(argv, config.homeDir, config.commandTimeout, env = config.accountEnv)
+
     /** Null when Agent View answers. */
     private suspend fun agentViewProblem(): RuntimeError? =
-        process.exec(ClaudeCommands.agentViewProbe(exe), config.homeDir, config.commandTimeout).fold(
+        exec(ClaudeCommands.agentViewProbe(exe)).fold(
             onOk = { result ->
                 when {
                     result.isSuccess -> null

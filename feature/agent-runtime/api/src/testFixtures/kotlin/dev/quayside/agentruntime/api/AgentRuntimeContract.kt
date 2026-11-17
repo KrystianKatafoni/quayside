@@ -1,5 +1,6 @@
 package dev.quayside.agentruntime.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.getOrNull
@@ -52,6 +53,32 @@ public abstract class AgentRuntimeContract {
             val runtime = create(RuntimeWorld(sessions = listOf(first, second)))
 
             runtime.listed() shouldContainExactlyInAnyOrder listOf(first, second)
+        }
+
+    @Test
+    public fun `listSessions stamps the account of the runtime`(): Unit =
+        runTest {
+            val work = AccountId("work")
+            val runtime = create(RuntimeWorld(sessions = listOf(first, second), account = work))
+
+            runtime.listed().map { it.account } shouldBe listOf(work, work)
+        }
+
+    @Test
+    public fun `a started session is listed with the runtime account`(): Unit =
+        runTest {
+            val work = AccountId("work")
+            val runtime = create(RuntimeWorld(account = work))
+
+            val id = runtime.start(aStartSpec(cwd = startCwd)).getOrNull().shouldNotBeNull()
+
+            runtime.find(id)?.account shouldBe work
+        }
+
+    @Test
+    public fun `sessions of a default runtime belong to the default account`(): Unit =
+        runTest {
+            create(RuntimeWorld(sessions = listOf(first))).listed().single().account shouldBe AccountId.DEFAULT
         }
 
     @Test

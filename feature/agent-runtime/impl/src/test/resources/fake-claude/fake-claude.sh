@@ -20,6 +20,7 @@
 #   print-result  raw stdout of a print-mode call (`claude -p`, AM-604); a default success JSON when absent
 #   print-cwd     working directory of the latest print-mode call
 #   calls.log     argv of every call: arguments end with \037, calls end with \036
+#   config-dir.log  one line per call, in call order: CLAUDE_CONFIG_DIR of the call, `-` when it is not set (AM-1003)
 set -u
 
 state=$1
@@ -34,6 +35,11 @@ for arg in "$@"; do
     printf '%s%s' "$arg" "$US" >>"$state/calls.log"
 done
 printf '%s' "$RS" >>"$state/calls.log"
+if [ -n "${CLAUDE_CONFIG_DIR+set}" ]; then
+    printf '%s\n' "$CLAUDE_CONFIG_DIR" >>"$state/config-dir.log"
+else
+    printf '%s\n' - >>"$state/config-dir.log"
+fi
 
 die() {
     printf 'fake-claude: %s\n' "$1" >&2

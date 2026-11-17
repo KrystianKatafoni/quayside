@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
  * Scriptable in-memory [AgentRuntime] for tests of features that run agents. Passes
  * [AgentRuntimeContract] and [AgentRuntimeHealthContract].
  *
+ * Every listed session carries [RuntimeWorld.account], like the CLI adapter stamps its account (AM-1003).
  * Started sessions get ids `fake0001`, `fake0002`, … and [Clock.now] as their start time. When
  * [RuntimeWorld.installed] is false every `suspend` operation returns [RuntimeError.NotInstalled].
  */
@@ -66,7 +67,12 @@ public class FakeAgentRuntime(
 
     override suspend fun listSessions(under: Path?): Outcome<List<RuntimeSession>, RuntimeError> =
         transact("listSessions") { current ->
-            current to Outcome.Ok(current.sessions.filter { under == null || it.cwd.startsWith(under) })
+            current to
+                Outcome.Ok(
+                    current.sessions
+                        .filter { under == null || it.cwd.startsWith(under) }
+                        .map { it.copy(account = world.account) },
+                )
         }
 
     override suspend fun start(spec: StartSpec): Outcome<SessionId, RuntimeError> {
@@ -74,7 +80,17 @@ public class FakeAgentRuntime(
         return transact("start") { current ->
             val id = SessionId("fake%04d".format(current.startedCount + 1))
             val session =
-                RuntimeSession(id, null, spec.name ?: id.value, spec.cwd, RuntimePhase.WORKING, null, startedAt, null)
+                RuntimeSession(
+                    id = id,
+                    conversationId = null,
+                    name = spec.name ?: id.value,
+                    cwd = spec.cwd,
+                    phase = RuntimePhase.WORKING,
+                    waitingFor = null,
+                    startedAt = startedAt,
+                    pid = null,
+                    account = world.account,
+                )
             current.copy(sessions = current.sessions + session, startedCount = current.startedCount + 1) to
                 Outcome.Ok(id)
         }
@@ -104,6 +120,7 @@ public class FakeAgentRuntime(
                     waitingFor = WaitingFor.Input.takeUnless { failed },
                     startedAt = startedAt,
                     pid = null,
+                    account = world.account,
                 )
             current.copy(
                 sessions = current.sessions.filterNot { it.id == id } + session,

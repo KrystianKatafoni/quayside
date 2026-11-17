@@ -37,6 +37,15 @@ internal class FakeClaude private constructor(
             .map { call -> call.split(ARG_END).dropLast(1) }
     }
 
+    /**
+     * `CLAUDE_CONFIG_DIR` of every call so far, in call order like [calls]; `-` when the call did not have it
+     * (AM-1003). The position of an entry is the position of its call.
+     */
+    fun configDirs(): List<String> {
+        val log = stateDir.resolve("config-dir.log")
+        return if (log.exists()) log.readText().lines().dropLast(1) else emptyList()
+    }
+
     /** Switches the behaviour of later calls: `normal`, `garbage`, `hang`, `fail <code> <stderr>`, `bg-child`. */
     fun setMode(mode: String) {
         stateDir.resolve("mode").writeText(mode)

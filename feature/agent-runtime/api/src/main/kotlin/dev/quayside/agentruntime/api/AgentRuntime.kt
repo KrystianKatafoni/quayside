@@ -1,5 +1,6 @@
 package dev.quayside.agentruntime.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Outcome
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.domain.ShellCommand
@@ -79,6 +80,7 @@ public interface AgentRuntime {
  * @property waitingFor what a [RuntimePhase.BLOCKED] session waits for; null otherwise.
  * @property startedAt when the session was started.
  * @property pid process id of a running agent; null when it is not running.
+ * @property account the Claude account (config directory) whose supervisor lists this session (ADR 0029).
  */
 public data class RuntimeSession(
     val id: SessionId,
@@ -89,6 +91,7 @@ public data class RuntimeSession(
     val waitingFor: WaitingFor?,
     val startedAt: Instant,
     val pid: Long?,
+    val account: AccountId = AccountId.DEFAULT,
 )
 
 /** Lifecycle phase of a supervised session. */

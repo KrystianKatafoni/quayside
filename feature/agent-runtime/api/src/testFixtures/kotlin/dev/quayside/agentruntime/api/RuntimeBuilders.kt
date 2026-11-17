@@ -1,5 +1,6 @@
 package dev.quayside.agentruntime.api
 
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.SessionId
 import dev.quayside.core.testing.T0
 import dev.quayside.core.testing.aSessionId
@@ -22,7 +23,8 @@ public fun aRuntimeSession(
     waitingFor: WaitingFor? = null,
     startedAt: Instant = T0,
     pid: Long? = 4242L,
-): RuntimeSession = RuntimeSession(id, conversationId, name, cwd, phase, waitingFor, startedAt, pid)
+    account: AccountId = AccountId.DEFAULT,
+): RuntimeSession = RuntimeSession(id, conversationId, name, cwd, phase, waitingFor, startedAt, pid, account)
 
 public fun aStartSpec(
     cwd: Path = A_PROJECT_DIR,

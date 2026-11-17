@@ -3,6 +3,7 @@ package dev.quayside.agentruntime.impl
 import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.agentruntime.api.AgentRuntimeContract
 import dev.quayside.agentruntime.api.RuntimeWorld
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.process.LoginShellProcessRunner
 import dev.quayside.core.testing.TestClock
@@ -40,6 +41,8 @@ class ClaudeCliAdapterContractTest : AgentRuntimeContract() {
             logger = NoOpLogger,
             homeDir = dir.resolve("home").createDirectories(),
             executable = claude.executable,
+            account = world.account,
+            configDir = dir.resolve("config-$installs").takeUnless { world.account == AccountId.DEFAULT },
         )
     }
 }

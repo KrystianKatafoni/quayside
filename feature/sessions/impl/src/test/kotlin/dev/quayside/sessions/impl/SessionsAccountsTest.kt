@@ -76,6 +76,39 @@ class SessionsAccountsTest {
         }
 
     @Test
+    fun `a flapping extra account is stale from its last good listing, not from an older one`() =
+        runTest {
+            val world = accountsWorld(listOf(working(S1)), listOf(working(onWork)))
+            runCurrent()
+            world.work.available(false)
+            advance(2.seconds)
+            world.work.available(true)
+            advance(2.seconds)
+
+            world.work.available(false)
+            advance(2.seconds)
+
+            world.api.monitor.snapshot.value.status shouldBe
+                SnapshotStatus.Stale(atMillis(4_000), RuntimeProblem.NOT_INSTALLED)
+        }
+
+    @Test
+    fun `when every account fails after a partial failure the stale time stays that of the partial one`() =
+        runTest {
+            val world = accountsWorld(listOf(working(S1)), listOf(working(onWork)))
+            runCurrent()
+            advance(4.seconds)
+
+            world.work.available(false)
+            advance(4.seconds)
+            world.default.available(false)
+            advance(2.seconds)
+
+            world.api.monitor.snapshot.value.status shouldBe
+                SnapshotStatus.Stale(atMillis(4_000), RuntimeProblem.NOT_INSTALLED)
+        }
+
+    @Test
     fun `a default session still emits events and activity while an extra account never answered`() =
         runTest {
             val world = accountsWorld(listOf(working(S1)), listOf(working(onWork)))

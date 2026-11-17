@@ -1,6 +1,7 @@
 package dev.quayside.agentruntime.impl
 
 import dev.quayside.agentruntime.api.PromptRequest
+import dev.quayside.agentruntime.api.RuntimeRequirements
 import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.NoOpLogger
 import dev.quayside.core.domain.Outcome
@@ -18,7 +19,8 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * The config dir of an extra account is masked in the error of every failing path: `rm` (refused with `kept`),
- * `respawn` and the one-shot prompt (plan AM-1003, ENG-C8). Each case fails when its `env` is not passed to the mask.
+ * `respawn`, the Agent View probe of `health` and the one-shot prompt (plan AM-1003, ENG-C8). Each case fails when
+ * its `env` is not passed to the mask.
  */
 class ClaudeAccountMaskTest {
     private val home = Path.of("/Users/test")
@@ -59,6 +61,32 @@ class ClaudeAccountMaskTest {
 
             result.toString() shouldContain "cannot use"
             result.toString() shouldNotContain configDir.toString()
+        }
+
+    @Test
+    fun `a failing Agent View probe in health masks the config dir`() =
+        runTest {
+            val probe =
+                FakeProcessRunner { command ->
+                    when {
+                        command.argv.contains("--version") -> {
+                            Outcome.Ok(ProcessResult(0, "${RuntimeRequirements.MIN_CLAUDE_VERSION} (Claude Code)", ""))
+                        }
+
+                        command.argv.contains("agents") -> {
+                            Outcome.Ok(ProcessResult(1, "", leak))
+                        }
+
+                        else -> {
+                            Outcome.Ok(ProcessResult(0, "", ""))
+                        }
+                    }
+                }
+
+            val health = runtime(probe).health()
+
+            health.problems.toString() shouldContain "cannot use"
+            health.problems.toString() shouldNotContain configDir.toString()
         }
 
     @Test

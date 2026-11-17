@@ -71,8 +71,9 @@ public sealed interface SnapshotStatus {
 
     /**
      * The last refresh failed with [problem] (the first failing account in automation order). Two cases:
-     * - every account failed: the sessions are the ones of the last successful listing, [lastFreshAt] is its time, or
-     *   null (and no sessions) when no listing has succeeded yet;
+     * - every account failed: the sessions are the ones of the previous snapshot and [lastFreshAt] stays as in the
+     *   previous status: the last fresh listing, or the stale time of a partial failure before it; null (and no
+     *   sessions) when no listing has succeeded yet;
      * - only some accounts failed: the sessions of the others are fresh and the failed ones keep their last sessions;
      *   [lastFreshAt] is the last successful listing of the account that failed, or the time of its first try when it
      *   has not answered yet, so it is not null while sessions are shown.

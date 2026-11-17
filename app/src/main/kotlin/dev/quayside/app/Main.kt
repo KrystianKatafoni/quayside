@@ -128,13 +128,15 @@ private fun appModules(
     val runtime = agentRuntimeModule(core.process, core.clock, core.logger, core.homeDir, injectHookToken = true)
     val inspector = projectInspectorModule(projects, runtime, core.process, core.dispatchers.io, core.logger)
     // Lives as long as the app, not the window (AM-405 risks).
-    val sessions =
-        sessionsDeps(core, runtime, projects, stored, CoroutineScope(SupervisorJob() + core.dispatchers.io))
+    val appScope = CoroutineScope(SupervisorJob() + core.dispatchers.io)
+    val extra = AccountRuntimes(accounts.repo.state, appScope) { id, dir -> accountRuntime(core, id, dir) }.runtimes
+    val sessions = sessionsDeps(core, Supervisors(runtime, extra), projects, stored, appScope)
     // The registry only merges lists on Default; commands run in the window scope on Main (see MainWindow).
     val registry = commandPaletteModule(CoroutineScope(SupervisorJob() + core.dispatchers.default), core.logger)
     val notifications = notificationDeps(core, stored.notifications, sessions, projects)
     val terminal =
         terminalDeps(core, runtime, stored.terminal, notifications, appearance.looks)
+            .withAttach(accountAttachCommand(runtime, extra, sessions.monitor.snapshot))
     return AppModules(
         ProjectDeps(projects, inspector, workspaceTrustModule(core.homeDir, core.dispatchers.io, core.logger)),
         sessions,
@@ -148,7 +150,7 @@ private fun appModules(
 /** The sessions module fed by the hook server (AM-601, AM-603); both live in [scope], as long as the app. */
 private fun sessionsDeps(
     core: CoreDeps,
-    runtime: AgentRuntime,
+    supervisors: Supervisors,
     projects: ProjectsApi,
     stored: StoredSettings,
     scope: CoroutineScope,
@@ -156,7 +158,7 @@ private fun sessionsDeps(
     val claudeHome = core.homeDir.resolve(".claude")
     val hooks = hookEventSourceModule(core.process, core.clock, core.logger, scope, core.homeDir, port = HOOK_PORT)
     return sessionsModule(
-        runtime,
+        supervisors.default,
         hooks,
         projects,
         scope,
@@ -167,6 +169,7 @@ private fun sessionsDeps(
         io = core.dispatchers.io,
         history = sessionHistoryModule(claudeHome, core.dispatchers.io, core.logger),
         historySettings = stored.history,
+        extraRuntimes = supervisors.extra,
     )
 }
 

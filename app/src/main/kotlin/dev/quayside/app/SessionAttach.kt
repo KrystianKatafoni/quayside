@@ -1,10 +1,12 @@
 package dev.quayside.app
 
+import dev.quayside.agentruntime.api.AgentRuntime
 import dev.quayside.commandpalette.api.Command
 import dev.quayside.commandpalette.api.CommandGroup
 import dev.quayside.commandpalette.api.CommandId
 import dev.quayside.commandpalette.api.CommandProvider
 import dev.quayside.commandpalette.api.Shortcut
+import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.Logger
 import dev.quayside.core.domain.ProjectId
 import dev.quayside.core.domain.SessionId
@@ -18,6 +20,7 @@ import dev.quayside.projects.api.Project
 import dev.quayside.projects.ui.ProjectsController
 import dev.quayside.projects.ui.ProjectsMenuState
 import dev.quayside.sessions.api.Session
+import dev.quayside.sessions.api.SessionsSnapshot
 import dev.quayside.terminal.ui.TerminalController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -136,3 +139,20 @@ internal class AttachCommands(
         combine(controller.menu, missionControl.actions, offered)
             .stateIn(scope, SharingStarted.Eagerly, offered(controller.menu.value, missionControl.actions.value))
 }
+
+/**
+ * `attachCommand` of the runtime of the account of the session in [sessions]; a session that is not listed, or whose
+ * account has no runtime, uses [default] (AM-1003). Both [extra] and [sessions] are read at every call.
+ */
+internal fun accountAttachCommand(
+    default: AgentRuntime,
+    extra: StateFlow<Map<AccountId, AgentRuntime>>,
+    sessions: StateFlow<SessionsSnapshot>,
+): (SessionId) -> ShellCommand =
+    { id ->
+        val account =
+            sessions.value.sessions
+                .firstOrNull { it.id == id }
+                ?.account
+        (account?.let { extra.value[it] } ?: default).attachCommand(id)
+    }

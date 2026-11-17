@@ -58,6 +58,10 @@ internal class TerminalDeps(
 ) {
     /** The current settings, read from [repo]. */
     val settings: StateFlow<TerminalSettings> get() = repo.settings
+
+    /** The same terminal with another [attach] command, e.g. one that picks the runtime of the session account. */
+    fun withAttach(attach: (SessionId) -> ShellCommand): TerminalDeps =
+        TerminalDeps(api, repo, loginShell, attach, runtime)
 }
 
 /** The appearance module with the looks of what is applied now and the theme files; shared by the windows. */

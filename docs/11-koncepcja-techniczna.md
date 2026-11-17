@@ -121,6 +121,7 @@ data class ResumeSpec(val conversation: ConversationId, val cwd: Path)   // cwd 
 data class RuntimeSession(
     val id: SessionId, val conversationId: ConversationId?, val name: String, val cwd: Path,
     val phase: RuntimePhase, val waitingFor: WaitingFor?, val startedAt: Instant, val pid: Long?,
+    val account: AccountId = AccountId.DEFAULT,                 // konto, którego supervisor wylistował sesję (AM-1003, ADR 0029)
 )
 enum class RuntimePhase { WORKING, BLOCKED, DONE, FAILED, STOPPED }
 sealed interface WaitingFor { data object Permission : WaitingFor; data object Input : WaitingFor; data class Other(val raw: String) : WaitingFor }
@@ -267,7 +268,7 @@ data class StoredPlace(val project: ProjectId, val place: PlaceAssignment)  // S
 data class ResumedSession(val id: SessionId, val copy: Boolean)     // id żywej sesji; copy: rozmowa była otwarta gdzie indziej, oryginał zostaje na liście (compat R4)
 
 interface SessionCommands {
-    suspend fun start(project: ProjectId, spec: NewSessionSpec): Outcome<SessionId, SessionError>  // spec.subfolder: podfolder grupy (AM-308); SessionError.SubfolderUnavailable
+    suspend fun start(project: ProjectId, spec: NewSessionSpec): Outcome<SessionId, SessionError>  // spec.subfolder: podfolder grupy (AM-308); SessionError.SubfolderUnavailable; spec.account: konto startu, brak runtime'u = SessionError.Runtime(COMMAND_FAILED) (AM-1003)
     suspend fun stop(id: SessionId): Outcome<Unit, SessionError>
     suspend fun stopAllIn(project: ProjectId): Outcome<Int, SessionError>
     suspend fun respawn(id: SessionId): Outcome<Unit, SessionError>
@@ -502,7 +503,7 @@ Polling `AgentRuntime.listSessions()` co 2–3 s trafia do tego samego reducera 
 | --- | --- |
 | Stan UI, ViewModel | `Dispatchers.Main` (Swing EDT w Compose Desktop) |
 | Procesy (`claude`, `say`, `git`) | `io`, z timeoutem per wywołanie (domyślnie 10 s, `start` 30 s) |
-| Pętla pollingu | `CoroutineScope` modułu `sessions`, `delay(pollInterval)`, wynik przez `conflate()` |
+| Pętla pollingu | `CoroutineScope` modułu `sessions`, `delay(pollInterval)`, wynik przez `conflate()`; listy kont równolegle (`async` na konto), więc cykl nie rośnie z liczbą kont (AM-1003) |
 | Serwer hooków | Ktor CIO na własnej puli; zdarzenia do `MutableSharedFlow(extraBufferCapacity = 64)` |
 | Zapisy konfiguracji | serializowane przez `Mutex` w `JsonStore` |
 
@@ -550,7 +551,7 @@ fun main() = application {
     val projects      = projectsModule(core)
     val oneShot       = oneShotPromptModule(core.process, core.homeDir)
     val summaries     = summariesModule(core.storage, oneShot, core.logger)
-    val sessions      = sessionsModule(core, runtime, projects, summaries)  // summaries: SummariesApi?, null = bez podsumowań
+    val sessions      = sessionsModule(core, runtime, projects, summaries, extraRuntimes = accountRuntimes)  // summaries: SummariesApi?, null = bez podsumowań; extraRuntimes: StateFlow<Map<AccountId, AgentRuntime>> (AM-1003)
     val notifications = notificationsModule(core, sessions.monitor, sessions.commands)
     val terminal      = terminalModule(core)
     val appearance    = appearanceModule(core)
@@ -560,6 +561,8 @@ fun main() = application {
     QuaysideApp(projects, sessions, notifications, terminal, appearance, palette, hookInstaller, accounts)
 }
 ```
+
+Konta (AM-1003): `agentRuntimeModule(..., account, configDir)` buduje supervisora konta; `CLAUDE_CONFIG_DIR=<configDir>` trafia do każdego wywołania `claude` konta dodatkowego (także `attachCommand`), a konta domyślnego nigdy (docs/compat.md). `app` trzyma `AccountRuntimes`: po jednym runtime na konto z `accounts.json` poza domyślnym, wymieniany tylko po zmianie `configDir`. `sessionsModule` dostaje konto domyślne jako `runtime` i resztę jako `extraRuntimes`, scala listy po kluczu (konto, ID) i kieruje polecenia do runtime'u konta sesji (ADR 0036); `attach` wybiera runtime po `Session.account`.
 
 Okno „Hooki Claude Code” obejmuje zakres globalny i każdy dodany projekt (`HookScope.Project`, AM-609); cele dostarcza `ProjectHookTargets` nad `ProjectsApi.projects`.
 

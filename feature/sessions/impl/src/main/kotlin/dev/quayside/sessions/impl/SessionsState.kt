@@ -105,6 +105,7 @@ internal class SessionsState(
     suspend fun refresh(expect: List<Expected> = emptyList()): Outcome<SessionsSnapshot, RuntimeError> =
         mutex.withLock {
             pending = pending + expect
+            // staleSince is never null for a partial failure: the reducer reads it from the status as "was listed".
             val (listing, staleAccount, staleSince) = accounts.list()
             val now = clock.now()
             val overlaid = listing.map { overlay(it, now) }

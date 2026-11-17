@@ -70,8 +70,12 @@ public sealed interface SnapshotStatus {
     ) : SnapshotStatus
 
     /**
-     * The last refresh failed with [problem]; the sessions are the ones listed at [lastFreshAt], or
-     * none when no listing has succeeded yet.
+     * The last refresh failed with [problem] (the first failing account in automation order). Two cases:
+     * - every account failed: the sessions are the ones of the last successful listing, [lastFreshAt] is its time, or
+     *   null (and no sessions) when no listing has succeeded yet;
+     * - only some accounts failed: the sessions of the others are fresh and the failed ones keep their last sessions;
+     *   [lastFreshAt] is the last successful listing of the account that failed, or the time of its first try when it
+     *   has not answered yet, so it is not null while sessions are shown.
      */
     public data class Stale(
         val lastFreshAt: Instant?,

@@ -11,7 +11,8 @@ import java.time.Instant
 
 /**
  * What [AccountListing.list] found: the [listing] to publish, the first error of an account that failed
- * ([staleBy]) and when that account last listed successfully ([staleSince], null if never).
+ * ([staleBy]) and when that account last listed successfully, or was first tried if it never did ([staleSince]; null
+ * when every account failed or none did).
  */
 internal data class AccountsListed(
     val listing: Outcome<List<RuntimeSession>, RuntimeError>,
@@ -34,7 +35,8 @@ internal class AccountListing(
 
     /**
      * When only some accounts failed the listing is `Ok` over their cached sessions and [AccountsListed.staleBy] is the
-     * error of the first of them (with [AccountsListed.staleSince], its last good listing): the snapshot is stale, but
+     * error of the first of them (with [AccountsListed.staleSince], its last good listing, or its first try if it
+     * never answered): the snapshot is stale, but
      * polling does not back off. When every account failed the listing is that first error.
      */
     suspend fun list(): AccountsListed {
@@ -43,7 +45,11 @@ internal class AccountListing(
         cache = merged.cache
         val now = clock.now()
         val ok = results.keys - merged.failed.keys
-        freshAt = freshAt.filterKeys { it in merged.failed } + ok.associateWith { now }
+        val firstTry =
+            merged.failed.keys
+                .filter { it !in freshAt }
+                .associateWith { now }
+        freshAt = freshAt.filterKeys { it in merged.failed } + firstTry + ok.associateWith { now }
         logCollisions(merged.collisions)
         val first = merged.failed.values.firstOrNull()
         val since =
@@ -51,7 +57,7 @@ internal class AccountListing(
                 .firstOrNull()
                 ?.let { freshAt[it] }
         return if (first != null && merged.failed.size == results.size) {
-            AccountsListed(Outcome.Err(first), null)
+            AccountsListed(Outcome.Err(first), null, null)
         } else {
             AccountsListed(Outcome.Ok(merged.sessions), first, since)
         }

@@ -3,9 +3,13 @@
 package dev.quayside.sessions.impl
 
 import dev.quayside.agentruntime.api.RuntimeError
+import dev.quayside.agentruntime.api.RuntimePhase
+import dev.quayside.agentruntime.api.WaitingFor
 import dev.quayside.core.domain.AccountId
 import dev.quayside.core.domain.LogLevel
+import dev.quayside.core.domain.SessionId
 import dev.quayside.sessions.api.RuntimeProblem
+import dev.quayside.sessions.api.SessionEvent
 import dev.quayside.sessions.api.SnapshotStatus
 import dev.quayside.sessions.impl.MonitorFixtures.S1
 import dev.quayside.sessions.impl.MonitorFixtures.working
@@ -55,6 +59,35 @@ class SessionsAccountsTest {
             stale.lastFreshAt shouldBe atMillis(0)
             world.default.listedAtMillis shouldBe listOf(0L, 2_000, 4_000, 6_000, 8_000, 10_000)
             world.work.listedAtMillis shouldBe listOf(0L, 2_000, 4_000, 6_000, 8_000, 10_000)
+        }
+
+    @Test
+    fun `an extra account that never answered is stale from its first try, not without a list`() =
+        runTest {
+            val world = accountsWorld(listOf(working(S1)), listOf(working(onWork)))
+            world.work.available(false)
+
+            runCurrent()
+            advance(4.seconds)
+
+            world.listedIds() shouldBe listOf(S1)
+            world.api.monitor.snapshot.value.status shouldBe
+                SnapshotStatus.Stale(atMillis(0), RuntimeProblem.NOT_INSTALLED)
+        }
+
+    @Test
+    fun `a default session still emits events and activity while an extra account never answered`() =
+        runTest {
+            val world = accountsWorld(listOf(working(S1)), listOf(working(onWork)))
+            world.work.available(false)
+            val events = record(world.api.monitor.events)
+            runCurrent()
+
+            world.default.fake.setPhase(SessionId(S1), RuntimePhase.BLOCKED, WaitingFor.Input)
+            advance(2.seconds)
+
+            events.map { it::class } shouldBe listOf(SessionEvent.BecameBlocked::class)
+            world.session(S1).lastActivityAt shouldBe atMillis(2_000)
         }
 
     @Test
